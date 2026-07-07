@@ -24,6 +24,10 @@ public class AppDbContext : DbContext
     public DbSet<TourTemplate> TourTemplates => Set<TourTemplate>();
     public DbSet<TourDeparture> TourDepartures => Set<TourDeparture>();
     public DbSet<TourItinerary> TourItineraries => Set<TourItinerary>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
 
     public override int SaveChanges()
     {
