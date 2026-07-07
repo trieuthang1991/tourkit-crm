@@ -11,6 +11,9 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- IDE0005 (bỏ using thừa) chỉ chạy khi build sinh doc file (dotnet/roslyn#41640).
+         Bật doc file để IDE0005 hiệu lực; tắt CS1591 vì convention KHÔNG bắt buộc XML doc mọi public member. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 </Project>
