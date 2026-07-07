@@ -25,7 +25,7 @@
 |----------|-----------|
 | Mô hình | SaaS thương mại bán cho nhiều công ty lữ hành |
 | Tech backend | **.NET 9 + EF Core 9**, logic ở code (KHÔNG stored proc) |
-| Database | **SQLite ở dev** (chưa cần cài server) → **SQL Server ở production**. Đổi bằng cấu hình `Database:Provider`; code provider-agnostic |
+| Database | **SQLite ở dev** (nhanh khi bootstrap) → **PostgreSQL ở production**. Đổi bằng cấu hình `Database:Provider`; code provider-agnostic. Chọn PostgreSQL vì open-source, linh hoạt, có Materialized View + JSONB để phục vụ các màn grid tổng hợp (xem `docs/business/database-optimization-analysis.md` §F) |
 | Kiến trúc | Modular Monolith |
 | Multi-tenant | Shared DB + `TenantId` + EF Global Query Filter (kèm soft-delete filter) |
 | API | REST, prefix `/api/v1`, DTO record riêng, lỗi trả ProblemDetails |

@@ -67,22 +67,33 @@ Hệ cũ lưu **danh sách ID dưới dạng chuỗi CSV** trong 1 cột:
 
 ---
 
-### A6. Trộn doanh thu + chi phí vào Order
-`Order` chứa cả `Total_Thu_Money`, `Total_Chi_Money`, `ApprovedRevenue`, `UnapprovedSpent`… → vừa là tổng, vừa là chi tiết, khó báo cáo, khó audit.
+### A6. ~~Trộn doanh thu + chi phí vào Order~~ → GIỮ LẠI (denormalize có chủ đích)
 
-**Giải pháp:** tách ra:
-- `Order` — chỉ metadata (khách, tour, trạng thái, người phụ trách).
-- `OrderRevenue` — dòng doanh thu (theo loại, duyệt/chưa).
-- `OrderCost` — dòng chi phí (theo NCC, theo dịch vụ) — thay `OrderChi` + `OrderProviderMoney`.
+> ⚠️ **ĐÍNH CHÍNH (sau khi đọc read pattern thật — xem §F):** Đề xuất ban đầu của tôi là tách
+> `OrderRevenue`/`OrderCost` thành bảng riêng. **SAI.** Màn "Tất cả tour" (`TourSharedSearch_v3`)
+> sort theo `Total_Thu_Money`, `Thuc_Thu`, `Total_Chi_Money`, `ApprovedRevenue` trực tiếp trên grid
+> phân trang. Màn "Công nợ khách" cũng sort theo `SUM(Total_Thu_Money)`. Nếu tách ra bảng con,
+> mỗi lần load grid phải `GROUP BY` + `JOIN` aggregate → chậm, không index được trên cột sort.
+
+**Giải pháp sửa lại:** GIỮ cột tổng (`TotalRevenue`, `TotalCost`, `ApprovedRevenue`…) trực tiếp
+trên `Order` như hệ cũ (denormalize). Đồng bộ qua:
+- Cập nhật trong cùng transaction khi ghi dòng con (Receipt/Payment/OrderCost).
+- PostgreSQL trigger tính lại tổng khi dòng con thay đổi (chỉ prod).
+- Chỉ phần **chi tiết** dòng chi phí NCC mới tách bảng `OrderCost` (giữ, chỉ đổi tên OrderChi→OrderCost).
 
 ---
 
-### A7. Giá 4 nhóm tuổi lặp 4 lần
-`TourSample` và `TourCustomer` đều lặp `price_per_slot/childs/childs_small/baby` + `commission_*` + `discount_*` + `surcharge_*` (mỗi nhóm 4-5 cột × 4 nhóm = ~20 cột).
+### A7. ~~Giá 4 nhóm tuổi lặp 4 lần~~ → GIỮ LẠI (denormalize có chủ đích)
 
-**Vấn đề:** nếu thêm nhóm tuổi mới (vd "người cao tuổi") → sửa schema. Cứng.
+> ⚠️ **ĐÍNH CHÍNH:** Đề xuất ban đầu của tôi là tách giá ra bảng `PriceTier`. **SAI.** Màn
+> "Tất cả tour" sort/filter theo `price_per_slot` (giá người lớn) trực tiếp trên grid. Nếu đẩy
+> vào bảng con `PriceTier`, sort phải JOIN + tìm dòng `AgeGroup=Adult` → không SARGable, không
+> index được, grid không sort được. Đây chính xác nỗi lo bạn chỉ ra.
 
-**Giải pháp:** bảng `PriceTier` (`AgeGroup` enum: Adult/Child/ChildSmall/Baby, `UnitPrice`, `Commission`, `Discount`, `Surcharge`). Mỗi TourSample/TourCustomer có nhiều dòng `PriceTier`. Dễ mở rộng, dễ báo cáo.
+**Giải pháp sửa lại:** GIỮ 4 nhóm tuổi dưới dạng cột trực tiếp trên `TourSample` và `TourCustomer`
+(như hệ cũ). Đổi tên PascalCase rõ ràng (`PriceAdult/PriceChild/PriceChildSmall/PriceBaby`).
+Chấp nhận lặp ~20 cột vì: nhóm tuổi cố định nghiệp vụ (người lớn/trẻ em/trẻ nhỏ/em bé) —
+rất hiếm khi thêm. Nếu sau này cần mở rộng → dùng cột `ExtraPricing jsonb` (PostgreSQL).
 
 ---
 
@@ -129,50 +140,130 @@ Tag(TenantId, Name, Color)
 CustomerTag(CustomerId, TagId)
 ```
 
-### B3. Catalog Tour (P1 — cốt lõi)
+### B3. Tour (cốt lõi) — mẫu TPT: 1 bảng gốc + 2 bảng phụ theo loại
+
+> **Quyết định thiết kế:** Gộp `tour_samples` + `tours` của hệ cũ thành 1 bảng gốc `Tour`
+> + 2 bảng phụ 1-1 theo `Kind` (Template | Departure). Pattern **TPT (Table-per-Type)**,
+> EF Core 9 hỗ trợ native qua `ToTable()` + kế thừa. Lý do: gom cột chung (Code, Title,
+> ngày, trạng thái...) vào 1 chỗ, cột riêng (giá vs điều hành) tách bảng phụ.
+> **TourCustomer KHÔNG gộp** — quan hệ 1 Tour : N TourCustomer (vi phạm 1NF nếu gộp).
+
+**Bảng gốc `Tour`** (cột chung cho cả mẫu và chuyến — sort/filter/index 1 chỗ):
 ```
-TourSample(TenantId, Code, Title, TourType, TypeOf,
-           DepartureDate, EndDate, BookingDate, ReservationHours,
-           TotalSlots, OversoldSeats,
-           PickupPlace, DropoffPlace, TransportMode,
-           TermsNote, TermsNoteEn,
-           Status, CreatedBy)
-TourItinerary(TenantId, TourSampleId?, TourId?, DayIndex, Title, Detail)
-PriceTier(TenantId, TourSampleId, AgeGroup[Adult|Child|ChildSmall|Baby],
-          UnitPrice, CommissionType[Pct|Amount], CommissionValue,
-          Surcharge, Discount)               — thay 20 cột giá lặp
-PriceScenario(TenantId, TourSampleId, FromQty, ToQty, UnitPrice)
-MarketType(TenantId, Name)                   — lookup (thị trường)
+Tour(
+  Id, TenantId,                              — kernel (BaseEntity + ITenantEntity)
+  Kind ENUM(Template, Departure),            — phân biệt: mẫu | chuyến cụ thể
+  Code, Title, TourType, TypeOf,
+  DepartureDate, EndDate, BookingDate,
+  TotalSlots, OversoldSeats,
+  Services,                                  — dịch vụ inklusiv (JSONB nếu cần)
+  PickupPlace, DropoffPlace, TransportMode,
+  MarketId, ParentTourId NULL,               — Departure trỏ về Template nguồn
+  DepartureTime, EndTime,
+  Status, CreatedBy, CreatedAt, UpdatedAt, IsDeleted
+)
+INDEX: (TenantId, Kind, Status), (TenantId, DepartureDate), (TenantId, Code), (TenantId, ParentTourId)
 ```
 
-### B4. Booking + Chuyến
+**Bảng phụ 1: `TourTemplateFields`** (chỉ Kind=Template — báo giá/catalog):
+```
+TourTemplateFields(
+  TourId PK/FK→Tour,
+  ReservationHours,                          — thời hạn giữ chỗ
+  — Giá 4 nhóm tuổi GIỮ TRỰC TIẾP (sort/filter theo PriceAdult trên grid mẫu):
+  PriceAdult, CommissionAdultType, CommissionAdultValue,
+  PriceChild, CommissionChildType, CommissionChildValue,
+  PriceChildSmall, CommissionChildSmallType, CommissionChildSmallValue,
+  PriceBaby, CommissionBabyType, CommissionBabyValue,
+  TermsNote, TermsNoteEn, TourPrice, Discount
+)
+```
+
+**Bảng phụ 2: `TourDepartureFields`** (chỉ Kind=Departure — điều hành/chốt chuyến):
+```
+TourDepartureFields(
+  TourId PK/FK→Tour,
+  AmountAdults, AmountChildren, SoLuong,
+  AssignedToUserId, IsClosed, ClosedAt,
+  CommissionStatus, CommissionClosedAt,
+  IsPaymentRecognized, PhanThu, MaYeuCau,
+  QuoteSample, CheckList,
+  ExchangeRateId
+)
+```
+
+**Bảng phụ trợ Tour:**
+```
+TourItinerary(TourId, DayIndex, Title, Detail, TourKind)  — lịch trình ngày (áp cả mẫu + chuyến)
+PriceScenario(TourTemplateId, FromQty, ToQty, UnitPrice)  — kịch bản giá theo đoàn
+MarketType(TenantId, Name, ParentId)         — lookup cây thị trường (đệ quy trong proc cũ)
+TourAssignee(TourId, UserId, Role[Manager|Watcher|Assignee])  — normalize IdsNguoiTheoDoi/ManagerIds
+TourGuide(TenantId, Name, Phone, Email, Skill, Languages, Avatar, IsExternal)
+TourGuideAssignment(TourDepartureId, TourGuideId, Role, Revenue, Expense)
+```
+
+**EF Core 9 mapping (TPT native):**
+```csharp
+public abstract class Tour : BaseEntity, ITenantEntity {
+    public TourKind Kind { get; set; }       // Template | Departure
+    public string Code { get; set; }
+    public string Title { get; set; }
+    public DateTime? DepartureDate { get; set; }
+    public int? Status { get; set; }
+    // ... cột chung
+}
+public sealed class TourTemplate : Tour {
+    public decimal PriceAdult { get; set; }
+    // ... cột riêng mẫu
+}
+public sealed class TourDeparture : Tour {
+    public int AmountAdults { get; set; }
+    // ... cột riêng chuyến
+}
+// Config:
+modelBuilder.Entity<Tour>().ToTable("Tours");
+modelBuilder.Entity<TourTemplate>().ToTable("TourTemplateFields", t => t.StartsWithBaseTable());
+modelBuilder.Entity<TourDeparture>().ToTable("TourDepartureFields", t => t.StartsWithBaseTable());
+// Query:
+db.Tours.OfType<TourTemplate>()...           // grid mẫu
+db.Tours.OfType<TourDeparture>()...          // grid chuyến
+db.Tours.Where(t => t.Title.Contains(kw))... // autocomplete 1 bảng, không UNION
+```
+
+### B4. Booking (Order + TourCustomer + BookingTicket)
+
+> ⚠️ **ĐÍNH CHÍNH (sau khi đọc read pattern thật — xem §F):**
+> - KHÔNG tách `OrderRevenue`/`OrderCost` thành bảng riêng — grid sort theo cột tổng
+>   (`TotalRevenue`, `ApprovedRevenue`) trực tiếp, phải giữ denormalize trên `Order`.
+> - KHÔNG tách giá 4 nhóm tuổi ra `PriceTier` — grid mẫu sort theo `PriceAdult`.
+> - `TourCustomer` KHÔNG gộp vào Tour (quan hệ 1:N, vi phạm 1NF).
+
 ```
 BookingTicket(TenantId, Code, CustomerName, Phone, Email,
               AdultQty, ChildQty, BabyQty, AdultPrice, ChildPrice, BabyPrice,
               Source, Status, IsConfirmed, ConfirmedAt, ConfirmedBy,
-              TourSampleId?, TourId?, CustomerId?)
-Order(TenantId, Code, TourId, CustomerId, TourSampleId, Status,
-      AssignedToUserId, TotalRevenue, TotalCost, TotalRefund,
-      ApprovedRevenue, ApprovedCost, IsPaymentRecognized)
-TourCustomer(TenantId, TourId, CustomerId, OrderId,
-             AgeGroup, Qty, UnitPrice, Surcharge, Discount, Commission,
+              TourTemplateId?, TourDepartureId?, CustomerId?)
+Order(TenantId, Code, TourDepartureId, CustomerId, TourTemplateId?, Status,
+      AssignedToUserId,
+      — Tổng tài chính GIỮ TRỰC TIẾP (denormalize, sort/filter trên grid):
+      TotalRevenue, TotalRevenueRoot, TotalCost, TotalCostSale,
+      ApprovedRevenue, ApprovedRevenueSingle, UnapprovedRevenue,
+      ApprovedCost, UnapprovedCost, TotalRefund,
+      IsPaymentRecognized)
+TourCustomer(TenantId, TourDepartureId, CustomerId, OrderId,
+             — Giá/phụ thu/chiết khấu/hoa hồng 4 nhóm tuổi GIỮ TRỰC TIẾP (như hệ cũ):
+             Qty, AmountAdults, AmountChildren, AmountChildrenSmall, AmountBaby,
+             PriceAdult, PriceChild, PriceChildSmall, PriceBaby,
+             Surcharge, ChildSurcharge, ChildSurchargeSmall, BabySurcharge,
+             Discount, ChildDiscount, ChildDiscountSmall, BabyDiscount,
+             Commission, ChildCommission, ChildCommissionSmall, BabyCommission,
              UpfrontAmount, SeatCode, IsMainContact, Status, Signature)
 CancelSeat(TenantId, TourCustomerId, Reason, CancelledAt, CancelledBy)
 DetailReasonSwitch(TenantId, Context[Order|Ticket|Seat], RefId, ReasonId, Note)
 ReasonSwitch(TenantId, Name)                 — lookup lý do
-TourManager(TourId, UserId, Role[Manager|Watcher|Assignee])  — normalize
 ```
 
-### B5. Tour cụ thể (điều hành)
-```
-Tour(TenantId, Code, Title, TourSampleId, ParentTourId,
-     DepartureDate, EndDate, DepartureTime, EndTime,
-     AdultCount, ChildCount, TypeOfService, MarketId, ExchangeRateId,
-     AssignedToUserId, Status, IsClosed, ClosedAt,
-     CommissionClosedAt)
-TourGuide(TenantId, Name, Phone, Email, Skill, Languages, Avatar, IsExternal)
-TourGuideAssignment(TourId, TourGuideId, Role, Revenue, Expense)
-```
+> Lưu ý: B4 gộp vào B3 (Tour TPT), không còn B5 riêng. Provider/Finance ở B6, B7 như cũ.
 
 ### B6. Provider + Chi phí
 ```
@@ -185,7 +276,7 @@ ProviderServiceOrder(TenantId, ProviderServiceId, OrderId, Qty, UnitPrice, Total
 Service(TenantId, Name, Type)                — catalog dịch vụ
 OrderCost(TenantId, OrderId, ProviderId, ServiceId, DayIndex,
           ExpectedAmount, ActualAmount, Deposit, Surcharge, Vat, Status,
-          SignedAt, SignedBy)                — thay OrderChi + OrderProviderMoney
+          SignedAt, SignedBy)                — dòng chi phí NCC (giữ, chỉ đổi tên OrderChi→OrderCost)
 Vehicle(TenantId, Plate, CarTypeId, ProviderId?)
 CarType(TenantId, Name, SeatCount)
 ClassHotel(TenantId, Name, Stars)            — lookup
@@ -281,7 +372,7 @@ ConfigCompany(TenantId, Name, LogoUrl, Address, TaxCode, Phone, Email)
 |---|---|---|
 | 0a ✅ | Tenant + BaseEntity | Kernel multi-tenant (xong) |
 | 0b | Identity/Subscription/Plan | Auth + RBAC + onboarding tenant |
-| 1 | Catalog (TourSample/Tour/Itinerary/PriceTier/Scenario) | Sản phẩm cốt lõi |
+| 1 | Catalog (Tour TPT + Itinerary + PriceScenario) | Sản phẩm cốt lõi |
 | 2 | CRM (Customer/Lead/Interaction) | Phễu bán |
 | 3 | Booking (BookingTicket/Order/TourCustomer/CancelSeat) | Giao dịch |
 | 4 | Provider + OrderCost | Điều hành + chi phí |
@@ -289,4 +380,203 @@ ConfigCompany(TenantId, Name, LogoUrl, Address, TaxCode, Phone, Email)
 | 6 | Commission/ProfitSharing | Chốt lãi |
 | 7 | Marketing + Task + AuditLog | Scale + phụ trợ |
 
-Mỗi phase: entity + config + migration + endpoint + test cô lập tenant. Chuyển SQL Server production khi cần (đổi `Database:Provider`).
+Mỗi phase: entity + config + migration + endpoint + test cô lập tenant.
+Provider DB: SQLite ở dev → **PostgreSQL ở production** (đổi `Database:Provider`).
+
+---
+
+## PHẦN F — Read pattern thật + giải pháp (PHẢI ĐỌC TRƯỚC KHI THIẾT KẾ BẢNG)
+
+> Phần này ghi lại **cách màn hình thật load dữ liệu** trong hệ gốc (đọc từ stored proc
+> thật). Đây là cơ sở cho mọi quyết định tách/gộp bảng ở §B. Bài học cốt lõi: **schema
+> phải phục vụ read pattern, không chỉ đẹp trên lý thuyết.**
+
+### F1. Các màn grid nóng và read pattern của chúng
+
+Đọc từ 4 stored proc chính của hệ gốc:
+
+| Màn | Stored proc | Join những gì | Sort theo field nào |
+|---|---|---|---|
+| **Tất cả chuyến** | `TourSharedSearch_v3` | `tours` ← `tour_customers`(main) ← `customers` ← `Orders` ← `OrderChi` agg ← `Rate` agg ← `users`(seller, phụ trách) ← `CarType` ← `customer_source` = **10+ bảng** | `Total_Thu_Money`, `Thuc_Thu`, `Total_Chi_Money`, `status`, `departure_date`, đánh giá trung bình |
+| **Tất cả mẫu tour** | `TourSampleSearch_v3` | `tour_samples` ← `Orders` ← agg thu/chi ← count khách (đã bán/giữ chỗ) | `price_per_slot`, `status`, `departure_date`, tổng doanh thu |
+| **Khách hàng** | `uspCustomerSearch` | `customers` ← `customer_type` ← agg `Orders`(`count`, `SUM money`) | **`total_money desc`** (field tính ra từ SUM!) |
+| **Phiếu thu/chi** | `uspFilterPaymentVoucher_v1` | UNION `tours`+`tour_samples` → `#AllTour` ← `Orders` ← `PaymentMethod` | ngày, trạng thái, số tiền |
+| **NCC** | `uspGetListProvider` | `providers` ← `provider_services` ← `services` ← `Order_Chi` | tên, dịch vụ |
+
+### F2. Bài học rút ra (chỉnh sửa đề xuất ban đầu)
+
+| Đề xuất ban đầu của tôi | Verdict sau khi đọc read pattern | Lý do |
+|---|---|---|
+| Tách `OrderRevenue`/`OrderCost` thành bảng riêng | ❌ **BỎ** — GIỮ cột tổng trên `Order` | Grid sort theo `TotalRevenue`, `ApprovedRevenue` trực tiếp. Tách = GROUP BY + JOIN mỗi lần load → chậm |
+| Tách giá 4 nhóm tuổi ra `PriceTier` | ❌ **BỎ** — GIỮ 4 nhóm tuổi trực tiếp | Grid mẫu sort theo `PriceAdult`. Tách = JOIN tìm dòng AgeGroup=Adult → không SARGable |
+| Gộp `Tour` + `TourSample` (TPT) | ✅ **GIỮ** | Autocomplete/ search chỉ query 1 bảng gốc `Tour`, không cần UNION |
+| `TourCustomer` gộp vào Tour | ❌ **KHÔNG** | Quan hệ 1:N (vi phạm 1NF nếu gộp) |
+
+### F3. Nguyên tắc denormalize CÓ CHỦ ĐÍCH
+
+Schema SaaS **không** thuần normalized 3NF. Có chủ đích denormalize ở 3 chỗ để phục vụ grid:
+
+1. **Cột tổng tài chính trên `Order`** (`TotalRevenue`, `TotalCost`, `ApprovedRevenue`…):
+   giữ trực tiếp, đồng bộ qua transaction khi ghi dòng con (Receipt/Payment/OrderCost),
+   hoặc PostgreSQL trigger tính lại. Lý do: grid sort theo cột này.
+2. **Cột giá chính trên `TourTemplateFields`** (`PriceAdult`): giữ trực tiếp. Lý do: grid
+   mẫu sort theo giá người lớn.
+3. **Cột lookup hiển thị** (vd `SellerName`, `CustomerName`): tùy chọn denormalize nếu
+   grid thường join —权衡 với rủi ro dữ liệu lệch.
+
+### F4. Giải pháp cho grid tổng hợp nặng → PostgreSQL Materialized View
+
+Hệ cũ dùng stored proc với JOIN 10+ bảng + temp table (`#AllTour`, `#FilteredIds`) để
+lọc + phân trang. Trong SaaS mới (EF Core, **KHÔNG stored proc**), không gọi proc được
+mà vẫn phải chạy grid nhanh → dùng **Materialized View** của PostgreSQL:
+
+```sql
+-- Materialized View: snapshot grid "Tất cả chuyến" (refresh định kỳ / theo event)
+CREATE MATERIALIZED VIEW mv_tour_departure_grid AS
+SELECT
+  t.TenantId, t.Id AS TourId, t.Code, t.Title, t.Status, t.DepartureDate,
+  tdf.AmountAdults, tdf.AmountChildren,
+  u.FullName AS AssignedToName,
+  c.FullName AS MainCustomerName,
+  COALESCE(o.TotalRevenue, 0) AS TotalRevenue,
+  COALESCE(o.TotalCost, 0) AS TotalCost,
+  COALESCE(o.ApprovedRevenue, 0) AS ApprovedRevenue,
+  COUNT(DISTINCT tc.Id) AS CustomerCount
+FROM Tours t
+JOIN TourDepartureFields tdf ON tdf.TourId = t.Id
+LEFT JOIN Users u ON u.Id = tdf.AssignedToUserId
+LEFT JOIN Orders o ON o.TourDepartureId = t.Id
+LEFT JOIN TourCustomers tc ON tc.TourDepartureId = t.Id
+LEFT JOIN Customers c ON c.Id = (SELECT MIN(customer_id) FROM TourCustomers
+                                  WHERE tour_departure_id = t.Id AND is_main_contact)
+WHERE t.Kind = 'Departure' AND t.IsDeleted = false
+GROUP BY t.Id, u.FullName, c.FullName, o.TotalRevenue, o.TotalCost, o.ApprovedRevenue;
+
+CREATE UNIQUE INDEX ON mv_tour_departure_grid (TenantId, TourId);
+CREATE INDEX ON mv_tour_departure_grid (TenantId, DepartureDate);
+CREATE INDEX ON mv_tour_departure_grid (TenantId, TotalRevenue);
+-- Refresh: REFRESH MATERIALIZED VIEW CONCURRENTLY mv_tour_departure_grid;
+```
+
+**Khi nào dùng:**
+- Grid list với sort/filter theo cột tổng hợp (thu/chi, count khách, đánh giá).
+- Báo cáo/dashboard.
+- **KHÔNG** dùng cho chi tiết (1 bản ghi) — query thẳng bảng gốc.
+
+**Refresh strategy:**
+- `REFRESH MATERIALIZED VIEW CONCURRENTLY` (không lock read) khi có event ghi
+  (Receipt/Payment/OrderCost/TourCustomer CRUD) → qua background job hoặc trigger.
+- Hoặc refresh định kỳ (mỗi 1-5 phút) nếu chấp nhận dữ liệu hơi stale.
+
+### F5. Tại sao PostgreSQL (không phải SQL Server)
+
+| Yêu cầu | PostgreSQL | SQL Server | SQLite (dev) |
+|---|---|---|---|
+| Materialized View | ✅ Native | ⚠️ Indexed view (ràng buộc khắt) | ❌ |
+| JSONB (lưu Services, CheckList, payload) | ✅ Index được | JSON (khó index hơn) | TEXT |
+| Open-source, self-host | ✅ Free | 💰 License | ✅ |
+| EF Core provider | ✅ Nimma.EntityFrameworkCore | ✅ SqlServer | ✅ Sqlite |
+| Full-text search (VD tên tour) | ✅ tsvector + GIN | ✅ Full-text | ⚠️ LIKE |
+| CTE đệ quy (MarketType cây) | ✅ Tốt | ✅ | ⚠️ |
+
+→ **Chốt: PostgreSQL production, SQLite dev.** Code provider-agnostic qua EF Core,
+đổi `Database:Provider` trong config.
+
+### F6. Checklist trước khi thêm/sửa bảng (bắt buộc)
+
+Trước khi chốt schema 1 entity, trả lời 4 câu:
+1. **Grid nào sẽ hiển thị entity này?** → sort/filter theo field nào? → field đó có index không?
+2. **Có field tổng hợp (SUM/COUNT) cần sort không?** → denormalize lên bảng cha HOẶC dùng Materialized View.
+3. **Có quan hệ 1:N không?** → KHÔNG gộp vào bảng cha (vi phạm 1NF). Tạo bảng con.
+4. **Có cột dùng chung cho nhiều loại không?** → cân nhắc TPT (gốc + bảng phụ theo Kind).
+
+---
+
+## PHẦN G — ERD cụm Tour (Mermaid)
+
+```mermaid
+erDiagram
+    Tour ||--o| TourTemplateFields : "Kind=Template"
+    Tour ||--o| TourDepartureFields : "Kind=Departure"
+    Tour ||--o{ TourItinerary : "lịch trình ngày"
+    Tour ||--o{ TourAssignee : "người phụ trách/theo dõi"
+    Tour ||--o{ PriceScenario : "giá theo đoàn (chỉ Template)"
+    Tour ||--o{ TourCustomer : "khách trên chuyến (chỉ Departure)"
+    Tour }o--|| MarketType : "thị trường"
+    Tour ||--o| Tour : "ParentTourId (Departure→Template)"
+
+    TourCustomer }o--|| Customer : ""
+    TourCustomer }o--|| Order : ""
+
+    Order ||--o{ OrderCost : "chi phí NCC"
+    Order ||--o{ ReceiptVoucher : "thu"
+    Order ||--o{ PaymentVoucher : "chi"
+
+    Tour {
+        Guid Id PK
+        Guid TenantId
+        Enum Kind "Template|Departure"
+        string Code
+        string Title
+        int TourType
+        date DepartureDate
+        date EndDate
+        int TotalSlots
+        int Status
+        Guid ParentTourId FK "NULL"
+        Guid MarketId FK
+    }
+    TourTemplateFields {
+        Guid TourId PK_FK
+        decimal PriceAdult
+        decimal PriceChild
+        decimal PriceChildSmall
+        decimal PriceBaby
+        string CommissionAdultType
+        decimal CommissionAdultValue
+        int ReservationHours
+        text TermsNote
+    }
+    TourDepartureFields {
+        Guid TourId PK_FK
+        int AmountAdults
+        int AmountChildren
+        Guid AssignedToUserId FK
+        bool IsClosed
+        date ClosedAt
+        int CommissionStatus
+        bool IsPaymentRecognized
+    }
+    TourCustomer {
+        Guid Id PK
+        Guid TourDepartureId FK
+        Guid CustomerId FK
+        Guid OrderId FK
+        int Qty
+        decimal PriceAdult
+        decimal Surcharge
+        decimal Discount
+        decimal Commission
+        string SeatCode
+        bool IsMainContact
+    }
+    TourAssignee {
+        Guid TourId FK
+        Guid UserId FK
+        Enum Role "Manager|Watcher|Assignee"
+    }
+    PriceScenario {
+        Guid Id PK
+        Guid TourTemplateId FK
+        int FromQty
+        int ToQty
+        decimal UnitPrice
+    }
+```
+
+**Tóm tắt cấu trúc:**
+- `Tour` = bảng gốc (cột chung) + `Kind` phân loại.
+- `TourTemplateFields` / `TourDepartureFields` = bảng phụ 1-1 theo Kind (TPT).
+- `TourCustomer` = bảng riêng (1:N, không gộp).
+- `TourAssignee` = bảng nối normalize `IdsNguoiTheoDoi`/`ManagerIds`.
+- Grid mẫu → JOIN `Tour` + `TourTemplateFields`; grid chuyến → JOIN `Tour` + `TourDepartureFields` + Materialized View cho cột tổng.

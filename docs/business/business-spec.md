@@ -62,15 +62,22 @@ Các mảng phụ trợ: Marketing đa kênh (Email/SMS/Zalo), Task/Nhật ký, 
 
 ---
 
-## 2. Mẫu tour & Báo giá (TourSample + Pricing)
+## 2. Mẫu tour & Báo giá (Tour TPT + Pricing)
 
-Tách biệt rõ hai khái niệm **cốt lõi** để tránh nhầm lẫn hệ cũ:
+> **Lưu ý thiết kế (cập nhật):** Hệ cũ tách `tour_samples` + `tours` thành 2 bảng. SaaS
+> mới **gộp theo pattern TPT** (Table-per-Type): 1 bảng gốc `Tour` (cột chung: Code,
+> Title, ngày, trạng thái...) + 2 bảng phụ 1-1 theo `Kind` (Template | Departure).
+> `TourCustomer` vẫn bảng riêng (quan hệ 1:N). Xem chi tiết schema + ERD ở
+> `database-optimization-analysis.md` §B3, §F, §G.
 
-| | TourSample (mẫu) | Tour (chuyến cụ thể) |
+Vẫn tách biệt rõ 2 khái niệm **cốt lõi** để tránh nhầm lẫn:
+
+| | TourTemplate (mẫu, Kind=Template) | TourDeparture (chuyến, Kind=Departure) |
 |---|---|---|
 | Bản chất | Sản phẩm bán lại nhiều lần | Một lần khởi hành cụ thể |
 | Số lượng | Không giới hạn | Cố định, theo slot |
 | Mục đích | Catalog + báo giá | Điều hành + chốt doanh thu |
+| Schema | bảng gốc `Tour` + phụ `TourTemplateFields` | bảng gốc `Tour` + phụ `TourDepartureFields` |
 
 ### 2.1 TourSample — sản phẩm catalog
 - Danh tính: `tour_code`, `title`, `tour_type` (inbound/outbound/domestic…), `typeOf` (loại hình).
