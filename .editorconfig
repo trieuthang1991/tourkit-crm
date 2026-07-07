@@ -47,6 +47,10 @@ dotnet_naming_rule.types_pascal.style = pascal_style
 dotnet_naming_symbols.type_symbol.applicable_kinds = class,struct,enum,property,method
 dotnet_naming_style.pascal_style.capitalization = pascal_case
 
+# ---- Test project: tên method có underscore là idiom chuẩn (Given_When_Then) ----
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+
 [*.{json,jsonc,yml,yaml}]
 indent_size = 2
 
