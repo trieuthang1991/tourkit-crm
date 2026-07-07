@@ -1,11 +1,20 @@
 # TourKit — Điểm bắt đầu (đọc file này trước)
 
 > Nền tảng SaaS điều hành tour đa doanh nghiệp, viết lại greenfield từ hệ cũ (`script.sql`, 144 bảng, đã phân mảnh).
-> Cập nhật lần cuối: 2026-07-07.
+> Cập nhật lần cuối: 2026-07-08.
 
 ## Trạng thái hiện tại
 
-**Phase 0a ĐÃ XONG** (nền móng multi-tenant). Solution `.NET 9` + EF Core 9 chạy trên **SQLite** (dev), có test chứng minh cô lập tenant (đọc/ghi/HTTP) và REST API `/api/v1/customers`. Việc tiếp theo: Phase 0b (xem cuối file).
+Solution `.NET 9` + EF Core 9 chạy trên **SQLite** (dev), 23 test xanh. Đã xong:
+
+| Phase | Nội dung | Trạng thái |
+|---|---|---|
+| 0a | Kernel multi-tenant (query filter + soft-delete + interceptor) | ✅ |
+| 0b-1 | Identity + JWT Auth (login/refresh, tenant từ claim) | ✅ |
+| 1 | Catalog: Tour TPT (Template/Departure) + Itinerary + CRUD TourTemplate | ✅ |
+| 0b-2 | RBAC: Permission (global) + Role/RolePermission/UserRole, quyền vào JWT, gate endpoint | ✅ |
+
+**Việc tiếp theo:** 0b-3 provisioning tenant · 0b-4 subscription · 1b (PriceScenario/assignee/MarketType/Departure) · 2 CRM · 3 Booking · 4 Provider · 5 Finance. Plan đã có: `plans/2026-07-07-phase0b1-*`, `phase1-catalog-tour`, `phase0b2-rbac`.
 
 > **Lưu ý điều chỉnh so với thiết kế gốc:** dùng **.NET 9** (thay vì 10) và **SQLite ở dev** (SQL Server để production) theo yêu cầu môi trường máy hiện tại. Provider đổi bằng cấu hình, không sửa code.
 
