@@ -17,8 +17,6 @@ dotnet_sort_system_directives_first = true
 dotnet_diagnostic.IDE0005.severity = warning
 # CA1716: cho phép tên "Shared" (project TourKit.Shared là cố ý; solution chỉ dùng C#).
 dotnet_diagnostic.CA1716.severity = none
-# CA1711: "Permission"/"RolePermission" là entity RBAC domain thật (không phải legacy CAS Permission type).
-dotnet_diagnostic.CA1711.severity = none
 # var khi kiểu hiển nhiên
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_prefer_braces = true:warning
@@ -54,6 +52,11 @@ dotnet_naming_style.pascal_style.capitalization = pascal_case
 dotnet_diagnostic.CA1707.severity = none
 # assert thường dùng mảng expected inline — không áp perf-rule CA1861
 dotnet_diagnostic.CA1861.severity = none
+
+# CA1711: cho phép hậu tố "Permission" ở entity RBAC domain thật (không phải legacy CAS type).
+# Thu hẹp đúng 2 file entity, không tắt toàn solution.
+[**/Entities/{Permission,RolePermission}.cs]
+dotnet_diagnostic.CA1711.severity = none
 
 # ---- Code EF sinh tự động (migrations): không áp style/analyzer của ta ----
 [**/Migrations/*.cs]

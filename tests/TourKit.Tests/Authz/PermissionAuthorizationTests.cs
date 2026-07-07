@@ -52,4 +52,19 @@ public class PermissionAuthorizationTests : IClassFixture<AuthTestFactory>
         });
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, create.StatusCode);
     }
+
+    [Fact]
+    public async Task Customer_create_forbidden_without_permission()
+    {
+        // chỉ có quyền xem khách, KHÔNG có quyền tạo
+        var seed = await _factory.SeedTenantUserWithPermissionsAsync("perm-cust", Permissions.CustomerView);
+        var client = await LoginAsync(seed);
+
+        var view = await client.GetAsync("/api/v1/customers");
+        Assert.Equal(System.Net.HttpStatusCode.OK, view.StatusCode);
+
+        var create = await client.PostAsJsonAsync("/api/v1/customers",
+            new { FullName = "Khach", Phone = (string?)null });
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, create.StatusCode);
+    }
 }
