@@ -19,6 +19,54 @@ public class AppDbContext : DbContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Customer> Customers => Set<Customer>();
 
+    public override int SaveChanges()
+    {
+        ApplyTenantAndTimestamps();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        ApplyTenantAndTimestamps();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void ApplyTenantAndTimestamps()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.TenantId = _tenant.TenantId;
+                    break;
+                case EntityState.Modified:
+                case EntityState.Deleted:
+                    if (entry.Entity.TenantId != _tenant.TenantId)
+                    {
+                        throw new InvalidOperationException(
+                            $"Chặn thao tác chéo tenant: entity thuộc {entry.Entity.TenantId}, request là {_tenant.TenantId}.");
+                    }
+
+                    break;
+            }
+        }
+
+        foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+        {
+            if (entry.State == EntityState.Added)
+            {
+                entry.Entity.CreatedAt = now;
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedAt = now;
+            }
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
