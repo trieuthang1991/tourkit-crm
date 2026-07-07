@@ -1,0 +1,52 @@
+# TourKit — style & naming ép tự động. Xem docs/conventions/backend-conventions.md
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.{cs,csx}]
+indent_size = 4
+# File-scoped namespace bắt buộc
+csharp_style_namespace_declarations = file_scoped:error
+# using ngoài namespace, sắp xếp, bỏ using thừa
+dotnet_sort_system_directives_first = true
+dotnet_diagnostic.IDE0005.severity = warning
+# var khi kiểu hiển nhiên
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_prefer_braces = true:warning
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+
+# ---- Naming rules (khớp §2 backend-conventions) ----
+# Interface: I + PascalCase
+dotnet_naming_rule.interfaces_should_be_prefixed_i.severity = error
+dotnet_naming_rule.interfaces_should_be_prefixed_i.symbols = interface_symbol
+dotnet_naming_rule.interfaces_should_be_prefixed_i.style = i_pascal_style
+dotnet_naming_symbols.interface_symbol.applicable_kinds = interface
+dotnet_naming_style.i_pascal_style.capitalization = pascal_case
+dotnet_naming_style.i_pascal_style.required_prefix = I
+
+# Private field: _camelCase
+dotnet_naming_rule.private_fields_underscore.severity = error
+dotnet_naming_rule.private_fields_underscore.symbols = private_field_symbol
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel_style
+dotnet_naming_symbols.private_field_symbol.applicable_kinds = field
+dotnet_naming_symbols.private_field_symbol.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_style.capitalization = camel_case
+dotnet_naming_style.underscore_camel_style.required_prefix = _
+
+# Types & members public: PascalCase
+dotnet_naming_rule.types_pascal.severity = error
+dotnet_naming_rule.types_pascal.symbols = type_symbol
+dotnet_naming_rule.types_pascal.style = pascal_style
+dotnet_naming_symbols.type_symbol.applicable_kinds = class,struct,enum,property,method
+dotnet_naming_style.pascal_style.capitalization = pascal_case
+
+[*.{json,jsonc,yml,yaml}]
+indent_size = 2
+
+[*.{ts,tsx,js,jsx,css,scss}]
+indent_size = 2

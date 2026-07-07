@@ -1,6 +1,8 @@
 # Phase 0a — Nền móng dữ liệu Multi-tenant — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **BẮT BUỘC ĐỌC TRƯỚC:** `docs/conventions/backend-conventions.md`. Mọi code trong plan phải tuân thủ nó (3 luật vàng, tenancy §4, EF §5). File `.editorconfig` + `Directory.Build.props` ở root sẽ ép tự động.
 
 **Goal:** Dựng solution .NET và tầng dữ liệu EF Core đảm bảo mọi truy vấn/ghi bị cô lập theo `TenantId` một cách tự động, có test chứng minh không lộ dữ liệu chéo giữa các tenant.
 
@@ -85,12 +87,16 @@ dotnet add tests/TourKit.Tests package Microsoft.EntityFrameworkCore.InMemory
 dotnet add tests/TourKit.Tests package Microsoft.AspNetCore.Mvc.Testing
 ```
 
-- [ ] **Step 5: Build để xác nhận scaffold OK**
+- [ ] **Step 5: Xác nhận enforcement đã bật**
+
+`.editorconfig` và `Directory.Build.props` đã có sẵn ở root repo (xem `docs/conventions/backend-conventions.md §10`) — **không xóa**. Chúng tự áp cho mọi project vừa tạo: `net10.0`, `Nullable=enable`, `TreatWarningsAsErrors=true`, .NET analyzers. Không cần đặt `<TargetFramework>`/`<Nullable>` trong từng `.csproj` nữa (đã kế thừa); nếu template sinh sẵn, để nguyên cũng không sao.
+
+- [ ] **Step 6: Build để xác nhận scaffold + enforcement OK**
 
 Run: `dotnet build`
-Expected: Build succeeded, 0 Error.
+Expected: Build succeeded, 0 Warning, 0 Error. (Nếu có warning → build fail do `TreatWarningsAsErrors`; sửa cho sạch trước khi đi tiếp — đây là chủ đích.)
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add -A
