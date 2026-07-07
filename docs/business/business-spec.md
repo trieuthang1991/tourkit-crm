@@ -329,6 +329,39 @@ Hệ cũ tự chế 5 bảng: `SubjectQuyen` → `FunctionQuyen` → `SubjectQuy
 
 ---
 
+## 12. Dòng dịch vụ khác & Tích hợp (hoàn tất khảo sát tính năng)
+
+Ngoài tour trọn gói, hệ cũ vận hành như **nền tảng đa dịch vụ lữ hành** — nhiều "sản phẩm" dùng chung hạ tầng `Order`/`Customer`/`Voucher` nhưng có entity + luồng riêng. (Xác định từ inventory ~50 module + khảo sát module thật; mục nào suy từ tên ghi rõ.)
+
+### 12.1 Dòng sản phẩm độc lập (mỗi cái ứng một `BookingType`)
+- **Vé máy bay (AirPlaneTicket / VMB)** — vé lẻ + vé đoàn. Luồng thật: tạo → duyệt (`VMB_DUYET`) → chốt đơn (status 108/109) → xuất báo giá/hóa đơn; gắn duyệt hóa đơn + hoa hồng. Provider = Airline.
+- **Đặt phòng khách sạn (BookingHotel)** — đặt phòng lẻ, tách khỏi tour trọn gói; có `HotelState` riêng. Provider = Hotel.
+- **Visa (Visa)** — dịch vụ làm visa (bán lẻ hoặc gắn tour); `VisaTourGuide` cho HDV cross-border.
+- **Xe (CarManagement, `BookingType=9`)** — điều xe, `CarType`/`Vehicle`. Provider = Vehicle.
+
+> **Ngụ ý schema:** `Order` là trung tâm **đa dịch vụ**. Thêm `ServiceLine` (Tour|AirTicket|Hotel|Visa|Car) trên `Order` + bảng chi tiết riêng theo dòng (polymorphic có kiểm soát) — KHÔNG nhồi mọi field vào 1 bảng. Dòng ít field (Visa) → bảng con 1-1; dòng phức tạp (Tour) → cụm bảng riêng (§B3). Thiết kế "đa dịch vụ ngay từ đầu" để không refactor `Order` về sau.
+
+### 12.2 Dự trù & Báo giá
+- **DuTruTours (dự trù chi phí tour)** *(suy từ tên)* — ước tính chi phí NCC trước khi chốt (ngân sách chuyến) → bảng `TourCostEstimate` tách khỏi `OrderCost` (chi thực tế).
+- **BaoGia (báo giá)** — sinh báo giá VN/EN từ mẫu tour + `PriceScenario`; là **output**, không cần bảng riêng.
+
+### 12.3 Tích hợp ngoài
+- **BankHub** — nhận webhook/đối soát giao dịch ngân hàng, tự gạch nợ phiếu thu → `BankTransaction` + matching với `ReceiptVoucher`.
+- **BillMiFi / InvoiceBranch** *(suy từ tên)* — phát hành **hóa đơn điện tử** qua nhà cung cấp, theo chi nhánh → `EInvoice` + trạng thái phát hành.
+- **CallCenter** *(suy từ tên)* — tích hợp tổng đài, log cuộc gọi gắn khách → `CallLog(CustomerId, Direction, Duration, RecordingUrl)`.
+- **Pancake / ZaloUID / ZaloZns / SMS / Email** — kênh marketing & CSKH (đã ở §10).
+
+### 12.4 Vận hành nội bộ & báo cáo
+- **Workflow** — engine cấu hình luồng duyệt = `ApprovalProcess` (§7.3), dùng chung mọi phiếu.
+- **WorkSpaceView / HomePage** — dashboard theo vai trò.
+- **SystemReport / MoneyReport / ReportCommission / KeyPerformanceIndicator** — cụm báo cáo (đọc thuần → Materialized View, xem tối ưu DB §F4).
+- **FeedBackTour** — phản hồi sau tour (đánh giá/NPS).
+- **BackgroundJobs / HandleUploadFile / Upload / LogSystem** — hạ tầng (job nền, upload R2, audit).
+
+**Phạm vi:** MVP tập trung **Tour trọn gói** (P1-P6). Air/Hotel/Visa/Car + HĐĐT/BankHub/CallCenter là **mở rộng sau MVP**, nhưng `Order` phải mang sẵn `ServiceLine` từ đầu.
+
+---
+
 ## Tóm tắt: Khối ưu tiên SaaS (MVP bán được)
 
 | Ưu tiên | Khối | Lý do |
