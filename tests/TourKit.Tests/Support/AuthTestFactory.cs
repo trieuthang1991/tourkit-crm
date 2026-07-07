@@ -73,4 +73,41 @@ public sealed class AuthTestFactory : WebApplicationFactory<Program>
 
         return (slug, email, password);
     }
+
+    /// <summary>Seed tenant + user gán role chỉ có đúng các mã quyền cho trước (để test 403).</summary>
+    public async Task<(string slug, string email, string password)> SeedTenantUserWithPermissionsAsync(
+        string slug, params string[] permissionCodes)
+    {
+        using var scope = Services.CreateScope();
+        var sp = scope.ServiceProvider;
+        var db = sp.GetRequiredService<AppDbContext>();
+        var hasher = sp.GetRequiredService<IPasswordHasher>();
+        var tenantCtx = sp.GetRequiredService<AmbientTenantContext>();
+
+        var tenant = new Tenant { Name = slug, Slug = slug };
+        db.Tenants.Add(tenant);
+        await db.SaveChangesAsync();
+        tenantCtx.SetTenant(tenant.Id);
+
+        var email = $"user@{slug}.com";
+        const string password = "P@ssw0rd!";
+        var user = new User { Email = email, FullName = "U", PasswordHash = hasher.Hash(password) };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        var role = new Role { Name = "Limited" };
+        db.Roles.Add(role);
+        await db.SaveChangesAsync();
+
+        var permIds = await db.Permissions.Where(p => permissionCodes.Contains(p.Code))
+            .Select(p => p.Id).ToListAsync();
+        foreach (var pid in permIds)
+        {
+            db.RolePermissions.Add(new RolePermission { RoleId = role.Id, PermissionId = pid });
+        }
+
+        db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
+        await db.SaveChangesAsync();
+        return (slug, email, password);
+    }
 }
