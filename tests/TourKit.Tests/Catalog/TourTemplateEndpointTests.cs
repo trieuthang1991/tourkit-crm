@@ -62,4 +62,25 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
         var listB = await clientB.GetFromJsonAsync<List<TourTemplateResponse>>("/api/v1/tour-templates");
         Assert.Empty(listB!);
     }
+
+    [Fact]
+    public async Task Update_then_soft_delete()
+    {
+        var client = await LoggedInClientAsync("cat-upd");
+        var dto = await (await client.PostAsJsonAsync("/api/v1/tour-templates", Sample("U-1")))
+            .Content.ReadFromJsonAsync<TourTemplateResponse>();
+
+        var upd = await client.PutAsJsonAsync($"/api/v1/tour-templates/{dto!.Id}",
+            new UpdateTourTemplateRequest("Huế 2N1Đ", "domestic", 20, 12, 4_000_000m, 2_500_000m, 1_500_000m, 0m, "ĐK mới"));
+        Assert.Equal(HttpStatusCode.NoContent, upd.StatusCode);
+
+        var got = await client.GetFromJsonAsync<TourTemplateResponse>($"/api/v1/tour-templates/{dto.Id}");
+        Assert.Equal("Huế 2N1Đ", got!.Title);
+
+        var del = await client.DeleteAsync($"/api/v1/tour-templates/{dto.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
+
+        var list = await client.GetFromJsonAsync<List<TourTemplateResponse>>("/api/v1/tour-templates");
+        Assert.Empty(list!);   // soft-deleted bị filter ẩn
+    }
 }

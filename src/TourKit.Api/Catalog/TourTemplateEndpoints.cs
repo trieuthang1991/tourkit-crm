@@ -42,6 +42,45 @@ public static class TourTemplateEndpoints
             return Results.Created($"/api/v1/tour-templates/{t.Id}", ToResponse(t));
         });
 
+        group.MapPut("/{id:guid}", async (Guid id, UpdateTourTemplateRequest body, AppDbContext db, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(body.Title))
+            {
+                return Validation("Title là bắt buộc.");
+            }
+
+            var t = await db.TourTemplates.FirstOrDefaultAsync(x => x.Id == id, ct);
+            if (t is null)
+            {
+                return Results.NotFound();
+            }
+
+            t.Title = body.Title.Trim();
+            t.TourType = body.TourType;
+            t.TotalSlots = body.TotalSlots;
+            t.ReservationHours = body.ReservationHours;
+            t.PriceAdult = body.PriceAdult;
+            t.PriceChild = body.PriceChild;
+            t.PriceChildSmall = body.PriceChildSmall;
+            t.PriceBaby = body.PriceBaby;
+            t.TermsNote = body.TermsNote;
+            await db.SaveChangesAsync(ct);
+            return Results.NoContent();
+        });
+
+        group.MapDelete("/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
+        {
+            var t = await db.TourTemplates.FirstOrDefaultAsync(x => x.Id == id, ct);
+            if (t is null)
+            {
+                return Results.NotFound();
+            }
+
+            t.IsDeleted = true;   // soft delete (conventions §5)
+            await db.SaveChangesAsync(ct);
+            return Results.NoContent();
+        });
+
         return app;
     }
 
