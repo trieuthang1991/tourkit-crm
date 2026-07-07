@@ -78,7 +78,8 @@ public sealed class AuthService : IAuthService
 
     private async Task<AuthResponse> IssueAsync(User user, CancellationToken ct)
     {
-        var access = _jwt.CreateAccessToken(user);
+        var permissions = await LoadPermissionsAsync(user.Id, ct);
+        var access = _jwt.CreateAccessToken(user, permissions);
         var refresh = _jwt.CreateRefreshToken();
 
         _db.RefreshTokens.Add(new RefreshToken
@@ -91,6 +92,16 @@ public sealed class AuthService : IAuthService
         await _db.SaveChangesAsync(ct);
 
         return new AuthResponse(access, refresh, _jwt.AccessTokenExpiry());
+    }
+
+    private async Task<List<string>> LoadPermissionsAsync(Guid userId, CancellationToken ct)
+    {
+        // UserRole → RolePermission → Permission.Code (RBAC là ITenantEntity nên đã lọc theo tenant hiện tại).
+        return await _db.UserRoles.Where(ur => ur.UserId == userId)
+            .Join(_db.RolePermissions, ur => ur.RoleId, rp => rp.RoleId, (ur, rp) => rp.PermissionId)
+            .Join(_db.Permissions, pid => pid, p => p.Id, (pid, p) => p.Code)
+            .Distinct()
+            .ToListAsync(ct);
     }
 
     private static string HashToken(string token)

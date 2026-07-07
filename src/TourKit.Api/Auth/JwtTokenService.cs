@@ -17,19 +17,23 @@ public sealed class JwtTokenService : IJwtTokenService
     public DateTimeOffset AccessTokenExpiry() =>
         DateTimeOffset.UtcNow.AddMinutes(_opt.AccessTokenMinutes);
 
-    public string CreateAccessToken(User user)
+    public string CreateAccessToken(User user, IEnumerable<string> permissions)
     {
         var creds = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_opt.Secret)),
             SecurityAlgorithms.HmacSha256);
 
-        Claim[] claims =
-        [
+        var claims = new List<Claim>
+        {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new("tenant_id", user.TenantId.ToString()),
             new("email", user.Email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        ];
+        };
+        foreach (var code in permissions)
+        {
+            claims.Add(new Claim("perm", code));
+        }
 
         var token = new JwtSecurityToken(
             issuer: _opt.Issuer,

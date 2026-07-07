@@ -25,12 +25,16 @@ public class JwtTokenServiceTests
         var svc = Create();
         var user = new User { TenantId = Guid.NewGuid(), Email = "a@b.com", FullName = "A" };
 
-        var token = svc.CreateAccessToken(user);
+        var token = svc.CreateAccessToken(user, ["tour.create", "customer.view"]);
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
         Assert.Equal(user.Id.ToString(), jwt.Subject);
         Assert.Equal(user.TenantId.ToString(), jwt.Claims.First(c => c.Type == "tenant_id").Value);
         Assert.Equal("a@b.com", jwt.Claims.First(c => c.Type == "email").Value);
+
+        var perms = jwt.Claims.Where(c => c.Type == "perm").Select(c => c.Value).ToList();
+        Assert.Contains("tour.create", perms);
+        Assert.Contains("customer.view", perms);
     }
 
     [Fact]
