@@ -13,7 +13,7 @@ public static class CustomerEndpoints
 {
     public static IEndpointRouteBuilder MapCustomerEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1/customers");
+        var group = app.MapGroup("/api/v1/customers").RequireAuthorization();
 
         group.MapGet("/", async (AppDbContext db, CancellationToken ct) =>
             Results.Ok(await db.Customers.AsNoTracking()
