@@ -50,6 +50,8 @@ dotnet_naming_style.pascal_style.capitalization = pascal_case
 # ---- Test project: tên method có underscore là idiom chuẩn (Given_When_Then) ----
 [tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
+# assert thường dùng mảng expected inline — không áp perf-rule CA1861
+dotnet_diagnostic.CA1861.severity = none
 
 [*.{json,jsonc,yml,yaml}]
 indent_size = 2
