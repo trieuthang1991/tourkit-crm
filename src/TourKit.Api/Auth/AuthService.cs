@@ -64,6 +64,13 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
+        // Chặn refresh cho tenant đã bị soft-delete (đồng bộ với LoginAsync; quan trọng khi 0b-3/0b-4 có deactivate tenant).
+        var tenantActive = await _db.Tenants.AnyAsync(t => t.Id == user.TenantId && !t.IsDeleted, ct);
+        if (!tenantActive)
+        {
+            return null;
+        }
+
         _tenant.SetTenant(user.TenantId);
         stored.RevokedAt = DateTimeOffset.UtcNow;   // rotate: thu hồi token cũ
         return await IssueAsync(user, ct);
