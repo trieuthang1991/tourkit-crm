@@ -75,11 +75,10 @@ Hệ cũ lưu **danh sách ID dưới dạng chuỗi CSV** trong 1 cột:
 > phân trang. Màn "Công nợ khách" cũng sort theo `SUM(Total_Thu_Money)`. Nếu tách ra bảng con,
 > mỗi lần load grid phải `GROUP BY` + `JOIN` aggregate → chậm, không index được trên cột sort.
 
-**Giải pháp sửa lại:** GIỮ cột tổng (`TotalRevenue`, `TotalCost`, `ApprovedRevenue`…) trực tiếp
-trên `Order` như hệ cũ (denormalize). Đồng bộ qua:
-- Cập nhật trong cùng transaction khi ghi dòng con (Receipt/Payment/OrderCost).
-- PostgreSQL trigger tính lại tổng khi dòng con thay đổi (chỉ prod).
-- Chỉ phần **chi tiết** dòng chi phí NCC mới tách bảng `OrderCost` (giữ, chỉ đổi tên OrderChi→OrderCost).
+**Giải pháp sửa lại (câu chốt chung với `business-spec §5.1`):** GIỮ cột tổng doanh thu/chi phí
+(`TotalRevenue`, `TotalCost`, `ApprovedRevenue`…) TRỰC TIẾP trên `Order` — **denormalize có chủ đích**;
+chỉ tách **chi tiết dòng chi phí NCC** ra `OrderCost` (đổi tên từ `OrderChi`).
+Cơ chế giữ cột tổng luôn đúng (transaction/trigger, optimistic locking, job đối soát) → xem **§I**.
 
 ---
 
