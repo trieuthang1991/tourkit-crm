@@ -20,6 +20,10 @@ public class AppDbContext : DbContext
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Tour> Tours => Set<Tour>();
+    public DbSet<TourTemplate> TourTemplates => Set<TourTemplate>();
+    public DbSet<TourDeparture> TourDepartures => Set<TourDeparture>();
+    public DbSet<TourItinerary> TourItineraries => Set<TourItinerary>();
 
     public override int SaveChanges()
     {
@@ -79,6 +83,12 @@ public class AppDbContext : DbContext
         // Global query filter: cô lập tenant + ẩn soft-deleted. Một filter/entity nên phải gộp chung.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
+            // TPT: filter chỉ đặt ở type GỐC (BaseType == null); type dẫn xuất kế thừa filter của gốc.
+            if (entityType.BaseType is not null)
+            {
+                continue;
+            }
+
             var clr = entityType.ClrType;
 
             if (typeof(ITenantEntity).IsAssignableFrom(clr))
