@@ -83,4 +83,24 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
         var list = await client.GetFromJsonAsync<List<TourTemplateResponse>>("/api/v1/tour-templates");
         Assert.Empty(list!);   // soft-deleted bị filter ẩn
     }
+
+    [Fact]
+    public async Task Set_and_get_itinerary()
+    {
+        var client = await LoggedInClientAsync("cat-itin");
+        var dto = await (await client.PostAsJsonAsync("/api/v1/tour-templates", Sample("I-1")))
+            .Content.ReadFromJsonAsync<TourTemplateResponse>();
+
+        var days = new[]
+        {
+            new ItineraryDayRequest(1, "Ngày 1: Khởi hành", "Bay Hà Nội - Đà Nẵng"),
+            new ItineraryDayRequest(2, "Ngày 2: Tham quan", "Bà Nà Hills"),
+        };
+        var put = await client.PutAsJsonAsync($"/api/v1/tour-templates/{dto!.Id}/itinerary", days);
+        Assert.Equal(HttpStatusCode.NoContent, put.StatusCode);
+
+        var got = await client.GetFromJsonAsync<List<ItineraryDayResponse>>($"/api/v1/tour-templates/{dto.Id}/itinerary");
+        Assert.Equal(2, got!.Count);
+        Assert.Equal("Ngày 1: Khởi hành", got[0].Title);
+    }
 }

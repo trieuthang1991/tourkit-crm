@@ -81,6 +81,34 @@ public static class TourTemplateEndpoints
             return Results.NoContent();
         });
 
+        group.MapGet("/{id:guid}/itinerary", async (Guid id, AppDbContext db, CancellationToken ct) =>
+            Results.Ok(await db.TourItineraries.AsNoTracking()
+                .Where(i => i.TourId == id).OrderBy(i => i.DayIndex)
+                .Select(i => new ItineraryDayResponse(i.Id, i.DayIndex, i.Title, i.Detail))
+                .ToListAsync(ct)));
+
+        group.MapPut("/{id:guid}/itinerary", async (Guid id, ItineraryDayRequest[] body, AppDbContext db, CancellationToken ct) =>
+        {
+            var exists = await db.TourTemplates.AnyAsync(x => x.Id == id, ct);
+            if (!exists)
+            {
+                return Results.NotFound();
+            }
+
+            var old = await db.TourItineraries.Where(i => i.TourId == id).ToListAsync(ct);
+            db.TourItineraries.RemoveRange(old);   // hard-remove dòng lịch cũ rồi ghi lại (thay toàn bộ)
+            foreach (var day in body)
+            {
+                db.TourItineraries.Add(new TourItinerary
+                {
+                    TourId = id, DayIndex = day.DayIndex, Title = day.Title.Trim(), Detail = day.Detail,
+                });
+            }
+
+            await db.SaveChangesAsync(ct);
+            return Results.NoContent();
+        });
+
         return app;
     }
 

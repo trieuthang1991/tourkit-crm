@@ -14,3 +14,6 @@ public sealed record TourTemplateResponse(
     Guid Id, string Code, string Title, string? TourType, int TotalSlots, int ReservationHours,
     decimal PriceAdult, decimal PriceChild, decimal PriceChildSmall, decimal PriceBaby,
     string? TermsNote, int Status);
+
+public sealed record ItineraryDayRequest(int DayIndex, string Title, string? Detail);
+public sealed record ItineraryDayResponse(Guid Id, int DayIndex, string Title, string? Detail);
