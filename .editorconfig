@@ -15,6 +15,8 @@ csharp_style_namespace_declarations = file_scoped:error
 # using ngoài namespace, sắp xếp, bỏ using thừa
 dotnet_sort_system_directives_first = true
 dotnet_diagnostic.IDE0005.severity = warning
+# CA1716: cho phép tên "Shared" (project TourKit.Shared là cố ý; solution chỉ dùng C#).
+dotnet_diagnostic.CA1716.severity = none
 # var khi kiểu hiển nhiên
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_prefer_braces = true:warning
