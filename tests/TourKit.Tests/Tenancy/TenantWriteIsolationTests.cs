@@ -21,4 +21,34 @@ public class TenantWriteIsolationTests
         Assert.Equal(tenantId, customer.TenantId);
         Assert.NotEqual(default, customer.CreatedAt);
     }
+
+    [Fact]
+    public async Task Cross_tenant_update_is_blocked()
+    {
+        var dbName = nameof(Cross_tenant_update_is_blocked);
+        var tenantA = Guid.NewGuid();
+        var tenantB = Guid.NewGuid();
+
+        // tenant A tạo 1 khách
+        var ctxA = new TestTenantContext { TenantId = tenantA };
+        Guid customerId;
+        using (var db = TestDb.Create(ctxA, dbName))
+        {
+            var c = new Customer { FullName = "A-owned" };
+            db.Customers.Add(c);
+            await db.SaveChangesAsync();
+            customerId = c.Id;
+        }
+
+        // tenant B nạp thẳng entity của A (bỏ qua filter bằng IgnoreQueryFilters) rồi thử sửa
+        var ctxB = new TestTenantContext { TenantId = tenantB };
+        using (var db = TestDb.Create(ctxB, dbName))
+        {
+            var stolen = await db.Customers.IgnoreQueryFilters()
+                .SingleAsync(c => c.Id == customerId);
+            stolen.FullName = "hacked-by-B";
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync());
+        }
+    }
 }

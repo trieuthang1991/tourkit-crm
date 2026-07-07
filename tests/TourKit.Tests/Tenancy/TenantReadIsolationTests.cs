@@ -26,12 +26,17 @@ public class TenantReadIsolationTests
         var tenantA = Guid.NewGuid();
         var tenantB = Guid.NewGuid();
 
-        // Seed: context của tenant A thêm khách của cả A và B (giả lập dữ liệu lẫn lộn ở tầng DB)
-        var seedCtx = new TestTenantContext { TenantId = tenantA };
-        using (var db = TestDb.Create(seedCtx, dbName))
+        // Seed: mỗi tenant thêm khách qua context của chính mình (interceptor tự gán TenantId).
+        // Không thể chèn dữ liệu tenant khác từ một context — đó chính là bảo đảm cô lập ghi.
+        using (var db = TestDb.Create(new TestTenantContext { TenantId = tenantA }, dbName))
         {
-            db.Customers.Add(new Customer { TenantId = tenantA, FullName = "A-1" });
-            db.Customers.Add(new Customer { TenantId = tenantB, FullName = "B-1" });
+            db.Customers.Add(new Customer { FullName = "A-1" });
+            await db.SaveChangesAsync();
+        }
+
+        using (var db = TestDb.Create(new TestTenantContext { TenantId = tenantB }, dbName))
+        {
+            db.Customers.Add(new Customer { FullName = "B-1" });
             await db.SaveChangesAsync();
         }
 
