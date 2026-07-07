@@ -57,6 +57,12 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await TourKit.Api.Authz.PermissionSeeder.SeedAsync(db);
+}
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
