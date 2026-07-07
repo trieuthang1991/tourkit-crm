@@ -53,7 +53,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    foreach (var (code, _) in TourKit.Api.Authz.Permissions.All)
+    {
+        options.AddPolicy(code, policy => policy.RequireClaim("perm", code));
+    }
+});
 
 var app = builder.Build();
 

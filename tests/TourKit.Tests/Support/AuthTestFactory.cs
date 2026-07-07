@@ -48,12 +48,27 @@ public sealed class AuthTestFactory : WebApplicationFactory<Program>
         tenantCtx.SetTenant(tenant.Id);   // để interceptor gán TenantId cho User
         var email = $"admin@{slug}.com";
         const string password = "P@ssw0rd!";
-        db.Users.Add(new User
+        var user = new User
         {
             Email = email,
             FullName = "Admin",
             PasswordHash = hasher.Hash(password),
-        });
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        // Admin role: gán toàn bộ permission global cho user seed (test cũ cần quyền để qua gate).
+        var role = new Role { Name = "Admin" };
+        db.Roles.Add(role);
+        await db.SaveChangesAsync();
+
+        var allPermIds = await db.Permissions.Select(p => p.Id).ToListAsync();
+        foreach (var pid in allPermIds)
+        {
+            db.RolePermissions.Add(new RolePermission { RoleId = role.Id, PermissionId = pid });
+        }
+
+        db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
         await db.SaveChangesAsync();
 
         return (slug, email, password);

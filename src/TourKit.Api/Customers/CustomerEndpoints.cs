@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TourKit.Api.Authz;
 using TourKit.Infrastructure.Entities;
 using TourKit.Infrastructure.Persistence;
 
@@ -13,13 +14,13 @@ public static class CustomerEndpoints
 {
     public static IEndpointRouteBuilder MapCustomerEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1/customers").RequireAuthorization();
+        var group = app.MapGroup("/api/v1/customers");
 
         group.MapGet("/", async (AppDbContext db, CancellationToken ct) =>
             Results.Ok(await db.Customers.AsNoTracking()
                 .OrderBy(c => c.FullName)
                 .Select(c => new CustomerResponse(c.Id, c.FullName, c.Phone))
-                .ToListAsync(ct)));
+                .ToListAsync(ct))).RequireAuthorization(Permissions.CustomerView);
 
         group.MapGet("/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
         {
@@ -28,7 +29,7 @@ public static class CustomerEndpoints
                 .Select(c => new CustomerResponse(c.Id, c.FullName, c.Phone))
                 .FirstOrDefaultAsync(ct);
             return customer is null ? Results.NotFound() : Results.Ok(customer);
-        });
+        }).RequireAuthorization(Permissions.CustomerView);
 
         group.MapPost("/", async (CreateCustomerRequest body, AppDbContext db, CancellationToken ct) =>
         {
@@ -43,7 +44,7 @@ public static class CustomerEndpoints
 
             var response = new CustomerResponse(customer.Id, customer.FullName, customer.Phone);
             return Results.Created($"/api/v1/customers/{customer.Id}", response);
-        });
+        }).RequireAuthorization(Permissions.CustomerCreate);
 
         group.MapPut("/{id:guid}", async (Guid id, UpdateCustomerRequest body, AppDbContext db, CancellationToken ct) =>
         {
@@ -62,7 +63,7 @@ public static class CustomerEndpoints
             customer.Phone = body.Phone;
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
-        });
+        }).RequireAuthorization(Permissions.CustomerUpdate);
 
         group.MapDelete("/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
         {
@@ -75,7 +76,7 @@ public static class CustomerEndpoints
             customer.IsDeleted = true; // soft delete (conventions §5)
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
-        });
+        }).RequireAuthorization(Permissions.CustomerDelete);
 
         return app;
     }

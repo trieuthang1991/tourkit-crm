@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TourKit.Api.Authz;
 using TourKit.Infrastructure.Entities;
 using TourKit.Infrastructure.Persistence;
 
@@ -8,19 +9,19 @@ public static class TourTemplateEndpoints
 {
     public static IEndpointRouteBuilder MapTourTemplateEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1/tour-templates").RequireAuthorization();
+        var group = app.MapGroup("/api/v1/tour-templates");
 
         group.MapGet("/", async (AppDbContext db, CancellationToken ct) =>
             Results.Ok(await db.TourTemplates.AsNoTracking()
                 .OrderBy(t => t.Title)
-                .Select(t => ToResponse(t)).ToListAsync(ct)));
+                .Select(t => ToResponse(t)).ToListAsync(ct))).RequireAuthorization(Permissions.TourView);
 
         group.MapGet("/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
         {
             var t = await db.TourTemplates.AsNoTracking()
                 .Where(x => x.Id == id).Select(x => ToResponse(x)).FirstOrDefaultAsync(ct);
             return t is null ? Results.NotFound() : Results.Ok(t);
-        });
+        }).RequireAuthorization(Permissions.TourView);
 
         group.MapPost("/", async (CreateTourTemplateRequest body, AppDbContext db, CancellationToken ct) =>
         {
@@ -40,7 +41,7 @@ public static class TourTemplateEndpoints
             db.TourTemplates.Add(t);
             await db.SaveChangesAsync(ct);
             return Results.Created($"/api/v1/tour-templates/{t.Id}", ToResponse(t));
-        });
+        }).RequireAuthorization(Permissions.TourCreate);
 
         group.MapPut("/{id:guid}", async (Guid id, UpdateTourTemplateRequest body, AppDbContext db, CancellationToken ct) =>
         {
@@ -66,7 +67,7 @@ public static class TourTemplateEndpoints
             t.TermsNote = body.TermsNote;
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
-        });
+        }).RequireAuthorization(Permissions.TourUpdate);
 
         group.MapDelete("/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
         {
@@ -79,13 +80,13 @@ public static class TourTemplateEndpoints
             t.IsDeleted = true;   // soft delete (conventions §5)
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
-        });
+        }).RequireAuthorization(Permissions.TourDelete);
 
         group.MapGet("/{id:guid}/itinerary", async (Guid id, AppDbContext db, CancellationToken ct) =>
             Results.Ok(await db.TourItineraries.AsNoTracking()
                 .Where(i => i.TourId == id).OrderBy(i => i.DayIndex)
                 .Select(i => new ItineraryDayResponse(i.Id, i.DayIndex, i.Title, i.Detail))
-                .ToListAsync(ct)));
+                .ToListAsync(ct))).RequireAuthorization(Permissions.TourView);
 
         group.MapPut("/{id:guid}/itinerary", async (Guid id, ItineraryDayRequest[] body, AppDbContext db, CancellationToken ct) =>
         {
@@ -107,7 +108,7 @@ public static class TourTemplateEndpoints
 
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
-        });
+        }).RequireAuthorization(Permissions.TourUpdate);
 
         return app;
     }
