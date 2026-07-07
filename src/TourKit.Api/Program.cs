@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TourKit.Api.Auth;
+using TourKit.Api.Catalog;
 using TourKit.Api.Customers;
 using TourKit.Api.Tenancy;
 using TourKit.Infrastructure.Persistence;
@@ -65,6 +66,7 @@ app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapCustomerEndpoints();
+app.MapTourTemplateEndpoints();
 
 app.Run();
 
