@@ -340,7 +340,7 @@ ConfigCompany(TenantId, Name, LogoUrl, Address, TaxCode, Phone, Email)
 2. **Kế thừa `BaseEntity`**: `Id (Guid)`, `CreatedAt`, `UpdatedAt`, `IsDeleted`. Bỏ `AUD_VER`, `INS_UID/UPD_UID` lộn xộn → thêm `CreatedBy`/`UpdatedBy` chuẩn.
 3. **Lookup** (loại khách, nguồn, thị trường, loại phiếu…): bảng riêng `TenantId + Name`, không hardcode enum trong code trừ khi cố định platform.
 4. **Normalize mọi danh sách**: không lưu CSV trong cột. Dùng bảng nối.
-5. **Giá theo nhóm tuổi** dùng bảng `PriceTier` (mở rộng được), không lặp 4×.
+5. **Giá theo nhóm tuổi GIỮ TRỰC TIẾP 4 cột** (`PriceAdult/PriceChild/PriceChildSmall/PriceBaby`) trên `TourTemplateFields`/`TourCustomer` — KHÔNG tách `PriceTier`. Lý do: grid mẫu sort/filter theo `PriceAdult`; tách bảng con làm cột sort không SARGable (xem §A7, §F2). Nhóm tuổi cố định nghiệp vụ nên chấp nhận lặp cột; mở rộng hiếm gặp → dùng `ExtraPricing jsonb`.
 6. **Tiền tệ**: lưu `decimal(18,2)`, áp `ExchangeRate` khi báo cáo — không lưu multi-currency trong cùng dòng.
 7. **Workflow duyệt dùng chung** (`ApprovalProcess` + `ApprovalHistory`), không copy cho mỗi loại phiếu.
 8. **RBAC chuẩn** (Role/Permission/RolePermission/UserRole), bỏ SubjectQuyen/FunctionQuyen.
@@ -355,7 +355,7 @@ ConfigCompany(TenantId, Name, LogoUrl, Address, TaxCode, Phone, Email)
 |---|---|---|---|
 | Foundation/Identity | ~15 | ~12 | RBAC thay SubjectQuyen, +Plan/Subscription |
 | CRM | ~8 | ~9 | +Lead tách, normalize watcher/tag |
-| Catalog | ~5 | ~6 | +PriceTier, PriceScenario rõ |
+| Catalog | ~5 | ~6 | Tour TPT + PriceScenario; giá 4 nhóm tuổi giữ cột (không PriceTier) |
 | Booking/Tour | ~10 | ~10 | BookingTicket/Order/TourCustomer rõ |
 | Provider | ~10 | ~9 | gộp OrderChi→OrderCost |
 | Finance | ~8 | ~9 | Receipt/Payment đúng tên + Approval chung |
@@ -580,3 +580,111 @@ erDiagram
 - `TourCustomer` = bảng riêng (1:N, không gộp).
 - `TourAssignee` = bảng nối normalize `IdsNguoiTheoDoi`/`ManagerIds`.
 - Grid mẫu → JOIN `Tour` + `TourTemplateFields`; grid chuyến → JOIN `Tour` + `TourDepartureFields` + Materialized View cho cột tổng.
+
+---
+
+## PHẦN H — Chiến lược Index cụ thể (theo read pattern §F)
+
+> Nguyên tắc "tối ưu để sản phẩm dùng được": **mỗi cột dùng để sort/filter trên grid nóng phải nằm trong 1 index bắt đầu bằng `TenantId`**. Không index tràn lan (mỗi index thêm chi phí ghi) — chỉ index cái read pattern thật cần.
+
+### H1. 4 quy tắc index
+1. **TenantId đứng đầu mọi index** của `ITenantEntity` — vì query filter luôn `WHERE TenantId = @t` trước.
+2. **Cột sort của grid** phải là cột tiếp theo trong composite index (để index vừa lọc tenant vừa phục vụ `ORDER BY` → tránh sort trên đĩa).
+3. **Mọi FK** (`*Id`) có index riêng (join + cascade check).
+4. **Unique theo tenant**: mã nghiệp vụ (`Code`) unique trong phạm vi tenant → `UNIQUE (TenantId, Code)`.
+
+### H2. Index cụ thể cho các bảng nóng
+
+| Bảng | Index (thứ tự cột) | Phục vụ read pattern |
+|---|---|---|
+| `Tour` | `(TenantId, Kind, Status)` · `(TenantId, DepartureDate)` · `UNIQUE(TenantId, Code)` · `(TenantId, ParentTourId)` · `(TenantId, MarketId)` | grid chuyến/mẫu lọc Kind+trạng thái, sort theo ngày khởi hành; autocomplete theo Code |
+| `TourTemplateFields` | PK `(TourId)`; cân nhắc `(TourId) INCLUDE (PriceAdult)` | grid mẫu sort `PriceAdult` — xem H4 (cross-table sort) |
+| `TourDepartureFields` | PK `(TourId)` · `(AssignedToUserId)` · `(TenantId, IsClosed)` | lọc chuyến theo người phụ trách / đã chốt |
+| `Order` | `(TenantId, Status)` · `(TenantId, TourDepartureId)` · `(TenantId, CustomerId)` · `(TenantId, TotalRevenue DESC)` · `(TenantId, ApprovedRevenue DESC)` | grid sort theo cột tổng tài chính (denormalize, §A6) |
+| `TourCustomer` | `(TenantId, TourDepartureId)` · `(TenantId, CustomerId)` · `(TenantId, OrderId)` · `(TenantId, ReservationCode)` | slot theo chuyến/khách/đơn; tra mã giữ chỗ |
+| `Customer` | `UNIQUE(TenantId, Code)` · `(TenantId, Phone)` · `(TenantId, TypeId)` · GIN full-text `FullName` | tìm khách theo mã/sđt/loại; search tên (§H3) |
+| `Lead` | `(TenantId, Status, AssignedToUserId)` · `(TenantId, RotationOrder)` | phân bổ round-robin, lọc lead theo sales |
+| `ReceiptVoucher` / `PaymentVoucher` | `(TenantId, IssuedAt DESC)` · `(TenantId, Status)` · `(TenantId, OrderId)` · `UNIQUE(TenantId, Code)` · `(TenantId, ParentId)` | grid phiếu sort theo ngày/trạng thái; phiếu con theo cha |
+| `Provider` | `(TenantId, Type, Status)` · `UNIQUE(TenantId, Code)` | lọc NCC theo loại |
+| `ProviderServicePricing` | `(TenantId, ProviderServiceId, FromDate)` | tra giá hiệu lực theo mùa |
+| `OrderCost` | `(TenantId, OrderId)` · `(TenantId, ProviderId)` | chi phí theo đơn/NCC |
+| `User` | `UNIQUE(TenantId, Email)` · `(TenantId, DepartmentId)` | đăng nhập, lọc theo phòng ban |
+| `ApprovalHistory` | `(TenantId, RefType, RefId, StepOrder)` | truy lịch sử duyệt của 1 phiếu |
+| `AuditLog` | `(TenantId, EntityType, EntityId)` · `(TenantId, At DESC)` | tra vết theo entity/thời gian |
+
+### H3. Partial index cho soft-delete + full-text (PostgreSQL)
+- **Partial index** bỏ qua bản ghi đã xóa → index gọn, hợp với global filter `IsDeleted = false`:
+  ```sql
+  CREATE INDEX ix_tour_departure ON "Tours" ("TenantId","DepartureDate")
+    WHERE "IsDeleted" = false;
+  ```
+- **Full-text tên** (tour/khách): `tsvector` + GIN thay `LIKE '%...%'` (LIKE dẫn đầu `%` không dùng được index):
+  ```sql
+  CREATE INDEX ix_customer_fts ON "Customers"
+    USING GIN (to_tsvector('simple', "FullName"));
+  ```
+
+### H4. Vấn đề "sort theo cột bảng con" (cross-table) + hướng xử lý
+Grid mẫu sort theo `PriceAdult` (nằm ở `TourTemplateFields`, join từ `Tour`). Index không thể phục vụ `ORDER BY` xuyên join. 3 mức xử lý theo tải:
+1. **Nhỏ (≤ vài trăm mẫu/tenant):** sort trong bộ nhớ sau khi lọc tenant — chấp nhận được, không cần gì thêm.
+2. **Vừa:** denormalize `PriceAdult` LÊN bảng gốc `Tour` (đồng bộ 1-1, cost thấp) để index `(TenantId, PriceAdult)`.
+3. **Lớn / grid tổng hợp nhiều SUM:** **Materialized View** (§F4).
+
+### H5. Ước lượng chi phí ghi
+Mỗi index = +1 lần cập nhật B-tree mỗi khi ghi. Bảng ghi nóng (`TourCustomer`, `Order`, vouchers) → giữ số index ở mức cần thiết (bảng trên). Bảng đọc-nhiều-ghi-ít (`Customer`, `Provider`) → thoải mái index hơn.
+
+---
+
+## PHẦN I — Đồng bộ & toàn vẹn khi denormalize
+
+> Denormalize (cột tổng trên `Order`, giá trên `TourTemplateFields`) đổi tốc độ đọc lấy rủi ro **lệch dữ liệu**. Bắt buộc có cơ chế giữ đồng bộ, nếu không "nhanh nhưng sai" còn tệ hơn.
+
+1. **Nguồn sự thật = dòng con** (`ReceiptVoucher`/`PaymentVoucher`/`OrderCost`/`TourCustomer`). Cột tổng trên `Order` chỉ là bản sao tính sẵn.
+2. **Tính lại trong CÙNG transaction** khi ghi dòng con: domain service (vd `OrderTotalsService.Recompute(orderId)`) chạy trong transaction ghi voucher/cost → không bao giờ commit lệch.
+3. **Hoặc PostgreSQL trigger** `AFTER INSERT/UPDATE/DELETE` trên bảng con → `UPDATE Orders SET ...` (chỉ prod; dev SQLite dùng cơ chế app-level).
+4. **Chống mất cập nhật (lost update):** `Order` có concurrency token (`xmin` PostgreSQL / `RowVersion`) → EF Core `IsRowVersion()` để optimistic locking khi 2 phiếu cùng cập nhật 1 đơn.
+5. **Job đối soát định kỳ:** so cột tổng vs `SUM` dòng con, log lệch để phát hiện bug đồng bộ (chạy nền, ngoài giờ).
+6. **Chỉ tính phiếu đã duyệt:** `Total_Thu/Chi` thực tế chỉ cộng phiếu `IsGhiNhanDongTien = 1 AND IsDeleted = false` (đúng logic hệ cũ — xem §J enum).
+
+---
+
+## PHẦN J — Catalog quyền & enum hệ cũ (đầu vào cho RBAC & trạng thái Phase 0b)
+
+> Trích từ khảo sát module thật (vé máy bay, phiếu thu/chi, tour lẻ, tasking...). Dùng để **seed bảng `Permission`** và định nghĩa **enum trạng thái** cho hệ mới. Quy ước mã cũ: `MODULE_ĐỐITƯỢNG_HÀNHĐỘNG`.
+
+### J1. Nhóm quyền quan sát được → map sang `Permission.Code` (RBAC)
+| Nhóm cũ | Ví dụ mã cũ | Ý nghĩa | Đề xuất Code mới |
+|---|---|---|---|
+| Vé máy bay | `VMB_XEM(_ALL/_DH/_SALES)`, `VMB_TAOMOI`, `VMB_SUA`, `VMB_XOA`, `VMB_DUYET`, `VMB_EXPORTBILL`, `VMB_GROUP_XEM` | xem/tạo/sửa/xóa/duyệt/xuất bill vé | `airticket.view/create/update/delete/approve/export` |
+| Tour lẻ | `TR_TL_XEM(_DH)`, `TR_TL_SUA`, `TR_TL_XOA`, `TR_TL_CT`, `TR_TL_HT_KH` | xem/sửa/xóa/chi tiết tour lẻ | `tour.single.view/update/delete/detail` |
+| Xác nhận chỗ | `TR_TM_XNC` | quyền "Xác nhận chỗ" (giữ chỗ→xác nhận) | `booking.seat.confirm` |
+| Phiếu thu | `KT_PT_XEM(_ALL)`, `KT_PT_DUYET`, `KT_PT_CHON_DUYET`, `KT_PT_SUA`, `KT_PT_XOA`, `KT_PT_CHUYEN`, `KT_PT_TAOMOI_DH`, `KT_PT_EXPORTBILL`, `KT_PT_BILLTOUR` | thu tiền | `finance.receipt.*` |
+| Phiếu chi | `KT_PC_XEM(_ALL)`, `KT_PC_DUYET`, `KT_PC_CHON_DUYET`, `KT_PC_SUA`, `KT_PC_XOA`, `KT_PC_TAOMOI_DH` | chi tiền | `finance.payment.*` |
+| Nhà cung cấp | `NC_NC_XEM(_GIA_NHAP/_GIA_BAN)`, `NC_NC_LN`, `NC_NC_MAIL` | xem NCC + giá nhập/bán/lợi nhuận | `provider.view / provider.price.buy/sell / provider.profit` |
+| Hoa hồng | `HH_CHOT` | chốt hoa hồng | `commission.close` |
+| Báo cáo | `BC_NV_XEM`, `BC_TC_XEM` | báo cáo nhân viên/tài chính | `report.staff/finance.view` |
+| Công việc | `CV_XEM_ALL`, `CV_TAOMOI`, `CV_SUA`, `CV_XOA`, `DA_XEM` | task/dự án nội bộ | `task.* / project.view` |
+| **Data-scope** (cắt phạm vi) | `CN_CN_XEM` (chi nhánh), `NHOM_XEM_ALL` (nhóm), `*_XEM_ALL` (toàn bộ) | **KHÔNG là quyền hành động** mà là phạm vi dữ liệu | → cơ chế **data scope** riêng (Own/Department/Branch/All), không nhét vào Permission |
+
+> **Bài học cho RBAC mới:** tách rõ 2 trục — **(a) quyền hành động** (`view/create/update/delete/approve/export`) và **(b) phạm vi dữ liệu** (`Own | Department | Branch | Tenant`). Hệ cũ trộn chung (`_XEM` vs `_XEM_ALL`, `CN_CN_XEM`) gây bùng nổ mã quyền. Thiết kế Phase 0b nên: `Permission = resource.action`, còn scope gắn ở `UserRole`/policy.
+
+### J2. Enum trạng thái thật (giữ ngữ nghĩa, đổi tên PascalCase)
+| Enum cũ | Giá trị | Dùng cho |
+|---|---|---|
+| `State` (record chung) | Hidden=0, Created=1, Active=2, UnActive=3 (chờ duyệt), Delete=4, Off=5 | vòng đời bản ghi (thay bằng `IsDeleted` + `Status` riêng) |
+| `TourState` | Pendding=101, Happenning=102, Completed=103, Canceled=104, Baogia=106, Abort=107, No_Settlement=108 | trạng thái chuyến/đơn |
+| `BookingType` | AllTour=0, SingleTour=1, Series=2, GroupTour=3, PaymentVoucher=4, ReceiptVoucher=5, CarManagement=9 | phân loại đơn/tour |
+| Duyệt phiếu (phân cấp) | `InProgress → Approved / Rejected`; bước: `Pending → Approved/Rejected`; method `One | All`; hỗ trợ **rewind** (reject bước giữa lùi 1 bước) + **recall** (thu hồi) | engine `ApprovalProcess` dùng chung |
+| Ghi nhận tiền | `IsGhiNhanDongTien`: null=chờ duyệt, 1=đã duyệt (tính công nợ), 0=không duyệt | phiếu thu/chi |
+
+### J3. Trạng thái "Giữ chỗ" (Booking core) — chuẩn hóa từ flow thật
+Từ `docs/flow-giu-cho`: trạng thái 1 chỗ (`TourCustomer`) suy ra từ tiền, không lưu enum cứng:
+| Điều kiện | Trạng thái | Ghi chú |
+|---|---|---|
+| `UpfrontAmount == 0` | **Giữ chỗ** | có countdown hết hạn (`ReservationHours`) |
+| `UpfrontAmount == 0` & hết countdown & chốt | **Chốt chỗ (không nhả)** | |
+| `0 < UpfrontAmount < PricePerSlot` | **Đã đặt cọc** | |
+| `UpfrontAmount >= PricePerSlot` | **Đã thanh toán** | |
+| `StatusCancel != 0` | **Đã huỷ** | kèm ngày huỷ |
+
+→ Hệ mới nên lưu `SeatStatus` tường minh (Held/Deposited/Paid/Cancelled) + `HoldExpiresAt`, thay vì suy ra từ tiền mỗi lần render (đỡ tính lại, index được để lọc "sắp hết hạn giữ chỗ").

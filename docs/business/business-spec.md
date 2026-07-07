@@ -180,7 +180,11 @@ Là **giao dịch tài chính trung tâm**, gắn 1 khách ↔ 1 tour:
 - **Hoàn**: `TotalRefund`.
 - Trạng thái: `status`, `IsGhiNhanDongTien` (ghi nhận tiền).
 
-> **Vấn đề hệ cũ**: trộn doanh thu/chi phí vào Order gây cồng. Nên tách ra `OrderRevenue` + `OrderCost` bảng riêng (xem tài liệu tối ưu DB).
+> **Quyết định (đã đính chính — xem `database-optimization-analysis.md` §A6, §F2):** GIỮ các cột tổng
+> doanh thu/chi phí (`Total_Thu_Money`, `ApprovedRevenue`…) TRỰC TIẾP trên `Order` (denormalize có
+> chủ đích) vì grid "Tất cả chuyến"/"Công nợ khách" sort theo chính các cột này — tách bảng con sẽ
+> phải GROUP BY + JOIN mỗi lần load, không index được cột sort. Chỉ **chi tiết dòng chi phí NCC** tách
+> ra `OrderCost` (đổi tên từ `OrderChi`). Đồng bộ cột tổng qua transaction/trigger khi ghi dòng con.
 
 ### 5.2 OrderChi — chi tiết chi phí NCC
 Mỗi dòng = 1 dịch vụ thuê từ 1 NCC trong 1 đơn:
