@@ -4,3 +4,8 @@ node_modules/
 *.user
 .vs/
 appsettings.*.local.json
+
+# SQLite dev database (tạo lại bằng `dotnet ef database update`)
+*.db
+*.db-shm
+*.db-wal

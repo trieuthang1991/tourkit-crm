@@ -5,7 +5,9 @@
 
 ## Trạng thái hiện tại
 
-Đã xong phần **thiết kế + convention + kế hoạch**. **Chưa viết code.** Sẵn sàng để bắt đầu code Phase 0a.
+**Phase 0a ĐÃ XONG** (nền móng multi-tenant). Solution `.NET 9` + EF Core 9 chạy trên **SQLite** (dev), có test chứng minh cô lập tenant (đọc/ghi/HTTP) và REST API `/api/v1/customers`. Việc tiếp theo: Phase 0b (xem cuối file).
+
+> **Lưu ý điều chỉnh so với thiết kế gốc:** dùng **.NET 9** (thay vì 10) và **SQLite ở dev** (SQL Server để production) theo yêu cầu môi trường máy hiện tại. Provider đổi bằng cấu hình, không sửa code.
 
 ## Đọc theo thứ tự
 
@@ -22,9 +24,11 @@
 | Hạng mục | Quyết định |
 |----------|-----------|
 | Mô hình | SaaS thương mại bán cho nhiều công ty lữ hành |
-| Tech backend | .NET 10 + EF Core 10 + SQL Server, logic ở code (KHÔNG stored proc) |
+| Tech backend | **.NET 9 + EF Core 9**, logic ở code (KHÔNG stored proc) |
+| Database | **SQLite ở dev** (chưa cần cài server) → **SQL Server ở production**. Đổi bằng cấu hình `Database:Provider`; code provider-agnostic |
 | Kiến trúc | Modular Monolith |
-| Multi-tenant | Shared DB + `TenantId` + EF Global Query Filter |
+| Multi-tenant | Shared DB + `TenantId` + EF Global Query Filter (kèm soft-delete filter) |
+| API | REST, prefix `/api/v1`, DTO record riêng, lỗi trả ProblemDetails |
 | Frontend | React + TypeScript (strict) + Vite + **Ant Design** + TanStack Query |
 | Đặt tên DB | PascalCase (chuẩn EF Core) |
 | Dữ liệu cũ | Khởi đầu trống ở v1; import để v2 |
@@ -38,26 +42,28 @@
 
 ## VIỆC CẦN LÀM TIẾP (khi quay lại)
 
-- [ ] **Bắt đầu code Phase 0a** theo plan `2026-07-07-phase0a-multitenant-foundation.md`.
-  - Cách nhanh: mở Claude Code, nói *"triển khai plan Phase 0a"* và chọn Subagent-Driven hoặc Inline.
-  - Hoặc tự làm: theo Task 1→7, mỗi task commit một lần.
-- [ ] Sau Phase 0a: cần **plan Phase 0b** (JWT auth, RBAC/permission, đăng ký & provisioning tenant, subscription/plan, khung React + đăng nhập). *Chưa viết — nhờ tạo khi tới đó.*
+- [x] **Phase 0a** — nền móng multi-tenant (net9 + EF Core 9 + SQLite). Xong: kernel tenancy, global query filter + soft-delete, SaveChanges interceptor, REST `/api/v1/customers`, migration SQLite, 5 test cô lập xanh.
+- [ ] **Chạy API thử:** `dotnet run --project src/TourKit.Api` rồi gọi `POST /api/v1/customers` kèm header `X-Tenant-Id: <guid>`.
+- [ ] **Plan Phase 0b** (JWT auth, RBAC/permission, đăng ký & provisioning tenant, subscription/plan, khung React + đăng nhập). *Chưa viết — nhờ tạo khi tới đó.*
+- [ ] **Khi có SQL Server:** đặt `Database:Provider=SqlServer` + connection string, rồi tạo bộ migration SQL Server riêng.
 
 ## Môi trường đã kiểm tra (máy này)
-- .NET SDK 10.0.100 ✅ · Node v22.15 ✅ · SQL Server LocalDB (MSSQLLocalDB) ✅
-- Cần cài khi bắt đầu Task 7: `dotnet tool install --global dotnet-ef`
+- .NET SDK 9.0.300 + 10.0.100 ✅ · runtime .NET 9.0.5 ✅ · Node v22.15 ✅ · `dotnet-ef` đã cài ✅
+- DB dev: **SQLite** (file `src/TourKit.Api/TourKit_Dev.db`, tự tạo, đã gitignore). Chưa cần SQL Server.
 
 ## Cấu trúc repo hiện tại
 ```
 TourKit/
+├─ TourKit.sln
 ├─ script.sql                  # DB hệ cũ (tham chiếu nghiệp vụ, KHÔNG dùng lại schema)
-├─ .editorconfig               # ép style/naming (đã có)
-├─ Directory.Build.props       # ép nullable + warnings-as-errors + analyzers (đã có)
+├─ .editorconfig               # ép style/naming
+├─ Directory.Build.props       # net9 + nullable + warnings-as-errors + analyzers
+├─ src/
+│  ├─ TourKit.Shared/          # kernel: BaseEntity, ITenantEntity, ITenantContext
+│  ├─ TourKit.Infrastructure/  # AppDbContext (filter+interceptor), entities, configs, migrations
+│  └─ TourKit.Api/             # composition root + REST endpoints /api/v1
+├─ tests/
+│  └─ TourKit.Tests/           # test cô lập tenant (đọc/ghi/HTTP)
 └─ docs/
-   ├─ README.md                # file này
-   ├─ conventions/             # best-practice backend + frontend
-   └─ superpowers/
-      ├─ specs/                # thiết kế
-      └─ plans/                # kế hoạch code
+   ├─ README.md · conventions/ · superpowers/{specs,plans}/
 ```
-*Source code (`src/`, `web/`, `tests/`) sẽ được tạo khi chạy Phase 0a.*

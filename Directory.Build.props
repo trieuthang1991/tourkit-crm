@@ -1,7 +1,7 @@
 <Project>
   <!-- Áp cho MỌI project .NET trong solution. Xem docs/conventions/backend-conventions.md §10 -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

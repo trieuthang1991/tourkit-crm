@@ -53,6 +53,13 @@ dotnet_diagnostic.CA1707.severity = none
 # assert thường dùng mảng expected inline — không áp perf-rule CA1861
 dotnet_diagnostic.CA1861.severity = none
 
+# ---- Code EF sinh tự động (migrations): không áp style/analyzer của ta ----
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0161.severity = none
+
 [*.{json,jsonc,yml,yaml}]
 indent_size = 2
 

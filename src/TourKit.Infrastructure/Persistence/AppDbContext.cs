@@ -71,25 +71,41 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Cấu hình entity theo IEntityTypeConfiguration<T> (mỗi entity 1 file — xem conventions §5).
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        // Global query filter: cô lập tenant + ẩn soft-deleted. Một filter/entity nên phải gộp chung.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
+            var clr = entityType.ClrType;
+
+            if (typeof(ITenantEntity).IsAssignableFrom(clr))
             {
-                var filter = BuildTenantFilterMethod
-                    .MakeGenericMethod(entityType.ClrType)
-                    .Invoke(this, null);
-                modelBuilder.Entity(entityType.ClrType).HasQueryFilter((LambdaExpression)filter!);
+                var filter = TenantFilterMethod.MakeGenericMethod(clr).Invoke(this, null);
+                modelBuilder.Entity(clr).HasQueryFilter((LambdaExpression)filter!);
+            }
+            else if (typeof(BaseEntity).IsAssignableFrom(clr))
+            {
+                var filter = SoftDeleteFilterMethod.MakeGenericMethod(clr).Invoke(this, null);
+                modelBuilder.Entity(clr).HasQueryFilter((LambdaExpression)filter!);
             }
         }
     }
 
-    private static readonly System.Reflection.MethodInfo BuildTenantFilterMethod =
+    private static readonly System.Reflection.MethodInfo TenantFilterMethod =
         typeof(AppDbContext).GetMethod(nameof(BuildTenantFilter),
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
 
-    private Expression<Func<TEntity, bool>> BuildTenantFilter<TEntity>() where TEntity : class, ITenantEntity
-    {
-        // Đóng gói tham chiếu tới _tenant.TenantId — EF Core đánh giá lại mỗi truy vấn.
-        return e => e.TenantId == _tenant.TenantId;
-    }
+    private static readonly System.Reflection.MethodInfo SoftDeleteFilterMethod =
+        typeof(AppDbContext).GetMethod(nameof(BuildSoftDeleteFilter),
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+
+    // Đóng gói tham chiếu tới _tenant.TenantId — EF Core đánh giá lại mỗi truy vấn.
+    private Expression<Func<TEntity, bool>> BuildTenantFilter<TEntity>()
+        where TEntity : BaseEntity, ITenantEntity
+        => e => e.TenantId == _tenant.TenantId && !e.IsDeleted;
+
+    private static Expression<Func<TEntity, bool>> BuildSoftDeleteFilter<TEntity>()
+        where TEntity : BaseEntity
+        => e => !e.IsDeleted;
 }
