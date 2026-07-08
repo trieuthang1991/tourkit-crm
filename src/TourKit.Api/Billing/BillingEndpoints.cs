@@ -7,7 +7,7 @@ namespace TourKit.Api.Billing;
 /// <summary>
 /// REST endpoints cho Plan/Subscription dưới /api/v1/plans và /api/v1/subscription.
 /// Endpoint mỏng: validate → thao tác DbContext → map DTO (conventions §6).
-/// TODO: chưa có middleware chặn theo SubscriptionStatus (Expired/Cancelled) — follow-up slice sau.
+/// Enforce hết hạn: SubscriptionGuardMiddleware chặn endpoint nghiệp vụ khi subscription Expired/Cancelled/quá hạn.
 /// </summary>
 public static class BillingEndpoints
 {

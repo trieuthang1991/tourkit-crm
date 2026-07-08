@@ -85,6 +85,7 @@ app.UseStatusCodePages();
 
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();   // sau Authentication để đọc được claim
+app.UseMiddleware<SubscriptionGuardMiddleware>();  // chặn nếu subscription hết hạn (miễn trừ auth/đăng ký/billing)
 app.UseAuthorization();
 
 app.MapAuthEndpoints();
