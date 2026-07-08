@@ -25,4 +25,11 @@ public static class BookingMath
 
         return price + surcharge - discount;
     }
+
+    /// <summary>
+    /// Số chỗ (ghế) một dòng đặt chiếm: tổng số khách 4 nhóm tuổi.
+    /// Quy ước: mỗi khách (kể cả em bé) tính 1 chỗ. Đổi quy ước sức chứa thì sửa ở ĐÂY.
+    /// </summary>
+    public static int SeatCount(TourCustomer s)
+        => s.Quantity + s.AmountChildren + s.AmountChildrenSmall + s.QuantityBaby;
 }
