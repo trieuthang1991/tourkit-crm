@@ -111,16 +111,16 @@ tests/
 
 > Nguyên tắc: mỗi bước **giữ 77 test xanh**, refactor 1 slice làm mẫu rồi nhân rộng. KHÔNG viết lại từ đầu.
 
-| Bước | Nội dung | Rủi ro | Giá trị |
-|---|---|---|---|
-| **1** | Kernel: `Result<T>`/`Error` + `ICommand/IQuery/IHandler` + `Dispatcher` (tự viết) + pipeline (validation) trong `Shared` | Thấp | Nền cho mọi slice |
-| **2** | FluentValidation + 1 **vertical slice mẫu** (vd `CreateTourTemplate` + `ListTourTemplates` phân trang) qua dispatcher; endpoint chỉ `Send()` | Thấp | Mẫu chuẩn để nhân rộng |
-| **3** | `TourKit.ArchTests` (NetArchTest) ép: Api mỏng, Domain không EF, ranh giới module | Thấp | Chống trôi kiến trúc |
-| **4** | Serilog + pipeline logging + ProblemDetails mapping từ `Result.Error` | Thấp | Trace được |
-| **5** | Rich **Booking aggregate** (Order+TourCustomer): chuyển logic đặt/giữ/cọc/huỷ vào aggregate + domain event; unit test nhanh | Trung | Bảo vệ invariant, test nhanh |
-| **6** | Phân trang toàn bộ endpoint list (`Paged<T>`) | Thấp | Grid dùng được ở quy mô |
-| **7** | Nhân rộng slice pattern cho các module còn lại; nâng module ổn định lên project riêng (`Domain`/`Application`) | Trung | Ranh giới thật, sẵn tách service |
-| **8** | Transaction/Outbox behavior + Domain events cho tác vụ phụ (thông báo, cập nhật tổng) | Trung | Nhất quán khi nhiều module |
+| Bước | Nội dung | Rủi ro | Giá trị | Trạng thái |
+|---|---|---|---|---|
+| **1** | Kernel: `Result<T>`/`Error` + `ICommand/IQuery/IHandler` + `Dispatcher` (tự viết) + pipeline (validation) trong `Shared` | Thấp | Nền cho mọi slice | ✅ Xong |
+| **2** | FluentValidation + 1 **vertical slice mẫu** (vd `CreateTourTemplate` + `ListTourTemplates` phân trang) qua dispatcher; endpoint chỉ `Send()` | Thấp | Mẫu chuẩn để nhân rộng | ✅ Xong |
+| **3** | `TourKit.ArchTests` (NetArchTest) ép: Api mỏng, Domain không EF, ranh giới module | Thấp | Chống trôi kiến trúc | ✅ Xong |
+| **4** | Serilog + pipeline logging + ProblemDetails mapping từ `Result.Error` | Thấp | Trace được | ✅ Xong |
+| **5** | Rich **Booking aggregate** (Order+TourCustomer): chuyển logic đặt/giữ/cọc/huỷ vào aggregate + domain event; unit test nhanh | Trung | Bảo vệ invariant, test nhanh | ◻️ Chưa — hiện gom ở `BookingFactory`/`BookingMath`/`SeatMapper` (đủ dùng); nâng lên aggregate khi cần invariant chặt hơn |
+| **6** | Phân trang toàn bộ endpoint list (`Paged<T>`) | Thấp | Grid dùng được ở quy mô | ✅ Xong (list toàn cục dạng mảng → `Paged<T>`; list con theo cha giữ `IReadOnlyList`) |
+| **7** | Nhân rộng slice pattern cho các module còn lại; nâng module ổn định lên project riêng (`Domain`/`Application`) | Trung | Ranh giới thật, sẵn tách service | ✅ Xong roll-out 9 module (Catalog, Customers, CRM, Providers, Marketing, Commission/Billing, Finance/Reports, Booking); tách project riêng = sau |
+| **8** | Transaction/Outbox behavior + Domain events cho tác vụ phụ (thông báo, cập nhật tổng) | Trung | Nhất quán khi nhiều module | ◻️ Chưa (chờ có nhiều module/broker) |
 
 ---
 
