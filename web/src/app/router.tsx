@@ -3,6 +3,7 @@ import { LoginPage } from '../features/auth/LoginPage';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import { AppShell } from './AppShell';
 import { TourTemplateListPage } from '../features/tourTemplates/TourTemplateListPage';
+import { TourTemplateDetailPage } from '../features/tourTemplates/TourTemplateDetailPage';
 import { CustomersPage } from '../features/customers/CustomersPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
 import { ProvidersPage } from '../features/providers/ProvidersPage';
@@ -27,6 +28,7 @@ export function AppRouter() {
         <Route path="/marketing" element={<MarketingPage />} />
         <Route path="/market-types" element={<MarketTypesPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
+        <Route path="/tour-templates/:id" element={<TourTemplateDetailPage />} />
       </Route>
     </Routes>
   );
