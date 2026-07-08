@@ -34,6 +34,14 @@ builder.Host.UseSerilog((context, config) => config
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
 
+// CORS cho SPA (Vite dev mặc định 5173/4173; prod cấu hình qua Cors:Origins).
+var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
+    ?? ["http://localhost:5173", "http://localhost:4173"];
+builder.Services.AddCors(options => options.AddPolicy("web", policy => policy
+    .WithOrigins(corsOrigins)
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
+
 // --- Tenancy: 1 instance scoped, vừa là ITenantContext (đọc) vừa set được (login/middleware) ---
 builder.Services.AddScoped<AmbientTenantContext>();
 builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<AmbientTenantContext>());
@@ -108,6 +116,8 @@ using (var scope = app.Services.CreateScope())
 app.UseSerilogRequestLogging();   // log mỗi request (method/path/status/thời gian) có cấu trúc
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+
+app.UseCors("web");   // trước Authentication để preflight OPTIONS không cần token
 
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();   // sau Authentication để đọc được claim
