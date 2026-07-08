@@ -44,9 +44,9 @@ export function makeCrud<TItem, TCreate extends object, TUpdate extends object>(
   function useUpdate() {
     const qc = useQueryClient();
     return useMutation({
+      // PUT trả 204 No Content (body rỗng) → KHÔNG parse; ResourcePage chỉ cần invalidate để refetch.
       mutationFn: async ({ id, body }: { id: string; body: TUpdate }) => {
-        const { data } = await httpClient.put<unknown>(`${cfg.basePath}/${id}`, body);
-        return cfg.itemSchema.parse(data);
+        await httpClient.put(`${cfg.basePath}/${id}`, body);
       },
       onSuccess: () => qc.invalidateQueries({ queryKey: keys.all }),
     });
