@@ -6,16 +6,18 @@ Nguyên tắc: **usable-first** — vá thứ chặn vận hành trước, mở 
 
 ---
 
-## Đợt 0 — Vá lỗ hổng chặn vận hành (nhỏ, gấp) ⚡
+## Đợt 0 — Vá lỗ hổng chặn vận hành (nhỏ, gấp) ⚡ ✅ ĐÃ XONG
 
-Thứ đã có gần đủ nhưng thiếu mảnh khiến không dùng thật được.
+Thứ đã có gần đủ nhưng thiếu mảnh khiến không dùng thật được. **Hoàn tất — 116 backend test + 46 web test xanh.**
 
-| # | Việc | Vì sao gấp | Quy mô |
-|---|---|---|---|
-| 0.1 | **Chống overbooking** khi đặt/giữ chỗ | Hiện đặt vượt `TotalSlots` vẫn thành công (đã xác minh). Hệ cũ có `sp_getapplock` | Nhỏ — thêm kiểm tra tổng chỗ đã dùng + concurrency (RowVersion/transaction) trong `BookingFactory` |
-| 0.2 | **Đóng chuyến** (close departure) | Cột `IsClosed/ClosedAt` là cột chết, chưa có handler → chuyến không chốt sổ được | Nhỏ — endpoint `POST /tour-departures/{id}/close` + guard chặn thao tác sau khi đóng |
-| 0.3 | **MarketType** hoàn thiện CRUD | Mới có GET/POST, thiếu Update/Delete + chưa qua dispatcher (lệch kiến trúc) | Nhỏ |
-| 0.4 | **CreateDeparture copy giá/itinerary từ template** | Hệ cũ mở chuyến kế thừa cấu hình mẫu; mới thì chuyến trống | Nhỏ–vừa |
+| # | Việc | Trạng thái |
+|---|---|---|
+| 0.1 | **Chống overbooking** — kiểm tra tổng chỗ đã dùng (seat `Status==0`) + `BookingMath.SeatCount`, chặn vượt `TotalSlots` | ✅ |
+| 0.2 | **Đóng chuyến** — `POST /tour-departures/{id}/close` (set `IsClosed/ClosedAt`) + chặn đặt chỗ/đóng lại | ✅ |
+| 0.3 | **MarketType** full CRUD qua dispatcher (thêm Update/Delete) + UI sửa/xoá | ✅ |
+| 0.4 | **Mở chuyến kế thừa** số chỗ/loại/lịch trình từ tour mẫu | ✅ |
+
+> Ghi chú: overbooking hiện chặn ở tầng ứng dụng (đủ cho SQLite dev). Concurrency-proof tuyệt đối (RowVersion/counter) = backend-architecture.md bước 8, làm khi lên quy mô.
 
 ---
 
