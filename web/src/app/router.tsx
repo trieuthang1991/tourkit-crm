@@ -11,6 +11,8 @@ import { MarketingPage } from '../features/marketing/MarketingPage';
 import { MarketTypesPage } from '../features/marketTypes/MarketTypesPage';
 import { DeparturesPage } from '../features/booking/DeparturesPage';
 import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
+import { OrdersPage } from '../features/booking/OrdersPage';
+import { OrderDetailPage } from '../features/booking/OrderDetailPage';
 
 export function AppRouter() {
   return (
@@ -31,6 +33,8 @@ export function AppRouter() {
         <Route path="/market-types" element={<MarketTypesPage />} />
         <Route path="/departures" element={<DeparturesPage />} />
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
         <Route path="/tour-templates/:id" element={<TourTemplateDetailPage />} />
       </Route>

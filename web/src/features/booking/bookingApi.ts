@@ -1,7 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { httpClient } from '../../shared/api/httpClient';
+import { makeCrud } from '../../shared/ui/useCrudResource';
 import { orderSchema, seatSchema } from './seatTypes';
 import type { BookingRequestForm, Order, Seat } from './seatTypes';
+
+// GET /api/v1/orders (Paged) — dùng cho OrdersPage (list-only, không có create/update/remove).
+export const ordersCrud = makeCrud<Order, object, object>({
+  key: 'orders',
+  basePath: '/api/v1/orders',
+  itemSchema: orderSchema,
+  getId: (o) => o.id,
+});
 
 function bookingsPath(departureId: string) {
   return `/api/v1/tour-departures/${departureId}/bookings`;

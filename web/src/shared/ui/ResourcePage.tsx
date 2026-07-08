@@ -12,7 +12,7 @@ type ResourcePageProps<TItem, TForm> = {
   columns: ColumnsType<TItem>;
   crud: {
     useList: (p: { page: number; size: number }) => { data?: { items: TItem[]; total: number }; isLoading: boolean };
-    useCreate: () => { mutateAsync: (b: TForm) => Promise<unknown>; isPending: boolean };
+    useCreate?: () => { mutateAsync: (b: TForm) => Promise<unknown>; isPending: boolean };
     useUpdate?: () => { mutateAsync: (a: { id: string; body: TForm }) => Promise<unknown>; isPending: boolean };
     useRemove?: () => { mutateAsync: (id: string) => Promise<unknown>; isPending: boolean };
     getId: (i: TItem) => string;
@@ -37,11 +37,11 @@ export function ResourcePage<TItem, TForm>(props: ResourcePageProps<TItem, TForm
   const [editing, setEditing] = useState<{ mode: 'create' | 'edit'; item: TItem | null } | null>(null);
 
   const list = props.crud.useList(page);
-  const create = props.crud.useCreate();
+  const create = props.crud.useCreate?.();
   const update = props.crud.useUpdate?.();
   const remove = props.crud.useRemove?.();
 
-  const canCreate = !props.perms.create || has(props.perms.create);
+  const canCreate = !!props.crud.useCreate && (!props.perms.create || has(props.perms.create));
   const canUpdate = !!props.crud.useUpdate && (!props.perms.update || has(props.perms.update));
   const canRemove = !!props.crud.useRemove && (!props.perms.remove || has(props.perms.remove));
 
@@ -85,7 +85,7 @@ export function ResourcePage<TItem, TForm>(props: ResourcePageProps<TItem, TForm
       if (editing?.mode === 'edit' && editing.item) {
         await update?.mutateAsync({ id: props.crud.getId(editing.item), body: values });
       } else {
-        await create.mutateAsync(values);
+        await create?.mutateAsync(values);
       }
       message.success('Đã lưu');
       setEditing(null);
@@ -122,7 +122,7 @@ export function ResourcePage<TItem, TForm>(props: ResourcePageProps<TItem, TForm
         ? props.formModal({
             open: true,
             mode: editing.mode,
-            submitting: create.isPending || (update?.isPending ?? false),
+            submitting: (create?.isPending ?? false) || (update?.isPending ?? false),
             onCancel: () => setEditing(null),
             onSubmit: submit,
             defaultValues: props.toForm(editing.item),
