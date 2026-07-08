@@ -16,6 +16,10 @@ public static class ReportEndpoints
             (await dispatcher.Send(new OrderDebtReportQuery(), ct))
                 .Match(rows => Results.Ok(rows))).RequireAuthorization(Permissions.ReportDebtView);
 
+        app.MapGet("/api/v1/reports/provider-debt", async (IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new ProviderDebtReportQuery(), ct))
+                .Match(rows => Results.Ok(rows))).RequireAuthorization(Permissions.ReportProviderDebtView);
+
         return app;
     }
 }
