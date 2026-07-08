@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Catalog;
+using TourKit.Shared.Application;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Catalog;
@@ -37,8 +38,9 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
         Assert.NotNull(dto);
         Assert.Equal(5_000_000m, dto!.PriceAdult);
 
-        var list = await client.GetFromJsonAsync<List<TourTemplateResponse>>("/api/v1/tour-templates");
-        Assert.Single(list!);
+        var list = await client.GetFromJsonAsync<Paged<TourTemplateResponse>>("/api/v1/tour-templates");
+        Assert.Single(list!.Items);
+        Assert.Equal(1, list.Total);
 
         var got = await client.GetFromJsonAsync<TourTemplateResponse>($"/api/v1/tour-templates/{dto.Id}");
         Assert.Equal("T-001", got!.Code);
@@ -59,8 +61,8 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
         await clientA.PostAsJsonAsync("/api/v1/tour-templates", Sample("A-1"));
 
         var clientB = await LoggedInClientAsync("cat-iso-b");
-        var listB = await clientB.GetFromJsonAsync<List<TourTemplateResponse>>("/api/v1/tour-templates");
-        Assert.Empty(listB!);
+        var listB = await clientB.GetFromJsonAsync<Paged<TourTemplateResponse>>("/api/v1/tour-templates");
+        Assert.Empty(listB!.Items);
     }
 
     [Fact]
@@ -80,8 +82,8 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
         var del = await client.DeleteAsync($"/api/v1/tour-templates/{dto.Id}");
         Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
 
-        var list = await client.GetFromJsonAsync<List<TourTemplateResponse>>("/api/v1/tour-templates");
-        Assert.Empty(list!);   // soft-deleted bị filter ẩn
+        var list = await client.GetFromJsonAsync<Paged<TourTemplateResponse>>("/api/v1/tour-templates");
+        Assert.Empty(list!.Items);   // soft-deleted bị filter ẩn
     }
 
     [Fact]

@@ -1,7 +1,9 @@
 using System.Text;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using TourKit.Api.Application;
 using TourKit.Api.Auth;
 using TourKit.Api.Billing;
 using TourKit.Api.Booking;
@@ -16,6 +18,7 @@ using TourKit.Api.Provisioning;
 using TourKit.Api.Reports;
 using TourKit.Api.Tenancy;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Shared.Application;
 using TourKit.Shared.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,6 +52,15 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+
+// --- CQRS: dispatcher + validation pipeline (FluentValidation) + scan handler (Scrutor). Không dùng MediatR. ---
+builder.Services.AddScoped<IDispatcher, Dispatcher>();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.Scan(scan => scan.FromAssemblyOf<Program>()
+    .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<,>)), publicOnly: false)
+        .AsImplementedInterfaces().WithScopedLifetime()
+    .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)), publicOnly: false)
+        .AsImplementedInterfaces().WithScopedLifetime());
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

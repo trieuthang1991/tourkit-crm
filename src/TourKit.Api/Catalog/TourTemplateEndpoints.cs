@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using TourKit.Api.Application;
 using TourKit.Api.Authz;
+using TourKit.Api.Catalog.Features;
 using TourKit.Infrastructure.Entities;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Shared.Application;
 
 namespace TourKit.Api.Catalog;
 
@@ -11,10 +14,10 @@ public static class TourTemplateEndpoints
     {
         var group = app.MapGroup("/api/v1/tour-templates");
 
-        group.MapGet("/", async (AppDbContext db, CancellationToken ct) =>
-            Results.Ok(await db.TourTemplates.AsNoTracking()
-                .OrderBy(t => t.Title)
-                .Select(t => ToResponse(t)).ToListAsync(ct))).RequireAuthorization(Permissions.TourView);
+        // Slice mẫu: qua dispatcher + phân trang (query ?page=&size=).
+        group.MapGet("/", async (IDispatcher dispatcher, int? page, int? size, CancellationToken ct) =>
+            (await dispatcher.Send(new ListTourTemplatesQuery(page ?? 1, size ?? 20), ct))
+                .Match(p => Results.Ok(p))).RequireAuthorization(Permissions.TourView);
 
         group.MapGet("/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
         {
@@ -23,24 +26,14 @@ public static class TourTemplateEndpoints
             return t is null ? Results.NotFound() : Results.Ok(t);
         }).RequireAuthorization(Permissions.TourView);
 
-        group.MapPost("/", async (CreateTourTemplateRequest body, AppDbContext db, CancellationToken ct) =>
+        // Slice mẫu: endpoint MỎNG — chỉ map request → command → dispatch → map Result sang HTTP.
+        group.MapPost("/", async (CreateTourTemplateRequest body, IDispatcher dispatcher, CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(body.Code) || string.IsNullOrWhiteSpace(body.Title))
-            {
-                return Validation("Code và Title là bắt buộc.");
-            }
-
-            var t = new TourTemplate
-            {
-                Code = body.Code.Trim(), Title = body.Title.Trim(), TourType = body.TourType,
-                TotalSlots = body.TotalSlots, ReservationHours = body.ReservationHours,
-                PriceAdult = body.PriceAdult, PriceChild = body.PriceChild,
-                PriceChildSmall = body.PriceChildSmall, PriceBaby = body.PriceBaby,
-                TermsNote = body.TermsNote,
-            };
-            db.TourTemplates.Add(t);
-            await db.SaveChangesAsync(ct);
-            return Results.Created($"/api/v1/tour-templates/{t.Id}", ToResponse(t));
+            var command = new CreateTourTemplateCommand(
+                body.Code, body.Title, body.TourType, body.TotalSlots, body.ReservationHours,
+                body.PriceAdult, body.PriceChild, body.PriceChildSmall, body.PriceBaby, body.TermsNote);
+            var result = await dispatcher.Send(command, ct);
+            return result.Match(r => Results.Created($"/api/v1/tour-templates/{r.Id}", r));
         }).RequireAuthorization(Permissions.TourCreate);
 
         group.MapPut("/{id:guid}", async (Guid id, UpdateTourTemplateRequest body, AppDbContext db, CancellationToken ct) =>

@@ -30,7 +30,8 @@ public class DebtReportTests : IClassFixture<AuthTestFactory>
     {
         var tpl = await (await client.PostAsJsonAsync("/api/v1/tour-templates", new
         {
-            Code = "TPL", Title = "Tour", TourType = (string?)null, TotalSlots = 30, ReservationHours = 24,
+            Code = "TPL-" + Guid.NewGuid().ToString("N")[..6], Title = "Tour", TourType = (string?)null,
+            TotalSlots = 30, ReservationHours = 24,
             PriceAdult = 5_000_000m, PriceChild = 3_000_000m, PriceChildSmall = 0m, PriceBaby = 0m,
             TermsNote = (string?)null,
         })).Content.ReadFromJsonAsync<TourTemplateResponse>();
