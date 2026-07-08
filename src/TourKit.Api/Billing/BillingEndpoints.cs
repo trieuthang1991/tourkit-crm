@@ -1,6 +1,7 @@
-using Microsoft.EntityFrameworkCore;
+using TourKit.Api.Application;
 using TourKit.Api.Authz;
-using TourKit.Infrastructure.Persistence;
+using TourKit.Api.Billing.Features;
+using TourKit.Shared.Application;
 
 namespace TourKit.Api.Billing;
 
@@ -13,49 +14,19 @@ public static class BillingEndpoints
 {
     public static IEndpointRouteBuilder MapBillingEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/v1/plans", async (AppDbContext db, CancellationToken ct) =>
-            Results.Ok(await db.Plans.AsNoTracking()
-                .OrderBy(p => p.PriceMonthly)
-                .Select(p => new PlanResponse(p.Id, p.Code, p.Name, p.MaxUsers, p.MaxTours, p.PriceMonthly))
-                .ToListAsync(ct))).RequireAuthorization(Permissions.SubscriptionView);
+        app.MapGet("/api/v1/plans", async (IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new ListPlansQuery(), ct))
+                .Match(p => Results.Ok(p))).RequireAuthorization(Permissions.SubscriptionView);
 
-        app.MapGet("/api/v1/subscription", async (AppDbContext db, CancellationToken ct) =>
-        {
-            var response = await (
-                from s in db.Subscriptions.AsNoTracking()
-                join p in db.Plans.AsNoTracking() on s.PlanId equals p.Id
-                select new SubscriptionResponse(s.Id, s.PlanId, p.Code, s.Status, s.StartedAt, s.ExpiresAt))
-                .FirstOrDefaultAsync(ct);
-            return response is null ? Results.NotFound() : Results.Ok(response);
-        }).RequireAuthorization(Permissions.SubscriptionView);
+        app.MapGet("/api/v1/subscription", async (IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new GetSubscriptionQuery(), ct))
+                .Match(s => Results.Ok(s))).RequireAuthorization(Permissions.SubscriptionView);
 
-        app.MapPost("/api/v1/subscription/change-plan", async (ChangePlanRequest body, AppDbContext db, CancellationToken ct) =>
-        {
-            var plan = await db.Plans.AsNoTracking().FirstOrDefaultAsync(p => p.Code == body.PlanCode, ct);
-            if (plan is null)
-            {
-                return ValidationError("PlanCode không hợp lệ.");
-            }
-
-            var subscription = await db.Subscriptions.FirstOrDefaultAsync(ct);
-            if (subscription is null)
-            {
-                return Results.NotFound();
-            }
-
-            subscription.PlanId = plan.Id;
-            await db.SaveChangesAsync(ct);
-
-            var response = new SubscriptionResponse(
-                subscription.Id, subscription.PlanId, plan.Code, subscription.Status,
-                subscription.StartedAt, subscription.ExpiresAt);
-            return Results.Ok(response);
-        }).RequireAuthorization(Permissions.SubscriptionManage);
+        app.MapPost("/api/v1/subscription/change-plan", async (
+            ChangePlanRequest body, IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new ChangePlanCommand(body.PlanCode), ct))
+                .Match(s => Results.Ok(s))).RequireAuthorization(Permissions.SubscriptionManage);
 
         return app;
     }
-
-    // Validation tối thiểu cho foundation; Phase sau thay bằng FluentValidation (conventions §6).
-    private static IResult ValidationError(string message) =>
-        Results.ValidationProblem(new Dictionary<string, string[]> { ["Request"] = [message] });
 }
