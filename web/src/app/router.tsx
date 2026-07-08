@@ -13,6 +13,7 @@ import { DeparturesPage } from '../features/booking/DeparturesPage';
 import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
 import { OrdersPage } from '../features/booking/OrdersPage';
 import { OrderDetailPage } from '../features/booking/OrderDetailPage';
+import { BillingPage } from '../features/billing/BillingPage';
 
 export function AppRouter() {
   return (
@@ -37,6 +38,7 @@ export function AppRouter() {
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
         <Route path="/tour-templates/:id" element={<TourTemplateDetailPage />} />
+        <Route path="/billing" element={<BillingPage />} />
       </Route>
     </Routes>
   );
