@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Crm;
+using TourKit.Shared.Application;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Crm;
@@ -46,8 +47,8 @@ public class LeadEndpointTests : IClassFixture<AuthTestFactory>
         Assert.NotNull(convBody);
 
         // Customer xuất hiện ở /customers
-        var customers = await client.GetFromJsonAsync<List<CustomerRow>>("/api/v1/customers");
-        Assert.Contains(customers!, c => c.Id == convBody!.CustomerId && c.FullName == "Nguyen Van A");
+        var customers = await client.GetFromJsonAsync<Paged<CustomerRow>>("/api/v1/customers");
+        Assert.Contains(customers!.Items, c => c.Id == convBody!.CustomerId && c.FullName == "Nguyen Van A");
 
         // convert lần 2 → 409
         var again = await client.PostAsync($"/api/v1/leads/{lead.Id}/convert", null);
