@@ -139,6 +139,7 @@ app.MapDepartureEndpoints();
 app.MapBookingEndpoints();
 app.MapReceiptEndpoints();
 app.MapReceiptApprovalEndpoints();
+app.MapPaymentEndpoints();
 app.MapReportEndpoints();
 app.MapProviderEndpoints();
 app.MapOrderCostEndpoints();
