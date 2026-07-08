@@ -1,4 +1,5 @@
-import { Form, Input, InputNumber, Select } from 'antd';
+import { DatePicker, Form, Input, InputNumber, Select } from 'antd';
+import dayjs from 'dayjs';
 import { Controller, useFormContext } from 'react-hook-form';
 
 const { TextArea } = Input;
@@ -69,6 +70,30 @@ export function TextAreaField({
           help={formState.errors[name]?.message as string | undefined}
         >
           <TextArea {...field} value={field.value ?? ''} rows={rows} />
+        </Form.Item>
+      )}
+    />
+  );
+}
+
+export function DatePickerField({ name, label, required }: { name: string; label: string; required?: boolean }) {
+  const { control, formState } = useFormContext();
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field }) => (
+        <Form.Item
+          label={label}
+          required={required}
+          validateStatus={formState.errors[name] ? 'error' : ''}
+          help={formState.errors[name]?.message as string | undefined}
+        >
+          <DatePicker
+            style={{ width: '100%' }}
+            value={field.value ? dayjs(field.value as string) : null}
+            onChange={(date) => field.onChange(date ? date.toISOString() : null)}
+          />
         </Form.Item>
       )}
     />
