@@ -10,6 +10,7 @@ import { ProvidersPage } from '../features/providers/ProvidersPage';
 import { MarketingPage } from '../features/marketing/MarketingPage';
 import { MarketTypesPage } from '../features/marketTypes/MarketTypesPage';
 import { DeparturesPage } from '../features/booking/DeparturesPage';
+import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
 
 export function AppRouter() {
   return (
@@ -29,6 +30,7 @@ export function AppRouter() {
         <Route path="/marketing" element={<MarketingPage />} />
         <Route path="/market-types" element={<MarketTypesPage />} />
         <Route path="/departures" element={<DeparturesPage />} />
+        <Route path="/departures/:id" element={<DepartureDetailPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
         <Route path="/tour-templates/:id" element={<TourTemplateDetailPage />} />
       </Route>
