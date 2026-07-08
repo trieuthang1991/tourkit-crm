@@ -5,7 +5,7 @@ Giao diện quản trị (SPA) cho TourKit — React 18 + Vite + TypeScript + An
 ## Yêu cầu
 
 - Node.js 18+ và npm.
-- Backend TourKit.Api đang chạy (mặc định `http://localhost:5199`). API đã bật CORS cho origin Vite (`http://localhost:5173`, `http://localhost:4173`); prod cấu hình thêm qua `Cors:Origins` trong `appsettings`.
+- Backend TourKit.Api đang chạy (mặc định `http://localhost:5075`). API đã bật CORS cho origin Vite (`http://localhost:5173`, `http://localhost:4173`); prod cấu hình thêm qua `Cors:Origins` trong `appsettings`.
 
 ## Chạy
 
@@ -24,10 +24,10 @@ npm run lint       # ESLint
 Trỏ tới backend khác qua biến môi trường (file `.env` hoặc `.env.local`):
 
 ```
-VITE_API_BASE=http://localhost:5199
+VITE_API_BASE=http://localhost:5075
 ```
 
-Mặc định là `http://localhost:5199` nếu không đặt.
+Mặc định là `http://localhost:5075` nếu không đặt.
 
 ### Đăng nhập / đăng ký
 

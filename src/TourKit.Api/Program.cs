@@ -109,6 +109,10 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if (db.Database.IsRelational())   // InMemory (test) không migrate được; chỉ migrate SQLite/SqlServer.
+    {
+        await db.Database.MigrateAsync();   // tự tạo/di trú schema khi khởi động (dev dùng được ngay)
+    }
     await TourKit.Api.Authz.PermissionSeeder.SeedAsync(db);
     await PlanSeeder.SeedAsync(db);
 }

@@ -21,7 +21,7 @@ export function clearTokens(): void {
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:5199';
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:5075';
 
 export const httpClient = axios.create({
   baseURL: API_BASE,

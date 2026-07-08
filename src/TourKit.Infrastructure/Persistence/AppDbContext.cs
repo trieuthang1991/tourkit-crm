@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TourKit.Infrastructure.Entities;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Tenancy;
@@ -100,6 +101,28 @@ public class AppDbContext : DbContext
 
         // Cấu hình entity theo IEntityTypeConfiguration<T> (mỗi entity 1 file — xem conventions §5).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        // SQLite không ORDER BY/so sánh được DateTimeOffset & decimal (lưu dạng TEXT).
+        // Chỉ áp converter khi provider là SQLite (dev) — SqlServer/prod giữ kiểu gốc, InMemory (test) không đụng.
+        if (Database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(DateTimeOffset) || property.ClrType == typeof(DateTimeOffset?))
+                    {
+                        // long (ticks + offset) — sắp xếp được, không mất dữ liệu.
+                        property.SetValueConverter(new DateTimeOffsetToBinaryConverter());
+                    }
+                    else if (property.ClrType == typeof(decimal) || property.ClrType == typeof(decimal?))
+                    {
+                        // double — sắp xếp/tính được trên SQLite (dev). Tiền chính xác cao chạy trên SqlServer/prod.
+                        property.SetValueConverter(new CastingConverter<decimal, double>());
+                    }
+                }
+            }
+        }
 
         // Global query filter: cô lập tenant + ẩn soft-deleted. Một filter/entity nên phải gộp chung.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
