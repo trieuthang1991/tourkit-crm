@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
+using TourKit.Shared.Application;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Booking;
@@ -57,8 +58,8 @@ public class BookingEndpointTests : IClassFixture<AuthTestFactory>
         Assert.Equal(13_000_000m, order!.TotalRevenue);
         Assert.Equal(customer.Id, order.CustomerId);
 
-        var orders = await client.GetFromJsonAsync<List<OrderResponse>>("/api/v1/orders");
-        Assert.Single(orders!);
+        var orders = await client.GetFromJsonAsync<Paged<OrderResponse>>("/api/v1/orders");
+        Assert.Single(orders!.Items);
     }
 
     [Fact]
@@ -100,8 +101,8 @@ public class BookingEndpointTests : IClassFixture<AuthTestFactory>
             new CreateBookingRequest(cus!.Id, 1, 0, 0, 0));
 
         var clientB = await LoggedInClientAsync("book-iso-b");
-        var ordersB = await clientB.GetFromJsonAsync<List<OrderResponse>>("/api/v1/orders");
-        Assert.Empty(ordersB!);
+        var ordersB = await clientB.GetFromJsonAsync<Paged<OrderResponse>>("/api/v1/orders");
+        Assert.Empty(ordersB!.Items);
     }
 
     private sealed record CustomerRow(Guid Id, string FullName, string? Phone);

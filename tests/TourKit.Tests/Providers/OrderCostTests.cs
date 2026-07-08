@@ -6,6 +6,7 @@ using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
 using TourKit.Api.Providers;
 using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Application;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Providers;
@@ -77,8 +78,8 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
         Assert.Equal(cost.Id, costs![0].Id);
 
         // Order.TotalCost phải được recompute = tổng ActualAmount toàn bộ dòng chi phí của đơn.
-        var orders = await client.GetFromJsonAsync<List<OrderResponse>>("/api/v1/orders");
-        var updatedOrder = orders!.Single(o => o.Id == order.Id);
+        var orders = await client.GetFromJsonAsync<Paged<OrderResponse>>("/api/v1/orders");
+        var updatedOrder = orders!.Items.Single(o => o.Id == order.Id);
         Assert.Equal(2_000_000m, updatedOrder.TotalCost);
         Assert.Equal(costs.Sum(c => c.ActualAmount), updatedOrder.TotalCost);
 
@@ -87,8 +88,8 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
             new CreateOrderCostRequest(provider.Id, "Phụ thu", 1, 500_000m, 500_000m, 0m, 0m, 0m, 1));
         Assert.Equal(HttpStatusCode.Created, costResponse2.StatusCode);
 
-        var ordersAfterSecond = await client.GetFromJsonAsync<List<OrderResponse>>("/api/v1/orders");
-        Assert.Equal(2_500_000m, ordersAfterSecond!.Single(o => o.Id == order.Id).TotalCost);
+        var ordersAfterSecond = await client.GetFromJsonAsync<Paged<OrderResponse>>("/api/v1/orders");
+        Assert.Equal(2_500_000m, ordersAfterSecond!.Items.Single(o => o.Id == order.Id).TotalCost);
     }
 
     [Fact]
