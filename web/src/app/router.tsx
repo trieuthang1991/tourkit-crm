@@ -14,6 +14,7 @@ import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
 import { OrdersPage } from '../features/booking/OrdersPage';
 import { OrderDetailPage } from '../features/booking/OrderDetailPage';
 import { BillingPage } from '../features/billing/BillingPage';
+import { OrderDebtReportPage } from '../features/reports/OrderDebtReportPage';
 
 export function AppRouter() {
   return (
@@ -39,6 +40,7 @@ export function AppRouter() {
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
         <Route path="/tour-templates/:id" element={<TourTemplateDetailPage />} />
         <Route path="/billing" element={<BillingPage />} />
+        <Route path="/reports/order-debt" element={<OrderDebtReportPage />} />
       </Route>
     </Routes>
   );
