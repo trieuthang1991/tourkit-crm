@@ -30,6 +30,8 @@ public static class Permissions
     public const string ReceiptCreate = "receipt.create";
     public const string ReceiptApprove = "receipt.approve";   // duyệt phiếu → IsGhiNhanDongTien
 
+    public const string ReportDebtView = "report.debt.view";  // báo cáo công nợ (CNPT hệ cũ)
+
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
     [
@@ -43,5 +45,6 @@ public static class Permissions
         (BookingView, "Booking"), (BookingCreate, "Booking"),
         (BookingSeatConfirm, "Booking"), (BookingSeatCancel, "Booking"),
         (ReceiptView, "Finance"), (ReceiptCreate, "Finance"), (ReceiptApprove, "Finance"),
+        (ReportDebtView, "Report"),
     ];
 }
