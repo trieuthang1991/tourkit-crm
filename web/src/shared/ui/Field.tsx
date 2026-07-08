@@ -1,6 +1,8 @@
 import { Form, Input, InputNumber, Select } from 'antd';
 import { Controller, useFormContext } from 'react-hook-form';
 
+const { TextArea } = Input;
+
 type Option = { label: string; value: number | string };
 
 export function TextField({ name, label, required }: { name: string; label: string; required?: boolean }) {
@@ -37,6 +39,36 @@ export function NumberField({ name, label, required }: { name: string; label: st
           help={formState.errors[name]?.message as string | undefined}
         >
           <InputNumber style={{ width: '100%' }} value={field.value} onChange={field.onChange} />
+        </Form.Item>
+      )}
+    />
+  );
+}
+
+export function TextAreaField({
+  name,
+  label,
+  required,
+  rows = 4,
+}: {
+  name: string;
+  label: string;
+  required?: boolean;
+  rows?: number;
+}) {
+  const { control, formState } = useFormContext();
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field }) => (
+        <Form.Item
+          label={label}
+          required={required}
+          validateStatus={formState.errors[name] ? 'error' : ''}
+          help={formState.errors[name]?.message as string | undefined}
+        >
+          <TextArea {...field} value={field.value ?? ''} rows={rows} />
         </Form.Item>
       )}
     />
