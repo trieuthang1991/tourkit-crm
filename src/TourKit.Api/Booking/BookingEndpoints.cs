@@ -70,6 +70,38 @@ public static class BookingEndpoints
             return Results.Ok(ToSeatResponse(seat));
         }).RequireAuthorization(Permissions.BookingCreate);
 
+        // Huỷ chỗ + hoàn tiền (legacy CancelSeats + statusCancel != 0).
+        app.MapPost("/api/v1/tour-customers/{seatId:guid}/cancel", async (
+            Guid seatId, CancelSeatRequest body, AppDbContext db, CancellationToken ct) =>
+        {
+            var seat = await db.TourCustomers.FirstOrDefaultAsync(s => s.Id == seatId, ct);
+            if (seat is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (seat.Status != 0)
+            {
+                return Results.Problem(statusCode: StatusCodes.Status409Conflict, title: "Chỗ đã được huỷ.");
+            }
+
+            db.CancelSeats.Add(new CancelSeat
+            {
+                TourCustomerId = seat.Id,
+                OrderId = seat.OrderId,
+                Note = body.Note,
+                RefundAmount = body.RefundAmount,
+                RefundRemain = seat.UpfrontAmount - body.RefundAmount,
+                RefundPercentage = seat.UpfrontAmount > 0m
+                    ? Math.Round(body.RefundAmount / seat.UpfrontAmount * 100m, 2)
+                    : 0m,
+            });
+            seat.Status = 1;   // statusCancel != 0 → đã huỷ
+            seat.HoldExpiresAt = null;
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(ToSeatResponse(seat));
+        }).RequireAuthorization(Permissions.BookingSeatCancel);
+
         app.MapGet("/api/v1/tour-customers/{seatId:guid}", async (
             Guid seatId, AppDbContext db, CancellationToken ct) =>
         {
@@ -181,6 +213,11 @@ public static class BookingEndpoints
     // Suy trạng thái theo bảng flow "Giữ chỗ" hệ cũ.
     private static SeatStatus DeriveStatus(TourCustomer s, decimal lineTotal)
     {
+        if (s.Status != 0)
+        {
+            return SeatStatus.Cancelled;
+        }
+
         if (s.UpfrontAmount >= lineTotal && lineTotal > 0m)
         {
             return SeatStatus.Paid;

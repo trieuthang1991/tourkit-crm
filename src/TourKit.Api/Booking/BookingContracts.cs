@@ -19,9 +19,12 @@ public enum SeatStatus
     HeldConfirmed = 2,  // chốt chỗ, không nhả (đã xác nhận chỗ → HoldExpiresAt = null, upfront = 0)
     Deposited = 3,      // đã đặt cọc (0 < upfront < tổng giá dòng)
     Paid = 4,           // đã thanh toán (upfront >= tổng giá dòng)
+    Cancelled = 5,      // đã huỷ chỗ (statusCancel != 0 hệ cũ)
 }
 
 public sealed record DepositRequest(decimal Amount);
+
+public sealed record CancelSeatRequest(string? Note, decimal RefundAmount);
 
 public sealed record SeatResponse(
     Guid Id, Guid OrderId, SeatStatus Status, decimal UpfrontAmount, decimal LineTotal,

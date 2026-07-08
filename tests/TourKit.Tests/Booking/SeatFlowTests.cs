@@ -80,6 +80,33 @@ public class SeatFlowTests : IClassFixture<AuthTestFactory>
     }
 
     [Fact]
+    public async Task Cancel_seat_marks_cancelled_and_blocks_double_cancel()
+    {
+        var seed = await _factory.SeedTenantUserAsync("seat-cancel");
+        var client = _factory.CreateClient();
+        SetBearer(client, await LoginAsync(client, seed));
+
+        var depId = await SetupDepartureAsync(client);
+        var cusId = await CustomerAsync(client);
+
+        var held = await (await client.PostAsJsonAsync($"/api/v1/tour-departures/{depId}/holds",
+            new CreateBookingRequest(cusId, 1, 0, 0, 0))).Content.ReadFromJsonAsync<SeatResponse>();
+        await client.PostAsJsonAsync($"/api/v1/tour-customers/{held!.Id}/deposit", new DepositRequest(2_000_000m));
+
+        // huỷ + hoàn 1tr
+        var cancel = await client.PostAsJsonAsync($"/api/v1/tour-customers/{held.Id}/cancel",
+            new CancelSeatRequest("Khách đổi lịch", 1_000_000m));
+        Assert.Equal(HttpStatusCode.OK, cancel.StatusCode);
+        var seat = await cancel.Content.ReadFromJsonAsync<SeatResponse>();
+        Assert.Equal(SeatStatus.Cancelled, seat!.Status);
+
+        // huỷ lần 2 → 409
+        var again = await client.PostAsJsonAsync($"/api/v1/tour-customers/{held.Id}/cancel",
+            new CancelSeatRequest(null, 0m));
+        Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+    }
+
+    [Fact]
     public async Task Confirm_seat_forbidden_without_permission()
     {
         // đủ quyền dựng + giữ chỗ, KHÔNG có booking.seat.confirm
