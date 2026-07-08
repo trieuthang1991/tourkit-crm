@@ -5,6 +5,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';
 import { money, statusText } from '../../shared/format';
 import { useAuth } from '../auth/AuthContext';
+import { CommissionPanel } from '../commission/CommissionPanel';
 import { ReceiptsPanel } from '../finance/ReceiptsPanel';
 import { OrderCostsPanel } from '../providers/OrderCostsPanel';
 import { ordersCrud } from './bookingApi';
@@ -217,7 +218,11 @@ export function OrderDetailPage() {
           <OrderCostsPanel orderId={orderId} />
         </div>
       ) : null}
-      {/* Commission panel mounted in Task 5.2 */}
+      {has('commission.view') ? (
+        <div style={{ marginTop: 16 }}>
+          <CommissionPanel orderId={orderId} />
+        </div>
+      ) : null}
     </>
   );
 }
