@@ -1,6 +1,7 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { LoginPage } from '../features/auth/LoginPage';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
+import { AppShell } from './AppShell';
 import { TourTemplateListPage } from '../features/tourTemplates/TourTemplateListPage';
 
 export function AppRouter() {
@@ -8,13 +9,15 @@ export function AppRouter() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route
-        path="/"
         element={
           <ProtectedRoute>
-            <TourTemplateListPage />
+            <AppShell />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/" element={<Navigate to="/tour-templates" replace />} />
+        <Route path="/tour-templates" element={<TourTemplateListPage />} />
+      </Route>
     </Routes>
   );
 }
