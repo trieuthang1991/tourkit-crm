@@ -5,6 +5,7 @@ import { AppShell } from './AppShell';
 import { TourTemplateListPage } from '../features/tourTemplates/TourTemplateListPage';
 import { CustomersPage } from '../features/customers/CustomersPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
+import { ProvidersPage } from '../features/providers/ProvidersPage';
 
 export function AppRouter() {
   return (
@@ -20,6 +21,7 @@ export function AppRouter() {
         <Route path="/" element={<Navigate to="/customers" replace />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/leads" element={<LeadsPage />} />
+        <Route path="/providers" element={<ProvidersPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
       </Route>
     </Routes>
