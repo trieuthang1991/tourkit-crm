@@ -5,7 +5,7 @@
 
 ## Trạng thái hiện tại
 
-Solution `.NET 9` + EF Core 9 chạy trên **SQLite** (dev), **67 test xanh**, build 0 warning. **Toàn bộ khối MVP (P0–P7) đã implement:**
+Backend `.NET 9` + EF Core 9 (SQLite dev) — **77 test xanh, build 0 warning, 13 migration**. Frontend shell `web/` (React+Vite+AntD, build xanh). **Toàn bộ khối MVP (P0–P7) + nâng cao đã implement:**
 
 | Phase | Nội dung | Trạng thái |
 |---|---|---|
@@ -24,7 +24,18 @@ Solution `.NET 9` + EF Core 9 chạy trên **SQLite** (dev), **67 test xanh**, b
 
 **Nền tảng thật (grounded):** mọi entity đối chiếu `script.sql` (schema 144 bảng), không bịa. Công thức tiền gom một chỗ ở `Infrastructure/Domain` (`BookingMath`, `OrderMath`, `ReceiptQueries`).
 
-**Việc tiếp theo (nâng cao / ngoài MVP):** enforce subscription hết hạn (middleware) · engine duyệt phiếu phân cấp (`ReceiptVoucherApproval`) · đối soát cọc↔phiếu thu · 1b (PriceScenario/assignee/MarketType) · Materialized View cho grid tổng hợp · React shell (0b-5) · chuyển SQL Server/PostgreSQL cho prod.
+**Nâng cao đã làm thêm (ngoài MVP cơ bản):**
+- ✅ Middleware chặn subscription hết hạn (402)
+- ✅ Engine duyệt phiếu phân cấp (`ReceiptApproval`/`StepUser`, method One/All, rewind)
+- ✅ Catalog 1b (PriceScenario giá theo cỡ đoàn, TourAssignee chuẩn hóa CSV, MarketType)
+- ✅ **React shell (0b-5)** — `web/`: Vite+React+TS+AntD+TanStack Query, login + danh sách tour-templates (build xanh)
+
+**Còn lại (cần môi trường/quyết định — không làm được offline):**
+- Materialized View cho grid tổng hợp — **cần PostgreSQL** đang chạy (SQLite dev không hỗ trợ MV).
+- Chuyển provider **SQL Server / PostgreSQL** cho production — cần DB server (đổi `Database:Provider`).
+- Đối soát cọc↔phiếu thu — *chủ động defer*: hệ cũ để 2 khái niệm song song, ép nối = "tính năng không rõ ràng".
+- Recall (thu hồi) trong engine duyệt — minor, defer.
+- Frontend đầy đủ các màn nghiệp vụ (hiện mới shell + 1 màn) · i18n · e2e.
 
 > **Điều chỉnh so với thiết kế gốc:** **.NET 9** (thay 10), **SQLite dev** (SQL Server/PostgreSQL prod, đổi bằng cấu hình), **không stored proc, không trigger** (đồng bộ ở domain service).
 
@@ -61,10 +72,9 @@ Solution `.NET 9` + EF Core 9 chạy trên **SQLite** (dev), **67 test xanh**, b
 
 ## VIỆC CẦN LÀM TIẾP (khi quay lại)
 
-- [x] **Phase 0a** — nền móng multi-tenant (net9 + EF Core 9 + SQLite). Xong: kernel tenancy, global query filter + soft-delete, SaveChanges interceptor, REST `/api/v1/customers`, migration SQLite, 5 test cô lập xanh.
-- [ ] **Chạy API thử:** `dotnet run --project src/TourKit.Api` rồi gọi `POST /api/v1/customers` kèm header `X-Tenant-Id: <guid>`.
-- [ ] **Plan Phase 0b** (JWT auth, RBAC/permission, đăng ký & provisioning tenant, subscription/plan, khung React + đăng nhập). *Chưa viết — nhờ tạo khi tới đó.*
-- [ ] **Khi có SQL Server:** đặt `Database:Provider=SqlServer` + connection string, rồi tạo bộ migration SQL Server riêng.
+- [x] **Toàn bộ MVP P0–P7 + nâng cao** (xem bảng trên). Backend 77 test xanh, frontend shell build xanh.
+- [ ] **Chạy thử end-to-end:** `dotnet run --project src/TourKit.Api` (API @ :5199) → `POST /api/v1/registration` tạo tenant → `POST /api/v1/auth/login` lấy JWT → gọi các endpoint kèm `Authorization: Bearer`. Frontend: `cd web && npm install && npm run dev`.
+- [ ] **Khi có SQL Server/PostgreSQL:** đặt `Database:Provider` + connection string, tạo bộ migration riêng cho provider prod; bật Materialized View cho grid tổng hợp (PostgreSQL).
 
 ## Môi trường đã kiểm tra (máy này)
 - .NET SDK 9.0.300 + 10.0.100 ✅ · runtime .NET 9.0.5 ✅ · Node v22.15 ✅ · `dotnet-ef` đã cài ✅
@@ -79,10 +89,11 @@ TourKit/
 ├─ Directory.Build.props       # net9 + nullable + warnings-as-errors + analyzers
 ├─ src/
 │  ├─ TourKit.Shared/          # kernel: BaseEntity, ITenantEntity, ITenantContext
-│  ├─ TourKit.Infrastructure/  # AppDbContext (filter+interceptor), entities, configs, migrations
-│  └─ TourKit.Api/             # composition root + REST endpoints /api/v1
+│  ├─ TourKit.Infrastructure/  # AppDbContext, entities, configs, migrations, Domain/ (công thức tiền)
+│  └─ TourKit.Api/             # composition root + endpoints: Auth/Authz/Provisioning/Billing/Catalog/Crm/Booking/Providers/Finance/Commission/Marketing/Reports
 ├─ tests/
-│  └─ TourKit.Tests/           # test cô lập tenant (đọc/ghi/HTTP)
+│  └─ TourKit.Tests/           # 77 test (cô lập tenant + nghiệp vụ qua HTTP)
+├─ web/                        # React shell (Vite+TS+AntD+TanStack Query): auth + tourTemplates
 └─ docs/
-   ├─ README.md · conventions/ · superpowers/{specs,plans}/
+   ├─ README.md · conventions/ · business/ (spec+phân tích DB) · superpowers/{specs,plans}/
 ```
