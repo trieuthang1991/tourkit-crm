@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Marketing;
 using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Application;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Marketing;
@@ -39,8 +40,8 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         Assert.Equal("Hè 2026", campaign!.Name);
         Assert.Equal(MarketingChannel.Email, campaign.Channel);
 
-        var list = await client.GetFromJsonAsync<List<CampaignResponse>>("/api/v1/marketing/campaigns");
-        Assert.Single(list!);
+        var list = await client.GetFromJsonAsync<Paged<CampaignResponse>>("/api/v1/marketing/campaigns");
+        Assert.Single(list!.Items);
 
         var got = await client.GetFromJsonAsync<CampaignResponse>($"/api/v1/marketing/campaigns/{campaign.Id}");
         Assert.NotNull(got);
@@ -122,8 +123,8 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         var del = await client.DeleteAsync($"/api/v1/marketing/campaigns/{campaign!.Id}");
         Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
 
-        var list = await client.GetFromJsonAsync<List<CampaignResponse>>("/api/v1/marketing/campaigns");
-        Assert.Empty(list!);
+        var list = await client.GetFromJsonAsync<Paged<CampaignResponse>>("/api/v1/marketing/campaigns");
+        Assert.Empty(list!.Items);
 
         var get = await client.GetAsync($"/api/v1/marketing/campaigns/{campaign.Id}");
         Assert.Equal(HttpStatusCode.NotFound, get.StatusCode);
@@ -136,7 +137,7 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         await clientA.PostAsJsonAsync("/api/v1/marketing/campaigns", Sample("Của A"));
 
         var clientB = await LoggedInClientAsync("mkt-iso-b");
-        var listB = await clientB.GetFromJsonAsync<List<CampaignResponse>>("/api/v1/marketing/campaigns");
-        Assert.Empty(listB!);
+        var listB = await clientB.GetFromJsonAsync<Paged<CampaignResponse>>("/api/v1/marketing/campaigns");
+        Assert.Empty(listB!.Items);
     }
 }
