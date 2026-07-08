@@ -23,6 +23,7 @@ public static class Permissions
     public const string DepartureCreate = "departure.create";
     public const string BookingView = "booking.view";
     public const string BookingCreate = "booking.create";
+    public const string BookingSeatConfirm = "booking.seat.confirm";   // hệ cũ: TR_TM_XNC (xác nhận chỗ)
 
     public const string ReceiptView = "receipt.view";
     public const string ReceiptCreate = "receipt.create";
@@ -38,6 +39,7 @@ public static class Permissions
         (LeadDelete, "CRM"), (LeadConvert, "CRM"),
         (DepartureView, "Booking"), (DepartureCreate, "Booking"),
         (BookingView, "Booking"), (BookingCreate, "Booking"),
+        (BookingSeatConfirm, "Booking"),
         (ReceiptView, "Finance"), (ReceiptCreate, "Finance"),
     ];
 }
