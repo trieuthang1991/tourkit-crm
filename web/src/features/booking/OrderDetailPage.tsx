@@ -5,6 +5,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';
 import { money, statusText } from '../../shared/format';
 import { useAuth } from '../auth/AuthContext';
+import { ReceiptsPanel } from '../finance/ReceiptsPanel';
 import { ordersCrud } from './bookingApi';
 import { useCancelSeat, useConfirmSeat, useDepositSeat, useOrderLines } from './orderLinesApi';
 import type { BookingLine } from './orderLinesApi';
@@ -204,7 +205,10 @@ export function OrderDetailPage() {
           pagination={false}
         />
       </Card>
-      {/* Finance/Commission panels mounted in later phases */}
+      <div style={{ marginTop: 16 }}>
+        <ReceiptsPanel orderId={orderId} />
+      </div>
+      {/* Commission panels mounted in later phases */}
     </>
   );
 }
