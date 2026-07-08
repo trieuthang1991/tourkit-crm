@@ -31,6 +31,10 @@ public static class DepartureEndpoints
             return result.Match(d => Results.Created($"/api/v1/tour-departures/{d.Id}", d));
         }).RequireAuthorization(Permissions.DepartureCreate);
 
+        group.MapPost("/{id:guid}/close", async (Guid id, IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new CloseDepartureCommand(id), ct))
+                .Match(d => Results.Ok(d))).RequireAuthorization(Permissions.DepartureClose);
+
         return app;
     }
 }
