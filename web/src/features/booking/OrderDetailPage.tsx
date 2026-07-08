@@ -6,6 +6,7 @@ import { errorMessage } from '../../shared/api/problem';
 import { money, statusText } from '../../shared/format';
 import { useAuth } from '../auth/AuthContext';
 import { ReceiptsPanel } from '../finance/ReceiptsPanel';
+import { OrderCostsPanel } from '../providers/OrderCostsPanel';
 import { ordersCrud } from './bookingApi';
 import { useCancelSeat, useConfirmSeat, useDepositSeat, useOrderLines } from './orderLinesApi';
 import type { BookingLine } from './orderLinesApi';
@@ -149,6 +150,7 @@ function LineActions({ line, orderId }: { line: BookingLine; orderId: string }) 
 }
 
 export function OrderDetailPage() {
+  const { has } = useAuth();
   const { id } = useParams<{ id: string }>();
   const orderId = id ?? '';
   const location = useLocation();
@@ -205,10 +207,17 @@ export function OrderDetailPage() {
           pagination={false}
         />
       </Card>
-      <div style={{ marginTop: 16 }}>
-        <ReceiptsPanel orderId={orderId} />
-      </div>
-      {/* Commission panels mounted in later phases */}
+      {has('receipt.view') ? (
+        <div style={{ marginTop: 16 }}>
+          <ReceiptsPanel orderId={orderId} />
+        </div>
+      ) : null}
+      {has('cost.view') ? (
+        <div style={{ marginTop: 16 }}>
+          <OrderCostsPanel orderId={orderId} />
+        </div>
+      ) : null}
+      {/* Commission panel mounted in Task 5.2 */}
     </>
   );
 }
