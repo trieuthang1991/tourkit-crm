@@ -1,9 +1,10 @@
-import { App, Button, Card, Descriptions, Input, InputNumber, Modal, Space, Table, Tag } from 'antd';
+import { App, Button, Card, Descriptions, Drawer, Input, InputNumber, Modal, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import { errorMessage } from '../../shared/api/problem';
 import { money, statusText } from '../../shared/format';
 import { useAuth } from '../auth/AuthContext';
+import { ApprovalPanel } from './ApprovalPanel';
 import { useApproveReceipt, useBalance, useCreateReceipt, useReceipts, useRejectReceipt } from './financeApi';
 import { RECEIPT_STATUS } from './receiptTypes';
 import type { CreateReceiptForm, Receipt } from './receiptTypes';
@@ -65,45 +66,59 @@ function CreateReceiptModal({ orderId, open, onClose }: { orderId: string; open:
 function ReceiptRowActions({ receipt, orderId }: { receipt: Receipt; orderId: string }) {
   const { has } = useAuth();
   const { message } = App.useApp();
+  const [approvalOpen, setApprovalOpen] = useState(false);
   const approve = useApproveReceipt(orderId);
   const reject = useRejectReceipt(orderId);
   const isPending = receipt.status === 1 && !receipt.isRecognized;
-
-  if (!has('receipt.approve') || !isPending) {
-    return null;
-  }
+  const canApproveReject = has('receipt.approve') && isPending;
 
   return (
     <Space>
-      <Button
-        size="small"
-        loading={approve.isPending}
-        onClick={async () => {
-          try {
-            await approve.mutateAsync(receipt.id);
-            message.success('Đã duyệt phiếu thu');
-          } catch (e) {
-            message.error(errorMessage(e));
-          }
-        }}
-      >
-        Duyệt
+      {canApproveReject ? (
+        <Button
+          size="small"
+          loading={approve.isPending}
+          onClick={async () => {
+            try {
+              await approve.mutateAsync(receipt.id);
+              message.success('Đã duyệt phiếu thu');
+            } catch (e) {
+              message.error(errorMessage(e));
+            }
+          }}
+        >
+          Duyệt
+        </Button>
+      ) : null}
+      {canApproveReject ? (
+        <Button
+          size="small"
+          danger
+          loading={reject.isPending}
+          onClick={async () => {
+            try {
+              await reject.mutateAsync(receipt.id);
+              message.success('Đã từ chối phiếu thu');
+            } catch (e) {
+              message.error(errorMessage(e));
+            }
+          }}
+        >
+          Từ chối
+        </Button>
+      ) : null}
+      <Button size="small" onClick={() => setApprovalOpen(true)}>
+        Duyệt phân cấp
       </Button>
-      <Button
-        size="small"
-        danger
-        loading={reject.isPending}
-        onClick={async () => {
-          try {
-            await reject.mutateAsync(receipt.id);
-            message.success('Đã từ chối phiếu thu');
-          } catch (e) {
-            message.error(errorMessage(e));
-          }
-        }}
+      <Drawer
+        title={`Duyệt phân cấp — ${receipt.code}`}
+        open={approvalOpen}
+        onClose={() => setApprovalOpen(false)}
+        width={480}
+        destroyOnClose
       >
-        Từ chối
-      </Button>
+        <ApprovalPanel receiptId={receipt.id} />
+      </Drawer>
     </Space>
   );
 }
