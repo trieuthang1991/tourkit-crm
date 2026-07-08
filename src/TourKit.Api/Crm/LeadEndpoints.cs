@@ -1,110 +1,52 @@
-using Microsoft.EntityFrameworkCore;
+using TourKit.Api.Application;
 using TourKit.Api.Authz;
-using TourKit.Infrastructure.Entities;
-using TourKit.Infrastructure.Persistence;
+using TourKit.Api.Crm.Features;
+using TourKit.Shared.Application;
 
 namespace TourKit.Api.Crm;
 
-/// <summary>REST endpoints cho Lead (phễu bán) dưới /api/v1/leads. Cô lập tenant + gác quyền lead.*.</summary>
+/// <summary>
+/// REST endpoints cho Lead (phễu bán) dưới /api/v1/leads. Cô lập tenant + gác quyền lead.*.
+/// Endpoint mỏng: map request → command/query → dispatch → map Result sang HTTP (conventions §6).
+/// </summary>
 public static class LeadEndpoints
 {
     public static IEndpointRouteBuilder MapLeadEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/leads");
 
-        group.MapGet("/", async (AppDbContext db, CancellationToken ct) =>
-            Results.Ok(await db.Leads.AsNoTracking()
-                .OrderByDescending(l => l.CreatedAt)
-                .Select(l => ToResponse(l)).ToListAsync(ct)))
-            .RequireAuthorization(Permissions.LeadView);
+        group.MapGet("/", async (IDispatcher dispatcher, int? page, int? size, CancellationToken ct) =>
+            (await dispatcher.Send(new ListLeadsQuery(page ?? 1, size ?? 20), ct))
+                .Match(p => Results.Ok(p))).RequireAuthorization(Permissions.LeadView);
 
-        group.MapGet("/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
+        group.MapGet("/{id:guid}", async (Guid id, IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new GetLeadQuery(id), ct))
+                .Match(l => Results.Ok(l))).RequireAuthorization(Permissions.LeadView);
+
+        group.MapPost("/", async (CreateLeadRequest body, IDispatcher dispatcher, CancellationToken ct) =>
         {
-            var lead = await db.Leads.AsNoTracking()
-                .Where(l => l.Id == id).Select(l => ToResponse(l)).FirstOrDefaultAsync(ct);
-            return lead is null ? Results.NotFound() : Results.Ok(lead);
-        }).RequireAuthorization(Permissions.LeadView);
-
-        group.MapPost("/", async (CreateLeadRequest body, AppDbContext db, CancellationToken ct) =>
-        {
-            if (string.IsNullOrWhiteSpace(body.FullName))
-            {
-                return Validation("FullName là bắt buộc.");
-            }
-
-            var lead = new Lead
-            {
-                FullName = body.FullName.Trim(), Phone = body.Phone, Email = body.Email,
-                Source = body.Source, AssignedToUserId = body.AssignedToUserId,
-            };
-            db.Leads.Add(lead);
-            await db.SaveChangesAsync(ct);
-            return Results.Created($"/api/v1/leads/{lead.Id}", ToResponse(lead));
+            var command = new CreateLeadCommand(body.FullName, body.Phone, body.Email, body.Source, body.AssignedToUserId);
+            var result = await dispatcher.Send(command, ct);
+            return result.Match(l => Results.Created($"/api/v1/leads/{l.Id}", l));
         }).RequireAuthorization(Permissions.LeadCreate);
 
-        group.MapPut("/{id:guid}", async (Guid id, UpdateLeadRequest body, AppDbContext db, CancellationToken ct) =>
+        group.MapPut("/{id:guid}", async (Guid id, UpdateLeadRequest body, IDispatcher dispatcher, CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(body.FullName))
-            {
-                return Validation("FullName là bắt buộc.");
-            }
-
-            var lead = await db.Leads.FirstOrDefaultAsync(l => l.Id == id, ct);
-            if (lead is null)
-            {
-                return Results.NotFound();
-            }
-
-            lead.FullName = body.FullName.Trim();
-            lead.Phone = body.Phone;
-            lead.Email = body.Email;
-            lead.Source = body.Source;
-            lead.Status = body.Status;
-            lead.AssignedToUserId = body.AssignedToUserId;
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            var command = new UpdateLeadCommand(
+                id, body.FullName, body.Phone, body.Email, body.Source, body.Status, body.AssignedToUserId);
+            var result = await dispatcher.Send(command, ct);
+            return result.Match(_ => Results.NoContent());
         }).RequireAuthorization(Permissions.LeadUpdate);
 
-        group.MapDelete("/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
-        {
-            var lead = await db.Leads.FirstOrDefaultAsync(l => l.Id == id, ct);
-            if (lead is null)
-            {
-                return Results.NotFound();
-            }
+        group.MapDelete("/{id:guid}", async (Guid id, IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new DeleteLeadCommand(id), ct))
+                .Match(_ => Results.NoContent())).RequireAuthorization(Permissions.LeadDelete);
 
-            lead.IsDeleted = true;   // soft delete
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
-        }).RequireAuthorization(Permissions.LeadDelete);
-
-        group.MapPost("/{id:guid}/convert", async (Guid id, AppDbContext db, CancellationToken ct) =>
-        {
-            var lead = await db.Leads.FirstOrDefaultAsync(l => l.Id == id, ct);
-            if (lead is null)
-            {
-                return Results.NotFound();
-            }
-
-            if (lead.ConvertedCustomerId is not null)
-            {
-                return Results.Problem(statusCode: StatusCodes.Status409Conflict, title: "Lead đã được convert.");
-            }
-
-            var customer = new Customer { FullName = lead.FullName, Phone = lead.Phone };
-            db.Customers.Add(customer);
-            lead.Status = LeadStatus.Won;
-            lead.ConvertedCustomerId = customer.Id;
-            await db.SaveChangesAsync(ct);
-            return Results.Created($"/api/v1/customers/{customer.Id}", new ConvertLeadResponse(customer.Id));
-        }).RequireAuthorization(Permissions.LeadConvert);
+        group.MapPost("/{id:guid}/convert", async (Guid id, IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new ConvertLeadCommand(id), ct))
+                .Match(r => Results.Created($"/api/v1/customers/{r.CustomerId}", r)))
+            .RequireAuthorization(Permissions.LeadConvert);
 
         return app;
     }
-
-    private static LeadResponse ToResponse(Lead l) => new(
-        l.Id, l.FullName, l.Phone, l.Email, l.Source, l.Status, l.AssignedToUserId, l.ConvertedCustomerId);
-
-    private static IResult Validation(string message) =>
-        Results.ValidationProblem(new Dictionary<string, string[]> { ["Request"] = [message] });
 }

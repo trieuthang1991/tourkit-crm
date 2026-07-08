@@ -37,8 +37,8 @@ public class LeadEndpointTests : IClassFixture<AuthTestFactory>
         var lead = await created.Content.ReadFromJsonAsync<LeadResponse>();
         Assert.NotNull(lead);
 
-        var list = await client.GetFromJsonAsync<List<LeadResponse>>("/api/v1/leads");
-        Assert.Single(list!);
+        var list = await client.GetFromJsonAsync<Paged<LeadResponse>>("/api/v1/leads");
+        Assert.Single(list!.Items);
 
         // convert → tạo Customer
         var conv = await client.PostAsync($"/api/v1/leads/{lead!.Id}/convert", null);
@@ -62,8 +62,8 @@ public class LeadEndpointTests : IClassFixture<AuthTestFactory>
         await clientA.PostAsJsonAsync("/api/v1/leads", Sample("A"));
 
         var clientB = await LoggedInClientAsync("lead-iso-b");
-        var listB = await clientB.GetFromJsonAsync<List<LeadResponse>>("/api/v1/leads");
-        Assert.Empty(listB!);
+        var listB = await clientB.GetFromJsonAsync<Paged<LeadResponse>>("/api/v1/leads");
+        Assert.Empty(listB!.Items);
     }
 
     private sealed record CustomerRow(Guid Id, string FullName, string? Phone);
