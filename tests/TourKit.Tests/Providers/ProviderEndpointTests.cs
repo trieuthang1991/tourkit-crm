@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Providers;
 using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Application;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Providers;
@@ -37,8 +38,8 @@ public class ProviderEndpointTests : IClassFixture<AuthTestFactory>
         Assert.Equal("NCC-1", created!.Code);
         Assert.Equal(ProviderType.Hotel, created.Type);
 
-        var list = await client.GetFromJsonAsync<List<ProviderResponse>>("/api/v1/providers");
-        Assert.Single(list!);
+        var list = await client.GetFromJsonAsync<Paged<ProviderResponse>>("/api/v1/providers");
+        Assert.Single(list!.Items);
 
         var fetched = await client.GetFromJsonAsync<ProviderResponse>($"/api/v1/providers/{created.Id}");
         Assert.Equal(created.Id, fetched!.Id);
@@ -77,7 +78,7 @@ public class ProviderEndpointTests : IClassFixture<AuthTestFactory>
             "P-A", "NCC A", ProviderType.Vehicle, null, null, null, null, null, null, null, 0, 1));
 
         var clientB = await LoggedInClientAsync("prov-iso-b");
-        var listB = await clientB.GetFromJsonAsync<List<ProviderResponse>>("/api/v1/providers");
-        Assert.Empty(listB!);
+        var listB = await clientB.GetFromJsonAsync<Paged<ProviderResponse>>("/api/v1/providers");
+        Assert.Empty(listB!.Items);
     }
 }
