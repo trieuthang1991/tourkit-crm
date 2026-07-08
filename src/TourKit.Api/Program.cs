@@ -10,6 +10,7 @@ using TourKit.Api.Commission;
 using TourKit.Api.Crm;
 using TourKit.Api.Customers;
 using TourKit.Api.Finance;
+using TourKit.Api.Marketing;
 using TourKit.Api.Providers;
 using TourKit.Api.Provisioning;
 using TourKit.Api.Reports;
@@ -99,6 +100,7 @@ app.MapProviderEndpoints();
 app.MapOrderCostEndpoints();
 app.MapCommissionEndpoints();
 app.MapBillingEndpoints();
+app.MapMarketingEndpoints();
 
 app.Run();
 
