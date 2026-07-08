@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TourKit.Api.Auth;
+using TourKit.Api.Billing;
 using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
 using TourKit.Api.Commission;
@@ -75,6 +76,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await TourKit.Api.Authz.PermissionSeeder.SeedAsync(db);
+    await PlanSeeder.SeedAsync(db);
 }
 
 app.UseExceptionHandler();
@@ -96,6 +98,7 @@ app.MapReportEndpoints();
 app.MapProviderEndpoints();
 app.MapOrderCostEndpoints();
 app.MapCommissionEndpoints();
+app.MapBillingEndpoints();
 
 app.Run();
 

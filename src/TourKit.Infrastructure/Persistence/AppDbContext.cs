@@ -36,6 +36,8 @@ public class AppDbContext : DbContext
     public DbSet<Provider> Providers => Set<Provider>();
     public DbSet<OrderCost> OrderCosts => Set<OrderCost>();
     public DbSet<ProfitShare> ProfitShares => Set<ProfitShare>();
+    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
 
     public override int SaveChanges()
     {

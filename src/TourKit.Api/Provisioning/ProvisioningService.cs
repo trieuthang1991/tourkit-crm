@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TourKit.Api.Auth;
+using TourKit.Api.Billing;
 using TourKit.Api.Tenancy;
 using TourKit.Infrastructure.Entities;
 using TourKit.Infrastructure.Persistence;
@@ -63,6 +64,20 @@ public sealed class ProvisioningService : IProvisioningService
         }
 
         _db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
+
+        // Plan là global (không lọc theo tenant) — gán gói mặc định cho tenant mới tạo.
+        var plan = await _db.Plans.FirstOrDefaultAsync(p => p.Code == PlanCatalog.DefaultPlanCode, ct);
+        if (plan is not null)
+        {
+            _db.Subscriptions.Add(new Subscription
+            {
+                PlanId = plan.Id,
+                Status = SubscriptionStatus.Active,
+                StartedAt = DateTimeOffset.UtcNow,
+                ExpiresAt = null,
+            });
+        }
+
         await _db.SaveChangesAsync(ct);
 
         return new RegistrationOutcome(RegistrationError.None,
