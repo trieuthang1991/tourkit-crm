@@ -194,7 +194,7 @@ public static class BookingEndpoints
     }
 
     private static OrderResponse ToResponse(Order o) => new(
-        o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, o.Status);
+        o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, o.TotalCost, o.Status);
 
     private static BookingLineResponse ToLineResponse(TourCustomer l) => new(
         l.Id, l.Quantity, l.AmountChildren, l.AmountChildrenSmall, l.QuantityBaby,

@@ -33,6 +33,8 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<Provider> Providers => Set<Provider>();
+    public DbSet<OrderCost> OrderCosts => Set<OrderCost>();
 
     public override int SaveChanges()
     {

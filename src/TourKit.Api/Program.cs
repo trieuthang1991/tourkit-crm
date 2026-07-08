@@ -8,6 +8,7 @@ using TourKit.Api.Catalog;
 using TourKit.Api.Crm;
 using TourKit.Api.Customers;
 using TourKit.Api.Finance;
+using TourKit.Api.Providers;
 using TourKit.Api.Provisioning;
 using TourKit.Api.Reports;
 using TourKit.Api.Tenancy;
@@ -91,6 +92,8 @@ app.MapDepartureEndpoints();
 app.MapBookingEndpoints();
 app.MapReceiptEndpoints();
 app.MapReportEndpoints();
+app.MapProviderEndpoints();
+app.MapOrderCostEndpoints();
 
 app.Run();
 

@@ -32,6 +32,13 @@ public static class Permissions
 
     public const string ReportDebtView = "report.debt.view";  // báo cáo công nợ (CNPT hệ cũ)
 
+    public const string ProviderView = "provider.view";
+    public const string ProviderCreate = "provider.create";
+    public const string ProviderUpdate = "provider.update";
+    public const string ProviderDelete = "provider.delete";
+    public const string CostView = "cost.view";
+    public const string CostCreate = "cost.create";
+
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
     [
@@ -46,5 +53,8 @@ public static class Permissions
         (BookingSeatConfirm, "Booking"), (BookingSeatCancel, "Booking"),
         (ReceiptView, "Finance"), (ReceiptCreate, "Finance"), (ReceiptApprove, "Finance"),
         (ReportDebtView, "Report"),
+        (ProviderView, "Provider"), (ProviderCreate, "Provider"),
+        (ProviderUpdate, "Provider"), (ProviderDelete, "Provider"),
+        (CostView, "Provider"), (CostCreate, "Provider"),
     ];
 }
