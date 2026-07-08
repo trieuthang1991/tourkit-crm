@@ -10,20 +10,28 @@ namespace TourKit.Api.Application;
 public sealed class Dispatcher : IDispatcher
 {
     private readonly IServiceProvider _sp;
+    private readonly ILogger<Dispatcher> _logger;
 
-    public Dispatcher(IServiceProvider sp) => _sp = sp;
+    public Dispatcher(IServiceProvider sp, ILogger<Dispatcher> logger)
+    {
+        _sp = sp;
+        _logger = logger;
+    }
 
     public async Task<Result<TResult>> Send<TResult>(ICommand<TResult> command, CancellationToken ct = default)
     {
         var error = await ValidateAsync(command, ct);
         if (error is not null)
         {
+            _logger.LogWarning("Validation thất bại cho {Command}: {Error}", command.GetType().Name, error.Message);
             return Result.Failure<TResult>(error);
         }
 
         var handlerType = typeof(ICommandHandler<,>).MakeGenericType(command.GetType(), typeof(TResult));
         dynamic handler = _sp.GetRequiredService(handlerType);
-        return await handler.Handle((dynamic)command, ct);
+        Result<TResult> result = await handler.Handle((dynamic)command, ct);
+        Log(command.GetType().Name, result);
+        return result;
     }
 
     public async Task<Result<TResult>> Send<TResult>(IQuery<TResult> query, CancellationToken ct = default)
@@ -37,6 +45,18 @@ public sealed class Dispatcher : IDispatcher
         var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
         dynamic handler = _sp.GetRequiredService(handlerType);
         return await handler.Handle((dynamic)query, ct);
+    }
+
+    private void Log<T>(string name, Result<T> result)
+    {
+        if (result.IsFailure)
+        {
+            _logger.LogWarning("{Command} lỗi: {ErrorType} {ErrorMessage}", name, result.Error!.Type, result.Error.Message);
+        }
+        else
+        {
+            _logger.LogInformation("{Command} thành công", name);
+        }
     }
 
     // Pipeline: nếu có IValidator<T> đăng ký thì chạy; fail → gom message thành Error.Validation.

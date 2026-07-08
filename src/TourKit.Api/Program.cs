@@ -1,8 +1,10 @@
+using System.Globalization;
 using System.Text;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using TourKit.Api.Application;
 using TourKit.Api.Auth;
 using TourKit.Api.Billing;
@@ -22,6 +24,12 @@ using TourKit.Shared.Application;
 using TourKit.Shared.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Structured logging (conventions §7) — Serilog. Không Console.WriteLine.
+builder.Host.UseSerilog((context, config) => config
+    .ReadFrom.Configuration(context.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture));
 
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
@@ -97,6 +105,7 @@ using (var scope = app.Services.CreateScope())
     await PlanSeeder.SeedAsync(db);
 }
 
+app.UseSerilogRequestLogging();   // log mỗi request (method/path/status/thời gian) có cấu trúc
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
