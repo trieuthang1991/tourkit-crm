@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Catalog;
+using TourKit.Api.Catalog.Features;
 using TourKit.Infrastructure.Entities;
 using TourKit.Tests.Support;
 
@@ -33,15 +34,15 @@ public class CatalogExtrasTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("mkt-a");
 
         var parent = await client.PostAsJsonAsync("/api/v1/market-types",
-            new CreateMarketTypeRequest("Nội địa", null, 1));
+            new CreateMarketTypeCommand("Nội địa", null, 1));
         Assert.Equal(HttpStatusCode.Created, parent.StatusCode);
-        var parentDto = await parent.Content.ReadFromJsonAsync<MarketTypeResponse>();
+        var parentDto = await parent.Content.ReadFromJsonAsync<MarketTypeDto>();
 
         var child = await client.PostAsJsonAsync("/api/v1/market-types",
-            new CreateMarketTypeRequest("Miền Trung", parentDto!.Id, 1));
+            new CreateMarketTypeCommand("Miền Trung", parentDto!.Id, 1));
         Assert.Equal(HttpStatusCode.Created, child.StatusCode);
 
-        var list = await client.GetFromJsonAsync<List<MarketTypeResponse>>("/api/v1/market-types");
+        var list = await client.GetFromJsonAsync<List<MarketTypeDto>>("/api/v1/market-types");
         Assert.Equal(2, list!.Count);
         Assert.Contains(list, m => m.Name == "Nội địa" && m.ParentId == null);
         Assert.Contains(list, m => m.Name == "Miền Trung" && m.ParentId == parentDto.Id);
@@ -51,10 +52,10 @@ public class CatalogExtrasTests : IClassFixture<AuthTestFactory>
     public async Task Market_types_are_isolated_between_tenants()
     {
         var clientA = await LoggedInClientAsync("mkt-iso-a");
-        await clientA.PostAsJsonAsync("/api/v1/market-types", new CreateMarketTypeRequest("A", null, 1));
+        await clientA.PostAsJsonAsync("/api/v1/market-types", new CreateMarketTypeCommand("A", null, 1));
 
         var clientB = await LoggedInClientAsync("mkt-iso-b");
-        var listB = await clientB.GetFromJsonAsync<List<MarketTypeResponse>>("/api/v1/market-types");
+        var listB = await clientB.GetFromJsonAsync<List<MarketTypeDto>>("/api/v1/market-types");
         Assert.Empty(listB!);
     }
 
