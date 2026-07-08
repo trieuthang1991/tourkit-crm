@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { httpClient } from '../../shared/api/httpClient';
 import { makeCrud } from '../../shared/ui/useCrudResource';
 import { departureSchema } from './departureTypes';
@@ -21,5 +21,16 @@ export function useDeparture(id: string) {
       return departureSchema.parse(data);
     },
     enabled: !!id,
+  });
+}
+
+export function useCloseDeparture() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await httpClient.post(`/api/v1/tour-departures/${id}/close`);
+    },
+    // Khớp prefix ['departures'] của departuresCrud.keys.all — invalidate luôn cả list và useDeparture(id).
+    onSuccess: () => qc.invalidateQueries({ queryKey: departuresCrud.keys.all }),
   });
 }

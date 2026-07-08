@@ -1,11 +1,11 @@
-import { App, Button, Card, Descriptions, Form, InputNumber, Select, Space, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Form, InputNumber, Popconfirm, Select, Space, Typography } from 'antd';
 import { Link, useParams } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';
 import { dateText } from '../../shared/format';
 import { customersCrud } from '../customers/customersCrud';
 import { useAuth } from '../auth/AuthContext';
 import { useCreateBooking, useCreateHold } from './bookingApi';
-import { useDeparture } from './departuresApi';
+import { useCloseDeparture, useDeparture } from './departuresApi';
 import type { BookingRequestForm } from './seatTypes';
 
 export function DepartureDetailPage() {
@@ -19,6 +19,16 @@ export function DepartureDetailPage() {
   const customers = customersCrud.useList({ page: 1, size: 100 });
   const createBooking = useCreateBooking(departureId);
   const createHold = useCreateHold(departureId);
+  const closeDeparture = useCloseDeparture();
+
+  async function handleClose() {
+    try {
+      await closeDeparture.mutateAsync(departureId);
+      message.success('Đã đóng chuyến');
+    } catch (e) {
+      message.error(errorMessage(e));
+    }
+  }
 
   const customerOptions = (customers.data?.items ?? []).map((c) => ({ value: c.id, label: c.fullName }));
 
@@ -54,7 +64,23 @@ export function DepartureDetailPage() {
   return (
     <>
       <Typography.Title level={3}>Chuyến đi {departure.data?.code ?? ''}</Typography.Title>
-      <Card loading={departure.isLoading} style={{ marginBottom: 16 }}>
+      <Card
+        loading={departure.isLoading}
+        style={{ marginBottom: 16 }}
+        extra={
+          has('departure.close') ? (
+            <Popconfirm
+              title="Đóng chuyến này?"
+              description="Sau khi đóng sẽ không thể đặt/giữ chỗ thêm."
+              onConfirm={handleClose}
+            >
+              <Button danger loading={closeDeparture.isPending}>
+                Đóng chuyến
+              </Button>
+            </Popconfirm>
+          ) : null
+        }
+      >
         <Descriptions column={2}>
           <Descriptions.Item label="Mã chuyến">{departure.data?.code}</Descriptions.Item>
           <Descriptions.Item label="Tên chuyến">{departure.data?.title}</Descriptions.Item>
