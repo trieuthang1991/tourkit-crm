@@ -37,7 +37,7 @@ function DepositModal({
       title="Đặt cọc"
       onCancel={onClose}
       confirmLoading={deposit.isPending}
-      destroyOnClose
+      destroyOnHidden
       onOk={async () => {
         try {
           await deposit.mutateAsync({ seatId, amount });
@@ -82,7 +82,7 @@ function CancelModal({
       title="Huỷ chỗ"
       onCancel={onClose}
       confirmLoading={cancel.isPending}
-      destroyOnClose
+      destroyOnHidden
       onOk={async () => {
         try {
           await cancel.mutateAsync({ seatId, note: note ? note : null, refundAmount });

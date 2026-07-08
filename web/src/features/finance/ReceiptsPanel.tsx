@@ -22,7 +22,7 @@ function CreateReceiptModal({ orderId, open, onClose }: { orderId: string; open:
       title="Tạo phiếu thu"
       onCancel={onClose}
       confirmLoading={create.isPending}
-      destroyOnClose
+      destroyOnHidden
       onOk={async () => {
         try {
           await create.mutateAsync(form);
@@ -115,7 +115,7 @@ function ReceiptRowActions({ receipt, orderId }: { receipt: Receipt; orderId: st
         open={approvalOpen}
         onClose={() => setApprovalOpen(false)}
         width={480}
-        destroyOnClose
+        destroyOnHidden
       >
         <ApprovalPanel receiptId={receipt.id} />
       </Drawer>

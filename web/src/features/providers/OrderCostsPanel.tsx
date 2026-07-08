@@ -37,7 +37,7 @@ function CreateOrderCostModal({ orderId, open, onClose }: { orderId: string; ope
       title="Thêm chi phí"
       onCancel={onClose}
       confirmLoading={create.isPending}
-      destroyOnClose
+      destroyOnHidden
       onOk={async () => {
         try {
           await create.mutateAsync(form);

@@ -39,7 +39,7 @@ function CampaignLogsDrawer({
   });
 
   return (
-    <Drawer title="Nhật ký gửi" open={open} onClose={onClose} width={480} destroyOnClose>
+    <Drawer title="Nhật ký gửi" open={open} onClose={onClose} width={480} destroyOnHidden>
       <Table
         rowKey="id"
         size="small"

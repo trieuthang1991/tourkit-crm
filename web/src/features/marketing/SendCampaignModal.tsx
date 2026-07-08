@@ -49,7 +49,7 @@ export function SendCampaignModal({
         send.mutate(recipients);
       }}
       confirmLoading={send.isPending}
-      destroyOnClose
+      destroyOnHidden
     >
       <TextArea
         rows={6}

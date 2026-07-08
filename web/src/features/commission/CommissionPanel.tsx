@@ -20,7 +20,7 @@ function CreateProfitShareModal({ orderId, open, onClose }: { orderId: string; o
       title="Thêm chia lợi nhuận"
       onCancel={onClose}
       confirmLoading={create.isPending}
-      destroyOnClose
+      destroyOnHidden
       onOk={async () => {
         try {
           await create.mutateAsync(form);

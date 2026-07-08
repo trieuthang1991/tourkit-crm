@@ -42,7 +42,7 @@ export function CrudFormModal<T extends FieldValues>({
       onCancel={onCancel}
       onOk={methods.handleSubmit(onSubmit)}
       confirmLoading={submitting}
-      destroyOnClose
+      destroyOnHidden
     >
       <FormProvider {...methods}>
         <Form layout="vertical">{children}</Form>
