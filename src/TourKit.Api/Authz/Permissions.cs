@@ -13,6 +13,20 @@ public static class Permissions
     public const string TourUpdate = "tour.update";
     public const string TourDelete = "tour.delete";
 
+    public const string LeadView = "lead.view";
+    public const string LeadCreate = "lead.create";
+    public const string LeadUpdate = "lead.update";
+    public const string LeadDelete = "lead.delete";
+    public const string LeadConvert = "lead.convert";
+
+    public const string DepartureView = "departure.view";
+    public const string DepartureCreate = "departure.create";
+    public const string BookingView = "booking.view";
+    public const string BookingCreate = "booking.create";
+
+    public const string ReceiptView = "receipt.view";
+    public const string ReceiptCreate = "receipt.create";
+
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
     [
@@ -20,5 +34,10 @@ public static class Permissions
         (CustomerUpdate, "Customer"), (CustomerDelete, "Customer"),
         (TourView, "Catalog"), (TourCreate, "Catalog"),
         (TourUpdate, "Catalog"), (TourDelete, "Catalog"),
+        (LeadView, "CRM"), (LeadCreate, "CRM"), (LeadUpdate, "CRM"),
+        (LeadDelete, "CRM"), (LeadConvert, "CRM"),
+        (DepartureView, "Booking"), (DepartureCreate, "Booking"),
+        (BookingView, "Booking"), (BookingCreate, "Booking"),
+        (ReceiptView, "Finance"), (ReceiptCreate, "Finance"),
     ];
 }

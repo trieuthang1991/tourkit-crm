@@ -3,8 +3,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TourKit.Api.Auth;
+using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
+using TourKit.Api.Crm;
 using TourKit.Api.Customers;
+using TourKit.Api.Finance;
+using TourKit.Api.Provisioning;
 using TourKit.Api.Tenancy;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Tenancy;
@@ -37,6 +41,7 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptio
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -77,8 +82,13 @@ app.UseMiddleware<TenantResolutionMiddleware>();   // sau Authentication để �
 app.UseAuthorization();
 
 app.MapAuthEndpoints();
+app.MapRegistrationEndpoints();
 app.MapCustomerEndpoints();
 app.MapTourTemplateEndpoints();
+app.MapLeadEndpoints();
+app.MapDepartureEndpoints();
+app.MapBookingEndpoints();
+app.MapReceiptEndpoints();
 
 app.Run();
 

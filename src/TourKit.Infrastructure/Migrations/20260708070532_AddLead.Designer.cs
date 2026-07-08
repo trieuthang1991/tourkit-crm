@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TourKit.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using TourKit.Infrastructure.Persistence;
 namespace TourKit.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260708070532_AddLead")]
+    partial class AddLead
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.17");
@@ -104,71 +107,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Leads");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Order", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("ApprovedRevenue")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("BookingType")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("CustomerId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsPaymentRecognized")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("TotalCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("TotalRefund")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("TotalRevenue")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("TourDepartureId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "CustomerId");
-
-                    b.HasIndex("TenantId", "Status");
-
-                    b.HasIndex("TenantId", "TourDepartureId");
-
-                    b.ToTable("Orders");
-                });
-
             modelBuilder.Entity("TourKit.Infrastructure.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -200,85 +138,6 @@ namespace TourKit.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Permissions");
-                });
-
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.ReceiptVoucher", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsClosed")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsRecognized")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTimeOffset>("IssuedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("OrderId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("ParentId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Partner")
-                        .HasMaxLength(255)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PaymentMethod")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ReceiverName")
-                        .HasMaxLength(255)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Title")
-                        .HasMaxLength(255)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "OrderId");
-
-                    b.HasIndex("TenantId", "ParentId");
-
-                    b.ToTable("ReceiptVouchers");
                 });
 
             modelBuilder.Entity("TourKit.Infrastructure.Entities.RefreshToken", b =>
@@ -492,141 +351,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Tours", (string)null);
 
                     b.UseTptMappingStrategy();
-                });
-
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.TourCustomer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("AmountChildren")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("AmountChildrenSmall")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("BabyCommission")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("BabyDiscount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("BabySurcharge")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("ChildCommission")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("ChildCommissionSmall")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("ChildDiscount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("ChildDiscountSmall")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("ChildSurcharge")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("ChildSurchargeSmall")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("Commission")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("CustomerId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("Discount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset?>("HoldExpiresAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsMainContact")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("OrderId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("PriceAdult")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("PriceBaby")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("PriceChild")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("PriceChildSmall")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("QuantityBaby")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ReservationCode")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SeatSelected")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("Surcharge")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("TourDepartureId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("UpfrontAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "CustomerId");
-
-                    b.HasIndex("TenantId", "OrderId");
-
-                    b.HasIndex("TenantId", "TourDepartureId");
-
-                    b.ToTable("TourCustomers");
                 });
 
             modelBuilder.Entity("TourKit.Infrastructure.Entities.TourItinerary", b =>
