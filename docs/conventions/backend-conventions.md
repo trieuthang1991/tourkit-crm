@@ -10,7 +10,7 @@ Tài liệu này gắn với các quyết định trong `docs/superpowers/specs/
 
 Hệ cũ phân mảnh vì 3 lỗi. Tuyệt đối tránh:
 
-1. **KHÔNG để logic nghiệp vụ trong database.** Không stored procedure, không table type cho logic. Logic ở tầng Application/Domain (C#), test được. → hệ cũ có 61 proc + 42 table type là lý do không refactor nổi.
+1. **KHÔNG để logic nghiệp vụ trong database.** Không stored procedure, **không trigger**, không table type cho logic. Logic ở tầng Application/Domain (C#), test được — kể cả đồng bộ cột denormalize (tính lại trong transaction ở domain service, KHÔNG nhờ trigger). → hệ cũ có 61 proc + 42 table type là lý do không refactor nổi; logic ẩn trong DB rất khó follow/trace/test.
 2. **KHÔNG "đẻ phiên bản".** Không bao giờ tạo `FooV2`, `FooNew`, `Foo_v11`. Thay đổi = sửa tại chỗ + **EF Core migration** trong git. → hệ cũ có `booking_list_tbltype` tới v11.
 3. **Một convention đặt tên duy nhất.** Toàn bộ English, PascalCase. Không tiếng Việt không dấu (`PhongBan`, `LoaiDonHang`). Ngoại lệ: nhãn hiển thị cho người dùng (i18n ở frontend).
 
