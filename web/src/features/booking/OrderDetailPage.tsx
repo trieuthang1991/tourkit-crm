@@ -6,6 +6,7 @@ import { errorMessage } from '../../shared/api/problem';
 import { money, statusText } from '../../shared/format';
 import { useAuth } from '../auth/AuthContext';
 import { CommissionPanel } from '../commission/CommissionPanel';
+import { PaymentsPanel } from '../finance/PaymentsPanel';
 import { ReceiptsPanel } from '../finance/ReceiptsPanel';
 import { OrderCostsPanel } from '../providers/OrderCostsPanel';
 import { ordersCrud } from './bookingApi';
@@ -211,6 +212,11 @@ export function OrderDetailPage() {
       {has('receipt.view') ? (
         <div style={{ marginTop: 16 }}>
           <ReceiptsPanel orderId={orderId} />
+        </div>
+      ) : null}
+      {has('payment.view') ? (
+        <div style={{ marginTop: 16 }}>
+          <PaymentsPanel orderId={orderId} />
         </div>
       ) : null}
       {has('cost.view') ? (

@@ -17,6 +17,7 @@ const NAV: NavItem[] = [
   { key: '/marketing', label: 'Marketing', perm: 'marketing.view' },
   { key: '/market-types', label: 'Loại thị trường', perm: 'market.view' },
   { key: '/reports/order-debt', label: 'Công nợ', perm: 'report.debt.view' },
+  { key: '/reports/provider-debt', label: 'Công nợ NCC', perm: 'report.providerdebt.view' },
   { key: '/billing', label: 'Gói dịch vụ', perm: 'subscription.view' },
 ];
 
