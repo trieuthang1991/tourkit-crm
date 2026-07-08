@@ -21,6 +21,7 @@ using TourKit.Shared.Tenancy;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddProblemDetails();
+builder.Services.AddHttpContextAccessor();
 
 // --- Tenancy: 1 instance scoped, vừa là ITenantContext (đọc) vừa set được (login/middleware) ---
 builder.Services.AddScoped<AmbientTenantContext>();
@@ -47,11 +48,15 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Giữ nguyên tên claim gốc ("sub" thay vì bị remap sang ClaimTypes.NameIdentifier) —
+        // CurrentUser/TenantResolutionMiddleware đọc thẳng "sub"/"tenant_id" theo tên phát hành.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -96,6 +101,7 @@ app.MapLeadEndpoints();
 app.MapDepartureEndpoints();
 app.MapBookingEndpoints();
 app.MapReceiptEndpoints();
+app.MapReceiptApprovalEndpoints();
 app.MapReportEndpoints();
 app.MapProviderEndpoints();
 app.MapOrderCostEndpoints();
