@@ -7,6 +7,7 @@ import { CustomersPage } from '../features/customers/CustomersPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
 import { ProvidersPage } from '../features/providers/ProvidersPage';
 import { MarketingPage } from '../features/marketing/MarketingPage';
+import { MarketTypesPage } from '../features/marketTypes/MarketTypesPage';
 
 export function AppRouter() {
   return (
@@ -24,6 +25,7 @@ export function AppRouter() {
         <Route path="/leads" element={<LeadsPage />} />
         <Route path="/providers" element={<ProvidersPage />} />
         <Route path="/marketing" element={<MarketingPage />} />
+        <Route path="/market-types" element={<MarketTypesPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
       </Route>
     </Routes>
