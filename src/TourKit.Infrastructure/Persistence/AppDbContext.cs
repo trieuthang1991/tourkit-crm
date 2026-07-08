@@ -24,6 +24,9 @@ public class AppDbContext : DbContext
     public DbSet<TourTemplate> TourTemplates => Set<TourTemplate>();
     public DbSet<TourDeparture> TourDepartures => Set<TourDeparture>();
     public DbSet<TourItinerary> TourItineraries => Set<TourItinerary>();
+    public DbSet<MarketType> MarketTypes => Set<MarketType>();
+    public DbSet<PriceScenario> PriceScenarios => Set<PriceScenario>();
+    public DbSet<TourAssignee> TourAssignees => Set<TourAssignee>();
     public DbSet<Lead> Leads => Set<Lead>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<TourCustomer> TourCustomers => Set<TourCustomer>();

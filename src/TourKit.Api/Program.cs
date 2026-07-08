@@ -97,6 +97,8 @@ app.MapAuthEndpoints();
 app.MapRegistrationEndpoints();
 app.MapCustomerEndpoints();
 app.MapTourTemplateEndpoints();
+app.MapMarketTypeEndpoints();
+app.MapTourAssigneeEndpoints();
 app.MapLeadEndpoints();
 app.MapDepartureEndpoints();
 app.MapBookingEndpoints();

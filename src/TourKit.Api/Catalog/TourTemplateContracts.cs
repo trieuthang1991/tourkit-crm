@@ -17,3 +17,6 @@ public sealed record TourTemplateResponse(
 
 public sealed record ItineraryDayRequest(int DayIndex, string Title, string? Detail);
 public sealed record ItineraryDayResponse(Guid Id, int DayIndex, string Title, string? Detail);
+
+public sealed record PriceScenarioRequest(int FromQty, int ToQty, decimal UnitPrice);
+public sealed record PriceScenarioResponse(Guid Id, int FromQty, int ToQty, decimal UnitPrice);

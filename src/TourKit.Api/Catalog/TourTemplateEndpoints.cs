@@ -110,6 +110,34 @@ public static class TourTemplateEndpoints
             return Results.NoContent();
         }).RequireAuthorization(Permissions.TourUpdate);
 
+        group.MapGet("/{id:guid}/price-scenarios", async (Guid id, AppDbContext db, CancellationToken ct) =>
+            Results.Ok(await db.PriceScenarios.AsNoTracking()
+                .Where(p => p.TourTemplateId == id).OrderBy(p => p.FromQty)
+                .Select(p => new PriceScenarioResponse(p.Id, p.FromQty, p.ToQty, p.UnitPrice))
+                .ToListAsync(ct))).RequireAuthorization(Permissions.TourView);
+
+        group.MapPut("/{id:guid}/price-scenarios", async (Guid id, PriceScenarioRequest[] body, AppDbContext db, CancellationToken ct) =>
+        {
+            var exists = await db.TourTemplates.AnyAsync(x => x.Id == id, ct);
+            if (!exists)
+            {
+                return Results.NotFound();
+            }
+
+            var old = await db.PriceScenarios.Where(p => p.TourTemplateId == id).ToListAsync(ct);
+            db.PriceScenarios.RemoveRange(old);   // thay toàn bộ bảng giá cỡ đoàn (giống itinerary)
+            foreach (var scenario in body)
+            {
+                db.PriceScenarios.Add(new PriceScenario
+                {
+                    TourTemplateId = id, FromQty = scenario.FromQty, ToQty = scenario.ToQty, UnitPrice = scenario.UnitPrice,
+                });
+            }
+
+            await db.SaveChangesAsync(ct);
+            return Results.NoContent();
+        }).RequireAuthorization(Permissions.TourUpdate);
+
         return app;
     }
 
