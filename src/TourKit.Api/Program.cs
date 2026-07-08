@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
+using TourKit.Api.Commission;
 using TourKit.Api.Crm;
 using TourKit.Api.Customers;
 using TourKit.Api.Finance;
@@ -94,6 +95,7 @@ app.MapReceiptEndpoints();
 app.MapReportEndpoints();
 app.MapProviderEndpoints();
 app.MapOrderCostEndpoints();
+app.MapCommissionEndpoints();
 
 app.Run();
 

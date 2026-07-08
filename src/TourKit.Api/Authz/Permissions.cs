@@ -39,6 +39,9 @@ public static class Permissions
     public const string CostView = "cost.view";
     public const string CostCreate = "cost.create";
 
+    public const string CommissionView = "commission.view";
+    public const string CommissionCreate = "commission.create";
+
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
     [
@@ -56,5 +59,6 @@ public static class Permissions
         (ProviderView, "Provider"), (ProviderCreate, "Provider"),
         (ProviderUpdate, "Provider"), (ProviderDelete, "Provider"),
         (CostView, "Provider"), (CostCreate, "Provider"),
+        (CommissionView, "Commission"), (CommissionCreate, "Commission"),
     ];
 }
