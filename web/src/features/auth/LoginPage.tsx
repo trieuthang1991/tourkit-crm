@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Button, Form, Input } from 'antd';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from './AuthContext';
 
@@ -73,6 +73,9 @@ export function LoginPage() {
             Đăng nhập
           </Button>
         </Form.Item>
+        <div style={{ textAlign: 'center' }}>
+          <Link to="/register">Đăng ký công ty</Link>
+        </div>
       </Form>
     </div>
   );

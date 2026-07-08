@@ -15,11 +15,13 @@ import { OrdersPage } from '../features/booking/OrdersPage';
 import { OrderDetailPage } from '../features/booking/OrderDetailPage';
 import { BillingPage } from '../features/billing/BillingPage';
 import { OrderDebtReportPage } from '../features/reports/OrderDebtReportPage';
+import { RegistrationPage } from '../features/registration/RegistrationPage';
 
 export function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegistrationPage />} />
       <Route
         element={
           <ProtectedRoute>
