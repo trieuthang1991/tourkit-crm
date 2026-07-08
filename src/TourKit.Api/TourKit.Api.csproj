@@ -8,6 +8,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Cho phép TourKit.UnitTests test trực tiếp các slice internal (vd BookingFactory) mà không cần public hoá. -->
+    <InternalsVisibleTo Include="TourKit.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.*" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.*">

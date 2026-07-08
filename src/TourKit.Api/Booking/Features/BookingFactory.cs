@@ -40,6 +40,21 @@ internal static class BookingFactory
             return Error.Validation("Không tìm thấy mẫu tour của chuyến.");
         }
 
+        if (departure.IsClosed)
+        {
+            return Error.Conflict("Chuyến đã đóng, không thể đặt thêm chỗ.");
+        }
+
+        var newSeats = adultQty + childQty + childSmallQty + babyQty;
+        var usedSeats = await db.TourCustomers
+            .Where(s => s.TourDepartureId == departureId && s.Status == 0)
+            .SumAsync(s => s.Quantity + s.AmountChildren + s.AmountChildrenSmall + s.QuantityBaby, ct);
+        if (departure.TotalSlots > 0 && usedSeats + newSeats > departure.TotalSlots)
+        {
+            return Error.Conflict(
+                $"Vượt sức chứa: còn {departure.TotalSlots - usedSeats}/{departure.TotalSlots} chỗ.");
+        }
+
         var order = new Order
         {
             Code = "ORD-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(),
