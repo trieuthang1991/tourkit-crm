@@ -37,13 +37,45 @@ public static class ReceiptEndpoints
                 PaymentMethod = string.IsNullOrWhiteSpace(body.PaymentMethod) ? "cash" : body.PaymentMethod.Trim(),
                 Partner = body.Partner,
                 Note = body.Note,
-                Status = 0,
-                IsRecognized = true,
+                Status = 0,           // 0 = chờ duyệt
+                IsRecognized = false, // chưa ghi nhận dòng tiền tới khi duyệt (legacy IsGhiNhanDongTien)
             };
             db.ReceiptVouchers.Add(receipt);
             await db.SaveChangesAsync(ct);
             return Results.Created($"/api/v1/orders/{orderId}/receipts/{receipt.Id}", ToResponse(receipt));
         }).RequireAuthorization(Permissions.ReceiptCreate);
+
+        // Duyệt phiếu → ghi nhận dòng tiền (mới tính vào công nợ). Mode 1 cấp (Default).
+        app.MapPost("/api/v1/receipts/{receiptId:guid}/approve", async (
+            Guid receiptId, AppDbContext db, CancellationToken ct) =>
+        {
+            var receipt = await db.ReceiptVouchers.FirstOrDefaultAsync(r => r.Id == receiptId, ct);
+            if (receipt is null)
+            {
+                return Results.NotFound();
+            }
+
+            receipt.Status = 1;          // 1 = đã duyệt
+            receipt.IsRecognized = true;
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(ToResponse(receipt));
+        }).RequireAuthorization(Permissions.ReceiptApprove);
+
+        // Không duyệt (từ chối) → không ghi nhận.
+        app.MapPost("/api/v1/receipts/{receiptId:guid}/reject", async (
+            Guid receiptId, AppDbContext db, CancellationToken ct) =>
+        {
+            var receipt = await db.ReceiptVouchers.FirstOrDefaultAsync(r => r.Id == receiptId, ct);
+            if (receipt is null)
+            {
+                return Results.NotFound();
+            }
+
+            receipt.Status = 2;          // 2 = từ chối
+            receipt.IsRecognized = false;
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(ToResponse(receipt));
+        }).RequireAuthorization(Permissions.ReceiptApprove);
 
         app.MapGet("/api/v1/orders/{orderId:guid}/receipts", async (
             Guid orderId, AppDbContext db, CancellationToken ct) =>
@@ -65,7 +97,10 @@ public static class ReceiptEndpoints
                 return Results.NotFound();
             }
 
-            var paid = await db.ReceiptVouchers.Where(r => r.OrderId == orderId).SumAsync(r => r.Amount, ct);
+            // Chỉ phiếu ĐÃ DUYỆT (IsRecognized) mới tính vào đã thu / công nợ (đúng §I & IsGhiNhanDongTien hệ cũ).
+            var paid = await db.ReceiptVouchers
+                .Where(r => r.OrderId == orderId && r.IsRecognized)
+                .SumAsync(r => r.Amount, ct);
             return Results.Ok(new OrderBalanceResponse(orderId, order.TotalRevenue, paid, order.TotalRevenue - paid));
         }).RequireAuthorization(Permissions.ReceiptView);
 
@@ -73,5 +108,5 @@ public static class ReceiptEndpoints
     }
 
     private static ReceiptResponse ToResponse(ReceiptVoucher r) => new(
-        r.Id, r.Code, r.OrderId, r.Amount, r.PaymentMethod, r.IssuedAt, r.Partner, r.Note);
+        r.Id, r.Code, r.OrderId, r.Amount, r.PaymentMethod, r.IssuedAt, r.Partner, r.Note, r.Status, r.IsRecognized);
 }

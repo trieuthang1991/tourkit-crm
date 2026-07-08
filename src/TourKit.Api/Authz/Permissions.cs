@@ -28,6 +28,7 @@ public static class Permissions
 
     public const string ReceiptView = "receipt.view";
     public const string ReceiptCreate = "receipt.create";
+    public const string ReceiptApprove = "receipt.approve";   // duyệt phiếu → IsGhiNhanDongTien
 
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
@@ -41,6 +42,6 @@ public static class Permissions
         (DepartureView, "Booking"), (DepartureCreate, "Booking"),
         (BookingView, "Booking"), (BookingCreate, "Booking"),
         (BookingSeatConfirm, "Booking"), (BookingSeatCancel, "Booking"),
-        (ReceiptView, "Finance"), (ReceiptCreate, "Finance"),
+        (ReceiptView, "Finance"), (ReceiptCreate, "Finance"), (ReceiptApprove, "Finance"),
     ];
 }

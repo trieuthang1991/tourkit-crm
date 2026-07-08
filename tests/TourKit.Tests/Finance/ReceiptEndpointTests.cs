@@ -50,30 +50,45 @@ public class ReceiptEndpointTests : IClassFixture<AuthTestFactory>
     }
 
     [Fact]
-    public async Task Record_receipt_updates_balance()
+    public async Task Only_approved_receipts_reduce_outstanding()
     {
         var client = await LoggedInClientAsync("fin-a");
         var orderId = await CreateOrderAsync(client);
 
-        // thu 5tr
-        var rcp = await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
-            new CreateReceiptRequest(5_000_000m, "cash", null, null));
-        Assert.Equal(HttpStatusCode.Created, rcp.StatusCode);
+        // thu 5tr — CHỜ DUYỆT → chưa tính vào công nợ
+        var r1 = await (await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
+            new CreateReceiptRequest(5_000_000m, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptResponse>();
+        Assert.False(r1!.IsRecognized);
+        var pending = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        Assert.Equal(0m, pending!.Paid);
 
-        var balance = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
-        Assert.Equal(13_000_000m, balance!.Total);
-        Assert.Equal(5_000_000m, balance.Paid);
-        Assert.Equal(8_000_000m, balance.Outstanding);
+        // duyệt → tính 5tr, còn nợ 8tr
+        (await client.PostAsync($"/api/v1/receipts/{r1.Id}/approve", null)).EnsureSuccessStatusCode();
+        var afterApprove = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        Assert.Equal(5_000_000m, afterApprove!.Paid);
+        Assert.Equal(8_000_000m, afterApprove.Outstanding);
 
-        // thu thêm 8tr → hết nợ
-        await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
-            new CreateReceiptRequest(8_000_000m, "transfer", null, "tất toán"));
-        var balance2 = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
-        Assert.Equal(13_000_000m, balance2!.Paid);
-        Assert.Equal(0m, balance2.Outstanding);
+        // thu 8tr + duyệt → hết nợ
+        var r2 = await (await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
+            new CreateReceiptRequest(8_000_000m, "transfer", null, "tất toán"))).Content.ReadFromJsonAsync<ReceiptResponse>();
+        (await client.PostAsync($"/api/v1/receipts/{r2!.Id}/approve", null)).EnsureSuccessStatusCode();
+        var settled = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        Assert.Equal(13_000_000m, settled!.Paid);
+        Assert.Equal(0m, settled.Outstanding);
+    }
 
-        var receipts = await client.GetFromJsonAsync<List<ReceiptResponse>>($"/api/v1/orders/{orderId}/receipts");
-        Assert.Equal(2, receipts!.Count);
+    [Fact]
+    public async Task Rejected_receipt_is_not_counted()
+    {
+        var client = await LoggedInClientAsync("fin-rej");
+        var orderId = await CreateOrderAsync(client);
+
+        var r = await (await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
+            new CreateReceiptRequest(5_000_000m, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptResponse>();
+        (await client.PostAsync($"/api/v1/receipts/{r!.Id}/reject", null)).EnsureSuccessStatusCode();
+
+        var bal = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        Assert.Equal(0m, bal!.Paid);
     }
 
     [Fact]

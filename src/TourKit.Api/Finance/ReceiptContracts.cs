@@ -4,6 +4,6 @@ public sealed record CreateReceiptRequest(decimal Amount, string PaymentMethod, 
 
 public sealed record ReceiptResponse(
     Guid Id, string Code, Guid OrderId, decimal Amount, string PaymentMethod,
-    DateTimeOffset IssuedAt, string? Partner, string? Note);
+    DateTimeOffset IssuedAt, string? Partner, string? Note, int Status, bool IsRecognized);
 
 public sealed record OrderBalanceResponse(Guid OrderId, decimal Total, decimal Paid, decimal Outstanding);
