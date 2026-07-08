@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TourKit.Api.Authz;
+using TourKit.Infrastructure.Domain;
 using TourKit.Infrastructure.Entities;
 using TourKit.Infrastructure.Persistence;
 
@@ -154,9 +155,6 @@ public static class BookingEndpoints
             return (Invalid("Không tìm thấy mẫu tour của chuyến."), null, null);
         }
 
-        var lineTotal = (body.AdultQty * template.PriceAdult) + (body.ChildQty * template.PriceChild)
-            + (body.ChildSmallQty * template.PriceChildSmall) + (body.BabyQty * template.PriceBaby);
-
         var order = new Order
         {
             Code = "ORD-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(),
@@ -164,7 +162,6 @@ public static class BookingEndpoints
             CustomerId = body.CustomerId,
             BookingType = 0,
             Status = isHold ? OrderStatus.Draft : OrderStatus.Confirmed,
-            TotalRevenue = lineTotal,
         };
 
         var seat = new TourCustomer
@@ -188,6 +185,8 @@ public static class BookingEndpoints
             seat.ReservationCode = "RSV-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         }
 
+        order.TotalRevenue = BookingMath.LineTotal(seat);   // công thức 1 chỗ
+
         db.Orders.Add(order);
         db.TourCustomers.Add(seat);
         await db.SaveChangesAsync(ct);
@@ -204,8 +203,7 @@ public static class BookingEndpoints
 
     private static SeatResponse ToSeatResponse(TourCustomer s)
     {
-        var lineTotal = (s.Quantity * s.PriceAdult) + (s.AmountChildren * s.PriceChild)
-            + (s.AmountChildrenSmall * s.PriceChildSmall) + (s.QuantityBaby * s.PriceBaby);
+        var lineTotal = BookingMath.LineTotal(s);   // công thức 1 chỗ
         return new SeatResponse(s.Id, s.OrderId, DeriveStatus(s, lineTotal),
             s.UpfrontAmount, lineTotal, s.HoldExpiresAt, s.ReservationCode);
     }

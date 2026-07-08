@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TourKit.Api.Authz;
+using TourKit.Infrastructure.Domain;
 using TourKit.Infrastructure.Entities;
 using TourKit.Infrastructure.Persistence;
 
@@ -97,9 +98,9 @@ public static class ReceiptEndpoints
                 return Results.NotFound();
             }
 
-            // Chỉ phiếu ĐÃ DUYỆT (IsRecognized) mới tính vào đã thu / công nợ (đúng §I & IsGhiNhanDongTien hệ cũ).
+            // Chỉ phiếu ĐÃ DUYỆT mới tính (quy tắc ở ReceiptQueries.Recognized — một chỗ).
             var paid = await db.ReceiptVouchers
-                .Where(r => r.OrderId == orderId && r.IsRecognized)
+                .Where(r => r.OrderId == orderId).Recognized()
                 .SumAsync(r => r.Amount, ct);
             return Results.Ok(new OrderBalanceResponse(orderId, order.TotalRevenue, paid, order.TotalRevenue - paid));
         }).RequireAuthorization(Permissions.ReceiptView);
