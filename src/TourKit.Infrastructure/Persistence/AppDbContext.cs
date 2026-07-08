@@ -33,6 +33,7 @@ public class AppDbContext : DbContext
     public DbSet<TourCustomer> TourCustomers => Set<TourCustomer>();
     public DbSet<CancelSeat> CancelSeats => Set<CancelSeat>();
     public DbSet<ReceiptVoucher> ReceiptVouchers => Set<ReceiptVoucher>();
+    public DbSet<PaymentVoucher> PaymentVouchers => Set<PaymentVoucher>();
     public DbSet<ReceiptApproval> ReceiptApprovals => Set<ReceiptApproval>();
     public DbSet<ReceiptApprovalStepUser> ReceiptApprovalStepUsers => Set<ReceiptApprovalStepUser>();
     public DbSet<Permission> Permissions => Set<Permission>();
