@@ -33,7 +33,12 @@ public static class Permissions
     public const string ReceiptApprovalStart = "receipt.approval.start"; // khởi tạo luồng duyệt nhiều cấp
     public const string ReceiptApprovalAct = "receipt.approval.act";     // duyệt/từ chối 1 bước của luồng nhiều cấp
 
+    public const string PaymentView = "payment.view";
+    public const string PaymentCreate = "payment.create";
+    public const string PaymentApprove = "payment.approve";   // duyệt phiếu → IsGhiNhanDongTien
+
     public const string ReportDebtView = "report.debt.view";  // báo cáo công nợ (CNPT hệ cũ)
+    public const string ReportProviderDebtView = "report.providerdebt.view";  // công nợ phải trả NCC
 
     public const string ProviderView = "provider.view";
     public const string ProviderCreate = "provider.create";
@@ -70,7 +75,9 @@ public static class Permissions
         (BookingSeatConfirm, "Booking"), (BookingSeatCancel, "Booking"),
         (ReceiptView, "Finance"), (ReceiptCreate, "Finance"), (ReceiptApprove, "Finance"),
         (ReceiptApprovalStart, "Finance"), (ReceiptApprovalAct, "Finance"),
+        (PaymentView, "Finance"), (PaymentCreate, "Finance"), (PaymentApprove, "Finance"),
         (ReportDebtView, "Report"),
+        (ReportProviderDebtView, "Report"),
         (ProviderView, "Provider"), (ProviderCreate, "Provider"),
         (ProviderUpdate, "Provider"), (ProviderDelete, "Provider"),
         (CostView, "Provider"), (CostCreate, "Provider"),
