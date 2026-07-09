@@ -31,15 +31,15 @@ Công ty tour không vận hành được nếu chỉ có thu mà không có chi
 - ✅ **Frontend**: panel phiếu chi trong chi tiết đơn + trang Công nợ NCC.
 - ◻️ (Sau) Duyệt chi **nhiều cấp** (mirror ReceiptApproval) · **Dự trù chi phí tour (`DuTruTours`)**.
 
-## Đợt 2 — Báo cáo & Dashboard 📊
+## Đợt 2 — Báo cáo & Dashboard 📊 ✅ ĐÃ XONG
 
-Hệ cũ có ~19 report; hệ mới mới có 1 (công nợ phải thu). Ưu tiên báo cáo quản trị hằng ngày:
+Ưu tiên báo cáo quản trị hằng ngày. **Hoàn tất — 123 backend + 48 web test xanh; smoke SQLite thật đúng số.**
 
-- Doanh thu (theo thời gian / thị trường / loại tour).
-- Dòng tiền theo phương thức thanh toán.
-- Lợi nhuận & hoa hồng theo nhân viên.
-- Công nợ phải trả NCC (nối Đợt 1).
-- Dashboard trang chủ (`HomePage`/`WorkSpaceView`) + KPI cơ bản.
+- ✅ **Dashboard tổng quan** (`/reports/dashboard`): số đơn, doanh thu, đã thu, còn phải thu, chi phí, đã chi, còn phải trả, lợi nhuận gộp — thành trang chủ.
+- ✅ **Dòng tiền theo phương thức TT** (`/reports/cash-flow`): thu vào − chi ra − ròng, gom theo phương thức (chỉ tính phiếu đã ghi nhận).
+- ✅ **Doanh thu–lợi nhuận theo đơn** (`/reports/turnover`): revenue − cost = profit mỗi đơn.
+- ✅ Công nợ phải trả NCC (đã làm Đợt 1).
+- ◻️ (Sau) Lợi nhuận/hoa hồng **theo nhân viên** → Đợt 3; báo cáo theo KH/đại lý, số dư tài khoản, KPI.
 
 ## Đợt 3 — Hoa hồng sales đúng nghĩa 🎯
 
