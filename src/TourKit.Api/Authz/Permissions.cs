@@ -50,6 +50,8 @@ public static class Permissions
     public const string ProviderDelete = "provider.delete";
     public const string CostView = "cost.view";
     public const string CostCreate = "cost.create";
+    public const string ServiceView = "service.view";
+    public const string ServiceManage = "service.manage";
 
     public const string CommissionView = "commission.view";
     public const string CommissionCreate = "commission.create";
@@ -92,6 +94,7 @@ public static class Permissions
         (ProviderView, "Provider"), (ProviderCreate, "Provider"),
         (ProviderUpdate, "Provider"), (ProviderDelete, "Provider"),
         (CostView, "Provider"), (CostCreate, "Provider"),
+        (ServiceView, "Provider"), (ServiceManage, "Provider"),
         (CommissionView, "Commission"), (CommissionCreate, "Commission"),
         (SubscriptionView, "Billing"), (SubscriptionManage, "Billing"),
         (MarketingView, "Marketing"), (MarketingCreate, "Marketing"), (MarketingSend, "Marketing"),
