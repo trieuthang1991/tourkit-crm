@@ -15,7 +15,6 @@ using TourKit.Api.Crm;
 using TourKit.Api.Finance;
 using TourKit.Api.Marketing;
 using TourKit.Api.Middleware;
-using TourKit.Api.Providers;
 using TourKit.Api.Provisioning;
 using TourKit.Api.Reports;
 using TourKit.Api.Tenancy;
@@ -139,7 +138,7 @@ app.UseMiddleware<TenantResolutionMiddleware>();   // sau Authentication để �
 app.UseMiddleware<SubscriptionGuardMiddleware>();  // chặn nếu subscription hết hạn (miễn trừ auth/đăng ký/billing)
 app.UseAuthorization();
 
-app.MapControllers();   // Customers (kiến trúc phân tầng — module mẫu)
+app.MapControllers();   // Customers, Providers (kiến trúc phân tầng)
 
 app.MapAuthEndpoints();
 app.MapRegistrationEndpoints();
@@ -155,10 +154,6 @@ app.MapReceiptEndpoints();
 app.MapReceiptApprovalEndpoints();
 app.MapPaymentEndpoints();
 app.MapReportEndpoints();
-app.MapProviderEndpoints();
-app.MapOrderCostEndpoints();
-app.MapServiceItemEndpoints();
-app.MapProviderServiceEndpoints();
 app.MapCommissionEndpoints();
 app.MapCommissionRuleEndpoints();
 app.MapBillingEndpoints();

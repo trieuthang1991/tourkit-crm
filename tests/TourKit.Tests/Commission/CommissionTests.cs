@@ -5,7 +5,7 @@ using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
 using TourKit.Api.Commission;
-using TourKit.Api.Providers;
+using TourKit.Application.Providers.Dtos;
 using TourKit.Tests.Support;
 
 using TourKit.Shared.Enums;
@@ -53,11 +53,11 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
         return (await booking.Content.ReadFromJsonAsync<OrderResponse>())!;
     }
 
-    private static async Task<ProviderResponse> CreateProviderAsync(HttpClient client)
+    private static async Task<ProviderDto> CreateProviderAsync(HttpClient client)
     {
-        var response = await client.PostAsJsonAsync("/api/v1/providers", new CreateProviderRequest(
+        var response = await client.PostAsJsonAsync("/api/v1/providers", new CreateProviderDto(
             "NCC-COMM", "Khách sạn Hoa hồng", ProviderType.Hotel, null, null, null, null, null, null, null, 0, 1));
-        return (await response.Content.ReadFromJsonAsync<ProviderResponse>())!;
+        return (await response.Content.ReadFromJsonAsync<ProviderDto>())!;
     }
 
     // Doanh thu 13tr, chi phí 3tr → lợi nhuận 10tr.
@@ -66,7 +66,7 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
         var order = await CreateOrderAsync(client);
         var provider = await CreateProviderAsync(client);
         await client.PostAsJsonAsync($"/api/v1/orders/{order.Id}/costs",
-            new CreateOrderCostRequest(provider.Id, "Phòng khách sạn", 1, 3_000_000m, 3_000_000m, 0m, 0m, 0m, 1));
+            new CreateOrderCostDto(provider.Id, "Phòng khách sạn", 1, 3_000_000m, 3_000_000m, 0m, 0m, 0m, 1));
         return order;
     }
 
