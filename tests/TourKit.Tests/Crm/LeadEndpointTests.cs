@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Crm;
-using TourKit.Shared.Application;
+using TourKit.Application.Common;
+using TourKit.Application.Crm.Dtos;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Crm;
@@ -24,7 +24,7 @@ public class LeadEndpointTests : IClassFixture<AuthTestFactory>
         return client;
     }
 
-    private static CreateLeadRequest Sample(string name) =>
+    private static CreateLeadDto Sample(string name) =>
         new(name, "0900000000", $"{name}@x.com", "facebook", null);
 
     [Fact]
@@ -34,20 +34,20 @@ public class LeadEndpointTests : IClassFixture<AuthTestFactory>
 
         var created = await client.PostAsJsonAsync("/api/v1/leads", Sample("Nguyen Van A"));
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
-        var lead = await created.Content.ReadFromJsonAsync<LeadResponse>();
+        var lead = await created.Content.ReadFromJsonAsync<LeadDto>();
         Assert.NotNull(lead);
 
-        var list = await client.GetFromJsonAsync<Paged<LeadResponse>>("/api/v1/leads");
+        var list = await client.GetFromJsonAsync<PagedResult<LeadDto>>("/api/v1/leads");
         Assert.Single(list!.Items);
 
         // convert → tạo Customer
         var conv = await client.PostAsync($"/api/v1/leads/{lead!.Id}/convert", null);
         Assert.Equal(HttpStatusCode.Created, conv.StatusCode);
-        var convBody = await conv.Content.ReadFromJsonAsync<ConvertLeadResponse>();
+        var convBody = await conv.Content.ReadFromJsonAsync<ConvertLeadResultDto>();
         Assert.NotNull(convBody);
 
         // Customer xuất hiện ở /customers
-        var customers = await client.GetFromJsonAsync<Paged<CustomerRow>>("/api/v1/customers");
+        var customers = await client.GetFromJsonAsync<PagedResult<CustomerRow>>("/api/v1/customers");
         Assert.Contains(customers!.Items, c => c.Id == convBody!.CustomerId && c.FullName == "Nguyen Van A");
 
         // convert lần 2 → 409
@@ -62,7 +62,7 @@ public class LeadEndpointTests : IClassFixture<AuthTestFactory>
         await clientA.PostAsJsonAsync("/api/v1/leads", Sample("A"));
 
         var clientB = await LoggedInClientAsync("lead-iso-b");
-        var listB = await clientB.GetFromJsonAsync<Paged<LeadResponse>>("/api/v1/leads");
+        var listB = await clientB.GetFromJsonAsync<PagedResult<LeadDto>>("/api/v1/leads");
         Assert.Empty(listB!.Items);
     }
 
