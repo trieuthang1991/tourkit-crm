@@ -20,7 +20,6 @@ using TourKit.Api.Provisioning;
 using TourKit.Api.Reports;
 using TourKit.Api.Tenancy;
 using TourKit.Application.Common;
-using TourKit.Application.Customers;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Infrastructure.Repositories;
 using TourKit.Shared.Application;
