@@ -42,6 +42,7 @@ public class AppDbContext : DbContext
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<Provider> Providers => Set<Provider>();
     public DbSet<OrderCost> OrderCosts => Set<OrderCost>();
+    public DbSet<ServiceItem> ServiceItems => Set<ServiceItem>();
     public DbSet<ProfitShare> ProfitShares => Set<ProfitShare>();
     public DbSet<CommissionRule> CommissionRules => Set<CommissionRule>();
     public DbSet<Plan> Plans => Set<Plan>();
