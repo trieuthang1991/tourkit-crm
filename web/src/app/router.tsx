@@ -16,6 +16,9 @@ import { OrderDetailPage } from '../features/booking/OrderDetailPage';
 import { BillingPage } from '../features/billing/BillingPage';
 import { OrderDebtReportPage } from '../features/reports/OrderDebtReportPage';
 import { ProviderDebtReportPage } from '../features/reports/ProviderDebtReportPage';
+import { DashboardPage } from '../features/reports/DashboardPage';
+import { CashFlowReportPage } from '../features/reports/CashFlowReportPage';
+import { TurnoverReportPage } from '../features/reports/TurnoverReportPage';
 import { RegistrationPage } from '../features/registration/RegistrationPage';
 
 export function AppRouter() {
@@ -30,7 +33,8 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Navigate to="/customers" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/leads" element={<LeadsPage />} />
         <Route path="/providers" element={<ProvidersPage />} />
@@ -45,6 +49,8 @@ export function AppRouter() {
         <Route path="/billing" element={<BillingPage />} />
         <Route path="/reports/order-debt" element={<OrderDebtReportPage />} />
         <Route path="/reports/provider-debt" element={<ProviderDebtReportPage />} />
+        <Route path="/reports/cash-flow" element={<CashFlowReportPage />} />
+        <Route path="/reports/turnover" element={<TurnoverReportPage />} />
       </Route>
     </Routes>
   );

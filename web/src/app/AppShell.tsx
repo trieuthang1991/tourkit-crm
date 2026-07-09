@@ -8,6 +8,7 @@ const { Header, Sider, Content } = Layout;
 type NavItem = { key: string; label: string; perm: string };
 
 const NAV: NavItem[] = [
+  { key: '/dashboard', label: 'Tổng quan', perm: 'report.dashboard.view' },
   { key: '/customers', label: 'Khách hàng', perm: 'customer.view' },
   { key: '/leads', label: 'Lead (CRM)', perm: 'lead.view' },
   { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
@@ -18,6 +19,8 @@ const NAV: NavItem[] = [
   { key: '/market-types', label: 'Loại thị trường', perm: 'market.view' },
   { key: '/reports/order-debt', label: 'Công nợ', perm: 'report.debt.view' },
   { key: '/reports/provider-debt', label: 'Công nợ NCC', perm: 'report.providerdebt.view' },
+  { key: '/reports/cash-flow', label: 'Dòng tiền', perm: 'report.cashflow.view' },
+  { key: '/reports/turnover', label: 'Doanh thu', perm: 'report.turnover.view' },
   { key: '/billing', label: 'Gói dịch vụ', perm: 'subscription.view' },
 ];
 
