@@ -64,6 +64,11 @@ public static class Permissions
     public const string MarketView = "market.view";
     public const string MarketManage = "market.manage";
 
+    public const string CareView = "care.view";
+    public const string CareManage = "care.manage";
+    public const string RatingView = "rating.view";
+    public const string RatingManage = "rating.manage";
+
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
     [
@@ -91,5 +96,6 @@ public static class Permissions
         (SubscriptionView, "Billing"), (SubscriptionManage, "Billing"),
         (MarketingView, "Marketing"), (MarketingCreate, "Marketing"), (MarketingSend, "Marketing"),
         (MarketView, "Catalog"), (MarketManage, "Catalog"),
+        (CareView, "CRM"), (CareManage, "CRM"), (RatingView, "CRM"), (RatingManage, "CRM"),
     ];
 }
