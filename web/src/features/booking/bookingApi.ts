@@ -41,3 +41,18 @@ export function useCreateHold(departureId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 }
+
+// PUT /api/v1/orders/{orderId}/sales — gán/đổi sales phụ trách đơn.
+export function useAssignSales(orderId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (salesUserId: string | null): Promise<Order> => {
+      const { data } = await httpClient.put<unknown>(`/api/v1/orders/${orderId}/sales`, { salesUserId });
+      return orderSchema.parse(data);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      qc.invalidateQueries({ queryKey: ['reports', 'commission-by-user'] });
+    },
+  });
+}

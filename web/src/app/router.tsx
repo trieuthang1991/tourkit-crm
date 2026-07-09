@@ -19,6 +19,8 @@ import { ProviderDebtReportPage } from '../features/reports/ProviderDebtReportPa
 import { DashboardPage } from '../features/reports/DashboardPage';
 import { CashFlowReportPage } from '../features/reports/CashFlowReportPage';
 import { TurnoverReportPage } from '../features/reports/TurnoverReportPage';
+import { CommissionByUserReportPage } from '../features/reports/CommissionByUserReportPage';
+import { CommissionRulesPage } from '../features/commission/CommissionRulesPage';
 import { RegistrationPage } from '../features/registration/RegistrationPage';
 
 export function AppRouter() {
@@ -51,6 +53,8 @@ export function AppRouter() {
         <Route path="/reports/provider-debt" element={<ProviderDebtReportPage />} />
         <Route path="/reports/cash-flow" element={<CashFlowReportPage />} />
         <Route path="/reports/turnover" element={<TurnoverReportPage />} />
+        <Route path="/reports/commission-by-user" element={<CommissionByUserReportPage />} />
+        <Route path="/commission-rules" element={<CommissionRulesPage />} />
       </Route>
     </Routes>
   );

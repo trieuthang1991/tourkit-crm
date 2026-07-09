@@ -8,6 +8,7 @@ export const orderSchema = z.object({
   totalRevenue: z.number(),
   totalCost: z.number(),
   status: z.number(),
+  salesUserId: z.string().uuid().nullable(),
 });
 export type Order = z.infer<typeof orderSchema>;
 

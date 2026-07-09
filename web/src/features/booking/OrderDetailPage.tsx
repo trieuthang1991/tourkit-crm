@@ -1,6 +1,6 @@
 import { App, Button, Card, Descriptions, Input, InputNumber, Modal, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';
 import { money, statusText } from '../../shared/format';
@@ -9,7 +9,7 @@ import { CommissionPanel } from '../commission/CommissionPanel';
 import { PaymentsPanel } from '../finance/PaymentsPanel';
 import { ReceiptsPanel } from '../finance/ReceiptsPanel';
 import { OrderCostsPanel } from '../providers/OrderCostsPanel';
-import { ordersCrud } from './bookingApi';
+import { ordersCrud, useAssignSales } from './bookingApi';
 import { useCancelSeat, useConfirmSeat, useDepositSeat, useOrderLines } from './orderLinesApi';
 import type { BookingLine } from './orderLinesApi';
 import { ORDER_STATUS } from './seatTypes';
@@ -110,6 +110,45 @@ function CancelModal({
   );
 }
 
+function AssignSalesControl({ orderId, salesUserId }: { orderId: string; salesUserId: string | null | undefined }) {
+  const { has } = useAuth();
+  const { message } = App.useApp();
+  const [value, setValue] = useState(salesUserId ?? '');
+  const assignSales = useAssignSales(orderId);
+
+  useEffect(() => {
+    setValue(salesUserId ?? '');
+  }, [salesUserId]);
+
+  if (!has('booking.create')) {
+    return null;
+  }
+
+  return (
+    <Space>
+      <Input
+        style={{ width: 280 }}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="ID sales phụ trách (UUID)"
+      />
+      <Button
+        loading={assignSales.isPending}
+        onClick={async () => {
+          try {
+            await assignSales.mutateAsync(value ? value : null);
+            message.success('Đã gán sales');
+          } catch (e) {
+            message.error(errorMessage(e));
+          }
+        }}
+      >
+        Gán sales
+      </Button>
+    </Space>
+  );
+}
+
 function LineActions({ line, orderId }: { line: BookingLine; orderId: string }) {
   const { has } = useAuth();
   const { message } = App.useApp();
@@ -198,7 +237,9 @@ export function OrderDetailPage() {
           </Descriptions.Item>
           <Descriptions.Item label="Doanh thu">{order ? money(order.totalRevenue) : ''}</Descriptions.Item>
           <Descriptions.Item label="Chi phí">{order ? money(order.totalCost) : ''}</Descriptions.Item>
+          <Descriptions.Item label="Sales phụ trách">{order?.salesUserId ?? ''}</Descriptions.Item>
         </Descriptions>
+        <AssignSalesControl orderId={orderId} salesUserId={order?.salesUserId} />
       </Card>
       <Card title="Dòng khách">
         <Table

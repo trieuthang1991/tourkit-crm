@@ -11,6 +11,7 @@ describe('order/seat schemas', () => {
       totalRevenue: 10000000,
       totalCost: 6000000,
       status: 2,
+      salesUserId: null,
     });
     expect(o.code).toBe('ORD001');
   });
