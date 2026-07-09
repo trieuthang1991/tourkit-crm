@@ -39,6 +39,9 @@ public static class Permissions
 
     public const string ReportDebtView = "report.debt.view";  // báo cáo công nợ (CNPT hệ cũ)
     public const string ReportProviderDebtView = "report.providerdebt.view";  // công nợ phải trả NCC
+    public const string ReportDashboardView = "report.dashboard.view";
+    public const string ReportCashFlowView = "report.cashflow.view";
+    public const string ReportTurnoverView = "report.turnover.view";
 
     public const string ProviderView = "provider.view";
     public const string ProviderCreate = "provider.create";
@@ -78,6 +81,7 @@ public static class Permissions
         (PaymentView, "Finance"), (PaymentCreate, "Finance"), (PaymentApprove, "Finance"),
         (ReportDebtView, "Report"),
         (ReportProviderDebtView, "Report"),
+        (ReportDashboardView, "Report"), (ReportCashFlowView, "Report"), (ReportTurnoverView, "Report"),
         (ProviderView, "Provider"), (ProviderCreate, "Provider"),
         (ProviderUpdate, "Provider"), (ProviderDelete, "Provider"),
         (CostView, "Provider"), (CostCreate, "Provider"),
