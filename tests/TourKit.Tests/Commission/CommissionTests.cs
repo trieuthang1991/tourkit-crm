@@ -6,7 +6,7 @@ using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
 using TourKit.Api.Commission;
 using TourKit.Api.Providers;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Commission;

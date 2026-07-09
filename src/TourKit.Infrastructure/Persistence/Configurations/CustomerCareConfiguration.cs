@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 
 namespace TourKit.Infrastructure.Persistence.Configurations;
 

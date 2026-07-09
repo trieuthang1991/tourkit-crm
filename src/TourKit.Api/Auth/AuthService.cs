@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using TourKit.Api.Tenancy;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 
 namespace TourKit.Api.Auth;

@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 
 namespace TourKit.Api.Auth;
 

@@ -20,7 +20,7 @@ namespace TourKit.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.17");
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.CancelSeat", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.CancelSeat", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -72,7 +72,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("CancelSeats");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Customer", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -106,7 +106,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Customers");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Lead", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.Lead", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -159,7 +159,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Leads");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Order", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.Order", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -224,7 +224,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Permission", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -257,7 +257,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Permissions");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.ReceiptVoucher", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.ReceiptVoucher", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -336,7 +336,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("ReceiptVouchers");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.RefreshToken", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -378,7 +378,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Role", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -409,7 +409,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Roles");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.RolePermission", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.RolePermission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -441,7 +441,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("RolePermissions");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Tenant", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -474,7 +474,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Tenants");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Tour", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.Tour", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -549,7 +549,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.UseTptMappingStrategy();
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.TourCustomer", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.TourCustomer", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -684,7 +684,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("TourCustomers");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.TourItinerary", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.TourItinerary", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -724,7 +724,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("TourItineraries");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.User", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -771,7 +771,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.UserRole", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -803,9 +803,9 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("UserRoles");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.TourDeparture", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.TourDeparture", b =>
                 {
-                    b.HasBaseType("TourKit.Infrastructure.Entities.Tour");
+                    b.HasBaseType("TourKit.Shared.Entities.Tour");
 
                     b.Property<int>("AmountAdults")
                         .HasColumnType("INTEGER");
@@ -827,9 +827,9 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("TourDepartureFields", (string)null);
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.TourTemplate", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.TourTemplate", b =>
                 {
-                    b.HasBaseType("TourKit.Infrastructure.Entities.Tour");
+                    b.HasBaseType("TourKit.Shared.Entities.Tour");
 
                     b.Property<decimal>("PriceAdult")
                         .HasPrecision(18, 2)
@@ -861,20 +861,20 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("TourTemplateFields", (string)null);
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.TourDeparture", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.TourDeparture", b =>
                 {
-                    b.HasOne("TourKit.Infrastructure.Entities.Tour", null)
+                    b.HasOne("TourKit.Shared.Entities.Tour", null)
                         .WithOne()
-                        .HasForeignKey("TourKit.Infrastructure.Entities.TourDeparture", "Id")
+                        .HasForeignKey("TourKit.Shared.Entities.TourDeparture", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.TourTemplate", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.TourTemplate", b =>
                 {
-                    b.HasOne("TourKit.Infrastructure.Entities.Tour", null)
+                    b.HasOne("TourKit.Shared.Entities.Tour", null)
                         .WithOne()
-                        .HasForeignKey("TourKit.Infrastructure.Entities.TourTemplate", "Id")
+                        .HasForeignKey("TourKit.Shared.Entities.TourTemplate", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

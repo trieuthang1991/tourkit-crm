@@ -20,7 +20,7 @@ namespace TourKit.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.17");
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Customer", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -54,7 +54,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Customers");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.RefreshToken", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -96,7 +96,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.Tenant", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -129,7 +129,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("Tenants");
                 });
 
-            modelBuilder.Entity("TourKit.Infrastructure.Entities.User", b =>
+            modelBuilder.Entity("TourKit.Shared.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()

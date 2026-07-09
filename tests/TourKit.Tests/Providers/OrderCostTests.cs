@@ -5,7 +5,7 @@ using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
 using TourKit.Api.Providers;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Shared.Application;
 using TourKit.Tests.Support;
 

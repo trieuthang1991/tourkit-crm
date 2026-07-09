@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Providers;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Shared.Application;
 using TourKit.Tests.Support;
 

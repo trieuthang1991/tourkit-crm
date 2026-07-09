@@ -7,7 +7,7 @@ namespace TourKit.Api.Commission;
 
 /// <summary>
 /// Hoa hồng/chia lợi nhuận theo đơn (ProfitSharing hệ cũ) — dưới /api/v1/orders/{orderId}/profit(-shares).
-/// Lợi nhuận đơn = doanh thu − chi phí, tính duy nhất tại <see cref="TourKit.Infrastructure.Domain.OrderMath.Profit"/>.
+/// Lợi nhuận đơn = doanh thu − chi phí, tính duy nhất tại <see cref="TourKit.Shared.Domain.OrderMath.Profit"/>.
 /// Endpoint mỏng: map request → command/query → dispatch → map Result sang HTTP (conventions §6).
 /// </summary>
 public static class CommissionEndpoints

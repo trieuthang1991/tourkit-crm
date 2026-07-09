@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TourKit.Api.Reports.Features;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Tenancy;
 

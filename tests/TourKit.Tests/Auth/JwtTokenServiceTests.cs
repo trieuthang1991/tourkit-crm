@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Options;
 using TourKit.Api.Auth;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 
 namespace TourKit.Tests.Auth;
 

@@ -1,4 +1,4 @@
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 
 namespace TourKit.Api.Marketing;
 

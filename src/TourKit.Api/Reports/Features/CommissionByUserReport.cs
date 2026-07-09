@@ -10,7 +10,7 @@ public sealed record CommissionByUserRow(
 
 /// <summary>
 /// Báo cáo hoa hồng/lợi nhuận theo nhân viên (legacy ReportTurnoverProfit theo user): gom đơn có
-/// <c>SalesUserId</c> theo user, cost từ OrderCost, rate từ <see cref="TourKit.Infrastructure.Entities.CommissionRule"/>
+/// <c>SalesUserId</c> theo user, cost từ OrderCost, rate từ <see cref="TourKit.Shared.Entities.CommissionRule"/>
 /// (rule đầu tiên của user, mặc định 0 nếu không có). Ghép + sort ở memory (SQLite-safe).
 /// </summary>
 public sealed record CommissionByUserReportQuery : IQuery<IReadOnlyList<CommissionByUserRow>>;

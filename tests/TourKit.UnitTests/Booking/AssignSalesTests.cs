@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TourKit.Api.Booking.Features;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 using TourKit.Shared.Tenancy;

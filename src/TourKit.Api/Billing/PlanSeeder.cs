@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 
 namespace TourKit.Api.Billing;

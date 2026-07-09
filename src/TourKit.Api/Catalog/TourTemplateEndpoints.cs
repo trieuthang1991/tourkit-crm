@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TourKit.Api.Application;
 using TourKit.Api.Authz;
 using TourKit.Api.Catalog.Features;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 

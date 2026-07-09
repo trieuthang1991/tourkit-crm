@@ -1,7 +1,7 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using TourKit.Infrastructure.Domain;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Domain;
+using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 

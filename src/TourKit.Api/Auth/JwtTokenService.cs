@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 
 namespace TourKit.Api.Auth;
 

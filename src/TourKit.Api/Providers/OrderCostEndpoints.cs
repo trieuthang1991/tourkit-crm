@@ -8,7 +8,7 @@ namespace TourKit.Api.Providers;
 /// <summary>
 /// Chi phí trả NCC theo đơn (Order_Chi hệ cũ) — dưới /api/v1/orders/{orderId}/costs.
 /// Mỗi lần thêm chi phí, Order.TotalCost được recompute lại từ toàn bộ dòng chi phí (công thức duy nhất
-/// ở <see cref="TourKit.Infrastructure.Domain.OrderMath.TotalCost"/>) và lưu chung 1 SaveChanges với dòng chi phí mới.
+/// ở <see cref="TourKit.Shared.Domain.OrderMath.TotalCost"/>) và lưu chung 1 SaveChanges với dòng chi phí mới.
 /// Endpoint mỏng: map request → command/query → dispatch → map Result sang HTTP (conventions §6).
 /// </summary>
 public static class OrderCostEndpoints

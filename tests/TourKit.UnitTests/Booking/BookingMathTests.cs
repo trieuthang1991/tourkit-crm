@@ -1,5 +1,5 @@
-using TourKit.Infrastructure.Domain;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Domain;
+using TourKit.Shared.Entities;
 
 namespace TourKit.UnitTests.Booking;
 

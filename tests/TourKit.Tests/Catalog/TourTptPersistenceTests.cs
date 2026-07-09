@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Catalog;

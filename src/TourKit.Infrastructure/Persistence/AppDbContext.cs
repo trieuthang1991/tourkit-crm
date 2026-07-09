@@ -1,7 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using TourKit.Infrastructure.Entities;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Tenancy;
 

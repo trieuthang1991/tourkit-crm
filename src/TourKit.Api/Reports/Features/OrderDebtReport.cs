@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Infrastructure.Domain;
+using TourKit.Shared.Domain;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 

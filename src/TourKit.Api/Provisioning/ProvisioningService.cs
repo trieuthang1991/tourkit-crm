@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TourKit.Api.Auth;
 using TourKit.Api.Billing;
 using TourKit.Api.Tenancy;
-using TourKit.Infrastructure.Entities;
+using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 
 namespace TourKit.Api.Provisioning;
