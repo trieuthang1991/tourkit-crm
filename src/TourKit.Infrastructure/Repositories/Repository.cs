@@ -28,7 +28,13 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
 
     public async Task AddAsync(T entity) => await Set.AddAsync(entity);
     public void Update(T entity) => Set.Update(entity);
-    public void Remove(T entity) => Set.Remove(entity);
+
+    // Soft-delete (đánh dấu IsDeleted) — giữ đúng convention: global query filter tự ẩn bản ghi đã xoá.
+    public void Remove(T entity)
+    {
+        entity.IsDeleted = true;
+        Set.Update(entity);
+    }
     public Task<int> SaveChangesAsync() => db.SaveChangesAsync();
     public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate) => Set.AnyAsync(predicate);
 }
