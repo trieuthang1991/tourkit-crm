@@ -32,11 +32,13 @@ TourKit.Shared         (Domain)        →  KHÔNG ref ai (leaf); KHÔNG dính E
 |---|---|---|---|
 | **Hạ tầng chung của tầng App** | `Application/Common/` | `TourKit.Application.Common` | `IRepository<T>`, `PagedResult<T>`, `Exceptions` (AppException...) |
 | **Helper cross-cutting tái dùng** | `Application/Common/` | `TourKit.Application.Common` | guard clause, extension map, chuẩn hoá chuỗi |
-| **DTO** (request/response) | `Application/<Module>/` | `TourKit.Application.<Module>` | `CustomerDto`, `CreateCustomerDto`, `UpdateCustomerDto` |
-| **Interface service** | `Application/<Module>/` | 〃 | `ICustomerService` |
+| **DTO** (request/response) | `Application/<Module>/Dtos/` | `TourKit.Application.<Module>.Dtos` | `CustomerDto`, `CreateCustomerDto`, `UpdateCustomerDto` |
+| **Validator** (FluentValidation) | `Application/<Module>/Validators/` | `TourKit.Application.<Module>.Validators` | `CreateCustomerValidator` |
+| **Interface service** | `Application/<Module>/` | `TourKit.Application.<Module>` | `ICustomerService` |
 | **Service** (logic) | `Application/<Module>/` | 〃 | `CustomerService` |
-| **Validator** (FluentValidation) | `Application/<Module>/` | 〃 | `CreateCustomerValidator` |
 | **Repo interface riêng** (query phức tạp) | `Application/<Module>/` hoặc `Common/` | 〃 | `IOrderRepository` |
+
+> **DTO và Validator để folder riêng** (`Dtos/`, `Validators/`) — namespace khớp folder (`.Dtos`, `.Validators`). Service/Controller `using ...Dtos`.
 
 ### TourKit.Infrastructure (Data access)
 | Loại | Thư mục | Ví dụ |
@@ -105,17 +107,27 @@ Thêm công thức mới → thêm method vào class Domain phù hợp (hoặc t
 ## 6. Khuôn một module (mẫu Customers — copy khi tạo module mới)
 
 ```
-Shared/Entities/<X>.cs                          entity
-Shared/Enums/<XStatus>.cs                        enum (nếu có)
-Application/<Module>/<X>Dtos.cs                  CustomerDto, CreateXDto, UpdateXDto
-Application/<Module>/I<X>Service.cs              interface
-Application/<Module>/<X>Service.cs               logic (validate, map, ném exception)
-Application/<Module>/<X>Validators.cs            FluentValidation
-Infrastructure/Repositories/                     dùng Repository<T> generic (chỉ thêm repo riêng khi query phức tạp)
-Api/Controllers/<X>Controller.cs                 [ApiController], mỏng, [Authorize(Permissions.X)]
-tests/TourKit.UnitTests/<Module>/<X>ServiceTests.cs   test service (fake IRepository)
+Shared/Entities/<X>.cs                              entity
+Shared/Enums/<XStatus>.cs                            enum (nếu có)
+Application/<Module>/Dtos/<X>Dtos.cs                 XDto, CreateXDto, UpdateXDto   (ns ...<Module>.Dtos)
+Application/<Module>/Validators/<X>Validators.cs     FluentValidation               (ns ...<Module>.Validators)
+Application/<Module>/I<X>Service.cs                  interface
+Application/<Module>/<X>Service.cs                   logic (validate, map, ném exception)
+Infrastructure/Repositories/                         dùng Repository<T> generic (chỉ thêm repo riêng khi query phức tạp)
+Api/Controllers/<X>Controller.cs                     [ApiController], mỏng, [Authorize(Permissions.X)]
+tests/TourKit.UnitTests/<Module>/<X>ServiceTests.cs  test service (fake IRepository)
 ```
-Luồng chuẩn service: `validate → repo.GetById (?? throw NotFound) → thao tác entity → repo.Save → map DTO`.
+Luồng chuẩn service (viết TƯỜNG MINH, nhiều dòng — không one-liner khó đọc):
+```
+validate(dto)
+var entity = await repo.GetByIdAsync(id);
+if (entity is null) { throw new NotFoundException(); }
+... thao tác entity ...
+await repo.SaveChangesAsync();
+return Map(entity);
+```
+
+> **KHÔNG truyền `CancellationToken`** trong chữ ký service/repository/controller — giữ gọn, dễ đọc (đánh đổi: mất huỷ query khi request chết, chấp nhận ở quy mô này).
 
 ## 7. Giữ nguyên (không đổi khi refactor)
 Đa tenant (global query filter + timestamp interceptor trong `AppDbContext`) · JWT/RBAC (`[Authorize(Permissions.*)]` = policy) · config provider SQLite↔SqlServer · converter decimal/DateTimeOffset cho SQLite · migrate-on-startup · route `/api/v1/...` bất biến (FE không phải sửa).

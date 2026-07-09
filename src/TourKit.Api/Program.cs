@@ -76,7 +76,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 // --- CQRS: dispatcher + validation pipeline (FluentValidation) + scan handler (Scrutor). Không dùng MediatR. ---
 builder.Services.AddScoped<IDispatcher, Dispatcher>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-builder.Services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Customers.Validators.CreateCustomerValidator>();
 builder.Services.Scan(scan => scan.FromAssemblyOf<Program>()
     .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<,>)), publicOnly: false)
         .AsImplementedInterfaces().WithScopedLifetime()

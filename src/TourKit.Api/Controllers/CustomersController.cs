@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Authz;
 using TourKit.Application.Customers;
+using TourKit.Application.Customers.Dtos;
 
 namespace TourKit.Api.Controllers;
 
@@ -11,35 +12,41 @@ public sealed class CustomersController(ICustomerService service) : ControllerBa
 {
     [HttpGet]
     [Authorize(Permissions.CustomerView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20, CancellationToken ct = default)
-        => Ok(await service.ListAsync(page, size, ct));
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20)
+    {
+        var result = await service.ListAsync(page, size);
+        return Ok(result);
+    }
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.CustomerView)]
-    public async Task<IActionResult> Get(Guid id, CancellationToken ct)
-        => Ok(await service.GetAsync(id, ct));
+    public async Task<IActionResult> Get(Guid id)
+    {
+        var customer = await service.GetAsync(id);
+        return Ok(customer);
+    }
 
     [HttpPost]
     [Authorize(Permissions.CustomerCreate)]
-    public async Task<IActionResult> Create([FromBody] CreateCustomerDto dto, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateCustomerDto dto)
     {
-        var created = await service.CreateAsync(dto, ct);
+        var created = await service.CreateAsync(dto);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:guid}")]
     [Authorize(Permissions.CustomerUpdate)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCustomerDto dto, CancellationToken ct)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCustomerDto dto)
     {
-        await service.UpdateAsync(id, dto, ct);
+        await service.UpdateAsync(id, dto);
         return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
     [Authorize(Permissions.CustomerDelete)]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete(Guid id)
     {
-        await service.DeleteAsync(id, ct);
+        await service.DeleteAsync(id);
         return NoContent();
     }
 }

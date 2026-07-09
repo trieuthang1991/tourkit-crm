@@ -1,6 +1,7 @@
 using FluentValidation;
+using TourKit.Application.Customers.Dtos;
 
-namespace TourKit.Application.Customers;
+namespace TourKit.Application.Customers.Validators;
 
 public sealed class CreateCustomerValidator : AbstractValidator<CreateCustomerDto>
 {

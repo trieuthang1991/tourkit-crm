@@ -1,12 +1,13 @@
 using TourKit.Application.Common;
+using TourKit.Application.Customers.Dtos;
 
 namespace TourKit.Application.Customers;
 
 public interface ICustomerService
 {
-    Task<PagedResult<CustomerDto>> ListAsync(int page, int size, CancellationToken ct = default);
-    Task<CustomerDto> GetAsync(Guid id, CancellationToken ct = default);
-    Task<CustomerDto> CreateAsync(CreateCustomerDto dto, CancellationToken ct = default);
-    Task UpdateAsync(Guid id, UpdateCustomerDto dto, CancellationToken ct = default);
-    Task DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<PagedResult<CustomerDto>> ListAsync(int page, int size);
+    Task<CustomerDto> GetAsync(Guid id);
+    Task<CustomerDto> CreateAsync(CreateCustomerDto dto);
+    Task UpdateAsync(Guid id, UpdateCustomerDto dto);
+    Task DeleteAsync(Guid id);
 }

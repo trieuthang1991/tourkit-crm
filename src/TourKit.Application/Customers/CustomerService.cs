@@ -1,5 +1,6 @@
 using FluentValidation;
 using TourKit.Application.Common;
+using TourKit.Application.Customers.Dtos;
 using TourKit.Shared.Entities;
 
 namespace TourKit.Application.Customers;
@@ -9,47 +10,69 @@ public sealed class CustomerService(
     IValidator<CreateCustomerDto> createValidator,
     IValidator<UpdateCustomerDto> updateValidator) : ICustomerService
 {
-    public async Task<PagedResult<CustomerDto>> ListAsync(int page, int size, CancellationToken ct = default)
+    public async Task<PagedResult<CustomerDto>> ListAsync(int page, int size)
     {
-        var (items, total) = await repo.PageAsync(page, size, ct: ct);
-        return new PagedResult<CustomerDto>(items.Select(Map).ToList(), total, page, size);
+        var (items, total) = await repo.PageAsync(page, size);
+        var dtos = items.Select(Map).ToList();
+        return new PagedResult<CustomerDto>(dtos, total, page, size);
     }
 
-    public async Task<CustomerDto> GetAsync(Guid id, CancellationToken ct = default)
-        => Map(await repo.GetByIdAsync(id, ct) ?? throw new NotFoundException());
-
-    public async Task<CustomerDto> CreateAsync(CreateCustomerDto dto, CancellationToken ct = default)
+    public async Task<CustomerDto> GetAsync(Guid id)
     {
-        await Validate(createValidator, dto, ct);
-        var entity = new Customer { FullName = dto.FullName.Trim(), Phone = dto.Phone };
-        await repo.AddAsync(entity, ct);
-        await repo.SaveChangesAsync(ct);
+        var entity = await repo.GetByIdAsync(id);
+        if (entity is null)
+        {
+            throw new NotFoundException();
+        }
+
         return Map(entity);
     }
 
-    public async Task UpdateAsync(Guid id, UpdateCustomerDto dto, CancellationToken ct = default)
+    public async Task<CustomerDto> CreateAsync(CreateCustomerDto dto)
     {
-        await Validate(updateValidator, dto, ct);
-        var entity = await repo.GetByIdAsync(id, ct) ?? throw new NotFoundException();
+        await Validate(createValidator, dto);
+
+        var entity = new Customer { FullName = dto.FullName.Trim(), Phone = dto.Phone };
+        await repo.AddAsync(entity);
+        await repo.SaveChangesAsync();
+
+        return Map(entity);
+    }
+
+    public async Task UpdateAsync(Guid id, UpdateCustomerDto dto)
+    {
+        await Validate(updateValidator, dto);
+
+        var entity = await repo.GetByIdAsync(id);
+        if (entity is null)
+        {
+            throw new NotFoundException();
+        }
+
         entity.FullName = dto.FullName.Trim();
         entity.Phone = dto.Phone;
         repo.Update(entity);
-        await repo.SaveChangesAsync(ct);
+        await repo.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id)
     {
-        var entity = await repo.GetByIdAsync(id, ct) ?? throw new NotFoundException();
-        repo.Remove(entity);
-        await repo.SaveChangesAsync(ct);
-    }
-
-    private static async Task Validate<T>(IValidator<T> v, T dto, CancellationToken ct)
-    {
-        var r = await v.ValidateAsync(dto, ct);
-        if (!r.IsValid)
+        var entity = await repo.GetByIdAsync(id);
+        if (entity is null)
         {
-            throw new ValidationAppException(r.Errors[0].ErrorMessage);
+            throw new NotFoundException();
+        }
+
+        repo.Remove(entity);
+        await repo.SaveChangesAsync();
+    }
+
+    private static async Task Validate<T>(IValidator<T> validator, T dto)
+    {
+        var result = await validator.ValidateAsync(dto);
+        if (!result.IsValid)
+        {
+            throw new ValidationAppException(result.Errors[0].ErrorMessage);
         }
     }
 

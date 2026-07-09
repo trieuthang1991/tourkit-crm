@@ -1,6 +1,8 @@
 using System.Linq.Expressions;
 using TourKit.Application.Common;
 using TourKit.Application.Customers;
+using TourKit.Application.Customers.Dtos;
+using TourKit.Application.Customers.Validators;
 using TourKit.Shared.Entities;
 
 namespace TourKit.UnitTests.Customers;
@@ -16,16 +18,16 @@ public class CustomerServiceTests
     {
         private readonly List<T> _items = [];
 
-        public Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        public Task<T?> GetByIdAsync(Guid id)
             => Task.FromResult(_items.FirstOrDefault(e => e.Id == id));
 
-        public Task<IReadOnlyList<T>> ListAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<IReadOnlyList<T>> ListAsync(Expression<Func<T, bool>>? predicate = null)
         {
             var query = predicate is null ? _items.AsEnumerable() : _items.AsQueryable().Where(predicate);
             return Task.FromResult<IReadOnlyList<T>>(query.ToList());
         }
 
-        public Task<(IReadOnlyList<T> Items, int Total)> PageAsync(int page, int size, Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default)
+        public Task<(IReadOnlyList<T> Items, int Total)> PageAsync(int page, int size, Expression<Func<T, bool>>? predicate = null)
         {
             var query = predicate is null ? _items.AsEnumerable() : _items.AsQueryable().Where(predicate);
             var list = query.ToList();
@@ -33,7 +35,7 @@ public class CustomerServiceTests
             return Task.FromResult<(IReadOnlyList<T> Items, int Total)>((pageItems, list.Count));
         }
 
-        public Task AddAsync(T entity, CancellationToken ct = default)
+        public Task AddAsync(T entity)
         {
             _items.Add(entity);
             return Task.CompletedTask;
@@ -50,9 +52,9 @@ public class CustomerServiceTests
 
         public void Remove(T entity) => _items.RemoveAll(e => e.Id == entity.Id);
 
-        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
+        public Task<int> SaveChangesAsync() => Task.FromResult(0);
 
-        public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default)
+        public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
             => Task.FromResult(_items.AsQueryable().Any(predicate));
     }
 
