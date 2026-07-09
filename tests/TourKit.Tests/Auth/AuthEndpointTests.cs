@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Shared.Application;
+using TourKit.Application.Common;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Auth;
@@ -63,7 +63,7 @@ public class AuthEndpointTests : IClassFixture<AuthTestFactory>
         var loginB = await (await client.PostAsJsonAsync("/api/v1/auth/login",
             new LoginRequest(b.slug, b.email, b.password))).Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginB!.AccessToken);
-        var listB = await client.GetFromJsonAsync<Paged<CustomerRow>>("/api/v1/customers");
+        var listB = await client.GetFromJsonAsync<PagedResult<CustomerRow>>("/api/v1/customers");
 
         Assert.NotNull(listB);
         Assert.Empty(listB!.Items);

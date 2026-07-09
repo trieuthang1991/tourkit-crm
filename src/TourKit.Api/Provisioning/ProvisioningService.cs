@@ -27,7 +27,7 @@ public sealed class ProvisioningService : IProvisioningService
         _hasher = hasher;
     }
 
-    public async Task<RegistrationOutcome> RegisterAsync(RegisterTenantRequest req, CancellationToken ct)
+    public async Task<RegistrationOutcome> RegisterAsync(RegisterTenantRequest req)
     {
         var slug = (req.Slug ?? string.Empty).Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(slug) || string.IsNullOrWhiteSpace(req.CompanyName)
@@ -36,14 +36,14 @@ public sealed class ProvisioningService : IProvisioningService
             return new RegistrationOutcome(RegistrationError.Invalid, null);
         }
 
-        if (await _db.Tenants.AnyAsync(t => t.Slug == slug && !t.IsDeleted, ct))
+        if (await _db.Tenants.AnyAsync(t => t.Slug == slug && !t.IsDeleted))
         {
             return new RegistrationOutcome(RegistrationError.SlugTaken, null);
         }
 
         var tenant = new Tenant { Name = req.CompanyName.Trim(), Slug = slug };
         _db.Tenants.Add(tenant);
-        await _db.SaveChangesAsync(ct);
+        await _db.SaveChangesAsync();
 
         _tenant.SetTenant(tenant.Id);   // để interceptor gán TenantId cho user/role
 
@@ -57,9 +57,9 @@ public sealed class ProvisioningService : IProvisioningService
 
         var role = new Role { Name = "Admin" };
         _db.Roles.Add(role);
-        await _db.SaveChangesAsync(ct);
+        await _db.SaveChangesAsync();
 
-        var permIds = await _db.Permissions.Select(p => p.Id).ToListAsync(ct);
+        var permIds = await _db.Permissions.Select(p => p.Id).ToListAsync();
         foreach (var pid in permIds)
         {
             _db.RolePermissions.Add(new RolePermission { RoleId = role.Id, PermissionId = pid });
@@ -68,7 +68,7 @@ public sealed class ProvisioningService : IProvisioningService
         _db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
 
         // Plan là global (không lọc theo tenant) — gán gói mặc định cho tenant mới tạo.
-        var plan = await _db.Plans.FirstOrDefaultAsync(p => p.Code == PlanCatalog.DefaultPlanCode, ct);
+        var plan = await _db.Plans.FirstOrDefaultAsync(p => p.Code == PlanCatalog.DefaultPlanCode);
         if (plan is not null)
         {
             _db.Subscriptions.Add(new Subscription
@@ -80,7 +80,7 @@ public sealed class ProvisioningService : IProvisioningService
             });
         }
 
-        await _db.SaveChangesAsync(ct);
+        await _db.SaveChangesAsync();
 
         return new RegistrationOutcome(RegistrationError.None,
             new RegistrationResponse(tenant.Id, tenant.Slug, user.Id));

@@ -25,10 +25,10 @@ public sealed class AuthService : IAuthService
         _opt = opt.Value;
     }
 
-    public async Task<AuthResponse?> LoginAsync(LoginRequest req, CancellationToken ct)
+    public async Task<AuthResponse?> LoginAsync(LoginRequest req)
     {
         // Tenant KHÔNG phải ITenantEntity → không bị query filter; tra thẳng theo slug.
-        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Slug == req.TenantSlug && !t.IsDeleted, ct);
+        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Slug == req.TenantSlug && !t.IsDeleted);
         if (tenant is null)
         {
             return null;
@@ -36,7 +36,7 @@ public sealed class AuthService : IAuthService
 
         // Chưa có tenant context → phải IgnoreQueryFilters, lọc tay theo tenant + email.
         var user = await _db.Users.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Email == req.Email && !u.IsDeleted, ct);
+            .FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Email == req.Email && !u.IsDeleted);
         if (user is null || !user.IsActive || !_hasher.Verify(user.PasswordHash, req.Password))
         {
             return null;
@@ -44,28 +44,28 @@ public sealed class AuthService : IAuthService
 
         // Từ đây ĐÃ biết tenant → set ambient để ghi RefreshToken đúng tenant qua interceptor.
         _tenant.SetTenant(tenant.Id);
-        return await IssueAsync(user, ct);
+        return await IssueAsync(user);
     }
 
-    public async Task<AuthResponse?> RefreshAsync(string refreshToken, CancellationToken ct)
+    public async Task<AuthResponse?> RefreshAsync(string refreshToken)
     {
         var hash = HashToken(refreshToken);
         var stored = await _db.RefreshTokens.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(r => r.TokenHash == hash, ct);
+            .FirstOrDefaultAsync(r => r.TokenHash == hash);
         if (stored is null || !stored.IsActive)
         {
             return null;
         }
 
         var user = await _db.Users.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.Id == stored.UserId && !u.IsDeleted, ct);
+            .FirstOrDefaultAsync(u => u.Id == stored.UserId && !u.IsDeleted);
         if (user is null || !user.IsActive)
         {
             return null;
         }
 
         // Chặn refresh cho tenant đã bị soft-delete (đồng bộ với LoginAsync; quan trọng khi 0b-3/0b-4 có deactivate tenant).
-        var tenantActive = await _db.Tenants.AnyAsync(t => t.Id == user.TenantId && !t.IsDeleted, ct);
+        var tenantActive = await _db.Tenants.AnyAsync(t => t.Id == user.TenantId && !t.IsDeleted);
         if (!tenantActive)
         {
             return null;
@@ -73,12 +73,12 @@ public sealed class AuthService : IAuthService
 
         _tenant.SetTenant(user.TenantId);
         stored.RevokedAt = DateTimeOffset.UtcNow;   // rotate: thu hồi token cũ
-        return await IssueAsync(user, ct);
+        return await IssueAsync(user);
     }
 
-    private async Task<AuthResponse> IssueAsync(User user, CancellationToken ct)
+    private async Task<AuthResponse> IssueAsync(User user)
     {
-        var permissions = await LoadPermissionsAsync(user.Id, ct);
+        var permissions = await LoadPermissionsAsync(user.Id);
         var access = _jwt.CreateAccessToken(user, permissions);
         var refresh = _jwt.CreateRefreshToken();
 
@@ -89,19 +89,19 @@ public sealed class AuthService : IAuthService
             ExpiresAt = DateTimeOffset.UtcNow.AddDays(_opt.RefreshTokenDays),
         });
         user.LastLoginAt = DateTimeOffset.UtcNow;
-        await _db.SaveChangesAsync(ct);
+        await _db.SaveChangesAsync();
 
         return new AuthResponse(access, refresh, _jwt.AccessTokenExpiry());
     }
 
-    private async Task<List<string>> LoadPermissionsAsync(Guid userId, CancellationToken ct)
+    private async Task<List<string>> LoadPermissionsAsync(Guid userId)
     {
         // UserRole → RolePermission → Permission.Code (RBAC là ITenantEntity nên đã lọc theo tenant hiện tại).
         return await _db.UserRoles.Where(ur => ur.UserId == userId)
             .Join(_db.RolePermissions, ur => ur.RoleId, rp => rp.RoleId, (ur, rp) => rp.PermissionId)
             .Join(_db.Permissions, pid => pid, p => p.Id, (pid, p) => p.Code)
             .Distinct()
-            .ToListAsync(ct);
+            .ToListAsync();
     }
 
     private static string HashToken(string token)

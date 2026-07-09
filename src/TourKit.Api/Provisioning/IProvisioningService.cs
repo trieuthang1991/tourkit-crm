@@ -6,5 +6,5 @@ public sealed record RegistrationOutcome(RegistrationError Error, RegistrationRe
 
 public interface IProvisioningService
 {
-    Task<RegistrationOutcome> RegisterAsync(RegisterTenantRequest req, CancellationToken ct);
+    Task<RegistrationOutcome> RegisterAsync(RegisterTenantRequest req);
 }

@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Shared.Application;
+using TourKit.Application.Common;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Api;
@@ -28,7 +28,7 @@ public class CustomerEndpointIsolationTests : IClassFixture<AuthTestFactory>
         var tokenB = (await (await client.PostAsJsonAsync("/api/v1/auth/login",
             new LoginRequest(b.slug, b.email, b.password))).Content.ReadFromJsonAsync<AuthResponse>())!.AccessToken;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenB);
-        var listB = await client.GetFromJsonAsync<Paged<CustomerDto>>("/api/v1/customers");
+        var listB = await client.GetFromJsonAsync<PagedResult<CustomerDto>>("/api/v1/customers");
 
         Assert.NotNull(listB);
         Assert.Empty(listB!.Items);

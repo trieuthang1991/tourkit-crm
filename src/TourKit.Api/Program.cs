@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using TourKit.Api.Application;
 using TourKit.Api.Auth;
 using TourKit.Api.Billing;
 using TourKit.Api.Middleware;
@@ -16,7 +15,6 @@ using TourKit.Application.Reports;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Infrastructure.Repositories;
 using TourKit.Infrastructure.Reports;
-using TourKit.Shared.Application;
 using TourKit.Shared.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -66,15 +64,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
-// --- CQRS: dispatcher + validation pipeline (FluentValidation) + scan handler (Scrutor). Không dùng MediatR. ---
-builder.Services.AddScoped<IDispatcher, Dispatcher>();
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+// --- FluentValidation: quét validator ở tầng Application ---
 builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Customers.Validators.CreateCustomerValidator>();
-builder.Services.Scan(scan => scan.FromAssemblyOf<Program>()
-    .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<,>)), publicOnly: false)
-        .AsImplementedInterfaces().WithScopedLifetime()
-    .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)), publicOnly: false)
-        .AsImplementedInterfaces().WithScopedLifetime());
 
 // --- Kiến trúc phân tầng: Controller → Service → IRepository<T> → EF ---
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -137,8 +128,6 @@ app.UseAuthorization();
 
 app.MapControllers();   // Customers, Providers, Crm (kiến trúc phân tầng)
 
-app.MapAuthEndpoints();
-app.MapRegistrationEndpoints();
 
 app.Run();
 
