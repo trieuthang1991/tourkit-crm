@@ -9,6 +9,8 @@ using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Tests.Support;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Tests.Billing;
 
 public class SubscriptionGuardTests : IClassFixture<AuthTestFactory>

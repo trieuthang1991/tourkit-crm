@@ -1,6 +1,8 @@
 using TourKit.Shared.Domain;
 using TourKit.Shared.Entities;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Api.Booking.Features;
 
 /// <summary>Chiếu TourCustomer (chỗ) → SeatResponse + suy trạng thái — dùng chung giữa các slice chỗ.</summary>

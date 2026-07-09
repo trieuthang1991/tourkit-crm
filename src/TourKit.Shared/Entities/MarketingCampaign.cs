@@ -1,4 +1,6 @@
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Shared.Entities;
 
 /// <summary>Chiến dịch marketing (Email/SMS/Zalo). Gửi thật nằm ngoài phạm vi — chỉ quản lý + ghi log.</summary>

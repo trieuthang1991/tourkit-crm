@@ -4,6 +4,8 @@ using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Api.Booking.Features;
 
 /// <summary>

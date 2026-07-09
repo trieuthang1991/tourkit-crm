@@ -5,6 +5,8 @@ using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 using TourKit.Shared.Tenancy;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.UnitTests.Marketing;
 
 /// <summary>

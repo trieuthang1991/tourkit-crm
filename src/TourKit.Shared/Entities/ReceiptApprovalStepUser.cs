@@ -1,4 +1,6 @@
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Shared.Entities;
 
 /// <summary>Một người duyệt được phân công ở một bước cụ thể của ReceiptApproval (legacy ReceiptVoucherApprovalStepUser).</summary>

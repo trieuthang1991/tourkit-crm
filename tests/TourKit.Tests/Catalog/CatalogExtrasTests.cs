@@ -4,8 +4,9 @@ using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Catalog;
 using TourKit.Api.Catalog.Features;
-using TourKit.Shared.Entities;
 using TourKit.Tests.Support;
+
+using TourKit.Shared.Enums;
 
 namespace TourKit.Tests.Catalog;
 

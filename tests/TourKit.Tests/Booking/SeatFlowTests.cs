@@ -7,6 +7,8 @@ using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
 using TourKit.Tests.Support;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Tests.Booking;
 
 public class SeatFlowTests : IClassFixture<AuthTestFactory>

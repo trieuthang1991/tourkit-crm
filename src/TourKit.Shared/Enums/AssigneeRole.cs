@@ -1,4 +1,4 @@
-namespace TourKit.Shared.Entities;
+namespace TourKit.Shared.Enums;
 
 /// <summary>Vai trò người phụ trách tour — greenfield chuẩn hoá từ cột CSV hệ cũ (Tour.IdsNguoiTheoDoi/ManagerIds).</summary>
 public enum AssigneeRole

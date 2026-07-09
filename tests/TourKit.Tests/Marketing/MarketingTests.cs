@@ -3,9 +3,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Marketing;
-using TourKit.Shared.Entities;
 using TourKit.Shared.Application;
 using TourKit.Tests.Support;
+
+using TourKit.Shared.Enums;
 
 namespace TourKit.Tests.Marketing;
 

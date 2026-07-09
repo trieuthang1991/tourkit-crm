@@ -1,4 +1,6 @@
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Shared.Entities;
 
 /// <summary>Bảng gốc TPT — cột chung cho cả mẫu (Template) và chuyến (Departure).</summary>

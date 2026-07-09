@@ -1,4 +1,4 @@
-namespace TourKit.Shared.Entities;
+namespace TourKit.Shared.Enums;
 
 /// <summary>Trạng thái tổng thể của một luồng duyệt nhiều cấp.</summary>
 public enum ApprovalStatus

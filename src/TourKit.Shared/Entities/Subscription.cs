@@ -1,4 +1,6 @@
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Shared.Entities;
 
 /// <summary>Subscription hiện tại của tenant trên một Plan. MVP: một subscription active/tenant.</summary>

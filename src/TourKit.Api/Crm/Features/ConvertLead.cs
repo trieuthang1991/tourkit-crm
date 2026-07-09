@@ -3,6 +3,8 @@ using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Api.Crm.Features;
 
 public sealed record ConvertLeadCommand(Guid Id) : ICommand<ConvertLeadResponse>;

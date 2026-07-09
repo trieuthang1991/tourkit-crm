@@ -7,9 +7,10 @@ using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
 using TourKit.Api.Finance;
-using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Tests.Support;
+
+using TourKit.Shared.Enums;
 
 namespace TourKit.Tests.Finance;
 

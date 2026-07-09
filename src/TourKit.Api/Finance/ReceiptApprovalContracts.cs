@@ -1,4 +1,5 @@
-using TourKit.Shared.Entities;
+
+using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Finance;
 

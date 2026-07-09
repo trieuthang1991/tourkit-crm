@@ -1,3 +1,5 @@
+using TourKit.Shared.Enums;
+
 namespace TourKit.Shared.Entities;
 
 public sealed class TourDeparture : Tour

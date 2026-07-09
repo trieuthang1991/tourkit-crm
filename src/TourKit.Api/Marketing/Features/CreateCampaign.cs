@@ -3,6 +3,8 @@ using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Api.Marketing.Features;
 
 public sealed record CreateCampaignCommand(string Name, MarketingChannel Channel, string? Subject, string Body)

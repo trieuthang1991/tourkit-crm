@@ -5,6 +5,8 @@ using TourKit.Api.Tenancy;
 using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Api.Provisioning;
 
 /// <summary>

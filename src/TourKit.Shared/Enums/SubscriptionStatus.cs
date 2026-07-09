@@ -1,4 +1,4 @@
-namespace TourKit.Shared.Entities;
+namespace TourKit.Shared.Enums;
 
 /// <summary>Trạng thái subscription của tenant.</summary>
 public enum SubscriptionStatus

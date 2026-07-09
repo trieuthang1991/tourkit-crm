@@ -1,4 +1,6 @@
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Shared.Entities;
 
 /// <summary>Khách tiềm năng (phễu bán). Convert thành Customer khi "Won".</summary>

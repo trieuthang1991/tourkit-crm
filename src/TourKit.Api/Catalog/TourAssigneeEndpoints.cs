@@ -3,6 +3,8 @@ using TourKit.Api.Authz;
 using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Api.Catalog;
 
 public sealed record AssigneeRequest(Guid UserId, AssigneeRole Role);

@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using TourKit.Shared.Entities;
 using TourKit.Tests.Support;
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Tests.Catalog;
 
 public class TourTptPersistenceTests

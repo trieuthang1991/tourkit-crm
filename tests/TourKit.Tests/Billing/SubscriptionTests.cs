@@ -43,7 +43,7 @@ public class SubscriptionTests : IClassFixture<AuthTestFactory>
         var sub = await res.Content.ReadFromJsonAsync<SubscriptionResponse>();
         Assert.NotNull(sub);
         Assert.Equal("free", sub!.PlanCode);
-        Assert.Equal(TourKit.Shared.Entities.SubscriptionStatus.Active, sub.Status);
+        Assert.Equal(TourKit.Shared.Enums.SubscriptionStatus.Active, sub.Status);
     }
 
     [Fact]

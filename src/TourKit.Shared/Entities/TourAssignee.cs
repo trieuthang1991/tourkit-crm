@@ -1,4 +1,6 @@
 
+using TourKit.Shared.Enums;
+
 namespace TourKit.Shared.Entities;
 
 /// <summary>Người phụ trách tour — greenfield chuẩn hoá từ cột CSV hệ cũ (Tour.IdsNguoiTheoDoi/ManagerIds).</summary>

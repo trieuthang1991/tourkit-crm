@@ -1,4 +1,4 @@
-namespace TourKit.Shared.Entities;
+namespace TourKit.Shared.Enums;
 
 /// <summary>Kênh gửi chiến dịch marketing.</summary>
 public enum MarketingChannel
