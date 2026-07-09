@@ -13,6 +13,7 @@ public class LayeringTests
 {
     private static readonly Assembly Shared = typeof(BaseEntity).Assembly;
     private static readonly Assembly Infrastructure = typeof(AppDbContext).Assembly;
+    private static readonly Assembly Application = typeof(TourKit.Application.Customers.ICustomerService).Assembly;
 
     [Fact]
     public void Shared_khong_phu_thuoc_Infrastructure_hay_Api()
@@ -32,6 +33,14 @@ public class LayeringTests
             .GetResult();
 
         Assert.True(result.IsSuccessful, Fail(result));
+    }
+
+    [Fact]
+    public void Application_khong_phu_thuoc_Infrastructure_Api()
+    {
+        var r = Types.InAssembly(Application).ShouldNot()
+            .HaveDependencyOnAny("TourKit.Infrastructure", "TourKit.Api").GetResult();
+        Assert.True(r.IsSuccessful, Fail(r));
     }
 
     [Fact]
