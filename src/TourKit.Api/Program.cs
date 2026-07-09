@@ -135,6 +135,7 @@ app.MapTourTemplateEndpoints();
 app.MapMarketTypeEndpoints();
 app.MapTourAssigneeEndpoints();
 app.MapLeadEndpoints();
+app.MapCustomerCareEndpoints();
 app.MapDepartureEndpoints();
 app.MapBookingEndpoints();
 app.MapReceiptEndpoints();

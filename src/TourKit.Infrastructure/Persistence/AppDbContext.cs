@@ -48,6 +48,7 @@ public class AppDbContext : DbContext
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<MarketingCampaign> MarketingCampaigns => Set<MarketingCampaign>();
     public DbSet<MarketingSendLog> MarketingSendLogs => Set<MarketingSendLog>();
+    public DbSet<CustomerCare> CustomerCares => Set<CustomerCare>();
 
     public override int SaveChanges()
     {
