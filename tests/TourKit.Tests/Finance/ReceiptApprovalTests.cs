@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TourKit.Api.Auth;
-using TourKit.Api.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog.Dtos;
 using TourKit.Application.Finance.Dtos;
 using TourKit.Infrastructure.Persistence;
@@ -47,10 +47,10 @@ public class ReceiptApprovalTests : IClassFixture<AuthTestFactory>
         {
             TemplateId = tpl!.Id, Code = "DEP", Title = "Chuyến",
             DepartureDate = (DateTimeOffset?)null, EndDate = (DateTimeOffset?)null, TotalSlots = 30,
-        })).Content.ReadFromJsonAsync<DepartureResponse>();
+        })).Content.ReadFromJsonAsync<DepartureDto>();
 
         var order = await (await client.PostAsJsonAsync($"/api/v1/tour-departures/{dep!.Id}/bookings",
-            new CreateBookingRequest(cus!.Id, 2, 1, 0, 0))).Content.ReadFromJsonAsync<OrderResponse>();
+            new CreateBookingDto(cus!.Id, 2, 1, 0, 0))).Content.ReadFromJsonAsync<OrderDto>();
         return order!.Id;
     }
 

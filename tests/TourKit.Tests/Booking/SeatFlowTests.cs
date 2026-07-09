@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Authz;
-using TourKit.Api.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog.Dtos;
 using TourKit.Tests.Support;
 
@@ -39,7 +39,7 @@ public class SeatFlowTests : IClassFixture<AuthTestFactory>
         {
             TemplateId = tpl!.Id, Code = "DEP", Title = "Chuyến",
             DepartureDate = (DateTimeOffset?)null, EndDate = (DateTimeOffset?)null, TotalSlots = 30,
-        })).Content.ReadFromJsonAsync<DepartureResponse>();
+        })).Content.ReadFromJsonAsync<DepartureDto>();
         return dep!.Id;
     }
 
@@ -59,25 +59,25 @@ public class SeatFlowTests : IClassFixture<AuthTestFactory>
 
         // Giữ chỗ (1 người lớn, giá 5tr) → Held + có đếm ngược
         var held = await (await client.PostAsJsonAsync($"/api/v1/tour-departures/{depId}/holds",
-            new CreateBookingRequest(cusId, 1, 0, 0, 0))).Content.ReadFromJsonAsync<SeatResponse>();
+            new CreateBookingDto(cusId, 1, 0, 0, 0))).Content.ReadFromJsonAsync<SeatDto>();
         Assert.Equal(SeatStatus.Held, held!.Status);
         Assert.NotNull(held.HoldExpiresAt);
         Assert.Equal(5_000_000m, held.LineTotal);
 
         // Xác nhận chỗ → HeldConfirmed, hết đếm ngược
         var confirmed = await (await client.PostAsync($"/api/v1/tour-customers/{held.Id}/confirm-seat", null))
-            .Content.ReadFromJsonAsync<SeatResponse>();
+            .Content.ReadFromJsonAsync<SeatDto>();
         Assert.Equal(SeatStatus.HeldConfirmed, confirmed!.Status);
         Assert.Null(confirmed.HoldExpiresAt);
 
         // Đặt cọc 2tr → Deposited
         var deposited = await (await client.PostAsJsonAsync($"/api/v1/tour-customers/{held.Id}/deposit",
-            new DepositRequest(2_000_000m))).Content.ReadFromJsonAsync<SeatResponse>();
+            new DepositDto(2_000_000m))).Content.ReadFromJsonAsync<SeatDto>();
         Assert.Equal(SeatStatus.Deposited, deposited!.Status);
 
         // Cọc thêm 3tr (đủ 5tr) → Paid
         var paid = await (await client.PostAsJsonAsync($"/api/v1/tour-customers/{held.Id}/deposit",
-            new DepositRequest(3_000_000m))).Content.ReadFromJsonAsync<SeatResponse>();
+            new DepositDto(3_000_000m))).Content.ReadFromJsonAsync<SeatDto>();
         Assert.Equal(SeatStatus.Paid, paid!.Status);
     }
 
@@ -92,19 +92,19 @@ public class SeatFlowTests : IClassFixture<AuthTestFactory>
         var cusId = await CustomerAsync(client);
 
         var held = await (await client.PostAsJsonAsync($"/api/v1/tour-departures/{depId}/holds",
-            new CreateBookingRequest(cusId, 1, 0, 0, 0))).Content.ReadFromJsonAsync<SeatResponse>();
-        await client.PostAsJsonAsync($"/api/v1/tour-customers/{held!.Id}/deposit", new DepositRequest(2_000_000m));
+            new CreateBookingDto(cusId, 1, 0, 0, 0))).Content.ReadFromJsonAsync<SeatDto>();
+        await client.PostAsJsonAsync($"/api/v1/tour-customers/{held!.Id}/deposit", new DepositDto(2_000_000m));
 
         // huỷ + hoàn 1tr
         var cancel = await client.PostAsJsonAsync($"/api/v1/tour-customers/{held.Id}/cancel",
-            new CancelSeatRequest("Khách đổi lịch", 1_000_000m));
+            new CancelSeatDto("Khách đổi lịch", 1_000_000m));
         Assert.Equal(HttpStatusCode.OK, cancel.StatusCode);
-        var seat = await cancel.Content.ReadFromJsonAsync<SeatResponse>();
+        var seat = await cancel.Content.ReadFromJsonAsync<SeatDto>();
         Assert.Equal(SeatStatus.Cancelled, seat!.Status);
 
         // huỷ lần 2 → 409
         var again = await client.PostAsJsonAsync($"/api/v1/tour-customers/{held.Id}/cancel",
-            new CancelSeatRequest(null, 0m));
+            new CancelSeatDto(null, 0m));
         Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
     }
 
@@ -121,7 +121,7 @@ public class SeatFlowTests : IClassFixture<AuthTestFactory>
         var depId = await SetupDepartureAsync(client);
         var cusId = await CustomerAsync(client);
         var held = await (await client.PostAsJsonAsync($"/api/v1/tour-departures/{depId}/holds",
-            new CreateBookingRequest(cusId, 1, 0, 0, 0))).Content.ReadFromJsonAsync<SeatResponse>();
+            new CreateBookingDto(cusId, 1, 0, 0, 0))).Content.ReadFromJsonAsync<SeatDto>();
 
         var res = await client.PostAsync($"/api/v1/tour-customers/{held!.Id}/confirm-seat", null);
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);

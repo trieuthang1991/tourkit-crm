@@ -2,10 +2,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog.Dtos;
+using TourKit.Application.Common;
 using TourKit.Application.Providers.Dtos;
-using TourKit.Shared.Application;
 using TourKit.Tests.Support;
 
 using TourKit.Shared.Enums;
@@ -29,7 +29,7 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
     }
 
     // Dựng 1 Order qua chain đầy đủ: mẫu tour → khách → chuyến → đặt chỗ (giống BookingEndpointTests).
-    private static async Task<OrderResponse> CreateOrderAsync(HttpClient client)
+    private static async Task<OrderDto> CreateOrderAsync(HttpClient client)
     {
         var template = await (await client.PostAsJsonAsync("/api/v1/tour-templates", new
         {
@@ -46,11 +46,11 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
         {
             TemplateId = template!.Id, Code = "DEP-COST", Title = "Đà Nẵng chi phí",
             DepartureDate = DateTimeOffset.UtcNow.AddDays(30), EndDate = (DateTimeOffset?)null, TotalSlots = 30,
-        })).Content.ReadFromJsonAsync<DepartureResponse>();
+        })).Content.ReadFromJsonAsync<DepartureDto>();
 
         var booking = await client.PostAsJsonAsync($"/api/v1/tour-departures/{departure!.Id}/bookings",
-            new CreateBookingRequest(customer!.Id, 1, 0, 0, 0));
-        return (await booking.Content.ReadFromJsonAsync<OrderResponse>())!;
+            new CreateBookingDto(customer!.Id, 1, 0, 0, 0));
+        return (await booking.Content.ReadFromJsonAsync<OrderDto>())!;
     }
 
     private static async Task<ProviderDto> CreateProviderAsync(HttpClient client)
@@ -79,7 +79,7 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
         Assert.Equal(cost.Id, costs![0].Id);
 
         // Order.TotalCost phải được recompute = tổng ActualAmount toàn bộ dòng chi phí của đơn.
-        var orders = await client.GetFromJsonAsync<Paged<OrderResponse>>("/api/v1/orders");
+        var orders = await client.GetFromJsonAsync<PagedResult<OrderDto>>("/api/v1/orders");
         var updatedOrder = orders!.Items.Single(o => o.Id == order.Id);
         Assert.Equal(2_000_000m, updatedOrder.TotalCost);
         Assert.Equal(costs.Sum(c => c.ActualAmount), updatedOrder.TotalCost);
@@ -89,7 +89,7 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
             new CreateOrderCostDto(provider.Id, "Phụ thu", 1, 500_000m, 500_000m, 0m, 0m, 0m, 1));
         Assert.Equal(HttpStatusCode.Created, costResponse2.StatusCode);
 
-        var ordersAfterSecond = await client.GetFromJsonAsync<Paged<OrderResponse>>("/api/v1/orders");
+        var ordersAfterSecond = await client.GetFromJsonAsync<PagedResult<OrderDto>>("/api/v1/orders");
         Assert.Equal(2_500_000m, ordersAfterSecond!.Items.Single(o => o.Id == order.Id).TotalCost);
     }
 

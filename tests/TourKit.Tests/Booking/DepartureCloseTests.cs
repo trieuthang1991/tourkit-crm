@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog.Dtos;
 using TourKit.Tests.Support;
 
@@ -44,7 +44,7 @@ public sealed class DepartureCloseTests : IClassFixture<AuthTestFactory>
         {
             TemplateId = template!.Id, Code = "DEP-C", Title = "Đà Nẵng 20/07",
             DepartureDate = DateTimeOffset.UtcNow.AddDays(30), EndDate = (DateTimeOffset?)null, TotalSlots = 30,
-        })).Content.ReadFromJsonAsync<DepartureResponse>();
+        })).Content.ReadFromJsonAsync<DepartureDto>();
 
         var close1 = await client.PostAsync($"/api/v1/tour-departures/{dep!.Id}/close", null);
         Assert.Equal(HttpStatusCode.OK, close1.StatusCode);
@@ -53,7 +53,7 @@ public sealed class DepartureCloseTests : IClassFixture<AuthTestFactory>
         Assert.Equal(HttpStatusCode.Conflict, close2.StatusCode);
 
         var book = await client.PostAsJsonAsync($"/api/v1/tour-departures/{dep.Id}/bookings",
-            new CreateBookingRequest(customer!.Id, 1, 0, 0, 0));
+            new CreateBookingDto(customer!.Id, 1, 0, 0, 0));
         Assert.Equal(HttpStatusCode.Conflict, book.StatusCode);
     }
 

@@ -1,0 +1,248 @@
+using FluentValidation;
+using TourKit.Application.Booking.Dtos;
+using TourKit.Application.Common;
+using TourKit.Shared.Domain;
+using TourKit.Shared.Entities;
+using TourKit.Shared.Enums;
+
+namespace TourKit.Application.Booking;
+
+/// <summary>
+/// Đặt khách lên chuyến (Order + dòng TourCustomer) + giữ chỗ / xác nhận chỗ / đặt cọc / huỷ chỗ.
+/// Trạng thái chỗ suy ra từ upfront_amount vs giá + HoldExpiresAt (BookingMath) — theo flow "Giữ chỗ" hệ cũ.
+/// </summary>
+public sealed class BookingService(
+    IRepository<TourDeparture> departureRepo,
+    IRepository<TourCustomer> seatRepo,
+    IRepository<Order> orderRepo,
+    IRepository<Customer> customerRepo,
+    IRepository<TourTemplate> templateRepo,
+    IRepository<CancelSeat> cancelSeatRepo,
+    IValidator<DepositDto> depositValidator) : IBookingService
+{
+    public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto)
+    {
+        var (order, _) = await BuildAsync(
+            departureId, dto.CustomerId, dto.AdultQty, dto.ChildQty, dto.ChildSmallQty, dto.BabyQty, isHold: false);
+        return MapOrder(order);
+    }
+
+    public async Task<SeatDto> CreateHoldAsync(Guid departureId, CreateBookingDto dto)
+    {
+        var (_, seat) = await BuildAsync(
+            departureId, dto.CustomerId, dto.AdultQty, dto.ChildQty, dto.ChildSmallQty, dto.BabyQty, isHold: true);
+        return MapSeat(seat);
+    }
+
+    public async Task<SeatDto> ConfirmSeatAsync(Guid seatId)
+    {
+        var seat = await seatRepo.GetByIdAsync(seatId);
+        if (seat is null)
+        {
+            throw new NotFoundException();
+        }
+
+        if (seat.UpfrontAmount != 0m)
+        {
+            throw new ValidationAppException("Chỉ xác nhận chỗ đang giữ (chưa đặt cọc).");
+        }
+
+        seat.HoldExpiresAt = null;   // chốt chỗ, không nhả
+        seatRepo.Update(seat);
+        await seatRepo.SaveChangesAsync();
+
+        return MapSeat(seat);
+    }
+
+    public async Task<SeatDto> DepositAsync(Guid seatId, DepositDto dto)
+    {
+        await Validate(depositValidator, dto);
+
+        var seat = await seatRepo.GetByIdAsync(seatId);
+        if (seat is null)
+        {
+            throw new NotFoundException();
+        }
+
+        seat.UpfrontAmount += dto.Amount;
+        seat.HoldExpiresAt = null;   // đã có tiền → không còn giữ-chỗ-đếm-ngược
+        seatRepo.Update(seat);
+        await seatRepo.SaveChangesAsync();
+
+        return MapSeat(seat);
+    }
+
+    public async Task<SeatDto> CancelSeatAsync(Guid seatId, CancelSeatDto dto)
+    {
+        var seat = await seatRepo.GetByIdAsync(seatId);
+        if (seat is null)
+        {
+            throw new NotFoundException();
+        }
+
+        if (seat.Status != 0)
+        {
+            throw new ConflictException("Chỗ đã được huỷ.");
+        }
+
+        await cancelSeatRepo.AddAsync(new CancelSeat
+        {
+            TourCustomerId = seat.Id,
+            OrderId = seat.OrderId,
+            Note = dto.Note,
+            RefundAmount = dto.RefundAmount,
+            RefundRemain = RefundMath.Remain(seat.UpfrontAmount, dto.RefundAmount),
+            RefundPercentage = RefundMath.Percentage(seat.UpfrontAmount, dto.RefundAmount),
+        });
+        seat.Status = 1;   // statusCancel != 0 → đã huỷ
+        seat.HoldExpiresAt = null;
+        seatRepo.Update(seat);
+        await seatRepo.SaveChangesAsync();
+
+        return MapSeat(seat);
+    }
+
+    public async Task<SeatDto> GetSeatAsync(Guid seatId)
+    {
+        var seat = await seatRepo.GetByIdAsync(seatId);
+        if (seat is null)
+        {
+            throw new NotFoundException();
+        }
+
+        return MapSeat(seat);
+    }
+
+    public async Task<PagedResult<OrderDto>> ListOrdersAsync(int page, int size)
+    {
+        var (items, total) = await orderRepo.PageAsync(page, size);
+        var dtos = items.Select(MapOrder).ToList();
+        return new PagedResult<OrderDto>(dtos, total, page, size);
+    }
+
+    public async Task<IReadOnlyList<BookingLineDto>> ListOrderLinesAsync(Guid orderId)
+    {
+        var lines = await seatRepo.ListAsync(l => l.OrderId == orderId);
+        return lines.OrderBy(l => l.CreatedAt).Select(MapLine).ToList();
+    }
+
+    public async Task<OrderDto> AssignSalesAsync(Guid orderId, AssignSalesDto dto)
+    {
+        var order = await orderRepo.GetByIdAsync(orderId);
+        if (order is null)
+        {
+            throw new NotFoundException();
+        }
+
+        order.SalesUserId = dto.SalesUserId;
+        orderRepo.Update(order);
+        await orderRepo.SaveChangesAsync();
+
+        return MapOrder(order);
+    }
+
+    /// <summary>
+    /// Dựng Order + 1 dòng TourCustomer — dùng chung giữa đặt "chốt ngay" và "giữ chỗ".
+    /// isHold = true → giữ chỗ (upfront 0 + đếm ngược). Guard OVERBOOKING + chuyến đã đóng nằm ở ĐÂY.
+    /// </summary>
+    private async Task<(Order Order, TourCustomer Seat)> BuildAsync(
+        Guid departureId, Guid customerId, int adultQty, int childQty, int childSmallQty, int babyQty, bool isHold)
+    {
+        var departure = await departureRepo.GetByIdAsync(departureId);
+        if (departure is null)
+        {
+            throw new NotFoundException();
+        }
+
+        if (departure.ParentTourId is null)
+        {
+            throw new ValidationAppException("Chuyến chưa gắn mẫu tour để tính giá.");
+        }
+
+        if (!await customerRepo.AnyAsync(c => c.Id == customerId))
+        {
+            throw new ValidationAppException("Khách hàng không tồn tại.");
+        }
+
+        var template = await templateRepo.GetByIdAsync(departure.ParentTourId.Value);
+        if (template is null)
+        {
+            throw new ValidationAppException("Không tìm thấy mẫu tour của chuyến.");
+        }
+
+        if (departure.IsClosed)
+        {
+            throw new ConflictException("Chuyến đã đóng, không thể đặt thêm chỗ.");
+        }
+
+        var newSeats = adultQty + childQty + childSmallQty + babyQty;
+        var activeSeats = await seatRepo.ListAsync(s => s.TourDepartureId == departureId && s.Status == 0);
+        var usedSeats = activeSeats.Sum(BookingMath.SeatCount);
+        if (departure.TotalSlots > 0 && usedSeats + newSeats > departure.TotalSlots)
+        {
+            throw new ConflictException(
+                $"Vượt sức chứa: còn {departure.TotalSlots - usedSeats}/{departure.TotalSlots} chỗ.");
+        }
+
+        var order = new Order
+        {
+            Code = "ORD-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(),
+            TourDepartureId = departureId,
+            CustomerId = customerId,
+            BookingType = 0,
+            Status = isHold ? OrderStatus.Draft : OrderStatus.Confirmed,
+        };
+
+        var seat = new TourCustomer
+        {
+            OrderId = order.Id,
+            TourDepartureId = departureId,
+            CustomerId = customerId,
+            Quantity = adultQty,
+            AmountChildren = childQty,
+            AmountChildrenSmall = childSmallQty,
+            QuantityBaby = babyQty,
+            PriceAdult = template.PriceAdult,
+            PriceChild = template.PriceChild,
+            PriceChildSmall = template.PriceChildSmall,
+            PriceBaby = template.PriceBaby,
+            IsMainContact = true,
+        };
+        if (isHold)
+        {
+            seat.HoldExpiresAt = DateTimeOffset.UtcNow.AddHours(template.ReservationHours);
+            seat.ReservationCode = "RSV-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        }
+
+        order.TotalRevenue = BookingMath.LineTotal(seat);   // công thức 1 chỗ (Shared/Domain)
+
+        await orderRepo.AddAsync(order);
+        await seatRepo.AddAsync(seat);
+        await orderRepo.SaveChangesAsync();
+        await seatRepo.SaveChangesAsync();
+
+        return (order, seat);
+    }
+
+    private static async Task Validate<T>(IValidator<T> validator, T dto)
+    {
+        var result = await validator.ValidateAsync(dto);
+        if (!result.IsValid)
+        {
+            throw new ValidationAppException(result.Errors[0].ErrorMessage);
+        }
+    }
+
+    private static OrderDto MapOrder(Order o) => new(
+        o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, o.TotalCost, o.Status, o.SalesUserId);
+
+    /// <summary>Chiếu TourCustomer (chỗ) → SeatDto. Công thức tiền &amp; suy trạng thái nằm ở BookingMath (một chỗ).</summary>
+    private static SeatDto MapSeat(TourCustomer s) => new(
+        s.Id, s.OrderId, BookingMath.DeriveSeatStatus(s), s.UpfrontAmount, BookingMath.LineTotal(s),
+        s.HoldExpiresAt, s.ReservationCode);
+
+    private static BookingLineDto MapLine(TourCustomer l) => new(
+        l.Id, l.Quantity, l.AmountChildren, l.AmountChildrenSmall, l.QuantityBaby,
+        l.PriceAdult, l.PriceChild, l.PriceChildSmall, l.PriceBaby,
+        l.UpfrontAmount, l.ReservationCode, l.IsMainContact);
+}

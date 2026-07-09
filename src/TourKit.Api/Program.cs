@@ -8,7 +8,6 @@ using Serilog;
 using TourKit.Api.Application;
 using TourKit.Api.Auth;
 using TourKit.Api.Billing;
-using TourKit.Api.Booking;
 using TourKit.Api.Middleware;
 using TourKit.Api.Provisioning;
 using TourKit.Api.Tenancy;
@@ -140,9 +139,6 @@ app.MapControllers();   // Customers, Providers, Crm (kiến trúc phân tầng)
 
 app.MapAuthEndpoints();
 app.MapRegistrationEndpoints();
-app.MapDepartureEndpoints();
-app.MapBookingEndpoints();
-app.MapVehicleEndpoints();
 
 app.Run();
 

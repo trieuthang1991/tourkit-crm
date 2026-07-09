@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog.Dtos;
 using TourKit.Application.Finance.Dtos;
 using TourKit.Application.Reports.Dtos;
@@ -41,9 +41,9 @@ public class DebtReportTests : IClassFixture<AuthTestFactory>
         {
             TemplateId = tpl!.Id, Code = "DEP", Title = "Chuyến",
             DepartureDate = (DateTimeOffset?)null, EndDate = (DateTimeOffset?)null, TotalSlots = 30,
-        })).Content.ReadFromJsonAsync<DepartureResponse>();
+        })).Content.ReadFromJsonAsync<DepartureDto>();
         var order = await (await client.PostAsJsonAsync($"/api/v1/tour-departures/{dep!.Id}/bookings",
-            new CreateBookingRequest(cus!.Id, 2, 1, 0, 0))).Content.ReadFromJsonAsync<OrderResponse>();
+            new CreateBookingDto(cus!.Id, 2, 1, 0, 0))).Content.ReadFromJsonAsync<OrderDto>();
         return order!.Id;
     }
 

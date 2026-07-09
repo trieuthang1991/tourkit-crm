@@ -2,9 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog.Dtos;
-using TourKit.Shared.Application;
+using TourKit.Application.Common;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Booking;
@@ -48,17 +48,17 @@ public class BookingEndpointTests : IClassFixture<AuthTestFactory>
         {
             TemplateId = template!.Id, Code = "DEP-1", Title = "Đà Nẵng 20/07",
             DepartureDate = DateTimeOffset.UtcNow.AddDays(30), EndDate = (DateTimeOffset?)null, TotalSlots = 30,
-        })).Content.ReadFromJsonAsync<DepartureResponse>();
+        })).Content.ReadFromJsonAsync<DepartureDto>();
 
         // đặt 2 người lớn + 1 trẻ em → total = 2*5tr + 1*3tr = 13tr
         var booking = await client.PostAsJsonAsync($"/api/v1/tour-departures/{departure!.Id}/bookings",
-            new CreateBookingRequest(customer!.Id, 2, 1, 0, 0));
+            new CreateBookingDto(customer!.Id, 2, 1, 0, 0));
         Assert.Equal(HttpStatusCode.Created, booking.StatusCode);
-        var order = await booking.Content.ReadFromJsonAsync<OrderResponse>();
+        var order = await booking.Content.ReadFromJsonAsync<OrderDto>();
         Assert.Equal(13_000_000m, order!.TotalRevenue);
         Assert.Equal(customer.Id, order.CustomerId);
 
-        var orders = await client.GetFromJsonAsync<Paged<OrderResponse>>("/api/v1/orders");
+        var orders = await client.GetFromJsonAsync<PagedResult<OrderDto>>("/api/v1/orders");
         Assert.Single(orders!.Items);
     }
 
@@ -71,13 +71,13 @@ public class BookingEndpointTests : IClassFixture<AuthTestFactory>
         {
             TemplateId = (Guid?)null, Code = "DEP-X", Title = "Không mẫu",
             DepartureDate = (DateTimeOffset?)null, EndDate = (DateTimeOffset?)null, TotalSlots = 10,
-        })).Content.ReadFromJsonAsync<DepartureResponse>();
+        })).Content.ReadFromJsonAsync<DepartureDto>();
 
         var customer = await (await client.PostAsJsonAsync("/api/v1/customers",
             new { FullName = "B", Phone = (string?)null })).Content.ReadFromJsonAsync<CustomerRow>();
 
         var booking = await client.PostAsJsonAsync($"/api/v1/tour-departures/{departure!.Id}/bookings",
-            new CreateBookingRequest(customer!.Id, 1, 0, 0, 0));
+            new CreateBookingDto(customer!.Id, 1, 0, 0, 0));
         Assert.Equal(HttpStatusCode.BadRequest, booking.StatusCode);
     }
 
@@ -96,12 +96,12 @@ public class BookingEndpointTests : IClassFixture<AuthTestFactory>
         {
             TemplateId = tpl!.Id, Code = "D", Title = "D",
             DepartureDate = (DateTimeOffset?)null, EndDate = (DateTimeOffset?)null, TotalSlots = 10,
-        })).Content.ReadFromJsonAsync<DepartureResponse>();
+        })).Content.ReadFromJsonAsync<DepartureDto>();
         await clientA.PostAsJsonAsync($"/api/v1/tour-departures/{dep!.Id}/bookings",
-            new CreateBookingRequest(cus!.Id, 1, 0, 0, 0));
+            new CreateBookingDto(cus!.Id, 1, 0, 0, 0));
 
         var clientB = await LoggedInClientAsync("book-iso-b");
-        var ordersB = await clientB.GetFromJsonAsync<Paged<OrderResponse>>("/api/v1/orders");
+        var ordersB = await clientB.GetFromJsonAsync<PagedResult<OrderDto>>("/api/v1/orders");
         Assert.Empty(ordersB!.Items);
     }
 

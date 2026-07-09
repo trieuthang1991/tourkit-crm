@@ -1,25 +1,25 @@
-
 using TourKit.Shared.Enums;
 
-namespace TourKit.Api.Booking;
+namespace TourKit.Application.Booking.Dtos;
 
-public sealed record CreateBookingRequest(Guid CustomerId, int AdultQty, int ChildQty, int ChildSmallQty, int BabyQty);
+/// <summary>Yêu cầu đặt khách (dùng chung giữa "đặt chốt ngay" và "giữ chỗ").</summary>
+public sealed record CreateBookingDto(Guid CustomerId, int AdultQty, int ChildQty, int ChildSmallQty, int BabyQty);
 
-public sealed record AssignSalesRequest(Guid? SalesUserId);
-
-public sealed record OrderResponse(
+public sealed record OrderDto(
     Guid Id, string Code, Guid TourDepartureId, Guid CustomerId, decimal TotalRevenue, decimal TotalCost,
     OrderStatus Status, Guid? SalesUserId);
 
-public sealed record BookingLineResponse(
+public sealed record BookingLineDto(
     Guid Id, int Quantity, int AmountChildren, int AmountChildrenSmall, int QuantityBaby,
     decimal PriceAdult, decimal PriceChild, decimal PriceChildSmall, decimal PriceBaby,
     decimal UpfrontAmount, string? ReservationCode, bool IsMainContact);
 
-public sealed record DepositRequest(decimal Amount);
+public sealed record DepositDto(decimal Amount);
 
-public sealed record CancelSeatRequest(string? Note, decimal RefundAmount);
+public sealed record CancelSeatDto(string? Note, decimal RefundAmount);
 
-public sealed record SeatResponse(
+public sealed record SeatDto(
     Guid Id, Guid OrderId, SeatStatus Status, decimal UpfrontAmount, decimal LineTotal,
     DateTimeOffset? HoldExpiresAt, string? ReservationCode);
+
+public sealed record AssignSalesDto(Guid? SalesUserId);

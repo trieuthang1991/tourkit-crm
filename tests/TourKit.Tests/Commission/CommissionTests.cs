@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog.Dtos;
 using TourKit.Application.Commission.Dtos;
 using TourKit.Application.Providers.Dtos;
@@ -29,7 +29,7 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
     }
 
     // Dựng 1 Order doanh thu 13tr (2 người lớn 5tr + 1 trẻ em 3tr) qua chain đầy đủ, giống OrderCostTests.
-    private static async Task<OrderResponse> CreateOrderAsync(HttpClient client)
+    private static async Task<OrderDto> CreateOrderAsync(HttpClient client)
     {
         var template = await (await client.PostAsJsonAsync("/api/v1/tour-templates", new
         {
@@ -46,11 +46,11 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
         {
             TemplateId = template!.Id, Code = "DEP-COMM", Title = "Đà Nẵng hoa hồng",
             DepartureDate = DateTimeOffset.UtcNow.AddDays(30), EndDate = (DateTimeOffset?)null, TotalSlots = 30,
-        })).Content.ReadFromJsonAsync<DepartureResponse>();
+        })).Content.ReadFromJsonAsync<DepartureDto>();
 
         var booking = await client.PostAsJsonAsync($"/api/v1/tour-departures/{departure!.Id}/bookings",
-            new CreateBookingRequest(customer!.Id, 2, 1, 0, 0));
-        return (await booking.Content.ReadFromJsonAsync<OrderResponse>())!;
+            new CreateBookingDto(customer!.Id, 2, 1, 0, 0));
+        return (await booking.Content.ReadFromJsonAsync<OrderDto>())!;
     }
 
     private static async Task<ProviderDto> CreateProviderAsync(HttpClient client)
@@ -61,7 +61,7 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
     }
 
     // Doanh thu 13tr, chi phí 3tr → lợi nhuận 10tr.
-    private static async Task<OrderResponse> CreateOrderWithProfitAsync(HttpClient client)
+    private static async Task<OrderDto> CreateOrderWithProfitAsync(HttpClient client)
     {
         var order = await CreateOrderAsync(client);
         var provider = await CreateProviderAsync(client);
