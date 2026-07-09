@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Application.Catalog.Dtos;
-using TourKit.Api.Finance;
+using TourKit.Application.Finance.Dtos;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Finance;
@@ -57,22 +57,22 @@ public class ReceiptEndpointTests : IClassFixture<AuthTestFactory>
 
         // thu 5tr — CHỜ DUYỆT → chưa tính vào công nợ
         var r1 = await (await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
-            new CreateReceiptRequest(5_000_000m, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptResponse>();
+            new CreateReceiptDto(5_000_000m, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptDto>();
         Assert.False(r1!.IsRecognized);
-        var pending = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        var pending = await client.GetFromJsonAsync<OrderBalanceDto>($"/api/v1/orders/{orderId}/balance");
         Assert.Equal(0m, pending!.Paid);
 
         // duyệt → tính 5tr, còn nợ 8tr
         (await client.PostAsync($"/api/v1/receipts/{r1.Id}/approve", null)).EnsureSuccessStatusCode();
-        var afterApprove = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        var afterApprove = await client.GetFromJsonAsync<OrderBalanceDto>($"/api/v1/orders/{orderId}/balance");
         Assert.Equal(5_000_000m, afterApprove!.Paid);
         Assert.Equal(8_000_000m, afterApprove.Outstanding);
 
         // thu 8tr + duyệt → hết nợ
         var r2 = await (await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
-            new CreateReceiptRequest(8_000_000m, "transfer", null, "tất toán"))).Content.ReadFromJsonAsync<ReceiptResponse>();
+            new CreateReceiptDto(8_000_000m, "transfer", null, "tất toán"))).Content.ReadFromJsonAsync<ReceiptDto>();
         (await client.PostAsync($"/api/v1/receipts/{r2!.Id}/approve", null)).EnsureSuccessStatusCode();
-        var settled = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        var settled = await client.GetFromJsonAsync<OrderBalanceDto>($"/api/v1/orders/{orderId}/balance");
         Assert.Equal(13_000_000m, settled!.Paid);
         Assert.Equal(0m, settled.Outstanding);
     }
@@ -84,10 +84,10 @@ public class ReceiptEndpointTests : IClassFixture<AuthTestFactory>
         var orderId = await CreateOrderAsync(client);
 
         var r = await (await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
-            new CreateReceiptRequest(5_000_000m, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptResponse>();
+            new CreateReceiptDto(5_000_000m, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptDto>();
         (await client.PostAsync($"/api/v1/receipts/{r!.Id}/reject", null)).EnsureSuccessStatusCode();
 
-        var bal = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        var bal = await client.GetFromJsonAsync<OrderBalanceDto>($"/api/v1/orders/{orderId}/balance");
         Assert.Equal(0m, bal!.Paid);
     }
 
@@ -98,7 +98,7 @@ public class ReceiptEndpointTests : IClassFixture<AuthTestFactory>
         var orderId = await CreateOrderAsync(client);
 
         var rcp = await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
-            new CreateReceiptRequest(0m, "cash", null, null));
+            new CreateReceiptDto(0m, "cash", null, null));
         Assert.Equal(HttpStatusCode.BadRequest, rcp.StatusCode);
     }
 
@@ -108,7 +108,7 @@ public class ReceiptEndpointTests : IClassFixture<AuthTestFactory>
         var clientA = await LoggedInClientAsync("fin-iso-a");
         var orderId = await CreateOrderAsync(clientA);
         await clientA.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
-            new CreateReceiptRequest(1_000_000m, "cash", null, null));
+            new CreateReceiptDto(1_000_000m, "cash", null, null));
 
         // tenant B không thấy phiếu của đơn A (đơn A không thuộc B → balance 404)
         var clientB = await LoggedInClientAsync("fin-iso-b");

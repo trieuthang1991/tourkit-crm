@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Application.Catalog.Dtos;
-using TourKit.Api.Finance;
+using TourKit.Application.Finance.Dtos;
 using TourKit.Api.Reports;
 using TourKit.Tests.Support;
 
@@ -50,7 +50,7 @@ public class DebtReportTests : IClassFixture<AuthTestFactory>
     private static async Task ApproveReceiptAsync(HttpClient client, Guid orderId, decimal amount)
     {
         var r = await (await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
-            new CreateReceiptRequest(amount, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptResponse>();
+            new CreateReceiptDto(amount, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptDto>();
         (await client.PostAsync($"/api/v1/receipts/{r!.Id}/approve", null)).EnsureSuccessStatusCode();
     }
 

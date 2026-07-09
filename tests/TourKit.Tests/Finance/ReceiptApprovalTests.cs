@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Application.Catalog.Dtos;
-using TourKit.Api.Finance;
+using TourKit.Application.Finance.Dtos;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Tests.Support;
 
@@ -66,7 +66,7 @@ public class ReceiptApprovalTests : IClassFixture<AuthTestFactory>
     private static async Task<Guid> CreateReceiptAsync(HttpClient client, Guid orderId, decimal amount)
     {
         var receipt = await (await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
-            new CreateReceiptRequest(amount, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptResponse>();
+            new CreateReceiptDto(amount, "cash", null, null))).Content.ReadFromJsonAsync<ReceiptDto>();
         return receipt!.Id;
     }
 
@@ -79,36 +79,36 @@ public class ReceiptApprovalTests : IClassFixture<AuthTestFactory>
         var adminId = await GetAdminUserIdAsync(slug);
 
         var start = await client.PostAsJsonAsync($"/api/v1/receipts/{receiptId}/approval",
-            new StartApprovalRequest(ApprovalMethod.One,
+            new StartApprovalDto(ApprovalMethod.One,
             [
-                new ApprovalStep(1, [adminId]),
-                new ApprovalStep(2, [adminId]),
+                new ApprovalStepDto(1, [adminId]),
+                new ApprovalStepDto(2, [adminId]),
             ]));
         Assert.Equal(HttpStatusCode.Created, start.StatusCode);
 
-        var initial = await client.GetFromJsonAsync<ApprovalResponse>($"/api/v1/receipts/{receiptId}/approval");
+        var initial = await client.GetFromJsonAsync<ApprovalDto>($"/api/v1/receipts/{receiptId}/approval");
         Assert.Equal(ApprovalStatus.InProgress, initial!.Status);
         Assert.Equal(1, initial.CurrentStepOrder);
 
         // Duyệt bước 1 → tiến sang bước 2, voucher vẫn CHƯA ghi nhận → công nợ chưa đổi.
         var act1 = await client.PostAsJsonAsync($"/api/v1/receipts/{receiptId}/approval/act",
-            new ActRequest(true, "ok bước 1"));
+            new ActApprovalDto(true, "ok bước 1"));
         Assert.Equal(HttpStatusCode.OK, act1.StatusCode);
-        var afterStep1 = await act1.Content.ReadFromJsonAsync<ApprovalResponse>();
+        var afterStep1 = await act1.Content.ReadFromJsonAsync<ApprovalDto>();
         Assert.Equal(ApprovalStatus.InProgress, afterStep1!.Status);
         Assert.Equal(2, afterStep1.CurrentStepOrder);
 
-        var balanceMid = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        var balanceMid = await client.GetFromJsonAsync<OrderBalanceDto>($"/api/v1/orders/{orderId}/balance");
         Assert.Equal(0m, balanceMid!.Paid);
 
         // Duyệt bước 2 (bước cuối) → Approved + voucher ghi nhận → công nợ phản ánh phiếu thu.
         var act2 = await client.PostAsJsonAsync($"/api/v1/receipts/{receiptId}/approval/act",
-            new ActRequest(true, "ok bước 2"));
+            new ActApprovalDto(true, "ok bước 2"));
         Assert.Equal(HttpStatusCode.OK, act2.StatusCode);
-        var afterStep2 = await act2.Content.ReadFromJsonAsync<ApprovalResponse>();
+        var afterStep2 = await act2.Content.ReadFromJsonAsync<ApprovalDto>();
         Assert.Equal(ApprovalStatus.Approved, afterStep2!.Status);
 
-        var balanceFinal = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        var balanceFinal = await client.GetFromJsonAsync<OrderBalanceDto>($"/api/v1/orders/{orderId}/balance");
         Assert.Equal(5_000_000m, balanceFinal!.Paid);
     }
 
@@ -121,19 +121,19 @@ public class ReceiptApprovalTests : IClassFixture<AuthTestFactory>
         var adminId = await GetAdminUserIdAsync(slug);
 
         await client.PostAsJsonAsync($"/api/v1/receipts/{receiptId}/approval",
-            new StartApprovalRequest(ApprovalMethod.One,
+            new StartApprovalDto(ApprovalMethod.One,
             [
-                new ApprovalStep(1, [adminId]),
-                new ApprovalStep(2, [adminId]),
+                new ApprovalStepDto(1, [adminId]),
+                new ApprovalStepDto(2, [adminId]),
             ]));
 
         var act = await client.PostAsJsonAsync($"/api/v1/receipts/{receiptId}/approval/act",
-            new ActRequest(false, "sai số tiền"));
+            new ActApprovalDto(false, "sai số tiền"));
         Assert.Equal(HttpStatusCode.OK, act.StatusCode);
-        var result = await act.Content.ReadFromJsonAsync<ApprovalResponse>();
+        var result = await act.Content.ReadFromJsonAsync<ApprovalDto>();
         Assert.Equal(ApprovalStatus.Rejected, result!.Status);
 
-        var balance = await client.GetFromJsonAsync<OrderBalanceResponse>($"/api/v1/orders/{orderId}/balance");
+        var balance = await client.GetFromJsonAsync<OrderBalanceDto>($"/api/v1/orders/{orderId}/balance");
         Assert.Equal(0m, balance!.Paid);
     }
 
@@ -145,7 +145,7 @@ public class ReceiptApprovalTests : IClassFixture<AuthTestFactory>
         var receiptId = await CreateReceiptAsync(client, orderId, 5_000_000m);
         var adminId = await GetAdminUserIdAsync(slug);
 
-        var body = new StartApprovalRequest(ApprovalMethod.One, [new ApprovalStep(1, [adminId])]);
+        var body = new StartApprovalDto(ApprovalMethod.One, [new ApprovalStepDto(1, [adminId])]);
         (await client.PostAsJsonAsync($"/api/v1/receipts/{receiptId}/approval", body)).EnsureSuccessStatusCode();
 
         var second = await client.PostAsJsonAsync($"/api/v1/receipts/{receiptId}/approval", body);
@@ -160,7 +160,7 @@ public class ReceiptApprovalTests : IClassFixture<AuthTestFactory>
         var receiptIdA = await CreateReceiptAsync(clientA, orderIdA, 1_000_000m);
         var adminIdA = await GetAdminUserIdAsync(slugA);
         (await clientA.PostAsJsonAsync($"/api/v1/receipts/{receiptIdA}/approval",
-            new StartApprovalRequest(ApprovalMethod.One, [new ApprovalStep(1, [adminIdA])])))
+            new StartApprovalDto(ApprovalMethod.One, [new ApprovalStepDto(1, [adminIdA])])))
             .EnsureSuccessStatusCode();
 
         var (clientB, _) = await LoggedInClientAsync("appr-iso-b");
