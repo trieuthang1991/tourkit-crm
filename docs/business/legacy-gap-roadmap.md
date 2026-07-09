@@ -50,12 +50,13 @@ Tách bạch với `ProfitShare` (chia lợi nhuận). **Hoàn tất — 131 bac
 - ✅ **Báo cáo hoa hồng/lợi nhuận theo NV** (`/reports/commission-by-user`): turnover/cost/profit + hoa hồng = profit × rate.
 - ◻️ (Deferred) hoa hồng theo **loại khách** (`id_customer_type`) + `CommissionCampaign` — chờ `Customer.CustomerType`; **chốt sổ hoa hồng** (`StatusComission`/`date_closed`).
 
-## Đợt 4 — CSKH sau tour & CRM sâu 🤝
+## Đợt 4 — CSKH sau tour & CRM sâu 🤝 ✅ ĐÃ XONG (phần dữ liệu)
 
-- **CSKH (`CustomerCare`)**: lịch chăm sóc, ghi nhận tương tác.
-- **Đánh giá/feedback sau tour (`FeedBackTour`)**.
-- **Gửi thật** Email/SMS/Zalo (hiện chỉ log) — nối provider gửi.
-- (Tuỳ nhu cầu) `Tasking` (giao việc), `Notification`, `CallCenter`, `Pancake`.
+**Hoàn tất — 140 backend + 55 web test xanh; smoke SQLite OK (care 201, rating chặn stars>5).**
+
+- ✅ **CSKH (`CustomerCare`)**: CRUD lịch/nội dung chăm sóc + nhắc hẹn + phản hồi.
+- ✅ **Đánh giá sau tour (`TourRating`, =legacy `Rate`)**: CRUD số sao (1-5) + nhận xét.
+- ◻️ (Deferred) **Gửi thật** Email/SMS/Zalo (cần tích hợp provider ngoài) · `Tasking`/`Notification`/`CallCenter`/`Pancake` (tuỳ nhu cầu).
 
 ## Đợt 5 — Dịch vụ lẻ (không chỉ tour trọn gói) 🧳
 
