@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using TourKit.Application.Common;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Shared.Constants;
 using TourKit.Shared.Entities;
 
 namespace TourKit.Infrastructure.Repositories;
@@ -19,8 +20,8 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
     public async Task<(IReadOnlyList<T> Items, int Total)> PageAsync(int page, int size, Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default)
     {
         var q = predicate is null ? Set : Set.Where(predicate);
-        var p = page < 1 ? 1 : page;
-        var s = size is < 1 or > 200 ? 20 : size;
+        var p = page < PaginationDefaults.FirstPage ? PaginationDefaults.FirstPage : page;
+        var s = size is < 1 or > PaginationDefaults.MaxPageSize ? PaginationDefaults.DefaultPageSize : size;
         var total = await q.CountAsync(ct);
         var items = await q.AsNoTracking().OrderByDescending(e => e.CreatedAt).Skip((p - 1) * s).Take(s).ToListAsync(ct);
         return (items, total);
