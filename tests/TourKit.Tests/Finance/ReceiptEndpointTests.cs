@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Booking;
-using TourKit.Api.Catalog;
+using TourKit.Application.Catalog.Dtos;
 using TourKit.Api.Finance;
 using TourKit.Tests.Support;
 
@@ -33,7 +33,7 @@ public class ReceiptEndpointTests : IClassFixture<AuthTestFactory>
             Code = "TPL", Title = "Tour", TourType = (string?)null, TotalSlots = 30, ReservationHours = 24,
             PriceAdult = 5_000_000m, PriceChild = 3_000_000m, PriceChildSmall = 0m, PriceBaby = 0m,
             TermsNote = (string?)null,
-        })).Content.ReadFromJsonAsync<TourTemplateResponse>();
+        })).Content.ReadFromJsonAsync<TourTemplateDto>();
 
         var cus = await (await client.PostAsJsonAsync("/api/v1/customers",
             new { FullName = "A", Phone = (string?)null })).Content.ReadFromJsonAsync<CustomerRow>();

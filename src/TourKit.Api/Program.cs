@@ -9,7 +9,6 @@ using TourKit.Api.Application;
 using TourKit.Api.Auth;
 using TourKit.Api.Billing;
 using TourKit.Api.Booking;
-using TourKit.Api.Catalog;
 using TourKit.Api.Commission;
 using TourKit.Api.Finance;
 using TourKit.Api.Marketing;
@@ -141,9 +140,6 @@ app.MapControllers();   // Customers, Providers, Crm (kiến trúc phân tầng)
 
 app.MapAuthEndpoints();
 app.MapRegistrationEndpoints();
-app.MapTourTemplateEndpoints();
-app.MapMarketTypeEndpoints();
-app.MapTourAssigneeEndpoints();
 app.MapDepartureEndpoints();
 app.MapBookingEndpoints();
 app.MapReceiptEndpoints();

@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Authz;
 using TourKit.Api.Booking;
-using TourKit.Api.Catalog;
+using TourKit.Application.Catalog.Dtos;
 using TourKit.Tests.Support;
 
 using TourKit.Shared.Enums;
@@ -34,7 +34,7 @@ public class SeatFlowTests : IClassFixture<AuthTestFactory>
         {
             Code = "TPL", Title = "Tour", TourType = (string?)null, TotalSlots = 30, ReservationHours = 24,
             PriceAdult = 5_000_000m, PriceChild = 0m, PriceChildSmall = 0m, PriceBaby = 0m, TermsNote = (string?)null,
-        })).Content.ReadFromJsonAsync<TourTemplateResponse>();
+        })).Content.ReadFromJsonAsync<TourTemplateDto>();
         var dep = await (await client.PostAsJsonAsync("/api/v1/tour-departures", new
         {
             TemplateId = tpl!.Id, Code = "DEP", Title = "Chuyến",

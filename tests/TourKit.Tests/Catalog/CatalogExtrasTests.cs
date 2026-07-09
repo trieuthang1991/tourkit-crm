@@ -2,11 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Catalog;
-using TourKit.Api.Catalog.Features;
-using TourKit.Tests.Support;
-
+using TourKit.Application.Catalog.Dtos;
 using TourKit.Shared.Enums;
+using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Catalog;
 
@@ -26,7 +24,7 @@ public class CatalogExtrasTests : IClassFixture<AuthTestFactory>
         return client;
     }
 
-    private static CreateTourTemplateRequest SampleTemplate(string code) =>
+    private static CreateTourTemplateDto SampleTemplate(string code) =>
         new(code, "Đà Nẵng 3N2Đ", "domestic", 30, 24, 5_000_000m, 3_000_000m, 2_000_000m, 0m, "Điều khoản");
 
     [Fact]
@@ -35,12 +33,12 @@ public class CatalogExtrasTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("mkt-a");
 
         var parent = await client.PostAsJsonAsync("/api/v1/market-types",
-            new CreateMarketTypeCommand("Nội địa", null, 1));
+            new CreateMarketTypeDto("Nội địa", null, 1));
         Assert.Equal(HttpStatusCode.Created, parent.StatusCode);
         var parentDto = await parent.Content.ReadFromJsonAsync<MarketTypeDto>();
 
         var child = await client.PostAsJsonAsync("/api/v1/market-types",
-            new CreateMarketTypeCommand("Miền Trung", parentDto!.Id, 1));
+            new CreateMarketTypeDto("Miền Trung", parentDto!.Id, 1));
         Assert.Equal(HttpStatusCode.Created, child.StatusCode);
 
         var list = await client.GetFromJsonAsync<List<MarketTypeDto>>("/api/v1/market-types");
@@ -53,7 +51,7 @@ public class CatalogExtrasTests : IClassFixture<AuthTestFactory>
     public async Task Market_types_are_isolated_between_tenants()
     {
         var clientA = await LoggedInClientAsync("mkt-iso-a");
-        await clientA.PostAsJsonAsync("/api/v1/market-types", new CreateMarketTypeCommand("A", null, 1));
+        await clientA.PostAsJsonAsync("/api/v1/market-types", new CreateMarketTypeDto("A", null, 1));
 
         var clientB = await LoggedInClientAsync("mkt-iso-b");
         var listB = await clientB.GetFromJsonAsync<List<MarketTypeDto>>("/api/v1/market-types");
@@ -65,27 +63,27 @@ public class CatalogExtrasTests : IClassFixture<AuthTestFactory>
     {
         var client = await LoggedInClientAsync("price-a");
         var template = await (await client.PostAsJsonAsync("/api/v1/tour-templates", SampleTemplate("P-001")))
-            .Content.ReadFromJsonAsync<TourTemplateResponse>();
+            .Content.ReadFromJsonAsync<TourTemplateDto>();
 
         var first = new[]
         {
-            new PriceScenarioRequest(10, 20, 4_500_000m),
-            new PriceScenarioRequest(1, 9, 5_000_000m),
+            new PriceScenarioDto(Guid.Empty, 10, 20, 4_500_000m),
+            new PriceScenarioDto(Guid.Empty, 1, 9, 5_000_000m),
         };
         var put1 = await client.PutAsJsonAsync($"/api/v1/tour-templates/{template!.Id}/price-scenarios", first);
         Assert.Equal(HttpStatusCode.NoContent, put1.StatusCode);
 
-        var got1 = await client.GetFromJsonAsync<List<PriceScenarioResponse>>(
+        var got1 = await client.GetFromJsonAsync<List<PriceScenarioDto>>(
             $"/api/v1/tour-templates/{template.Id}/price-scenarios");
         Assert.Equal(2, got1!.Count);
         Assert.Equal(1, got1[0].FromQty);
         Assert.Equal(10, got1[1].FromQty);
 
-        var second = new[] { new PriceScenarioRequest(1, 30, 4_000_000m) };
+        var second = new[] { new PriceScenarioDto(Guid.Empty, 1, 30, 4_000_000m) };
         var put2 = await client.PutAsJsonAsync($"/api/v1/tour-templates/{template.Id}/price-scenarios", second);
         Assert.Equal(HttpStatusCode.NoContent, put2.StatusCode);
 
-        var got2 = await client.GetFromJsonAsync<List<PriceScenarioResponse>>(
+        var got2 = await client.GetFromJsonAsync<List<PriceScenarioDto>>(
             $"/api/v1/tour-templates/{template.Id}/price-scenarios");
         Assert.Single(got2!);
         Assert.Equal(4_000_000m, got2![0].UnitPrice);
@@ -96,21 +94,21 @@ public class CatalogExtrasTests : IClassFixture<AuthTestFactory>
     {
         var client = await LoggedInClientAsync("assignee-a");
         var template = await (await client.PostAsJsonAsync("/api/v1/tour-templates", SampleTemplate("AS-001")))
-            .Content.ReadFromJsonAsync<TourTemplateResponse>();
+            .Content.ReadFromJsonAsync<TourTemplateDto>();
 
         var userA = Guid.NewGuid();
         var userB = Guid.NewGuid();
         var body = new[]
         {
-            new AssigneeRequest(userA, AssigneeRole.Manager),
-            new AssigneeRequest(userB, AssigneeRole.Watcher),
+            new AssigneeDto(Guid.Empty, userA, AssigneeRole.Manager),
+            new AssigneeDto(Guid.Empty, userB, AssigneeRole.Watcher),
         };
 
         // TourTemplate LÀ Tour (TPT) — Id của template dùng thẳng làm tourId.
         var put = await client.PutAsJsonAsync($"/api/v1/tours/{template!.Id}/assignees", body);
         Assert.Equal(HttpStatusCode.NoContent, put.StatusCode);
 
-        var got = await client.GetFromJsonAsync<List<AssigneeResponse>>($"/api/v1/tours/{template.Id}/assignees");
+        var got = await client.GetFromJsonAsync<List<AssigneeDto>>($"/api/v1/tours/{template.Id}/assignees");
         Assert.Equal(2, got!.Count);
         Assert.Contains(got, a => a.UserId == userA && a.Role == AssigneeRole.Manager);
         Assert.Contains(got, a => a.UserId == userB && a.Role == AssigneeRole.Watcher);

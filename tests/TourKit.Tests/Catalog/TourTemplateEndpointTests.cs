@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Catalog;
-using TourKit.Shared.Application;
+using TourKit.Application.Catalog.Dtos;
+using TourKit.Application.Common;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Catalog;
@@ -24,7 +24,7 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
         return client;
     }
 
-    private static CreateTourTemplateRequest Sample(string code) =>
+    private static CreateTourTemplateDto Sample(string code) =>
         new(code, "Đà Nẵng 3N2Đ", "domestic", 30, 24, 5_000_000m, 3_000_000m, 2_000_000m, 0m, "Điều khoản");
 
     [Fact]
@@ -34,15 +34,15 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
 
         var created = await client.PostAsJsonAsync("/api/v1/tour-templates", Sample("T-001"));
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
-        var dto = await created.Content.ReadFromJsonAsync<TourTemplateResponse>();
+        var dto = await created.Content.ReadFromJsonAsync<TourTemplateDto>();
         Assert.NotNull(dto);
         Assert.Equal(5_000_000m, dto!.PriceAdult);
 
-        var list = await client.GetFromJsonAsync<Paged<TourTemplateResponse>>("/api/v1/tour-templates");
+        var list = await client.GetFromJsonAsync<PagedResult<TourTemplateDto>>("/api/v1/tour-templates");
         Assert.Single(list!.Items);
         Assert.Equal(1, list.Total);
 
-        var got = await client.GetFromJsonAsync<TourTemplateResponse>($"/api/v1/tour-templates/{dto.Id}");
+        var got = await client.GetFromJsonAsync<TourTemplateDto>($"/api/v1/tour-templates/{dto.Id}");
         Assert.Equal("T-001", got!.Code);
     }
 
@@ -61,7 +61,7 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
         await clientA.PostAsJsonAsync("/api/v1/tour-templates", Sample("A-1"));
 
         var clientB = await LoggedInClientAsync("cat-iso-b");
-        var listB = await clientB.GetFromJsonAsync<Paged<TourTemplateResponse>>("/api/v1/tour-templates");
+        var listB = await clientB.GetFromJsonAsync<PagedResult<TourTemplateDto>>("/api/v1/tour-templates");
         Assert.Empty(listB!.Items);
     }
 
@@ -70,19 +70,19 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
     {
         var client = await LoggedInClientAsync("cat-upd");
         var dto = await (await client.PostAsJsonAsync("/api/v1/tour-templates", Sample("U-1")))
-            .Content.ReadFromJsonAsync<TourTemplateResponse>();
+            .Content.ReadFromJsonAsync<TourTemplateDto>();
 
         var upd = await client.PutAsJsonAsync($"/api/v1/tour-templates/{dto!.Id}",
-            new UpdateTourTemplateRequest("Huế 2N1Đ", "domestic", 20, 12, 4_000_000m, 2_500_000m, 1_500_000m, 0m, "ĐK mới"));
+            new UpdateTourTemplateDto("Huế 2N1Đ", "domestic", 20, 12, 4_000_000m, 2_500_000m, 1_500_000m, 0m, "ĐK mới"));
         Assert.Equal(HttpStatusCode.NoContent, upd.StatusCode);
 
-        var got = await client.GetFromJsonAsync<TourTemplateResponse>($"/api/v1/tour-templates/{dto.Id}");
+        var got = await client.GetFromJsonAsync<TourTemplateDto>($"/api/v1/tour-templates/{dto.Id}");
         Assert.Equal("Huế 2N1Đ", got!.Title);
 
         var del = await client.DeleteAsync($"/api/v1/tour-templates/{dto.Id}");
         Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
 
-        var list = await client.GetFromJsonAsync<Paged<TourTemplateResponse>>("/api/v1/tour-templates");
+        var list = await client.GetFromJsonAsync<PagedResult<TourTemplateDto>>("/api/v1/tour-templates");
         Assert.Empty(list!.Items);   // soft-deleted bị filter ẩn
     }
 
@@ -91,17 +91,17 @@ public class TourTemplateEndpointTests : IClassFixture<AuthTestFactory>
     {
         var client = await LoggedInClientAsync("cat-itin");
         var dto = await (await client.PostAsJsonAsync("/api/v1/tour-templates", Sample("I-1")))
-            .Content.ReadFromJsonAsync<TourTemplateResponse>();
+            .Content.ReadFromJsonAsync<TourTemplateDto>();
 
         var days = new[]
         {
-            new ItineraryDayRequest(1, "Ngày 1: Khởi hành", "Bay Hà Nội - Đà Nẵng"),
-            new ItineraryDayRequest(2, "Ngày 2: Tham quan", "Bà Nà Hills"),
+            new ItineraryDayDto(Guid.Empty, 1, "Ngày 1: Khởi hành", "Bay Hà Nội - Đà Nẵng"),
+            new ItineraryDayDto(Guid.Empty, 2, "Ngày 2: Tham quan", "Bà Nà Hills"),
         };
         var put = await client.PutAsJsonAsync($"/api/v1/tour-templates/{dto!.Id}/itinerary", days);
         Assert.Equal(HttpStatusCode.NoContent, put.StatusCode);
 
-        var got = await client.GetFromJsonAsync<List<ItineraryDayResponse>>($"/api/v1/tour-templates/{dto.Id}/itinerary");
+        var got = await client.GetFromJsonAsync<List<ItineraryDayDto>>($"/api/v1/tour-templates/{dto.Id}/itinerary");
         Assert.Equal(2, got!.Count);
         Assert.Equal("Ngày 1: Khởi hành", got[0].Title);
     }

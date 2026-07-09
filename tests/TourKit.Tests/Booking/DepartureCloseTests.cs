@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Booking;
-using TourKit.Api.Catalog;
+using TourKit.Application.Catalog.Dtos;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Booking;
@@ -34,7 +34,7 @@ public sealed class DepartureCloseTests : IClassFixture<AuthTestFactory>
             Code = "TPL-C", Title = "Đà Nẵng", TourType = (string?)null, TotalSlots = 30, ReservationHours = 24,
             PriceAdult = 5_000_000m, PriceChild = 3_000_000m, PriceChildSmall = 0m, PriceBaby = 0m,
             TermsNote = (string?)null,
-        })).Content.ReadFromJsonAsync<TourTemplateResponse>();
+        })).Content.ReadFromJsonAsync<TourTemplateDto>();
 
         var customer = await (await client.PostAsJsonAsync("/api/v1/customers",
             new { FullName = "Nguyen Van A", Phone = (string?)null }))
