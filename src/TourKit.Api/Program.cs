@@ -127,8 +127,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseSerilogRequestLogging();   // log mỗi request (method/path/status/thời gian) có cấu trúc
-app.UseMiddleware<ExceptionHandlingMiddleware>();   // sớm nhất có thể → bắt lỗi từ mọi middleware/controller phía sau
-app.UseExceptionHandler();
+app.UseMiddleware<ExceptionHandlingMiddleware>();   // thay UseExceptionHandler: map AppException → HTTP + ProblemDetails
 app.UseStatusCodePages();
 
 app.UseCors("web");   // trước Authentication để preflight OPTIONS không cần token
