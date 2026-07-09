@@ -58,15 +58,14 @@ Tách bạch với `ProfitShare` (chia lợi nhuận). **Hoàn tất — 131 bac
 - ✅ **Đánh giá sau tour (`TourRating`, =legacy `Rate`)**: CRUD số sao (1-5) + nhận xét.
 - ◻️ (Deferred) **Gửi thật** Email/SMS/Zalo (cần tích hợp provider ngoài) · `Tasking`/`Notification`/`CallCenter`/`Pancake` (tuỳ nhu cầu).
 
-## Đợt 5 — Dịch vụ lẻ (không chỉ tour trọn gói) 🧳
+## Đợt 5 — Dịch vụ lẻ (không chỉ tour trọn gói) 🧳 🟡 LÕI ĐÃ XONG
 
-Hệ cũ đặt **cả dịch vụ lẻ**; hệ mới mới có tour trọn gói.
+Phần lõi groundable đã làm. **149 backend + 59 web test xanh; smoke SQLite OK.**
 
-- **Báo giá (`BaoGia`)** — bước trước khi chốt booking.
-- **Tour lẻ / FIT (`SingleTour`)** cạnh tour đoàn (`GroupTour`).
-- **Catalog dịch vụ (`ServiceManager`)** + bảng giá NCC theo hợp đồng (`provider_service_pricing`).
-- **Đặt khách sạn / vé máy bay / visa (`BookingHotel`, `AirPlaneTicket`, `Visa`, `BookingTicket`)**.
-- **Hoá đơn VAT (`InvoiceBranch`)**.
+- ✅ **Catalog dịch vụ (`ServiceItem`, =legacy `services`)**: CRUD danh mục dịch vụ (phòng/xe/vé/visa...).
+- ✅ **Bảng giá NCC (`ProviderService`, =`provider_services`+`provider_service_pricing`)**: CRUD giá hợp đồng/công bố theo NCC, lọc theo provider. Lấp gap `OrderCost.ServiceName` free-text.
+- ◻️ (Cần requirement, chưa làm) **Báo giá (`BaoGia`)** · **Tour lẻ/FIT (`SingleTour`)** · **Đặt hotel/vé/visa (`BookingHotel`/`AirPlaneTicket`/`Visa`/`BookingTicket`)** · **Hoá đơn VAT (`InvoiceBranch`)** — hệ con lớn, cần chốt nghiệp vụ với chủ dự án.
+- ◻️ (Follow-up) liên kết `OrderCost.ProviderServiceId` để chọn giá từ bảng giá thay vì nhập tay.
 
 ## Đợt 6 — Điều hành tour (Operations) 🚌
 
