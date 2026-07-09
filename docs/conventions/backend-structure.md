@@ -59,7 +59,7 @@ TourKit.Shared         (Domain)        →  KHÔNG ref ai (leaf); KHÔNG dính E
 
 - **Mọi enum nghiệp vụ** (trạng thái, loại, kênh...) → `Shared/Enums/`, namespace `TourKit.Shared.Enums`. Một enum = một file cùng tên.
 - Backing type mặc định `int`, **giá trị bắt đầu từ 1** (bám hệ cũ), gán số tường minh.
-- **Không** khai enum trong file Contracts/DTO/Controller. Enum lỗi kernel (`ErrorType`) và enum Api-nội-bộ (`RegistrationError`) là ngoại lệ — ở tầng tương ứng.
+- **Không** khai enum trong file DTO/Controller. Enum Api-nội-bộ (`RegistrationError`) là ngoại lệ — ở tầng Api.
 - FE map số → nhãn (enum serialize thành **number**, không phải string).
 
 ## 4. Hằng số (const) — quy tắc
@@ -136,4 +136,3 @@ return Map(entity);
 `tests/TourKit.ArchTests/LayeringTests.cs`: Shared không dính EF/Infra/Api · Infrastructure không dính Api · **Application không dính Infrastructure/Api**. Thêm rule mới ở đây khi cần siết.
 
 ---
-*Chuyển tiếp: 10 module cũ còn chạy CQRS (dispatcher/Result) tới khi nhân rộng xong; sau đó xoá kernel `Shared/Application/*` + `Api/Application/Dispatcher`.*

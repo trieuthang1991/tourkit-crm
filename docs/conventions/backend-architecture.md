@@ -1,6 +1,8 @@
 # TourKit — Kiến trúc Backend chuẩn (best-practice C#/.NET) & Kế hoạch nâng cấp
 
-> Mục tiêu: từ backend MVP "endpoint gọi thẳng DbContext" (nhanh nhưng sơ sài, khó scale) → kiến trúc **Modular Monolith + Vertical Slice + CQRS + Domain giàu**, có thể mở rộng theo team & quy mô, tách microservice sau nếu cần.
+> ⚠️ **LỖI THỜI (2026-07-09):** dự án đã **chuyển từ CQRS/Vertical-Slice sang phân tầng cổ điển** (Controller → Service → Repository → EF, Exception + global handler) cho dễ tiếp cận. Tài liệu kiến trúc hiện hành là **`backend-structure.md`**. Kernel CQRS (Dispatcher/Result/Features) đã bị xoá. File này giữ lại làm lịch sử.
+>
+> Mục tiêu (bản gốc): từ backend MVP "endpoint gọi thẳng DbContext" → kiến trúc Modular Monolith + Vertical Slice + CQRS + Domain giàu.
 > Cập nhật: 2026-07-08. Bổ sung cho `backend-conventions.md` (không thay thế — làm rõ *cách tổ chức* code).
 
 ---
