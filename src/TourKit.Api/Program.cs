@@ -151,6 +151,7 @@ app.MapCommissionEndpoints();
 app.MapCommissionRuleEndpoints();
 app.MapBillingEndpoints();
 app.MapMarketingEndpoints();
+app.MapVehicleEndpoints();
 
 app.Run();
 
