@@ -12,14 +12,17 @@ using TourKit.Api.Booking;
 using TourKit.Api.Catalog;
 using TourKit.Api.Commission;
 using TourKit.Api.Crm;
-using TourKit.Api.Customers;
 using TourKit.Api.Finance;
 using TourKit.Api.Marketing;
+using TourKit.Api.Middleware;
 using TourKit.Api.Providers;
 using TourKit.Api.Provisioning;
 using TourKit.Api.Reports;
 using TourKit.Api.Tenancy;
+using TourKit.Application.Common;
+using TourKit.Application.Customers;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Repositories;
 using TourKit.Shared.Application;
 using TourKit.Shared.Tenancy;
 
@@ -33,6 +36,7 @@ builder.Host.UseSerilog((context, config) => config
 
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddControllers();
 
 // CORS cho SPA (Vite dev mặc định 5173/4173; prod cấu hình qua Cors:Origins).
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
@@ -72,11 +76,16 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 // --- CQRS: dispatcher + validation pipeline (FluentValidation) + scan handler (Scrutor). Không dùng MediatR. ---
 builder.Services.AddScoped<IDispatcher, Dispatcher>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();
 builder.Services.Scan(scan => scan.FromAssemblyOf<Program>()
     .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<,>)), publicOnly: false)
         .AsImplementedInterfaces().WithScopedLifetime()
     .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)), publicOnly: false)
         .AsImplementedInterfaces().WithScopedLifetime());
+
+// --- Kiến trúc phân tầng (module mẫu Customers): Controller → Service → IRepository<T> → EF ---
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -118,6 +127,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseSerilogRequestLogging();   // log mỗi request (method/path/status/thời gian) có cấu trúc
+app.UseMiddleware<ExceptionHandlingMiddleware>();   // sớm nhất có thể → bắt lỗi từ mọi middleware/controller phía sau
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
@@ -128,9 +138,10 @@ app.UseMiddleware<TenantResolutionMiddleware>();   // sau Authentication để �
 app.UseMiddleware<SubscriptionGuardMiddleware>();  // chặn nếu subscription hết hạn (miễn trừ auth/đăng ký/billing)
 app.UseAuthorization();
 
+app.MapControllers();   // Customers (kiến trúc phân tầng — module mẫu)
+
 app.MapAuthEndpoints();
 app.MapRegistrationEndpoints();
-app.MapCustomerEndpoints();
 app.MapTourTemplateEndpoints();
 app.MapMarketTypeEndpoints();
 app.MapTourAssigneeEndpoints();

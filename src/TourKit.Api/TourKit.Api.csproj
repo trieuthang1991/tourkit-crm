@@ -3,6 +3,7 @@
   <!-- TargetFramework/Nullable/ImplicitUsings kế thừa từ Directory.Build.props -->
 
   <ItemGroup>
+    <ProjectReference Include="..\TourKit.Application\TourKit.Application.csproj" />
     <ProjectReference Include="..\TourKit.Infrastructure\TourKit.Infrastructure.csproj" />
     <ProjectReference Include="..\TourKit.Shared\TourKit.Shared.csproj" />
   </ItemGroup>
