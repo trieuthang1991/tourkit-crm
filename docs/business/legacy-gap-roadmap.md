@@ -41,13 +41,14 @@ Công ty tour không vận hành được nếu chỉ có thu mà không có chi
 - ✅ Công nợ phải trả NCC (đã làm Đợt 1).
 - ◻️ (Sau) Lợi nhuận/hoa hồng **theo nhân viên** → Đợt 3; báo cáo theo KH/đại lý, số dư tài khoản, KPI.
 
-## Đợt 3 — Hoa hồng sales đúng nghĩa 🎯
+## Đợt 3 — Hoa hồng sales đúng nghĩa 🎯 ✅ ĐÃ XONG
 
-Tách bạch với `ProfitShare` (chia lợi nhuận) hiện tại:
+Tách bạch với `ProfitShare` (chia lợi nhuận). **Hoàn tất — 131 backend + 51 web test xanh; smoke SQLite đúng số (hoa hồng 700k = LN 7tr × 10%).**
 
-- **Hoa hồng theo bậc/loại khách/chiến dịch** (`ConfigCommission`, `CommissionCampaign`, `CommissionProfitLevel`).
-- **Chốt sổ hoa hồng** tách khỏi chốt đơn (`StatusComission`, `date_closed`).
-- Đổi tên/nhãn để không nhầm "Commission" (đang là chia lợi nhuận) với hoa hồng.
+- ✅ **`Order.SalesUserId`**: gán sales phụ trách đơn (`PUT /orders/{id}/sales`).
+- ✅ **`CommissionRule`** (=legacy `Comission`): CRUD quy tắc hoa hồng theo user (%).
+- ✅ **Báo cáo hoa hồng/lợi nhuận theo NV** (`/reports/commission-by-user`): turnover/cost/profit + hoa hồng = profit × rate.
+- ◻️ (Deferred) hoa hồng theo **loại khách** (`id_customer_type`) + `CommissionCampaign` — chờ `Customer.CustomerType`; **chốt sổ hoa hồng** (`StatusComission`/`date_closed`).
 
 ## Đợt 4 — CSKH sau tour & CRM sâu 🤝
 
