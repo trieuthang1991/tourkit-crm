@@ -83,9 +83,12 @@ builder.Services.Scan(scan => scan.FromAssemblyOf<Program>()
     .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)), publicOnly: false)
         .AsImplementedInterfaces().WithScopedLifetime());
 
-// --- Kiến trúc phân tầng (module mẫu Customers): Controller → Service → IRepository<T> → EF ---
+// --- Kiến trúc phân tầng: Controller → Service → IRepository<T> → EF ---
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-builder.Services.AddScoped<ICustomerService, CustomerService>();
+// Auto-register mọi Application service (I<X>Service → <X>Service) — khỏi khai báo tay từng cái.
+builder.Services.Scan(scan => scan.FromAssemblyOf<TourKit.Application.Customers.ICustomerService>()
+    .AddClasses(c => c.Where(t => t.Name.EndsWith("Service", StringComparison.Ordinal)))
+        .AsImplementedInterfaces().WithScopedLifetime());
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
