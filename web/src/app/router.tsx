@@ -7,6 +7,8 @@ import { TourTemplateDetailPage } from '../features/tourTemplates/TourTemplateDe
 import { CustomersPage } from '../features/customers/CustomersPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
 import { ProvidersPage } from '../features/providers/ProvidersPage';
+import { ServiceItemsPage } from '../features/services/ServiceItemsPage';
+import { ProviderServicesPage } from '../features/services/ProviderServicesPage';
 import { MarketingPage } from '../features/marketing/MarketingPage';
 import { MarketTypesPage } from '../features/marketTypes/MarketTypesPage';
 import { DeparturesPage } from '../features/booking/DeparturesPage';
@@ -42,6 +44,8 @@ export function AppRouter() {
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/leads" element={<LeadsPage />} />
         <Route path="/providers" element={<ProvidersPage />} />
+        <Route path="/service-items" element={<ServiceItemsPage />} />
+        <Route path="/provider-services" element={<ProviderServicesPage />} />
         <Route path="/marketing" element={<MarketingPage />} />
         <Route path="/market-types" element={<MarketTypesPage />} />
         <Route path="/departures" element={<DeparturesPage />} />

@@ -105,11 +105,13 @@ export function SelectField({
   label,
   options,
   required,
+  allowClear,
 }: {
   name: string;
   label: string;
   options: Option[];
   required?: boolean;
+  allowClear?: boolean;
 }) {
   const { control, formState } = useFormContext();
   return (
@@ -123,7 +125,13 @@ export function SelectField({
           validateStatus={formState.errors[name] ? 'error' : ''}
           help={formState.errors[name]?.message as string | undefined}
         >
-          <Select {...field} options={options} />
+          <Select
+            {...field}
+            value={field.value ?? undefined}
+            options={options}
+            allowClear={allowClear}
+            onChange={(v) => field.onChange(v ?? null)}
+          />
         </Form.Item>
       )}
     />
