@@ -32,6 +32,10 @@ public static class ReportEndpoints
             (await dispatcher.Send(new TurnoverReportQuery(), ct))
                 .Match(rows => Results.Ok(rows))).RequireAuthorization(Permissions.ReportTurnoverView);
 
+        app.MapGet("/api/v1/reports/commission-by-user", async (IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new CommissionByUserReportQuery(), ct))
+                .Match(rows => Results.Ok(rows))).RequireAuthorization(Permissions.ReportCommissionView);
+
         return app;
     }
 }
