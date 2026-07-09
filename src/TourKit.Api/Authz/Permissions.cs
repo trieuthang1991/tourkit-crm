@@ -42,6 +42,7 @@ public static class Permissions
     public const string ReportDashboardView = "report.dashboard.view";
     public const string ReportCashFlowView = "report.cashflow.view";
     public const string ReportTurnoverView = "report.turnover.view";
+    public const string ReportCommissionView = "report.commission.view";  // hoa hồng/lợi nhuận theo nhân viên
 
     public const string ProviderView = "provider.view";
     public const string ProviderCreate = "provider.create";
@@ -82,6 +83,7 @@ public static class Permissions
         (ReportDebtView, "Report"),
         (ReportProviderDebtView, "Report"),
         (ReportDashboardView, "Report"), (ReportCashFlowView, "Report"), (ReportTurnoverView, "Report"),
+        (ReportCommissionView, "Report"),
         (ProviderView, "Provider"), (ProviderCreate, "Provider"),
         (ProviderUpdate, "Provider"), (ProviderDelete, "Provider"),
         (CostView, "Provider"), (CostCreate, "Provider"),
