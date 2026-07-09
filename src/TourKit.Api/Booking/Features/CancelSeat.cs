@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TourKit.Shared.Domain;
 using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
@@ -33,10 +34,8 @@ public sealed class CancelSeatHandler : ICommandHandler<CancelSeatCommand, SeatR
             OrderId = seat.OrderId,
             Note = c.Note,
             RefundAmount = c.RefundAmount,
-            RefundRemain = seat.UpfrontAmount - c.RefundAmount,
-            RefundPercentage = seat.UpfrontAmount > 0m
-                ? Math.Round(c.RefundAmount / seat.UpfrontAmount * 100m, 2)
-                : 0m,
+            RefundRemain = RefundMath.Remain(seat.UpfrontAmount, c.RefundAmount),
+            RefundPercentage = RefundMath.Percentage(seat.UpfrontAmount, c.RefundAmount),
         });
         seat.Status = 1;   // statusCancel != 0 → đã huỷ
         seat.HoldExpiresAt = null;

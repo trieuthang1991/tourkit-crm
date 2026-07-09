@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TourKit.Shared.Domain;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 
@@ -48,7 +49,7 @@ public sealed class ProviderDebtReportHandler : IQueryHandler<ProviderDebtReport
                 var total = costs.FirstOrDefault(c => c.ProviderId == id)?.Total ?? 0m;
                 var pd = paid.FirstOrDefault(p => p.ProviderId == id)?.Paid ?? 0m;
                 var name = providers.FirstOrDefault(p => p.Id == id)?.Name ?? id.ToString();
-                return new ProviderDebtRow(id, name, total, pd, total - pd);
+                return new ProviderDebtRow(id, name, total, pd, OrderMath.Outstanding(total, pd));
             })
             .Where(r => r.TotalCost > 0 || r.Paid > 0)
             .OrderByDescending(r => r.Outstanding)

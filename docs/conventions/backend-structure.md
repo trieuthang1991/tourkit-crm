@@ -84,6 +84,24 @@ TourKit.Shared         (Domain)        →  KHÔNG ref ai (leaf); KHÔNG dính E
 
 **Nguyên tắc "một chỗ":** đổi công thức/quy tắc → sửa **đúng một file**. Nếu thấy mình sắp copy một đoạn logic sang module thứ hai → dừng lại, đưa nó về Shared/Domain hoặc Application/Common.
 
+### 5b. BẢNG CÔNG THỨC CHUẨN (Shared/Domain) — dùng lại, ĐỪNG viết lại
+
+> Trước khi viết bất kỳ phép `+ - × ÷ Round` nghiệp vụ nào, kiểm bảng này.
+
+| Hàm | Ý nghĩa | Dùng ở |
+|---|---|---|
+| `BookingMath.LineTotal(seat)` | Doanh thu 1 dòng đặt = Σ(giá×SL 4 nhóm tuổi)+phụ thu−chiết khấu | Order.TotalRevenue, SeatResponse |
+| `BookingMath.SeatCount(seat)` | Số chỗ 1 dòng chiếm (Σ SL 4 nhóm) | Chống overbooking |
+| `BookingMath.DeriveSeatStatus(seat)` | Suy trạng thái chỗ (Cancelled/Paid/Deposited/Held/HeldConfirmed) | SeatMapper |
+| `OrderMath.TotalCost(costs)` | Σ ActualAmount các dòng OrderCost | Order.TotalCost |
+| `OrderMath.Profit(order)` / `Profit(rev,cost)` | Lợi nhuận = doanh thu − chi phí | Commission, Turnover, Dashboard |
+| `OrderMath.Outstanding(total,settled)` | Công nợ còn lại = tổng − đã ghi nhận | Balance, công nợ thu/trả, Dashboard |
+| `CommissionMath.ShareAmount(profitBase,pct)` | Tiền hoa hồng/chia = profit×%÷100 (Round 2); lỗ≤0 → 0 | ProfitShare, báo cáo hoa hồng |
+| `RefundMath.Remain(upfront,refund)` / `Percentage(...)` | Tiền giữ lại &amp; % hoàn khi huỷ chỗ | CancelSeat |
+| `ReceiptQueries.Recognized()` | Lọc phiếu ĐÃ ghi nhận (extension IQueryable) | Balance, mọi báo cáo tiền |
+
+Thêm công thức mới → thêm method vào class Domain phù hợp (hoặc tạo `<X>Math.cs`), KHÔNG viết inline trong handler/service/report.
+
 ## 6. Khuôn một module (mẫu Customers — copy khi tạo module mới)
 
 ```

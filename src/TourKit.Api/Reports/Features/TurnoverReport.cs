@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TourKit.Shared.Domain;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 
@@ -37,7 +38,7 @@ public sealed class TurnoverReportHandler : IQueryHandler<TurnoverReportQuery, I
             .Select(o =>
             {
                 var cost = costByOrder.GetValueOrDefault(o.Id, 0m);
-                return new TurnoverRow(o.Id, o.Code, o.TotalRevenue, cost, o.TotalRevenue - cost);
+                return new TurnoverRow(o.Id, o.Code, o.TotalRevenue, cost, OrderMath.Profit(o.TotalRevenue, cost));
             })
             .OrderByDescending(r => r.Revenue)
             .ToList();

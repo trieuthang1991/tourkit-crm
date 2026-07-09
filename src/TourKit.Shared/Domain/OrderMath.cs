@@ -13,4 +13,10 @@ public static class OrderMath
 
     /// <summary>Lợi nhuận đơn = doanh thu − chi phí. Base để chia hoa hồng (legacy TotalRevenueByComission).</summary>
     public static decimal Profit(Order o) => o.TotalRevenue - o.TotalCost;
+
+    /// <summary>Lợi nhuận từ doanh thu &amp; chi phí rời (dùng ở báo cáo khi chưa có Order tracked).</summary>
+    public static decimal Profit(decimal revenue, decimal cost) => revenue - cost;
+
+    /// <summary>Công nợ còn lại = tổng phải − đã (thu/chi ĐÃ ghi nhận). Dùng cho công nợ phải thu &amp; phải trả.</summary>
+    public static decimal Outstanding(decimal total, decimal settled) => total - settled;
 }

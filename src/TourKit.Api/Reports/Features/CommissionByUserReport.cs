@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TourKit.Shared.Domain;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Application;
 
@@ -46,9 +47,9 @@ public sealed class CommissionByUserReportHandler
             {
                 var turnover = g.Sum(x => x.TotalRevenue);
                 var cost = g.Sum(x => costByOrder.GetValueOrDefault(x.Id, 0m));
-                var profit = turnover - cost;
+                var profit = OrderMath.Profit(turnover, cost);
                 var rate = rules.GetValueOrDefault(g.Key, 0m);
-                var amount = profit > 0m ? profit * rate / 100m : 0m;
+                var amount = CommissionMath.ShareAmount(profit, rate);
                 return new CommissionByUserRow(g.Key, turnover, cost, profit, rate, amount);
             })
             .OrderByDescending(r => r.Profit)

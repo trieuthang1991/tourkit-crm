@@ -4,7 +4,7 @@ namespace TourKit.Shared.Entities;
 /// <summary>
 /// Chia hoa hồng/lợi nhuận cho user theo đơn — grounded ở legacy bảng `ProfitSharing`
 /// (UserId/TourId/Percentage/Comission/TotalRevenueByComission). ProfitBase lưu lại lợi nhuận đơn
-/// (doanh thu − chi phí, xem <see cref="TourKit.Shared.Domain.OrderMath.Profit"/>) TẠI THỜI ĐIỂM chia,
+/// (doanh thu − chi phí, xem <see cref="TourKit.Shared.Domain.OrderMath.Profit(TourKit.Shared.Entities.Order)"/>) TẠI THỜI ĐIỂM chia,
 /// vì Order có thể thay đổi doanh thu/chi phí sau đó — legacy field TotalRevenueByComission.
 /// Amount tương ứng legacy field Comission.
 /// </summary>

@@ -33,7 +33,7 @@ public sealed class CreateProfitShareHandler : ICommandHandler<CreateProfitShare
         }
 
         var profit = OrderMath.Profit(order);
-        var amount = Math.Round(profit * c.Percentage / 100m, 2);
+        var amount = CommissionMath.ShareAmount(profit, c.Percentage);
 
         var share = new ProfitShare
         {

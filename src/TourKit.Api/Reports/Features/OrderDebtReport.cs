@@ -33,10 +33,11 @@ public sealed class OrderDebtReportHandler : IQueryHandler<OrderDebtReportQuery,
 
         IReadOnlyList<OrderDebtRow> rows = orders
             .Select(o => (o, Paid: paidByOrder.GetValueOrDefault(o.Id, 0m)))
-            .Where(x => x.o.TotalRevenue - x.Paid > 0m)
-            .OrderByDescending(x => x.o.TotalRevenue - x.Paid)
+            .Select(x => (x.o, x.Paid, Outstanding: OrderMath.Outstanding(x.o.TotalRevenue, x.Paid)))
+            .Where(x => x.Outstanding > 0m)
+            .OrderByDescending(x => x.Outstanding)
             .Select(x => new OrderDebtRow(
-                x.o.Id, x.o.Code, x.o.CustomerId, x.o.TotalRevenue, x.Paid, x.o.TotalRevenue - x.Paid))
+                x.o.Id, x.o.Code, x.o.CustomerId, x.o.TotalRevenue, x.Paid, x.Outstanding))
             .ToList();
 
         return Result.Success(rows);

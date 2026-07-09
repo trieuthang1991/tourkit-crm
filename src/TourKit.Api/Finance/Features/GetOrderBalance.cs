@@ -29,6 +29,7 @@ public sealed class GetOrderBalanceHandler : IQueryHandler<GetOrderBalanceQuery,
             .Where(r => r.OrderId == q.OrderId).Recognized()
             .SumAsync(r => r.Amount, ct);
 
-        return new OrderBalanceResponse(q.OrderId, order.TotalRevenue, paid, order.TotalRevenue - paid);
+        return new OrderBalanceResponse(
+            q.OrderId, order.TotalRevenue, paid, OrderMath.Outstanding(order.TotalRevenue, paid));
     }
 }

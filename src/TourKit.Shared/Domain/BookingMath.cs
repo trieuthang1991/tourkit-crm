@@ -1,4 +1,5 @@
 using TourKit.Shared.Entities;
+using TourKit.Shared.Enums;
 
 namespace TourKit.Shared.Domain;
 
@@ -32,4 +33,29 @@ public static class BookingMath
     /// </summary>
     public static int SeatCount(TourCustomer s)
         => s.Quantity + s.AmountChildren + s.AmountChildrenSmall + s.QuantityBaby;
+
+    /// <summary>
+    /// Suy TRẠNG THÁI chỗ từ tiền cọc vs giá dòng + cờ giữ chỗ (bảng flow "Giữ chỗ" hệ cũ).
+    /// Quy tắc suy trạng thái nằm MỘT CHỖ ở đây — đừng suy lại nơi khác.
+    /// </summary>
+    public static SeatStatus DeriveSeatStatus(TourCustomer s)
+    {
+        if (s.Status != 0)
+        {
+            return SeatStatus.Cancelled;
+        }
+
+        var lineTotal = LineTotal(s);
+        if (s.UpfrontAmount >= lineTotal && lineTotal > 0m)
+        {
+            return SeatStatus.Paid;
+        }
+
+        if (s.UpfrontAmount > 0m)
+        {
+            return SeatStatus.Deposited;
+        }
+
+        return s.HoldExpiresAt is not null ? SeatStatus.Held : SeatStatus.HeldConfirmed;
+    }
 }

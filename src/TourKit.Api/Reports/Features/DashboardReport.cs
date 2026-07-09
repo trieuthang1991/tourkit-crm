@@ -34,9 +34,9 @@ public sealed class DashboardReportHandler : IQueryHandler<DashboardReportQuery,
 
         var summary = new DashboardSummary(
             orderCount,
-            totalRevenue, totalReceived, totalRevenue - totalReceived,
-            totalCost, totalPaid, totalCost - totalPaid,
-            totalRevenue - totalCost);
+            totalRevenue, totalReceived, OrderMath.Outstanding(totalRevenue, totalReceived),
+            totalCost, totalPaid, OrderMath.Outstanding(totalCost, totalPaid),
+            OrderMath.Profit(totalRevenue, totalCost));
 
         return Result.Success(summary);
     }
