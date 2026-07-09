@@ -33,5 +33,5 @@ public sealed class CreateBookingHandler : ICommandHandler<CreateBookingCommand,
 internal static class OrderMapper
 {
     public static OrderResponse ToResponse(Order o) => new(
-        o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, o.TotalCost, o.Status);
+        o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, o.TotalCost, o.Status, o.SalesUserId);
 }

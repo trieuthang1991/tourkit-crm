@@ -66,6 +66,12 @@ public static class BookingEndpoints
             (await dispatcher.Send(new ListOrderLinesQuery(orderId), ct))
                 .Match(l => Results.Ok(l))).RequireAuthorization(Permissions.BookingView);
 
+        // Gán sales phụ trách đơn (legacy id_sales_root trên Orders).
+        app.MapPut("/api/v1/orders/{orderId:guid}/sales", async (
+            Guid orderId, AssignSalesRequest body, IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new AssignSalesCommand(orderId, body.SalesUserId), ct))
+                .Match(o => Results.Ok(o))).RequireAuthorization(Permissions.BookingCreate);
+
         return app;
     }
 }

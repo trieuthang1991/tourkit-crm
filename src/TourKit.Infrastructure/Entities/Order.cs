@@ -14,6 +14,7 @@ public sealed class Order : BaseEntity, ITenantEntity
     public string Code { get; set; } = string.Empty;
     public Guid TourDepartureId { get; set; }
     public Guid CustomerId { get; set; }
+    public Guid? SalesUserId { get; set; }
     public int BookingType { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Draft;
 

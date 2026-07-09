@@ -21,7 +21,7 @@ public sealed class ListOrdersHandler : IQueryHandler<ListOrdersQuery, Paged<Ord
         var items = await baseQuery
             .Skip(page.Skip).Take(page.SafeSize)
             .Select(o => new OrderResponse(
-                o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, o.TotalCost, o.Status))
+                o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, o.TotalCost, o.Status, o.SalesUserId))
             .ToListAsync(ct);
 
         return new Paged<OrderResponse>(items, total, page.SafePage, page.SafeSize);

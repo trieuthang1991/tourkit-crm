@@ -4,9 +4,11 @@ namespace TourKit.Api.Booking;
 
 public sealed record CreateBookingRequest(Guid CustomerId, int AdultQty, int ChildQty, int ChildSmallQty, int BabyQty);
 
+public sealed record AssignSalesRequest(Guid? SalesUserId);
+
 public sealed record OrderResponse(
     Guid Id, string Code, Guid TourDepartureId, Guid CustomerId, decimal TotalRevenue, decimal TotalCost,
-    OrderStatus Status);
+    OrderStatus Status, Guid? SalesUserId);
 
 public sealed record BookingLineResponse(
     Guid Id, int Quantity, int AmountChildren, int AmountChildrenSmall, int QuantityBaby,
