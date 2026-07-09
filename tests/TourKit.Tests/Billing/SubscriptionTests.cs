@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Billing;
 using TourKit.Api.Provisioning;
+using TourKit.Application.Billing.Dtos;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Billing;
@@ -40,7 +40,7 @@ public class SubscriptionTests : IClassFixture<AuthTestFactory>
 
         var res = await client.GetAsync("/api/v1/subscription");
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
-        var sub = await res.Content.ReadFromJsonAsync<SubscriptionResponse>();
+        var sub = await res.Content.ReadFromJsonAsync<SubscriptionDto>();
         Assert.NotNull(sub);
         Assert.Equal("free", sub!.PlanCode);
         Assert.Equal(TourKit.Shared.Enums.SubscriptionStatus.Active, sub.Status);
@@ -53,7 +53,7 @@ public class SubscriptionTests : IClassFixture<AuthTestFactory>
 
         var res = await client.GetAsync("/api/v1/plans");
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
-        var plans = await res.Content.ReadFromJsonAsync<List<PlanResponse>>();
+        var plans = await res.Content.ReadFromJsonAsync<List<PlanDto>>();
         Assert.NotNull(plans);
         Assert.Contains(plans!, p => p.Code == "free");
         Assert.Contains(plans!, p => p.Code == "pro");
@@ -64,14 +64,14 @@ public class SubscriptionTests : IClassFixture<AuthTestFactory>
     {
         var client = await RegisterAndLoginAsync("subco3");
 
-        var change = await client.PostAsJsonAsync("/api/v1/subscription/change-plan", new ChangePlanRequest("pro"));
+        var change = await client.PostAsJsonAsync("/api/v1/subscription/change-plan", new ChangePlanDto("pro"));
         Assert.Equal(HttpStatusCode.OK, change.StatusCode);
-        var updated = await change.Content.ReadFromJsonAsync<SubscriptionResponse>();
+        var updated = await change.Content.ReadFromJsonAsync<SubscriptionDto>();
         Assert.NotNull(updated);
         Assert.Equal("pro", updated!.PlanCode);
 
         var res = await client.GetAsync("/api/v1/subscription");
-        var sub = await res.Content.ReadFromJsonAsync<SubscriptionResponse>();
+        var sub = await res.Content.ReadFromJsonAsync<SubscriptionDto>();
         Assert.Equal("pro", sub!.PlanCode);
     }
 
@@ -80,7 +80,7 @@ public class SubscriptionTests : IClassFixture<AuthTestFactory>
     {
         var client = await RegisterAndLoginAsync("subco4");
 
-        var change = await client.PostAsJsonAsync("/api/v1/subscription/change-plan", new ChangePlanRequest("nonexistent"));
+        var change = await client.PostAsJsonAsync("/api/v1/subscription/change-plan", new ChangePlanDto("nonexistent"));
         Assert.Equal(HttpStatusCode.BadRequest, change.StatusCode);
     }
 }

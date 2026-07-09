@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Application.Catalog.Dtos;
-using TourKit.Api.Commission;
+using TourKit.Application.Commission.Dtos;
 using TourKit.Application.Providers.Dtos;
 using TourKit.Tests.Support;
 
@@ -76,7 +76,7 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("comm-a");
         var order = await CreateOrderWithProfitAsync(client);
 
-        var profit = await client.GetFromJsonAsync<OrderProfitResponse>($"/api/v1/orders/{order.Id}/profit");
+        var profit = await client.GetFromJsonAsync<OrderProfitDto>($"/api/v1/orders/{order.Id}/profit");
         Assert.Equal(13_000_000m, profit!.Revenue);
         Assert.Equal(3_000_000m, profit.Cost);
         Assert.Equal(10_000_000m, profit.Profit);
@@ -99,15 +99,15 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
         var userId = Guid.NewGuid();
 
         var response = await client.PostAsJsonAsync($"/api/v1/orders/{order.Id}/profit-shares",
-            new CreateProfitShareRequest(userId, 10m));
+            new CreateProfitShareDto(userId, 10m));
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var share = await response.Content.ReadFromJsonAsync<ProfitShareResponse>();
+        var share = await response.Content.ReadFromJsonAsync<ProfitShareDto>();
         Assert.Equal(userId, share!.UserId);
         Assert.Equal(10m, share.Percentage);
         Assert.Equal(1_000_000m, share.Amount);
         Assert.Equal(10_000_000m, share.ProfitBase);
 
-        var shares = await client.GetFromJsonAsync<List<ProfitShareResponse>>(
+        var shares = await client.GetFromJsonAsync<List<ProfitShareDto>>(
             $"/api/v1/orders/{order.Id}/profit-shares");
         Assert.Single(shares!);
         Assert.Equal(share.Id, shares![0].Id);
@@ -119,7 +119,7 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("comm-share-noorder");
 
         var response = await client.PostAsJsonAsync($"/api/v1/orders/{Guid.NewGuid()}/profit-shares",
-            new CreateProfitShareRequest(Guid.NewGuid(), 10m));
+            new CreateProfitShareDto(Guid.NewGuid(), 10m));
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -133,7 +133,7 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
         var order = await CreateOrderWithProfitAsync(client);
 
         var response = await client.PostAsJsonAsync($"/api/v1/orders/{order.Id}/profit-shares",
-            new CreateProfitShareRequest(Guid.NewGuid(), percentage));
+            new CreateProfitShareDto(Guid.NewGuid(), percentage));
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -143,10 +143,10 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
         var clientA = await LoggedInClientAsync("comm-iso-a");
         var orderA = await CreateOrderWithProfitAsync(clientA);
         await clientA.PostAsJsonAsync($"/api/v1/orders/{orderA.Id}/profit-shares",
-            new CreateProfitShareRequest(Guid.NewGuid(), 10m));
+            new CreateProfitShareDto(Guid.NewGuid(), 10m));
 
         var clientB = await LoggedInClientAsync("comm-iso-b");
-        var sharesB = await clientB.GetFromJsonAsync<List<ProfitShareResponse>>(
+        var sharesB = await clientB.GetFromJsonAsync<List<ProfitShareDto>>(
             $"/api/v1/orders/{orderA.Id}/profit-shares");
         Assert.Empty(sharesB!);
 
