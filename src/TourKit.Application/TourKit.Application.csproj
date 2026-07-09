@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- TargetFramework/Nullable/ImplicitUsings kế thừa từ Directory.Build.props (nguồn duy nhất) -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\TourKit.Shared\TourKit.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.*" />
+  </ItemGroup>
+
+</Project>
