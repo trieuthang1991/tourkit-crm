@@ -28,6 +28,10 @@ public static class ReportEndpoints
             (await dispatcher.Send(new CashFlowReportQuery(), ct))
                 .Match(rows => Results.Ok(rows))).RequireAuthorization(Permissions.ReportCashFlowView);
 
+        app.MapGet("/api/v1/reports/turnover", async (IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new TurnoverReportQuery(), ct))
+                .Match(rows => Results.Ok(rows))).RequireAuthorization(Permissions.ReportTurnoverView);
+
         return app;
     }
 }
