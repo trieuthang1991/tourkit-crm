@@ -146,6 +146,7 @@ app.MapReportEndpoints();
 app.MapProviderEndpoints();
 app.MapOrderCostEndpoints();
 app.MapServiceItemEndpoints();
+app.MapProviderServiceEndpoints();
 app.MapCommissionEndpoints();
 app.MapCommissionRuleEndpoints();
 app.MapBillingEndpoints();
