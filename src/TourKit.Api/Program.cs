@@ -10,7 +10,6 @@ using TourKit.Api.Auth;
 using TourKit.Api.Billing;
 using TourKit.Api.Booking;
 using TourKit.Api.Finance;
-using TourKit.Api.Marketing;
 using TourKit.Api.Middleware;
 using TourKit.Api.Provisioning;
 using TourKit.Api.Reports;
@@ -145,7 +144,6 @@ app.MapReceiptEndpoints();
 app.MapReceiptApprovalEndpoints();
 app.MapPaymentEndpoints();
 app.MapReportEndpoints();
-app.MapMarketingEndpoints();
 app.MapVehicleEndpoints();
 
 app.Run();

@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
-using TourKit.Api.Marketing;
-using TourKit.Shared.Application;
+using TourKit.Application.Common;
+using TourKit.Application.Marketing.Dtos;
 using TourKit.Tests.Support;
 
 using TourKit.Shared.Enums;
@@ -26,7 +26,7 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         return client;
     }
 
-    private static CreateCampaignRequest Sample(string name) =>
+    private static CreateCampaignDto Sample(string name) =>
         new(name, MarketingChannel.Email, "Chào hè", "Nội dung khuyến mãi hè 2026.");
 
     [Fact]
@@ -36,15 +36,15 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
 
         var created = await client.PostAsJsonAsync("/api/v1/marketing/campaigns", Sample("Hè 2026"));
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
-        var campaign = await created.Content.ReadFromJsonAsync<CampaignResponse>();
+        var campaign = await created.Content.ReadFromJsonAsync<CampaignDto>();
         Assert.NotNull(campaign);
         Assert.Equal("Hè 2026", campaign!.Name);
         Assert.Equal(MarketingChannel.Email, campaign.Channel);
 
-        var list = await client.GetFromJsonAsync<Paged<CampaignResponse>>("/api/v1/marketing/campaigns");
+        var list = await client.GetFromJsonAsync<PagedResult<CampaignDto>>("/api/v1/marketing/campaigns");
         Assert.Single(list!.Items);
 
-        var got = await client.GetFromJsonAsync<CampaignResponse>($"/api/v1/marketing/campaigns/{campaign.Id}");
+        var got = await client.GetFromJsonAsync<CampaignDto>($"/api/v1/marketing/campaigns/{campaign.Id}");
         Assert.NotNull(got);
         Assert.Equal(campaign.Id, got!.Id);
     }
@@ -55,7 +55,7 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("mkt-invalid");
 
         var res = await client.PostAsJsonAsync("/api/v1/marketing/campaigns",
-            new CreateCampaignRequest("", MarketingChannel.Sms, null, "Body"));
+            new CreateCampaignDto("", MarketingChannel.Sms, null, "Body"));
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
 
@@ -65,13 +65,13 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("mkt-update");
 
         var created = await client.PostAsJsonAsync("/api/v1/marketing/campaigns", Sample("Trước update"));
-        var campaign = await created.Content.ReadFromJsonAsync<CampaignResponse>();
+        var campaign = await created.Content.ReadFromJsonAsync<CampaignDto>();
 
         var update = await client.PutAsJsonAsync($"/api/v1/marketing/campaigns/{campaign!.Id}",
-            new UpdateCampaignRequest("Sau update", MarketingChannel.Zalo, "Chủ đề mới", "Nội dung mới", 2));
+            new UpdateCampaignDto("Sau update", MarketingChannel.Zalo, "Chủ đề mới", "Nội dung mới", 2));
         Assert.Equal(HttpStatusCode.NoContent, update.StatusCode);
 
-        var got = await client.GetFromJsonAsync<CampaignResponse>($"/api/v1/marketing/campaigns/{campaign.Id}");
+        var got = await client.GetFromJsonAsync<CampaignDto>($"/api/v1/marketing/campaigns/{campaign.Id}");
         Assert.Equal("Sau update", got!.Name);
         Assert.Equal(MarketingChannel.Zalo, got.Channel);
         Assert.Equal(2, got.Status);
@@ -83,23 +83,23 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("mkt-send");
 
         var created = await client.PostAsJsonAsync("/api/v1/marketing/campaigns", Sample("Chiến dịch gửi"));
-        var campaign = await created.Content.ReadFromJsonAsync<CampaignResponse>();
+        var campaign = await created.Content.ReadFromJsonAsync<CampaignDto>();
 
         var send = await client.PostAsJsonAsync($"/api/v1/marketing/campaigns/{campaign!.Id}/send",
-            new SendCampaignRequest(["a@x.com", "b@x.com"]));
+            new SendCampaignDto(["a@x.com", "b@x.com"]));
         Assert.Equal(HttpStatusCode.OK, send.StatusCode);
-        var result = await send.Content.ReadFromJsonAsync<SendResultResponse>();
+        var result = await send.Content.ReadFromJsonAsync<SendResultDto>();
         Assert.NotNull(result);
         Assert.Equal(2, result!.Sent);
 
-        var logs = await client.GetFromJsonAsync<List<SendLogResponse>>(
+        var logs = await client.GetFromJsonAsync<List<SendLogDto>>(
             $"/api/v1/marketing/campaigns/{campaign.Id}/logs");
         Assert.NotNull(logs);
         Assert.Equal(2, logs!.Count);
         Assert.Contains(logs, l => l.Recipient == "a@x.com");
         Assert.Contains(logs, l => l.Recipient == "b@x.com");
 
-        var got = await client.GetFromJsonAsync<CampaignResponse>($"/api/v1/marketing/campaigns/{campaign.Id}");
+        var got = await client.GetFromJsonAsync<CampaignDto>($"/api/v1/marketing/campaigns/{campaign.Id}");
         Assert.Equal(1, got!.Status);   // đã gửi
     }
 
@@ -109,7 +109,7 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("mkt-send-404");
 
         var send = await client.PostAsJsonAsync($"/api/v1/marketing/campaigns/{Guid.NewGuid()}/send",
-            new SendCampaignRequest(["a@x.com"]));
+            new SendCampaignDto(["a@x.com"]));
         Assert.Equal(HttpStatusCode.NotFound, send.StatusCode);
     }
 
@@ -119,12 +119,12 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("mkt-delete");
 
         var created = await client.PostAsJsonAsync("/api/v1/marketing/campaigns", Sample("Xoá mềm"));
-        var campaign = await created.Content.ReadFromJsonAsync<CampaignResponse>();
+        var campaign = await created.Content.ReadFromJsonAsync<CampaignDto>();
 
         var del = await client.DeleteAsync($"/api/v1/marketing/campaigns/{campaign!.Id}");
         Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
 
-        var list = await client.GetFromJsonAsync<Paged<CampaignResponse>>("/api/v1/marketing/campaigns");
+        var list = await client.GetFromJsonAsync<PagedResult<CampaignDto>>("/api/v1/marketing/campaigns");
         Assert.Empty(list!.Items);
 
         var get = await client.GetAsync($"/api/v1/marketing/campaigns/{campaign.Id}");
@@ -138,7 +138,7 @@ public class MarketingTests : IClassFixture<AuthTestFactory>
         await clientA.PostAsJsonAsync("/api/v1/marketing/campaigns", Sample("Của A"));
 
         var clientB = await LoggedInClientAsync("mkt-iso-b");
-        var listB = await clientB.GetFromJsonAsync<Paged<CampaignResponse>>("/api/v1/marketing/campaigns");
+        var listB = await clientB.GetFromJsonAsync<PagedResult<CampaignDto>>("/api/v1/marketing/campaigns");
         Assert.Empty(listB!.Items);
     }
 }
