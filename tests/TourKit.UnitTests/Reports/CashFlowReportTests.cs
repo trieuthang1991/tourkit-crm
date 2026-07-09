@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Reports.Features;
-using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Reports;
+using TourKit.Shared.Entities;
 using TourKit.Shared.Tenancy;
 
 namespace TourKit.UnitTests.Reports;
@@ -64,18 +64,17 @@ public class CashFlowReportTests
 
         await db.SaveChangesAsync();
 
-        var handler = new CashFlowReportHandler(db);
-        var result = await handler.Handle(new CashFlowReportQuery(), CancellationToken.None);
+        var queries = new ReportQueries(db);
+        var rows = await queries.GetCashFlowAsync();
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(2, result.Value.Count);
+        Assert.Equal(2, rows.Count);
 
-        var cash = result.Value.Single(r => r.PaymentMethod == "cash");
+        var cash = rows.Single(r => r.PaymentMethod == "cash");
         Assert.Equal(2_000_000m, cash.Inflow);
         Assert.Equal(1_000_000m, cash.Outflow);
         Assert.Equal(1_000_000m, cash.Net);
 
-        var bank = result.Value.Single(r => r.PaymentMethod == "bank");
+        var bank = rows.Single(r => r.PaymentMethod == "bank");
         Assert.Equal(1_000_000m, bank.Inflow);
         Assert.Equal(0m, bank.Outflow);
         Assert.Equal(1_000_000m, bank.Net);

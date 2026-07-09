@@ -11,11 +11,12 @@ using TourKit.Api.Billing;
 using TourKit.Api.Booking;
 using TourKit.Api.Middleware;
 using TourKit.Api.Provisioning;
-using TourKit.Api.Reports;
 using TourKit.Api.Tenancy;
 using TourKit.Application.Common;
+using TourKit.Application.Reports;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Infrastructure.Repositories;
+using TourKit.Infrastructure.Reports;
 using TourKit.Shared.Application;
 using TourKit.Shared.Tenancy;
 
@@ -78,6 +79,8 @@ builder.Services.Scan(scan => scan.FromAssemblyOf<Program>()
 
 // --- Kiến trúc phân tầng: Controller → Service → IRepository<T> → EF ---
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+// Repo riêng cho query phức tạp/nhiều bảng (báo cáo GROUP BY) — không dịch được bằng IRepository<T> generic.
+builder.Services.AddScoped<IReportQueries, ReportQueries>();
 // Auto-register mọi Application service (I<X>Service → <X>Service) — khỏi khai báo tay từng cái.
 builder.Services.Scan(scan => scan.FromAssemblyOf<TourKit.Application.Customers.ICustomerService>()
     .AddClasses(c => c.Where(t => t.Name.EndsWith("Service", StringComparison.Ordinal)))
@@ -139,7 +142,6 @@ app.MapAuthEndpoints();
 app.MapRegistrationEndpoints();
 app.MapDepartureEndpoints();
 app.MapBookingEndpoints();
-app.MapReportEndpoints();
 app.MapVehicleEndpoints();
 
 app.Run();

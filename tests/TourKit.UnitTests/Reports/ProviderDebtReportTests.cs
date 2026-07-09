@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Reports.Features;
-using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Reports;
+using TourKit.Shared.Entities;
 using TourKit.Shared.Tenancy;
 
 namespace TourKit.UnitTests.Reports;
@@ -59,11 +59,10 @@ public class ProviderDebtReportTests
 
         await db.SaveChangesAsync();
 
-        var handler = new ProviderDebtReportHandler(db);
-        var result = await handler.Handle(new ProviderDebtReportQuery(), CancellationToken.None);
+        var queries = new ReportQueries(db);
+        var rows = await queries.GetProviderDebtAsync();
 
-        Assert.True(result.IsSuccess);
-        var row = Assert.Single(result.Value);
+        var row = Assert.Single(rows);
         Assert.Equal(provider.Id, row.ProviderId);
         Assert.Equal(5_000_000m, row.TotalCost);
         Assert.Equal(2_000_000m, row.Paid);

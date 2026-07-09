@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Reports.Features;
-using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Reports;
+using TourKit.Shared.Entities;
 using TourKit.Shared.Tenancy;
 
 namespace TourKit.UnitTests.Reports;
@@ -52,11 +52,10 @@ public class CommissionByUserReportTests
 
         await db.SaveChangesAsync();
 
-        var handler = new CommissionByUserReportHandler(db);
-        var result = await handler.Handle(new CommissionByUserReportQuery(), CancellationToken.None);
+        var queries = new ReportQueries(db);
+        var rows = await queries.GetCommissionByUserAsync();
 
-        Assert.True(result.IsSuccess);
-        var row = Assert.Single(result.Value);
+        var row = Assert.Single(rows);
         Assert.Equal(salesUserId, row.UserId);
         Assert.Equal(10_000_000m, row.Turnover);
         Assert.Equal(3_000_000m, row.Cost);
@@ -88,11 +87,10 @@ public class CommissionByUserReportTests
 
         await db.SaveChangesAsync();
 
-        var handler = new CommissionByUserReportHandler(db);
-        var result = await handler.Handle(new CommissionByUserReportQuery(), CancellationToken.None);
+        var queries = new ReportQueries(db);
+        var rows = await queries.GetCommissionByUserAsync();
 
-        Assert.True(result.IsSuccess);
-        var row = Assert.Single(result.Value);
+        var row = Assert.Single(rows);
         Assert.Equal(salesUserId, row.UserId);
         Assert.Equal(-1_000_000m, row.Profit);
         Assert.Equal(0m, row.CommissionRate);

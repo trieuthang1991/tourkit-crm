@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Reports.Features;
-using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Reports;
+using TourKit.Shared.Entities;
 using TourKit.Shared.Tenancy;
 
 namespace TourKit.UnitTests.Reports;
@@ -64,11 +64,9 @@ public class DashboardReportTests
 
         await db.SaveChangesAsync();
 
-        var handler = new DashboardReportHandler(db);
-        var result = await handler.Handle(new DashboardReportQuery(), CancellationToken.None);
+        var queries = new ReportQueries(db);
+        var s = await queries.GetDashboardAsync();
 
-        Assert.True(result.IsSuccess);
-        var s = result.Value;
         Assert.Equal(1, s.OrderCount);
         Assert.Equal(5_000_000m, s.TotalRevenue);
         Assert.Equal(2_000_000m, s.TotalReceived);

@@ -4,7 +4,7 @@ using TourKit.Api.Auth;
 using TourKit.Api.Booking;
 using TourKit.Application.Catalog.Dtos;
 using TourKit.Application.Finance.Dtos;
-using TourKit.Api.Reports;
+using TourKit.Application.Reports.Dtos;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Reports;
@@ -65,7 +65,7 @@ public class DebtReportTests : IClassFixture<AuthTestFactory>
         var settled = await CreateOrderAsync(client);    // 13tr
         await ApproveReceiptAsync(client, settled, 13_000_000m); // hết nợ
 
-        var rows = await client.GetFromJsonAsync<List<OrderDebtRow>>("/api/v1/reports/order-debt");
+        var rows = await client.GetFromJsonAsync<List<OrderDebtRowDto>>("/api/v1/reports/order-debt");
 
         Assert.Single(rows!);                            // chỉ đơn còn nợ
         Assert.Equal(owing, rows![0].OrderId);
@@ -82,7 +82,7 @@ public class DebtReportTests : IClassFixture<AuthTestFactory>
         await ApproveReceiptAsync(clientA, owing, 1_000_000m);
 
         var clientB = await LoggedInClientAsync("debt-iso-b");
-        var rowsB = await clientB.GetFromJsonAsync<List<OrderDebtRow>>("/api/v1/reports/order-debt");
+        var rowsB = await clientB.GetFromJsonAsync<List<OrderDebtRowDto>>("/api/v1/reports/order-debt");
         Assert.Empty(rowsB!);
     }
 

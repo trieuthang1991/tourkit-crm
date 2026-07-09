@@ -1,0 +1,203 @@
+using Microsoft.EntityFrameworkCore;
+using TourKit.Application.Reports;
+using TourKit.Application.Reports.Dtos;
+using TourKit.Infrastructure.Persistence;
+using TourKit.Shared.Domain;
+
+namespace TourKit.Infrastructure.Reports;
+
+/// <summary>
+/// Query phức tạp/nhiều bảng cho 6 báo cáo — dùng <c>AppDbContext</c> trực tiếp (repo riêng theo convention §5).
+/// SQLite-safe: GROUP/SUM/COUNT trong SQL, ghép + ORDER BY ở memory (tránh subquery tương quan không dịch được
+/// &amp; tránh ORDER BY decimal/DateTimeOffset trên SQLite). Grid lớn → Materialized View (§F4/§I).
+/// </summary>
+public sealed class ReportQueries(AppDbContext db) : IReportQueries
+{
+    /// <summary>
+    /// Báo cáo công nợ phải thu (legacy MoneyReport CNPT): các đơn còn nợ = TotalRevenue − tổng phiếu thu ĐÃ DUYỆT.
+    /// </summary>
+    public async Task<IReadOnlyList<OrderDebtRowDto>> GetOrderDebtAsync()
+    {
+        // 2 truy vấn top-level (dùng chung ReceiptQueries.Recognized) rồi ghép ở memory —
+        // tránh subquery tương quan (không dịch được extension).
+        var orders = await db.Orders.AsNoTracking()
+            .Select(o => new { o.Id, o.Code, o.CustomerId, o.TotalRevenue })
+            .ToListAsync();
+
+        var paidByOrder = (await db.ReceiptVouchers.Recognized()
+                .GroupBy(r => r.OrderId)
+                .Select(g => new { OrderId = g.Key, Paid = g.Sum(r => r.Amount) })
+                .ToListAsync())
+            .ToDictionary(x => x.OrderId, x => x.Paid);
+
+        IReadOnlyList<OrderDebtRowDto> rows = orders
+            .Select(o => (o, Paid: paidByOrder.GetValueOrDefault(o.Id, 0m)))
+            .Select(x => (x.o, x.Paid, Outstanding: OrderMath.Outstanding(x.o.TotalRevenue, x.Paid)))
+            .Where(x => x.Outstanding > 0m)
+            .OrderByDescending(x => x.Outstanding)
+            .Select(x => new OrderDebtRowDto(
+                x.o.Id, x.o.Code, x.o.CustomerId, x.o.TotalRevenue, x.Paid, x.Outstanding))
+            .ToList();
+
+        return rows;
+    }
+
+    /// <summary>
+    /// Báo cáo công nợ phải trả NCC (đối xứng OrderDebt): gom theo ProviderId. TotalCost = Σ OrderCost.ActualAmount;
+    /// Paid = Σ PaymentVoucher.Amount đã ghi nhận (IsRecognized).
+    /// </summary>
+    public async Task<IReadOnlyList<ProviderDebtRowDto>> GetProviderDebtAsync()
+    {
+        // 3 truy vấn top-level rồi ghép ở memory — tránh subquery tương quan (không dịch được extension,
+        // và tránh ORDER BY decimal trên SQLite).
+        var costs = await db.OrderCosts.AsNoTracking()
+            .GroupBy(c => c.ProviderId)
+            .Select(g => new { ProviderId = g.Key, Total = g.Sum(x => x.ActualAmount) })
+            .ToListAsync();
+
+        var paid = await db.PaymentVouchers.AsNoTracking()
+            .Where(p => p.IsRecognized && p.ProviderId != null)
+            .GroupBy(p => p.ProviderId!.Value)
+            .Select(g => new { ProviderId = g.Key, Paid = g.Sum(x => x.Amount) })
+            .ToListAsync();
+
+        var providers = await db.Providers.AsNoTracking()
+            .Select(p => new { p.Id, p.Name })
+            .ToListAsync();
+
+        var ids = costs.Select(c => c.ProviderId).Union(paid.Select(p => p.ProviderId)).Distinct();
+
+        IReadOnlyList<ProviderDebtRowDto> rows = ids
+            .Select(id =>
+            {
+                var total = costs.FirstOrDefault(c => c.ProviderId == id)?.Total ?? 0m;
+                var pd = paid.FirstOrDefault(p => p.ProviderId == id)?.Paid ?? 0m;
+                var name = providers.FirstOrDefault(p => p.Id == id)?.Name ?? id.ToString();
+                return new ProviderDebtRowDto(id, name, total, pd, OrderMath.Outstanding(total, pd));
+            })
+            .Where(r => r.TotalCost > 0 || r.Paid > 0)
+            .OrderByDescending(r => r.Outstanding)
+            .ToList();
+
+        return rows;
+    }
+
+    /// <summary>
+    /// Báo cáo Dashboard tổng quan (legacy BusinessActivity/HomePage): một object tổng hợp toàn tenant.
+    /// Mỗi tổng 1 truy vấn top-level (SUM/COUNT rỗng → 0) — SQLite-safe, không ORDER BY.
+    /// </summary>
+    public async Task<DashboardSummaryDto> GetDashboardAsync()
+    {
+        var orderCount = await db.Orders.CountAsync();
+        var totalRevenue = await db.Orders.SumAsync(o => o.TotalRevenue);
+        var totalReceived = await db.ReceiptVouchers.Recognized().SumAsync(r => r.Amount);
+        var totalCost = await db.OrderCosts.SumAsync(c => c.ActualAmount);
+        var totalPaid = await db.PaymentVouchers.Where(p => p.IsRecognized).SumAsync(p => p.Amount);
+
+        return new DashboardSummaryDto(
+            orderCount,
+            totalRevenue, totalReceived, OrderMath.Outstanding(totalRevenue, totalReceived),
+            totalCost, totalPaid, OrderMath.Outstanding(totalCost, totalPaid),
+            OrderMath.Profit(totalRevenue, totalCost));
+    }
+
+    /// <summary>
+    /// Báo cáo dòng tiền theo phương thức thanh toán (legacy ListPaymentMethodsCashFlow): gom theo PaymentMethod.
+    /// Inflow = Σ phiếu thu đã ghi nhận; Outflow = Σ phiếu chi đã ghi nhận.
+    /// </summary>
+    public async Task<IReadOnlyList<CashFlowRowDto>> GetCashFlowAsync()
+    {
+        // 2 truy vấn top-level (dùng chung ReceiptQueries.Recognized) rồi ghép + sort ở memory —
+        // tránh ORDER BY decimal trên SQLite.
+        var inflow = await db.ReceiptVouchers.Recognized()
+            .GroupBy(r => r.PaymentMethod)
+            .Select(g => new { Method = g.Key, Sum = g.Sum(x => x.Amount) })
+            .ToListAsync();
+        var outflow = await db.PaymentVouchers.Where(p => p.IsRecognized)
+            .GroupBy(p => p.PaymentMethod)
+            .Select(g => new { Method = g.Key, Sum = g.Sum(x => x.Amount) })
+            .ToListAsync();
+
+        var methods = inflow.Select(x => x.Method).Union(outflow.Select(x => x.Method)).Distinct();
+
+        IReadOnlyList<CashFlowRowDto> rows = methods
+            .Select(m =>
+            {
+                var i = inflow.FirstOrDefault(x => x.Method == m)?.Sum ?? 0m;
+                var o = outflow.FirstOrDefault(x => x.Method == m)?.Sum ?? 0m;
+                return new CashFlowRowDto(m, i, o, i - o);
+            })
+            .OrderByDescending(r => r.Net)
+            .ToList();
+
+        return rows;
+    }
+
+    /// <summary>
+    /// Báo cáo doanh thu–lợi nhuận theo đơn (legacy ReportTurnover/TurnoverProfit): Cost tính từ OrderCost
+    /// (không tin cột denormalized), mirror OrderDebt.
+    /// </summary>
+    public async Task<IReadOnlyList<TurnoverRowDto>> GetTurnoverAsync()
+    {
+        // 2 truy vấn top-level rồi ghép ở memory — tránh subquery tương quan (không dịch được extension),
+        // và tránh ORDER BY decimal trên SQLite.
+        var orders = await db.Orders.AsNoTracking()
+            .Select(o => new { o.Id, o.Code, o.TotalRevenue })
+            .ToListAsync();
+
+        var costByOrder = (await db.OrderCosts
+                .GroupBy(c => c.OrderId)
+                .Select(g => new { OrderId = g.Key, Cost = g.Sum(x => x.ActualAmount) })
+                .ToListAsync())
+            .ToDictionary(x => x.OrderId, x => x.Cost);
+
+        IReadOnlyList<TurnoverRowDto> rows = orders
+            .Select(o =>
+            {
+                var cost = costByOrder.GetValueOrDefault(o.Id, 0m);
+                return new TurnoverRowDto(o.Id, o.Code, o.TotalRevenue, cost, OrderMath.Profit(o.TotalRevenue, cost));
+            })
+            .OrderByDescending(r => r.Revenue)
+            .ToList();
+
+        return rows;
+    }
+
+    /// <summary>
+    /// Báo cáo hoa hồng/lợi nhuận theo nhân viên (legacy ReportTurnoverProfit theo user): gom đơn có SalesUserId
+    /// theo user, cost từ OrderCost, rate từ CommissionRule (rule đầu tiên của user, mặc định 0 nếu không có).
+    /// </summary>
+    public async Task<IReadOnlyList<CommissionByUserRowDto>> GetCommissionByUserAsync()
+    {
+        var orders = await db.Orders.AsNoTracking()
+            .Where(o => o.SalesUserId != null)
+            .Select(o => new { o.Id, o.TotalRevenue, UserId = o.SalesUserId!.Value })
+            .ToListAsync();
+
+        var costByOrder = (await db.OrderCosts.AsNoTracking()
+                .GroupBy(c => c.OrderId)
+                .Select(g => new { OrderId = g.Key, Cost = g.Sum(x => x.ActualAmount) })
+                .ToListAsync())
+            .ToDictionary(x => x.OrderId, x => x.Cost);
+
+        var rules = (await db.CommissionRules.AsNoTracking().ToListAsync())
+            .GroupBy(r => r.UserId)
+            .ToDictionary(g => g.Key, g => g.First().Percentage);
+
+        IReadOnlyList<CommissionByUserRowDto> rows = orders
+            .GroupBy(o => o.UserId)
+            .Select(g =>
+            {
+                var turnover = g.Sum(x => x.TotalRevenue);
+                var cost = g.Sum(x => costByOrder.GetValueOrDefault(x.Id, 0m));
+                var profit = OrderMath.Profit(turnover, cost);
+                var rate = rules.GetValueOrDefault(g.Key, 0m);
+                var amount = CommissionMath.ShareAmount(profit, rate);
+                return new CommissionByUserRowDto(g.Key, turnover, cost, profit, rate, amount);
+            })
+            .OrderByDescending(r => r.Profit)
+            .ToList();
+
+        return rows;
+    }
+}

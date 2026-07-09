@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Reports.Features;
-using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Reports;
+using TourKit.Shared.Entities;
 using TourKit.Shared.Tenancy;
 
 namespace TourKit.UnitTests.Reports;
@@ -42,11 +42,10 @@ public class TurnoverReportTests
 
         await db.SaveChangesAsync();
 
-        var handler = new TurnoverReportHandler(db);
-        var result = await handler.Handle(new TurnoverReportQuery(), CancellationToken.None);
+        var queries = new ReportQueries(db);
+        var rows = await queries.GetTurnoverAsync();
 
-        Assert.True(result.IsSuccess);
-        var row = Assert.Single(result.Value);
+        var row = Assert.Single(rows);
         Assert.Equal(order.Id, row.OrderId);
         Assert.Equal("ORD-1", row.OrderCode);
         Assert.Equal(5_000_000m, row.Revenue);
