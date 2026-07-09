@@ -24,6 +24,10 @@ public static class ReportEndpoints
             (await dispatcher.Send(new DashboardReportQuery(), ct))
                 .Match(s => Results.Ok(s))).RequireAuthorization(Permissions.ReportDashboardView);
 
+        app.MapGet("/api/v1/reports/cash-flow", async (IDispatcher dispatcher, CancellationToken ct) =>
+            (await dispatcher.Send(new CashFlowReportQuery(), ct))
+                .Match(rows => Results.Ok(rows))).RequireAuthorization(Permissions.ReportCashFlowView);
+
         return app;
     }
 }
