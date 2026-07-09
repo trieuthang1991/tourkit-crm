@@ -22,6 +22,8 @@ import { TurnoverReportPage } from '../features/reports/TurnoverReportPage';
 import { CommissionByUserReportPage } from '../features/reports/CommissionByUserReportPage';
 import { CommissionRulesPage } from '../features/commission/CommissionRulesPage';
 import { RegistrationPage } from '../features/registration/RegistrationPage';
+import { CustomerCaresPage } from '../features/care/CustomerCaresPage';
+import { TourRatingsPage } from '../features/ratings/TourRatingsPage';
 
 export function AppRouter() {
   return (
@@ -55,6 +57,8 @@ export function AppRouter() {
         <Route path="/reports/turnover" element={<TurnoverReportPage />} />
         <Route path="/reports/commission-by-user" element={<CommissionByUserReportPage />} />
         <Route path="/commission-rules" element={<CommissionRulesPage />} />
+        <Route path="/customer-cares" element={<CustomerCaresPage />} />
+        <Route path="/tour-ratings" element={<TourRatingsPage />} />
       </Route>
     </Routes>
   );

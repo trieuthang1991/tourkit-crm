@@ -11,6 +11,8 @@ const NAV: NavItem[] = [
   { key: '/dashboard', label: 'Tổng quan', perm: 'report.dashboard.view' },
   { key: '/customers', label: 'Khách hàng', perm: 'customer.view' },
   { key: '/leads', label: 'Lead (CRM)', perm: 'lead.view' },
+  { key: '/customer-cares', label: 'Chăm sóc KH', perm: 'care.view' },
+  { key: '/tour-ratings', label: 'Đánh giá tour', perm: 'rating.view' },
   { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
   { key: '/departures', label: 'Chuyến đi', perm: 'departure.view' },
   { key: '/orders', label: 'Đơn hàng', perm: 'booking.view' },
