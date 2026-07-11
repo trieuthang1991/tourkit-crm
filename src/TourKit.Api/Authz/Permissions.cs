@@ -23,6 +23,9 @@ public static class Permissions
     public const string WorkflowView = "workflow.view";    // board Kanban (legacy Workflow/SectionWork)
     public const string WorkflowManage = "workflow.manage";
 
+    public const string ApprovalProcessView = "approvalprocess.view";     // quy trình duyệt cấu hình (legacy ApprovalProcess)
+    public const string ApprovalProcessManage = "approvalprocess.manage";
+
     public const string PostView = "post.view";        // bài viết/tin tức (legacy Posts)
     public const string PostManage = "post.manage";
 
@@ -133,6 +136,7 @@ public static class Permissions
         (BookingSeatConfirm, "Booking"), (BookingSeatCancel, "Booking"),
         (ReceiptView, "Finance"), (ReceiptCreate, "Finance"), (ReceiptApprove, "Finance"),
         (ReceiptApprovalStart, "Finance"), (ReceiptApprovalAct, "Finance"),
+        (ApprovalProcessView, "Finance"), (ApprovalProcessManage, "Finance"),
         (PaymentView, "Finance"), (PaymentCreate, "Finance"), (PaymentApprove, "Finance"),
         (PaymentApprovalStart, "Finance"), (PaymentApprovalAct, "Finance"),
         (ReportDebtView, "Report"),

@@ -73,6 +73,9 @@ public class AppDbContext : DbContext
     public DbSet<PostComment> PostComments => Set<PostComment>();
     public DbSet<Workflow> Workflows => Set<Workflow>();
     public DbSet<WorkflowSection> WorkflowSections => Set<WorkflowSection>();
+    public DbSet<ApprovalProcess> ApprovalProcesses => Set<ApprovalProcess>();
+    public DbSet<ApprovalProcessStep> ApprovalProcessSteps => Set<ApprovalProcessStep>();
+    public DbSet<ApprovalProcessStepUser> ApprovalProcessStepUsers => Set<ApprovalProcessStepUser>();
     public DbSet<TourTransfer> TourTransfers => Set<TourTransfer>();
     public DbSet<GuideTransaction> GuideTransactions => Set<GuideTransaction>();
     public DbSet<RoomClass> RoomClasses => Set<RoomClass>();
