@@ -36,6 +36,8 @@ import { CustomerCommissionRulesPage } from '../features/customerCommissionRules
 import { QuotesPage } from '../features/quotes/QuotesPage';
 import { InvoicesPage } from '../features/invoices/InvoicesPage';
 import { AgentQuotesPage } from '../features/agentQuotes/AgentQuotesPage';
+import { TicketFundsPage } from '../features/ticketFunds/TicketFundsPage';
+import { AgentBookingsPage } from '../features/agentBookings/AgentBookingsPage';
 
 export function AppRouter() {
   return (
@@ -83,6 +85,8 @@ export function AppRouter() {
         <Route path="/quotes" element={<QuotesPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
         <Route path="/agent-quotes" element={<AgentQuotesPage />} />
+        <Route path="/ticket-funds" element={<TicketFundsPage />} />
+        <Route path="/agent-bookings" element={<AgentBookingsPage />} />
       </Route>
     </Routes>
   );
