@@ -54,6 +54,8 @@ public class AppDbContext : DbContext
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<Agent> Agents => Set<Agent>();
     public DbSet<AgentQuoteRequest> AgentQuoteRequests => Set<AgentQuoteRequest>();
+    public DbSet<AgentBooking> AgentBookings => Set<AgentBooking>();
+    public DbSet<AgentPassenger> AgentPassengers => Set<AgentPassenger>();
 
     public override int SaveChanges()
     {
