@@ -13,6 +13,7 @@ import { MarketingPage } from '../features/marketing/MarketingPage';
 import { MarketTypesPage } from '../features/marketTypes/MarketTypesPage';
 import { CustomerTypesPage } from '../features/customerTypes/CustomerTypesPage';
 import { CustomerSourcesPage } from '../features/customerSources/CustomerSourcesPage';
+import { CustomerTagsPage } from '../features/customerTags/CustomerTagsPage';
 import { DeparturesPage } from '../features/booking/DeparturesPage';
 import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
 import { OrdersPage } from '../features/booking/OrdersPage';
@@ -75,6 +76,7 @@ export function AppRouter() {
         <Route path="/market-types" element={<MarketTypesPage />} />
         <Route path="/customer-types" element={<CustomerTypesPage />} />
         <Route path="/customer-sources" element={<CustomerSourcesPage />} />
+        <Route path="/customer-tags" element={<CustomerTagsPage />} />
         <Route path="/departures" element={<DeparturesPage />} />
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
         <Route path="/operations-calendar" element={<OperationsCalendarPage />} />
