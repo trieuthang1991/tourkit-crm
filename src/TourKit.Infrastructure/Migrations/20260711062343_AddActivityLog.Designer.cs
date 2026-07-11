@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TourKit.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using TourKit.Infrastructure.Persistence;
 namespace TourKit.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711062343_AddActivityLog")]
+    partial class AddActivityLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.17");
@@ -1539,53 +1542,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.HasIndex("TenantId", "TourDepartureId");
 
                     b.ToTable("TourCustomers");
-                });
-
-            modelBuilder.Entity("TourKit.Shared.Entities.TourGuideAssignment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(1000)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("ProviderId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("TimeCome")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long?>("TimeGo")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long?>("TimeReturn")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("TourDepartureId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "TourDepartureId");
-
-                    b.ToTable("TourGuideAssignments");
                 });
 
             modelBuilder.Entity("TourKit.Shared.Entities.TourItinerary", b =>

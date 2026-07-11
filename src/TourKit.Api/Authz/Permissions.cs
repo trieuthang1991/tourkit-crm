@@ -76,6 +76,8 @@ public static class Permissions
     public const string GuideView = "guide.view";
     public const string GuideManage = "guide.manage";
 
+    public const string ActivityLogView = "activitylog.view";   // xem nhật ký thao tác (audit)
+
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
     [
@@ -107,5 +109,6 @@ public static class Permissions
         (CareView, "CRM"), (CareManage, "CRM"), (RatingView, "CRM"), (RatingManage, "CRM"),
         (VehicleView, "Booking"), (VehicleManage, "Booking"),
         (GuideView, "Booking"), (GuideManage, "Booking"),
+        (ActivityLogView, "System"),
     ];
 }

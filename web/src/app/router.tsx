@@ -28,6 +28,7 @@ import { CustomerCaresPage } from '../features/care/CustomerCaresPage';
 import { TourRatingsPage } from '../features/ratings/TourRatingsPage';
 import { VehiclesPage } from '../features/vehicles/VehiclesPage';
 import { GuideAssignmentsPage } from '../features/guides/GuideAssignmentsPage';
+import { ActivityLogsPage } from '../features/activityLogs/ActivityLogsPage';
 
 export function AppRouter() {
   return (
@@ -67,6 +68,7 @@ export function AppRouter() {
         <Route path="/tour-ratings" element={<TourRatingsPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/guide-assignments" element={<GuideAssignmentsPage />} />
+        <Route path="/activity-logs" element={<ActivityLogsPage />} />
       </Route>
     </Routes>
   );

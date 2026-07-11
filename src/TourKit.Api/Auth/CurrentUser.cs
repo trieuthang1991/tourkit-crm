@@ -1,7 +1,9 @@
+using TourKit.Shared.Security;
+
 namespace TourKit.Api.Auth;
 
 /// <summary>Đọc userId từ claim "sub" của HttpContext hiện tại (scoped/request).</summary>
-public sealed class CurrentUser : ICurrentUser
+public sealed class CurrentUser : ICurrentUser, ICurrentUserContext
 {
     public CurrentUser(IHttpContextAccessor accessor)
     {
