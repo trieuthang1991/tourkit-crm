@@ -25,7 +25,7 @@
 | PriceScenario, MarketType | PriceScenario, MarketType |
 | Orders, Order_Chi, CancelSeats | Order, OrderCost, CancelSeat |
 | N_ReceiptVoucher, N_PaymentVoucher | ReceiptVoucher, PaymentVoucher |
-| ApprovalProcess/Step/StepUser, ReceiptVoucherApproval | ReceiptApproval + PaymentApproval (engine duyệt nhiều cấp) |
+| ApprovalProcess/Step/StepUser, ReceiptVoucherApproval | ReceiptApproval + PaymentApproval (instance duyệt nhiều cấp theo phiếu) **+ ApprovalProcess catalog** ✅ (template duyệt cấu hình động: `/api/v1/approval-processes`, bước theo Position + người duyệt mỗi bước, perm `approvalprocess.*`) |
 | Comission, CommissionCampaign, ProfitSharing | CommissionRule, CustomerCommissionRule, ProfitShare |
 | providers, provider_services, provider_service_pricing, Provider_Service_Orders, services | Provider, ProviderService, ServiceBooking, ServiceItem |
 | vehicle, TourGuide, TicketFund, Calendar | Vehicle, TourGuideAssignment, **VehicleAssignment** (mới), TicketFund, OperationsCalendar (UI) |
@@ -63,7 +63,7 @@
 
 - **Gửi thật đa kênh**: ✅ **CẢ 3 KÊNH (Email/SMS/Zalo) đã nối qua abstraction** — CampaignService gửi qua `IEmailSender`/`ISmsSender`/`IZaloSender`, mỗi kênh dev ghi log (chạy ngay) / prod drop-in provider thật đọc `{Email,Sms,Zalo}:Provider`; bền per-recipient (lỗi → Status=Failed, không chặn). Email đã có SMTP thật. Còn lại chỉ là **implementation provider prod cụ thể** (SMS: Twilio/eSMS; Zalo: OA API) — cần API key + chọn nhà cung cấp; thêm 1 class không sửa code gọi.
 - 🟡 **Notification in-app** (`Notification`/`NotificationOfEachUser`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần API ngoài): thông báo cá nhân + chuông đếm chưa đọc ở header + đánh dấu đã đọc/tất cả. Nối Tasking→Notification (giao việc → thông báo người nhận). Chỉ cần đăng nhập (thông báo cá nhân, lọc theo user hiện tại).
-- 🟡 **Tasking** (`Tasking`/`UserInTasks`) ✅ **ĐÃ LÀM** (WorkTask — giao/theo dõi việc, lọc người+trạng thái, quyền `task.*`). ✅ **KPI** (`KeyPerformanceIndicator`) **ĐÃ LÀM** — `/reports/kpi` phễu báo giá→chấp nhận→chuyển đơn→thu tiền từ dữ liệu sẵn (`OrderMath.Rate` chia-0 an toàn). Còn `Workflow`/`SectionWork` (quy trình động) — cần thiết kế.
+- 🟡 **Tasking** (`Tasking`/`UserInTasks`) ✅ **ĐÃ LÀM** (WorkTask — giao/theo dõi việc, lọc người+trạng thái, quyền `task.*`). ✅ **KPI** (`KeyPerformanceIndicator`) **ĐÃ LÀM** — `/reports/kpi` phễu báo giá→chấp nhận→chuyển đơn→thu tiền từ dữ liệu sẵn (`OrderMath.Rate` chia-0 an toàn). `Workflow`/`SectionWork` ✅ **ĐÃ LÀM** — hoá ra là **board Kanban** (Workflow=board, SectionWork=cột do user tự đặt, Tasking=thẻ tham chiếu WorkflowId): user định nghĩa cột/trạng thái như DỮ LIỆU lúc chạy, không cần thiết kế state-machine. `/api/v1/workflows` + FE WorkflowsPage/WorkflowBoardPage, perm `workflow.*`.
 - 🟡 **CMS bài viết** (`Posts`/`CategoriesPost`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần external): Post + PostCategory (tiêu đề/slug/tóm tắt/nội dung/chuyên mục/nháp-xuất bản, PublishedAt tự set khi publish, slug duy nhất/tenant), lọc theo chuyên mục/trạng thái, quyền `post.*` (nhóm Content). `CommentsPost`/`Likes` ✅ **ĐÃ LÀM** phần nội bộ (PostComment: nhân viên nhập/duyệt testimonial, lọc `approvedOnly`, `/posts/{id}/comments` + `Post.LikeCount` + PostCommentsModal FE) — phần cổng public tự gửi làm khi có website public.
 - **BankHub** (`BankHub`/`APIKeyMifi`) — đối soát ngân hàng, cần API.
 - **BookingTickets** — hệ ticket hỗ trợ nội bộ.
