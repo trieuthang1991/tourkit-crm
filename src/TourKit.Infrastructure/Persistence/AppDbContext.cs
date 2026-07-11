@@ -63,6 +63,7 @@ public class AppDbContext : DbContext
     public DbSet<QuoteLine> QuoteLines => Set<QuoteLine>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<InvoiceLine> InvoiceLines => Set<InvoiceLine>();
+    public DbSet<ServiceBooking> ServiceBookings => Set<ServiceBooking>();
 
     public override int SaveChanges()
     {
