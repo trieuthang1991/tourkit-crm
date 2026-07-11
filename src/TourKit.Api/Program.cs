@@ -84,6 +84,11 @@ else
     builder.Services.AddScoped<TourKit.Application.Notifications.IEmailSender, TourKit.Infrastructure.Notifications.LogEmailSender>();
 }
 
+// --- SMS: dev ghi log; prod thêm provider thật (Twilio/eSMS…) + đổi Sms:Provider (giống Email) ---
+builder.Services.Configure<TourKit.Infrastructure.Notifications.SmsOptions>(
+    builder.Configuration.GetSection(TourKit.Infrastructure.Notifications.SmsOptions.SectionName));
+builder.Services.AddScoped<TourKit.Application.Notifications.ISmsSender, TourKit.Infrastructure.Notifications.LogSmsSender>();
+
 // --- FluentValidation: quét validator ở tầng Application ---
 builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Customers.Validators.CreateCustomerValidator>();
 

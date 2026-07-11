@@ -30,14 +30,26 @@ public class CampaignServiceTests
         }
     }
 
+    /// <summary>Fake SMS sender: đếm số SMS gửi.</summary>
+    private sealed class FakeSmsSender : ISmsSender
+    {
+        public List<string> Sent { get; } = [];
+        public Task SendAsync(string phone, string message, CancellationToken ct = default)
+        {
+            Sent.Add(phone);
+            return Task.CompletedTask;
+        }
+    }
+
     private static CampaignService NewService(
         out FakeRepository<MarketingCampaign> repo, out FakeRepository<MarketingSendLog> logRepo,
-        IEmailSender? emailSender = null)
+        IEmailSender? emailSender = null, ISmsSender? smsSender = null)
     {
         repo = new FakeRepository<MarketingCampaign>();
         logRepo = new FakeRepository<MarketingSendLog>();
         return new CampaignService(
-            repo, logRepo, emailSender ?? new FakeEmailSender(), new CreateCampaignValidator(), new UpdateCampaignValidator());
+            repo, logRepo, emailSender ?? new FakeEmailSender(), smsSender ?? new FakeSmsSender(),
+            new CreateCampaignValidator(), new UpdateCampaignValidator());
     }
 
     private static CreateCampaignDto NewCreateDto(string name = "Hè 2026") =>
@@ -157,16 +169,17 @@ public class CampaignServiceTests
     }
 
     [Fact]
-    public async Task SendAsync_sms_channel_does_not_call_email_sender()
+    public async Task SendAsync_sms_channel_uses_sms_sender_not_email()
     {
-        var sender = new FakeEmailSender();
-        var service = NewService(out var repo, out _, sender);
+        var email = new FakeEmailSender();
+        var sms = new FakeSmsSender();
+        var service = NewService(out _, out _, email, sms);
         var campaign = await service.CreateAsync(new CreateCampaignDto("SMS", MarketingChannel.Sms, null, "Nội dung"));
 
-        await service.SendAsync(campaign.Id, new SendCampaignDto(["0900000000"]));
+        await service.SendAsync(campaign.Id, new SendCampaignDto(["0900000000", "0911111111"]));
 
-        Assert.Empty(sender.Sent);   // SMS chưa có provider — không gọi email
-        _ = repo;
+        Assert.Equal(new[] { "0900000000", "0911111111" }, sms.Sent);   // gửi qua SMS sender
+        Assert.Empty(email.Sent);                                        // không gọi email
     }
 
     [Fact]

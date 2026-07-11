@@ -61,7 +61,7 @@
 
 ## 🔴 Tích hợp ngoài / subsystem lớn (làm khi có nhu cầu + API)
 
-- **Gửi thật đa kênh**: ✅ **Email campaign ĐÃ NỐI** — CampaignService kênh Email gửi thật qua `IEmailSender` (dev ghi log, prod SMTP khi cấu hình; 1 địa chỉ lỗi không chặn cả chiến dịch, ghi Status=Failed). Còn `SMS`/`Send_Sms_History` (SMS gateway) + `ZaloCampain`/`ZaloZNS` (Zalo OA) — CẦN API/tài khoản provider ngoài (kênh SMS/Zalo hiện mô phỏng log).
+- **Gửi thật đa kênh**: ✅ **Email + SMS ĐÃ NỐI qua abstraction** — CampaignService kênh Email qua `IEmailSender` (dev log / prod SMTP), kênh SMS qua `ISmsSender` (dev `LogSmsSender` chạy ngay / prod drop-in provider Twilio-eSMS đọc `Sms:Provider`); bền per-recipient (lỗi → Status=Failed, không chặn). Còn: **implementation provider SMS thật** (cần chọn nhà cung cấp + API key) và **Zalo OA** (`ZaloZNS` — cần Zalo OA API; kênh Zalo hiện mô phỏng log). Abstraction đã sẵn, prod chỉ thêm 1 class.
 - 🟡 **Notification in-app** (`Notification`/`NotificationOfEachUser`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần API ngoài): thông báo cá nhân + chuông đếm chưa đọc ở header + đánh dấu đã đọc/tất cả. Nối Tasking→Notification (giao việc → thông báo người nhận). Chỉ cần đăng nhập (thông báo cá nhân, lọc theo user hiện tại).
 - 🟡 **Tasking** (`Tasking`/`UserInTasks`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần API ngoài): WorkTask — giao/theo dõi công việc nội bộ (tiêu đề/mô tả/người được giao/hạn/ưu tiên/trạng thái/gắn đơn), lọc theo người+trạng thái, quyền `task.*`. Còn `Workflow`/`KPI`/`SectionWork` (quy trình động + chỉ số) là phần nâng cao, cần thiết kế.
 - **CMS/blog** (`Posts`/`CategoriesPost`/`CommentsPost`/`Likes`) — ngoài phạm vi điều hành tour.

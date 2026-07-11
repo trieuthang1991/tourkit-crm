@@ -8,12 +8,13 @@ using TourKit.Shared.Enums;
 namespace TourKit.Application.Marketing;
 
 /// <summary>Quản lý chiến dịch marketing (Email/SMS/Zalo) + ghi log gửi.
-/// Kênh Email gửi THẬT qua <see cref="IEmailSender"/> (dev ghi log, prod SMTP khi cấu hình);
-/// SMS/Zalo vẫn mô phỏng — cần provider ngoài.</summary>
+/// Kênh Email qua <see cref="IEmailSender"/>, SMS qua <see cref="ISmsSender"/> (đều dev ghi log, prod
+/// dùng provider thật khi cấu hình). Zalo vẫn mô phỏng — cần Zalo OA API.</summary>
 public sealed class CampaignService(
     IRepository<MarketingCampaign> repo,
     IRepository<MarketingSendLog> logRepo,
     IEmailSender emailSender,
+    ISmsSender smsSender,
     IValidator<CreateCampaignDto> createValidator,
     IValidator<UpdateCampaignDto> updateValidator) : ICampaignService
 {
@@ -100,11 +101,12 @@ public sealed class CampaignService(
         {
             // Kênh Email: gửi thật qua IEmailSender (dev ghi log, prod SMTP). Một địa chỉ lỗi không
             // làm hỏng cả chiến dịch — ghi Status=Failed cho địa chỉ đó rồi tiếp tục.
-            var status = StatusSent;
-            if (campaign.Channel == MarketingChannel.Email)
+            var status = campaign.Channel switch
             {
-                status = await TrySendEmailAsync(recipient, campaign);
-            }
+                MarketingChannel.Email => await TrySendAsync(() => emailSender.SendAsync(recipient, campaign.Subject ?? campaign.Name, campaign.Body)),
+                MarketingChannel.Sms => await TrySendAsync(() => smsSender.SendAsync(recipient, campaign.Body)),
+                _ => StatusSent, // Zalo: chưa có provider — mô phỏng log
+            };
 
             await logRepo.AddAsync(new MarketingSendLog
             {
@@ -126,14 +128,15 @@ public sealed class CampaignService(
         return new SendResultDto(dto.Recipients.Length);
     }
 
-    private async Task<int> TrySendEmailAsync(string recipient, MarketingCampaign campaign)
+    /// <summary>Gửi 1 địa chỉ, bền: lỗi (provider từ chối…) → Status=Failed, không chặn địa chỉ khác.</summary>
+    private static async Task<int> TrySendAsync(Func<Task> send)
     {
         try
         {
-            await emailSender.SendAsync(recipient, campaign.Subject ?? campaign.Name, campaign.Body);
+            await send();
             return StatusSent;
         }
-#pragma warning disable CA1031 // Gửi campaign phải bền: 1 địa chỉ lỗi (SMTP từ chối…) không được chặn các địa chỉ khác.
+#pragma warning disable CA1031 // Gửi campaign phải bền: 1 địa chỉ lỗi không được chặn các địa chỉ khác.
         catch (Exception)
 #pragma warning restore CA1031
         {
