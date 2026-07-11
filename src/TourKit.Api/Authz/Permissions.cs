@@ -89,6 +89,10 @@ public static class Permissions
     public const string InvoiceManage = "invoice.manage";
     public const string ServiceBookingView = "servicebooking.view";      // đặt dịch vụ lẻ (hotel/vé/visa)
     public const string ServiceBookingManage = "servicebooking.manage";
+    public const string AgentView = "agent.view";              // B2B: đại lý
+    public const string AgentManage = "agent.manage";
+    public const string AgentQuoteView = "agentquote.view";    // B2B: yêu cầu báo giá đại lý
+    public const string AgentQuoteManage = "agentquote.manage";
 
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
@@ -128,5 +132,7 @@ public static class Permissions
         (QuoteView, "CRM"), (QuoteManage, "CRM"),
         (InvoiceView, "Finance"), (InvoiceManage, "Finance"),
         (ServiceBookingView, "Booking"), (ServiceBookingManage, "Booking"),
+        (AgentView, "B2B"), (AgentManage, "B2B"),
+        (AgentQuoteView, "B2B"), (AgentQuoteManage, "B2B"),
     ];
 }
