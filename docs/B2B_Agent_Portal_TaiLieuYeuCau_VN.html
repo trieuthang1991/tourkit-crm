@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>B2B Agent Portal — Tài liệu Yêu cầu (VN)</title>
+<style>
+:root{--bg:#ffffff;--fg:#1f2328;--muted:#59636e;--border:#d1d9e0;--accent:#0969da;
+--code-bg:#f6f8fa;--quote-bg:#f6f8fa;--quote-bar:#d0d7de;--th:#f6f8fa;--row:#fbfcfd;}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;
+--border:#30363d;--accent:#4493f8;--code-bg:#161b22;--quote-bg:#161b22;--quote-bar:#3d444d;
+--th:#161b22;--row:#12171e;}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--fg);margin:0;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
+line-height:1.65;font-size:16px;}
+.wrap{max-width:900px;margin:0 auto;padding:48px 24px 96px;}
+h1,h2,h3,h4{line-height:1.3;font-weight:600;margin-top:1.6em;margin-bottom:.6em;}
+h1{font-size:1.9em;border-bottom:2px solid var(--border);padding-bottom:.3em;margin-top:0;}
+h2{font-size:1.5em;border-bottom:1px solid var(--border);padding-bottom:.3em;}
+h3{font-size:1.2em;} h4{font-size:1.05em;color:var(--muted);}
+a{color:var(--accent);text-decoration:none;} a:hover{text-decoration:underline;}
+p{margin:.7em 0;}
+ul,ol{padding-left:1.6em;} li{margin:.25em 0;}
+code{background:var(--code-bg);padding:.15em .4em;border-radius:6px;font-size:.88em;
+font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;}
+pre code{display:block;padding:14px;overflow:auto;}
+blockquote{margin:1em 0;padding:.4em 1em;color:var(--fg);
+background:var(--quote-bg);border-left:4px solid var(--quote-bar);border-radius:0 6px 6px 0;}
+blockquote p{margin:.4em 0;}
+table{border-collapse:collapse;width:100%;margin:1.2em 0;display:block;overflow-x:auto;}
+th,td{border:1px solid var(--border);padding:9px 13px;text-align:left;vertical-align:top;}
+th{background:var(--th);font-weight:600;}
+tr:nth-child(even) td{background:var(--row);}
+hr{border:0;border-top:1px solid var(--border);margin:2em 0;}
+em{color:var(--muted);}
+.doc-meta{color:var(--muted);font-size:.85em;margin-top:64px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1 id="tai-lieu-yeu-cau-b2b-agent-portal">TÀI LIỆU YÊU CẦU — B2B AGENT PORTAL</h1>
+<h3 id="pham-vi-theo-giai-oan-mvp-tu-ong-hoa-nghiep-vu-toi-uu-hoa-nghiep-vu">Phạm vi theo giai đoạn: MVP, Tự động hóa nghiệp vụ &amp; Tối ưu hóa nghiệp vụ</h3>
+<table>
+<thead>
+<tr>
+<th>Trường</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tên tài liệu</strong></td>
+<td>B2B Agent Portal — Tài liệu Yêu cầu (Phạm vi theo giai đoạn)</td>
+</tr>
+<tr>
+<td><strong>Khách hàng (Client)</strong></td>
+<td><em>(để trống)</em></td>
+</tr>
+<tr>
+<td><strong>Đơn vị lập</strong></td>
+<td>Kaopiz Global JSC</td>
+</tr>
+<tr>
+<td><strong>Trạng thái</strong></td>
+<td>Bản nháp (Draft) — phục vụ rà soát nội bộ</td>
+</tr>
+<tr>
+<td><strong>Phiên bản</strong></td>
+<td>v1.0</td>
+</tr>
+<tr>
+<td><strong>Ngày</strong></td>
+<td>07/07/2026</td>
+</tr>
+<tr>
+<td><strong>Nguồn</strong></td>
+<td>Tổng hợp lại từ tài liệu yêu cầu do khách hàng cung cấp (quyền truy cập chỉ đọc)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Lưu ý bản chất tài liệu:</strong> Đây là <strong>tài liệu yêu cầu / phạm vi (requirements &amp; scope)</strong>, mô tả <em>cần làm gì</em> theo từng giai đoạn. Đây <strong>chưa phải</strong> bản thiết kế kỹ thuật (kiến trúc, mô hình dữ liệu, thiết kế API) — phần đó sẽ được xây dựng ở bước Thiết kế sau.</p>
+<p><strong>Quy ước thuật ngữ:</strong> <strong>Đại lý (Agent)</strong> = đại lý du lịch B2B (là doanh nghiệp/nhân sự, không phải phần mềm tự động). Trong tài liệu, lần đầu ghi "Đại lý (Agent)", các lần sau gọi tắt là <strong>"Đại lý"</strong>. Riêng tên riêng/tên module giữ nguyên tiếng Anh (B2B Agent Portal, Agent Profile, Agent-specific Pricing…).</p>
+<p>ℹ️ <strong>Quy ước diễn giải:</strong> Các đoạn được đánh dấu <strong><em>› Diễn giải:</em></strong> (chữ nghiêng) là <strong>phần giải thích bổ sung để dễ hiểu</strong>, do đơn vị lập tài liệu diễn giải theo thông lệ ngành — <strong>KHÔNG thuộc nội dung yêu cầu gốc</strong> của khách hàng. Khi có mâu thuẫn, <strong>nội dung yêu cầu gốc là chuẩn</strong>; phần diễn giải cần được khách hàng xác nhận lại.</p>
+</blockquote>
+<hr>
+<h2 id="muc-luc">Mục lục</h2>
+<ol>
+<li><a href="#1-giới-thiệu">Giới thiệu</a></li>
+<li><a href="#2-bối-cảnh-khách-hàng">Bối cảnh khách hàng</a></li>
+<li><a href="#3-chiến-lược-phát-triển">Chiến lược phát triển</a></li>
+<li><a href="#4-giai-đoạn-1--mvp-sản-phẩm-khả-dụng-tối-thiểu">Giai đoạn 1 — MVP (Sản phẩm khả dụng tối thiểu)</a></li>
+<li><a href="#5-giai-đoạn-2--tự-động-hóa-nghiệp-vụ-business-automation">Giai đoạn 2 — Tự động hóa nghiệp vụ (Business Automation)</a></li>
+<li><a href="#6-giai-đoạn-3--tối-ưu-hóa-nghiệp-vụ-business-optimization">Giai đoạn 3 — Tối ưu hóa nghiệp vụ (Business Optimization)</a></li>
+<li><a href="#7-lưu-ý--yêu-cầu-bổ-sung-cho-agent-portal">Lưu ý &amp; Yêu cầu bổ sung cho Agent Portal</a></li>
+</ol>
+<hr>
+<h2 id="1-gioi-thieu">1. Giới thiệu</h2>
+<p>Tài liệu này mô tả yêu cầu và phạm vi triển khai cho dự án <strong>B2B Agent Portal</strong>, được xây dựng dựa trên tài liệu yêu cầu (requirement) do phía khách hàng cung cấp. Tài liệu trình bày định hướng phát triển theo từng giai đoạn (Phase-based Development) cùng phạm vi chi tiết của từng giai đoạn.</p>
+<blockquote>
+<p><strong>Lưu ý:</strong> Nội dung yêu cầu nghiệp vụ trong tài liệu này được tổng hợp và trình bày lại <strong>nguyên trạng</strong> từ tài liệu gốc của khách hàng, <strong>không bổ sung hay suy diễn</strong> thêm thông tin ngoài phạm vi đã được cung cấp.</p>
+</blockquote>
+<h2 id="2-boi-canh-khach-hang">2. Bối cảnh khách hàng</h2>
+<p>Khách hàng đóng vai trò là <strong>DMC</strong> (Destination Management Company — công ty quản lý điểm đến), cung cấp sản phẩm/dịch vụ du lịch cho hệ thống <strong>Đại lý du lịch (Travel Agent)</strong> B2B — là các doanh nghiệp và nhân sự, không phải phần mềm tự động.</p>
+<p>Khách hàng mong muốn xây dựng <strong>B2B Agent Portal</strong> nhằm <strong>số hóa quy trình giao dịch</strong> giữa DMC và các Đại lý (Agent), thay thế cho quy trình thủ công qua <strong>Email/Excel</strong> hiện tại.</p>
+<h2 id="3-chien-luoc-phat-trien">3. Chiến lược phát triển</h2>
+<p>Để đảm bảo dự án triển khai nhanh nhưng vẫn đáp ứng mục tiêu phát triển lâu dài, B2B Agent Portal sẽ được phát triển theo <strong>từng giai đoạn (Phase-based Development)</strong>.</p>
+<ul>
+<li>Mỗi giai đoạn tập trung giải quyết một nhóm bài toán nghiệp vụ cụ thể.</li>
+<li>Chức năng của giai đoạn sau được xây dựng dựa trên <strong>nền tảng kiến trúc của giai đoạn trước</strong>, tránh phải thay đổi cơ sở dữ liệu, API hoặc luồng nghiệp vụ khi mở rộng.</li>
+<li><strong>MVP không phải là phiên bản rút gọn</strong> của sản phẩm, mà là <strong>phiên bản đầu tiên của hệ thống với đầy đủ nền tảng kỹ thuật để mở rộng</strong> trong tương lai.</li>
+</ul>
+<hr>
+<h2 id="4-giai-oan-1-mvp-san-pham-kha-dung-toi-thieu">4. Giai đoạn 1 — MVP (Sản phẩm khả dụng tối thiểu)</h2>
+<h3 id="41-muc-tieu">4.1 Mục tiêu</h3>
+<p>Xây dựng nền tảng giao dịch đầu tiên giữa Đại lý và khách hàng DMC.</p>
+<p>Mục tiêu của MVP là <strong>thay thế quy trình xử lý Báo giá (Quote) và Đặt chỗ (Booking)</strong> hiện đang thực hiện qua Email và Excel bằng một Portal thống nhất, đồng thời <strong>đồng bộ dữ liệu với CRM</strong>.</p>
+<p>MVP tập trung vào việc <strong>chuẩn hóa quy trình nghiệp vụ</strong>, thay vì tự động hóa toàn bộ hệ thống.</p>
+<h3 id="42-pham-vi-thuc-hien">4.2 Phạm vi thực hiện</h3>
+<h4 id="421-xac-thuc-authentication">4.2.1 Xác thực (Authentication)</h4>
+<p>Cho phép Đại lý đăng nhập vào hệ thống bằng tài khoản được cấp.</p>
+<blockquote>
+<p><em>› Diễn giải:</em> Tài khoản do phía DMC cấp (Đại lý không tự đăng ký ở MVP). Đây là cổng vào để mọi giao dịch gắn với đúng Đại lý sở hữu.</p>
+</blockquote>
+<h4 id="422-danh-muc-san-pham-product-catalog">4.2.2 Danh mục sản phẩm (Product Catalog)</h4>
+<p>Cho phép Đại lý xem danh sách sản phẩm hiện có của khách hàng (DMC).</p>
+<blockquote>
+<p><em>› Diễn giải:</em> Đại lý xem/tra cứu danh mục sản phẩm/dịch vụ du lịch (tour, dịch vụ) để làm cơ sở gửi yêu cầu báo giá. Ở MVP là danh mục để tham khảo, chưa gắn công cụ định giá.</p>
+</blockquote>
+<h4 id="423-quan-ly-bao-gia-quote-management">4.2.3 Quản lý Báo giá (Quote Management)</h4>
+<blockquote>
+<p>Đây là <strong>module trọng tâm</strong> của MVP.</p>
+</blockquote>
+<p>Cho phép Đại lý:
+- Gửi yêu cầu báo giá
+- Theo dõi trạng thái báo giá
+- Nhận kết quả báo giá
+- Xác nhận hoặc từ chối báo giá</p>
+<p>Sales thực hiện xử lý báo giá trên <strong>CRM hoặc hệ thống nội bộ</strong>. Portal chỉ đóng vai trò là <strong>kênh giao tiếp</strong> với Đại lý.</p>
+<blockquote>
+<p><em>› Diễn giải:</em> Đây là bước "hỏi giá — chào giá" <strong>trước khi</strong> chốt đơn, thay cho việc trao đổi qua Email/Excel. Đại lý gửi yêu cầu (sản phẩm, ngày, số khách, yêu cầu riêng…), Sales tính giá bên ngoài Portal rồi trả kết quả về. Ở MVP, Portal <strong>không tự tính giá</strong> — chỉ truyền yêu cầu và hiển thị kết quả. Quote được xác nhận (<code>Confirmed</code>) là điều kiện để tạo Booking.</p>
+</blockquote>
+<h4 id="424-quan-ly-at-cho-booking-management">4.2.4 Quản lý Đặt chỗ (Booking Management)</h4>
+<p>Sau khi Báo giá được xác nhận, hệ thống cho phép tạo <strong>Booking</strong>. Bao gồm:
+- Chi tiết đặt chỗ (Booking Detail)
+- Trạng thái đặt chỗ (Booking Status)
+- Theo dõi đặt chỗ (Booking Tracking)
+- Tải chứng từ đặt chỗ (Download Booking Documents)</p>
+<blockquote>
+<p><em>› Diễn giải:</em> Booking là <strong>đơn đã chốt</strong> (khác với Quote chỉ là hỏi giá) — phát sinh cam kết và kéo theo hành khách, chứng từ, thanh toán/công nợ. Đại lý theo dõi được chi tiết, trạng thái, tiến trình vận hành và tải các chứng từ liên quan.</p>
+</blockquote>
+<h4 id="425-quan-ly-hanh-khach-passenger-management">4.2.5 Quản lý Hành khách (Passenger Management)</h4>
+<p>Cho phép Đại lý cung cấp thông tin hành khách. Bao gồm:
+- Nhập thủ công (Manual Entry)
+- Nhập từ Excel (Excel Import)</p>
+<h4 id="426-trung-tam-tai-lieu-document-center">4.2.6 Trung tâm Tài liệu (Document Center)</h4>
+<p>Cho phép Đại lý tải về:
+- Chương trình tour (Itinerary)
+- Phiếu dịch vụ (Voucher)
+- Hóa đơn (Invoice)
+- Thư xác nhận (Confirmation Letter)</p>
+<h4 id="427-quan-tri-gia-cong-no-pricing-debt-management">4.2.7 Quản trị Giá &amp; Công nợ (Pricing &amp; Debt Management)</h4>
+<p>Trong MVP, hệ thống <strong>chưa</strong> triển khai Pricing Engine hay Contract Pricing; tuy nhiên <strong>cần thiết lập nền tảng quản lý thanh toán và công nợ</strong> theo các mô hình kinh doanh thực tế của Đại lý.</p>
+<p>Hệ thống hỗ trợ <strong>3 hình thức thanh toán</strong> chính:</p>
+<p><strong>a) Booking trả tiền ngay (Immediate Payment)</strong>
+Áp dụng cho các booking yêu cầu thanh toán trước khi tour khởi hành. Bao gồm:
+- Đặt cọc (Deposit)
+- Thanh toán phần còn lại trước ngày khởi hành (Final Payment)</p>
+<p>Hệ thống cho phép:
+- Ghi nhận trạng thái thanh toán theo từng mốc
+- Theo dõi tình trạng đã thanh toán / chưa thanh toán
+- Hiển thị hạn thanh toán (deadline)</p>
+<p><strong>b) Công nợ theo hạng Đại lý (Credit-based Payment)</strong>
+Áp dụng cho các Đại lý được cấp hạn mức công nợ. Bao gồm:
+- Thiết lập hạn mức công nợ (Credit Limit)
+- Thiết lập thời hạn thanh toán (Payment Term)</p>
+<p>Hệ thống cho phép:
+- Theo dõi tổng công nợ hiện tại của Đại lý
+- Kiểm soát việc tạo booking khi vượt hạn mức / vượt hạn thanh toán (pay-day)
+- Hiển thị các khoản công nợ đến hạn / quá hạn</p>
+<p><strong>c) Nạp tiền cấn trừ (Prepaid Wallet)</strong>
+Áp dụng cho Đại lý nạp tiền trước và sử dụng dần cho các booking. Bao gồm:
+- Ghi nhận số dư tài khoản (Wallet Balance)
+- Trừ tiền tự động khi tạo booking
+- Theo dõi lịch sử giao dịch</p>
+<blockquote>
+<p><strong>Lưu ý phạm vi MVP:</strong>
+- Chỉ tập trung vào <strong>ghi nhận và theo dõi</strong> trạng thái thanh toán / công nợ.
+- <strong>Không</strong> bao gồm tích hợp Cổng thanh toán (Payment Gateway).
+- <strong>Không</strong> bao gồm tự động hóa đối soát tài chính.</p>
+</blockquote>
+<h4 id="428-luong-trang-thai-workflow">4.2.8 Luồng trạng thái (Workflow)</h4>
+<p>MVP chỉ triển khai <strong>Workflow theo trạng thái</strong>. Ví dụ:</p>
+<p><strong>Báo giá (Quote):</strong>
+<code>New</code> → <code>Processing</code> → <code>Quoted</code> → <code>Confirmed</code> / <code>Rejected</code></p>
+<p><strong>Đặt chỗ (Booking):</strong>
+<code>Confirmed</code> → <code>Operating</code> → <code>Completed</code></p>
+<blockquote>
+<p>Luồng phê duyệt (Approval Workflow) <strong>chưa</strong> nằm trong phạm vi MVP.</p>
+</blockquote>
+<h4 id="429-thong-bao-notification">4.2.9 Thông báo (Notification)</h4>
+<p>MVP chỉ hỗ trợ <strong>Email Notification</strong>. Bao gồm:
+- Tạo báo giá (Quote Created)
+- Cập nhật báo giá (Quote Updated)
+- Xác nhận đặt chỗ (Booking Confirmed)
+- Nhắc thanh toán (Payment Reminder): Đặt cọc / Thanh toán cuối / Công nợ đến hạn</p>
+<p><strong>Không</strong> bao gồm:
+- Thông báo đẩy (Push Notification)
+- Tin nhắn SMS
+- Thông báo trên ứng dụng di động (Mobile Notification)</p>
+<h4 id="4210-tich-hop-crm-etour">4.2.10 Tích hợp CRM / eTour</h4>
+<p>Portal sẽ <strong>đồng bộ</strong> các dữ liệu sau sang CRM / eTour:
+- Báo giá (Quote)
+- Đặt chỗ (Booking)
+- Hành khách (Passenger)
+- Trạng thái thanh toán / Thông tin công nợ (Payment Status / Debt Information)</p>
+<p>CRM và eTour tiếp tục là nơi Sales xử lý nghiệp vụ.</p>
+<hr>
+<h2 id="5-giai-oan-2-tu-ong-hoa-nghiep-vu-business-automation">5. Giai đoạn 2 — Tự động hóa nghiệp vụ (Business Automation)</h2>
+<h3 id="51-muc-tieu">5.1 Mục tiêu</h3>
+<p>Sau khi Portal vận hành ổn định, Giai đoạn 2 tập trung <strong>giảm khối lượng thao tác thủ công của Sales</strong> và <strong>tăng khả năng tự phục vụ của Đại lý</strong>.</p>
+<h3 id="52-pham-vi">5.2 Phạm vi</h3>
+<p>Danh sách tính năng (cột <strong>Tính năng</strong> là nội dung gốc; cột <strong>Diễn giải</strong> là giải thích bổ sung — cần khách hàng xác nhận):</p>
+<table>
+<thead>
+<tr>
+<th>Tính năng</th>
+<th><em>› Diễn giải</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Công cụ dựng báo giá động</strong> (Dynamic Quotation Builder)</td>
+<td><em>Dựng báo giá ngay trên Portal bằng cách ghép các thành phần dịch vụ (khách sạn, xe, tour, vé…), giảm việc Sales tính tay như ở MVP; Portal chuyển từ "kênh truyền tin" sang "công cụ tạo giá".</em></td>
+</tr>
+<tr>
+<td><strong>Giá theo hợp đồng</strong> (Contract Pricing)</td>
+<td><em>Áp bảng giá đã ký theo hợp đồng cho từng Đại lý/nhóm Đại lý (giá net, chiết khấu theo hợp đồng) thay vì giá chung.</em></td>
+</tr>
+<tr>
+<td><strong>Giá riêng theo từng Đại lý</strong> (Agent-specific Pricing)</td>
+<td><em>Cùng một sản phẩm nhưng mỗi Đại lý thấy giá khác nhau tùy hạng, thị trường, thỏa thuận riêng — chi tiết hơn Contract Pricing.</em></td>
+</tr>
+<tr>
+<td><strong>Luồng phê duyệt</strong> (Approval Workflow)</td>
+<td><em>Bổ sung bước duyệt trước khi đi tiếp (VD: giảm giá quá mức, booking vượt hạn mức phải cấp trên phê duyệt). MVP chưa có phần này.</em></td>
+</tr>
+<tr>
+<td><strong>Bảng điều khiển</strong> (Dashboard)</td>
+<td><em>Tổng hợp trực quan số liệu quote/booking/doanh thu/công nợ thay vì tra từng đơn.</em></td>
+</tr>
+<tr>
+<td><strong>Theo dõi thanh toán nâng cao</strong></td>
+<td><em>Tự động nhắc nợ và kiểm soát hạn mức chặt hơn (tự chặn khi vượt hạn mức/quá hạn), nâng cấp phần công nợ thủ công ở MVP.</em></td>
+</tr>
+<tr>
+<td><strong>Hồ sơ Đại lý</strong> (Agent Profile)</td>
+<td><em>Đại lý tự quản lý hồ sơ công ty: thông tin liên hệ, hạng (tier), hạn mức, tài liệu…</em></td>
+</tr>
+<tr>
+<td><strong>Thu thập thông tin hành khách trực tuyến</strong> (Online Passenger Collection)</td>
+<td><em>Gửi link để chính hành khách tự điền thông tin online, giảm việc nhập tay/Excel cho Đại lý (so với MVP).</em></td>
+</tr>
+<tr>
+<td><strong>Tự động hóa đặt chỗ</strong> (Booking Automation)</td>
+<td><em>Tự động hóa các bước từ xác nhận quote → tạo booking → sinh chứng từ, giảm thao tác thủ công của Sales.</em></td>
+</tr>
+<tr>
+<td><strong>Thông báo trên Portal</strong> (Portal Notification)</td>
+<td><em>Thông báo trong giao diện Portal (in-app), bổ sung bên cạnh Email của MVP.</em></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="6-giai-oan-3-toi-uu-hoa-nghiep-vu-business-optimization">6. Giai đoạn 3 — Tối ưu hóa nghiệp vụ (Business Optimization)</h2>
+<h3 id="61-muc-tieu">6.1 Mục tiêu</h3>
+<p>Xây dựng B2B Portal trở thành <strong>nền tảng giao dịch số hoàn chỉnh</strong> giữa khách hàng và toàn bộ hệ sinh thái đối tác.</p>
+<h3 id="62-pham-vi">6.2 Phạm vi</h3>
+<p>Danh sách tính năng (cột <strong>Tính năng</strong> là nội dung gốc; cột <strong>Diễn giải</strong> là giải thích bổ sung — cần khách hàng xác nhận):</p>
+<table>
+<thead>
+<tr>
+<th>Tính năng</th>
+<th><em>› Diễn giải</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Công cụ định giá động</strong> (Dynamic Pricing Engine)</td>
+<td><em>Định giá tự động, linh hoạt theo thời điểm/cung cầu/quy tắc kinh doanh — mức cao hơn của công cụ dựng báo giá ở Giai đoạn 2.</em></td>
+</tr>
+<tr>
+<td><strong>Tích hợp API nhà cung cấp</strong> (Supplier API Integration)</td>
+<td><em>Kết nối API tới nhà cung cấp dịch vụ để lấy dữ liệu và/hoặc đặt dịch vụ tự động.</em></td>
+</tr>
+<tr>
+<td><strong>Tình trạng phòng khách sạn</strong> (Hotel Availability)</td>
+<td><em>Tra cứu tình trạng còn/hết phòng khách sạn (thường theo thời gian thực qua API).</em></td>
+</tr>
+<tr>
+<td><strong>Tình trạng du thuyền</strong> (Cruise Availability)</td>
+<td><em>Tra cứu tình trạng chỗ trên du thuyền.</em></td>
+</tr>
+<tr>
+<td><strong>Tích hợp vé máy bay</strong> (Flight Integration)</td>
+<td><em>Tra cứu/đặt vé máy bay ngay trong hệ thống.</em></td>
+</tr>
+<tr>
+<td><strong>Cổng thanh toán</strong> (Payment Gateway)</td>
+<td><em>Thanh toán trực tuyến qua cổng thanh toán (thẻ, ví điện tử…). MVP loại trừ tính năng này.</em></td>
+</tr>
+<tr>
+<td><strong>Gợi ý báo giá bằng AI</strong> (AI Quote Recommendation)</td>
+<td><em>Dùng AI đề xuất phương án/mức báo giá phù hợp cho từng yêu cầu.</em></td>
+</tr>
+<tr>
+<td><strong>Bảng điều khiển thông minh</strong> (Business Intelligence Dashboard)</td>
+<td><em>Báo cáo/phân tích chuyên sâu phục vụ ra quyết định (cao hơn Dashboard cơ bản ở Giai đoạn 2).</em></td>
+</tr>
+<tr>
+<td><strong>Ứng dụng di động</strong> (Mobile Application)</td>
+<td><em>App di động cho Đại lý (và/hoặc các vai trò khác).</em></td>
+</tr>
+<tr>
+<td><strong>Đa ngôn ngữ</strong> (Multi-language)</td>
+<td><em>Giao diện/nội dung hỗ trợ nhiều ngôn ngữ theo thị trường.</em></td>
+</tr>
+<tr>
+<td><strong>Đa tiền tệ</strong> (Multi-currency)</td>
+<td><em>Giao dịch/báo giá/công nợ theo nhiều loại tiền tệ.</em></td>
+</tr>
+<tr>
+<td><strong>Phân tích nâng cao</strong> (Advanced Analytics)</td>
+<td><em>Phân tích chuyên sâu về hành vi, hiệu quả kinh doanh, dự báo…</em></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="7-luu-y-yeu-cau-bo-sung-cho-agent-portal">7. Lưu ý &amp; Yêu cầu bổ sung cho Agent Portal</h2>
+<p>Các điểm cần lưu ý khi thiết kế và triển khai hệ thống, <strong>áp dụng xuyên suốt các giai đoạn</strong>:</p>
+<ul>
+<li><strong>Giao diện theo thị trường:</strong> giao diện hiển thị của các thị trường và nhóm thị trường sẽ khác nhau; chương trình khuyến mãi của thị trường Ấn Độ và Âu/Úc/Mỹ sẽ khác nhau.</li>
+<li><strong>Phân tầng quản trị (Đại lý):</strong> trong mỗi hãng B2B sẽ có nhiều sub-account cấp dưới, do đó họ có quyền cấp sub-account con.</li>
+<li><strong>Phân tầng + thiết lập quy tắc hoa hồng theo hạng (tier):</strong> hạng vàng hưởng hoa hồng nhiều hơn hạng bạc…</li>
+<li><strong>Khuyến mãi tùy biến theo quốc gia:</strong> các chương trình khuyến mãi được customize theo country.</li>
+<li><strong>Onboarding Đại lý (Agent Onboarding):</strong> đơn giản, dễ dùng cho các Đại lý, kèm bộ handbook hướng dẫn cụ thể.</li>
+<li><strong>API bán tour cho thị trường ngách (niche):</strong> ví dụ thị trường Nga — cần bộ API kết nối với các nền tảng khác.</li>
+<li><strong>Affiliate Tracking:</strong> dành cho các bên giới thiệu khách (intro khách); hệ thống cho phép partner theo dõi được tiến trình (progress).</li>
+<li><strong>Phân tầng quản trị nội bộ:</strong> phân tầng quản trị theo nước, theo vai trò (role).</li>
+<li><strong>Quy trình tạo tài khoản:</strong> đơn giản, dễ quản lý.</li>
+<li><strong>API tới người dùng cuối (End User):</strong> có logo hãng của Đại lý và logo khách hàng (white-label).</li>
+<li><strong>Quản lý khuyến mãi:</strong> theo loại tài khoản (account type) và theo thị trường (tag).</li>
+</ul>
+<hr>
+<p><em>Bản chuẩn hóa tiếng Việt — giữ nguyên trạng nội dung yêu cầu từ tài liệu gốc v1.0 (07/07/2026), chỉ hiệu đính chính tả/định dạng và thống nhất thuật ngữ song ngữ.</em></p>
+<div class="doc-meta">Bản HTML tự chứa — render từ tài liệu Markdown. Xem offline bằng bất kỳ trình duyệt nào.</div>
+</div>
+</body>
+</html>

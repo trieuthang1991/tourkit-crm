@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout *)",
+      "Bash(dotnet --version)",
+      "Bash(dotnet new *)",
+      "Bash(rm -f src/TourKit.Shared/Class1.cs src/TourKit.Infrastructure/Class1.cs tests/TourKit.Tests/UnitTest1.cs)",
+      "Bash(dotnet sln *)",
+      "Bash(dotnet add *)",
+      "Bash(python -c \"import json,sys; d=json.load\\(open\\('.claude/settings.json',encoding='utf-8'\\)\\); print\\(json.dumps\\(d.get\\('hooks',{}\\),indent=2,ensure_ascii=False\\)\\)\")",
+      "Bash(uv run *)"
+    ]
+  }
+}
