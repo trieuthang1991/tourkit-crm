@@ -54,6 +54,8 @@ public class AppDbContext : DbContext
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<TourGuideAssignment> TourGuideAssignments => Set<TourGuideAssignment>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
+    public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();
 
     public override int SaveChanges()
     {
