@@ -76,6 +76,11 @@ public static class Permissions
     public const string GuideView = "guide.view";
     public const string GuideManage = "guide.manage";
 
+    public const string AgentView = "agent.view";              // B2B: đại lý
+    public const string AgentManage = "agent.manage";
+    public const string AgentQuoteView = "agentquote.view";    // B2B: yêu cầu báo giá đại lý
+    public const string AgentQuoteManage = "agentquote.manage";
+
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
     [
@@ -107,5 +112,7 @@ public static class Permissions
         (CareView, "CRM"), (CareManage, "CRM"), (RatingView, "CRM"), (RatingManage, "CRM"),
         (VehicleView, "Booking"), (VehicleManage, "Booking"),
         (GuideView, "Booking"), (GuideManage, "Booking"),
+        (AgentView, "B2B"), (AgentManage, "B2B"),
+        (AgentQuoteView, "B2B"), (AgentQuoteManage, "B2B"),
     ];
 }

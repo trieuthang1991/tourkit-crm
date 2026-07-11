@@ -52,6 +52,8 @@ public class AppDbContext : DbContext
     public DbSet<CustomerCare> CustomerCares => Set<CustomerCare>();
     public DbSet<TourRating> TourRatings => Set<TourRating>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+    public DbSet<Agent> Agents => Set<Agent>();
+    public DbSet<AgentQuoteRequest> AgentQuoteRequests => Set<AgentQuoteRequest>();
 
     public override int SaveChanges()
     {
