@@ -35,6 +35,7 @@ import { AgentsPage } from '../features/agents/AgentsPage';
 import { CustomerCommissionRulesPage } from '../features/customerCommissionRules/CustomerCommissionRulesPage';
 import { QuotesPage } from '../features/quotes/QuotesPage';
 import { InvoicesPage } from '../features/invoices/InvoicesPage';
+import { AgentQuotesPage } from '../features/agentQuotes/AgentQuotesPage';
 
 export function AppRouter() {
   return (
@@ -81,6 +82,7 @@ export function AppRouter() {
         <Route path="/activity-logs" element={<ActivityLogsPage />} />
         <Route path="/quotes" element={<QuotesPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
+        <Route path="/agent-quotes" element={<AgentQuotesPage />} />
       </Route>
     </Routes>
   );
