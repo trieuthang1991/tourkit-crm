@@ -1,12 +1,12 @@
 {
   "repoPath": "D:\\MiGroup\\AI\\tourkit-crm\\tourkit-crm",
-  "lastCommit": "2e00dd3367974d777612055abc81d98940aafd49",
-  "indexedAt": "2026-07-11T14:54:42.297Z",
+  "lastCommit": "cb2063c45b0b81b53e22ad1f479619b6b9553821",
+  "indexedAt": "2026-07-11T14:58:29.425Z",
   "stats": {
-    "files": 879,
-    "nodes": 6091,
-    "edges": 39898,
-    "communities": 552,
+    "files": 882,
+    "nodes": 6112,
+    "edges": 39952,
+    "communities": 558,
     "processes": 300,
     "embeddings": 0
   }

@@ -89,6 +89,11 @@ builder.Services.Configure<TourKit.Infrastructure.Notifications.SmsOptions>(
     builder.Configuration.GetSection(TourKit.Infrastructure.Notifications.SmsOptions.SectionName));
 builder.Services.AddScoped<TourKit.Application.Notifications.ISmsSender, TourKit.Infrastructure.Notifications.LogSmsSender>();
 
+// --- Zalo OA: dev ghi log; prod thêm provider Zalo OA thật + đổi Zalo:Provider (giống SMS) ---
+builder.Services.Configure<TourKit.Infrastructure.Notifications.ZaloOptions>(
+    builder.Configuration.GetSection(TourKit.Infrastructure.Notifications.ZaloOptions.SectionName));
+builder.Services.AddScoped<TourKit.Application.Notifications.IZaloSender, TourKit.Infrastructure.Notifications.LogZaloSender>();
+
 // --- FluentValidation: quét validator ở tầng Application ---
 builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Customers.Validators.CreateCustomerValidator>();
 

@@ -41,15 +41,26 @@ public class CampaignServiceTests
         }
     }
 
+    /// <summary>Fake Zalo sender: đếm số tin Zalo gửi.</summary>
+    private sealed class FakeZaloSender : IZaloSender
+    {
+        public List<string> Sent { get; } = [];
+        public Task SendAsync(string zaloId, string message, CancellationToken ct = default)
+        {
+            Sent.Add(zaloId);
+            return Task.CompletedTask;
+        }
+    }
+
     private static CampaignService NewService(
         out FakeRepository<MarketingCampaign> repo, out FakeRepository<MarketingSendLog> logRepo,
-        IEmailSender? emailSender = null, ISmsSender? smsSender = null)
+        IEmailSender? emailSender = null, ISmsSender? smsSender = null, IZaloSender? zaloSender = null)
     {
         repo = new FakeRepository<MarketingCampaign>();
         logRepo = new FakeRepository<MarketingSendLog>();
         return new CampaignService(
             repo, logRepo, emailSender ?? new FakeEmailSender(), smsSender ?? new FakeSmsSender(),
-            new CreateCampaignValidator(), new UpdateCampaignValidator());
+            zaloSender ?? new FakeZaloSender(), new CreateCampaignValidator(), new UpdateCampaignValidator());
     }
 
     private static CreateCampaignDto NewCreateDto(string name = "Hè 2026") =>
@@ -180,6 +191,20 @@ public class CampaignServiceTests
 
         Assert.Equal(new[] { "0900000000", "0911111111" }, sms.Sent);   // gửi qua SMS sender
         Assert.Empty(email.Sent);                                        // không gọi email
+    }
+
+    [Fact]
+    public async Task SendAsync_zalo_channel_uses_zalo_sender()
+    {
+        var zalo = new FakeZaloSender();
+        var service = NewService(out _, out var logRepo, zaloSender: zalo);
+        var campaign = await service.CreateAsync(new CreateCampaignDto("Zalo", MarketingChannel.Zalo, null, "Nội dung"));
+
+        await service.SendAsync(campaign.Id, new SendCampaignDto(["user1", "user2"]));
+
+        Assert.Equal(new[] { "user1", "user2" }, zalo.Sent);
+        var logs = await logRepo.ListAsync(l => l.CampaignId == campaign.Id);
+        Assert.All(logs, l => Assert.Equal(1, l.Status));
     }
 
     [Fact]

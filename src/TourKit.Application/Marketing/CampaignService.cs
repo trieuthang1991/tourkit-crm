@@ -7,14 +7,15 @@ using TourKit.Shared.Enums;
 
 namespace TourKit.Application.Marketing;
 
-/// <summary>Quản lý chiến dịch marketing (Email/SMS/Zalo) + ghi log gửi.
-/// Kênh Email qua <see cref="IEmailSender"/>, SMS qua <see cref="ISmsSender"/> (đều dev ghi log, prod
-/// dùng provider thật khi cấu hình). Zalo vẫn mô phỏng — cần Zalo OA API.</summary>
+/// <summary>Quản lý chiến dịch marketing (Email/SMS/Zalo) + ghi log gửi. Cả 3 kênh gửi qua abstraction
+/// (<see cref="IEmailSender"/>/<see cref="ISmsSender"/>/<see cref="IZaloSender"/>): dev ghi log, prod
+/// dùng provider thật khi cấu hình. Bền per-recipient (1 địa chỉ lỗi không chặn cả chiến dịch).</summary>
 public sealed class CampaignService(
     IRepository<MarketingCampaign> repo,
     IRepository<MarketingSendLog> logRepo,
     IEmailSender emailSender,
     ISmsSender smsSender,
+    IZaloSender zaloSender,
     IValidator<CreateCampaignDto> createValidator,
     IValidator<UpdateCampaignDto> updateValidator) : ICampaignService
 {
@@ -105,7 +106,8 @@ public sealed class CampaignService(
             {
                 MarketingChannel.Email => await TrySendAsync(() => emailSender.SendAsync(recipient, campaign.Subject ?? campaign.Name, campaign.Body)),
                 MarketingChannel.Sms => await TrySendAsync(() => smsSender.SendAsync(recipient, campaign.Body)),
-                _ => StatusSent, // Zalo: chưa có provider — mô phỏng log
+                MarketingChannel.Zalo => await TrySendAsync(() => zaloSender.SendAsync(recipient, campaign.Body)),
+                _ => StatusSent,
             };
 
             await logRepo.AddAsync(new MarketingSendLog
