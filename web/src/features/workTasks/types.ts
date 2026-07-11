@@ -10,6 +10,8 @@ export const workTaskSchema = z.object({
   priority: z.number(),
   status: z.number(),
   relatedOrderId: z.string().nullable(),
+  workflowId: z.string().nullable().optional(),
+  sectionId: z.string().nullable().optional(),
 });
 export type WorkTask = z.infer<typeof workTaskSchema>;
 

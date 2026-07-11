@@ -36,7 +36,7 @@ public class WorkTaskServiceTests
     }
 
     private static CreateWorkTaskDto NewDto(string title = "Gọi khách xác nhận", Guid? assignee = null) =>
-        new(title, "mô tả", assignee, null, (int)WorkTaskPriority.Normal, (int)WorkTaskStatus.Todo, null);
+        new(title, "mô tả", assignee, null, (int)WorkTaskPriority.Normal, (int)WorkTaskStatus.Todo, null, null, null);
 
     [Fact]
     public async Task CreateAsync_persists_and_returns_dto()
@@ -101,7 +101,7 @@ public class WorkTaskServiceTests
 
         await service.CreateAsync(NewDto("T1", u1.Id));
         var t2 = await service.CreateAsync(NewDto("T2", u2.Id));
-        await service.UpdateAsync(t2.Id, new UpdateWorkTaskDto("T2", null, u2.Id, null, 1, (int)WorkTaskStatus.Done, null));
+        await service.UpdateAsync(t2.Id, new UpdateWorkTaskDto("T2", null, u2.Id, null, 1, (int)WorkTaskStatus.Done, null, null, null));
 
         var forU1 = await service.ListAsync(u1.Id, null);
         Assert.Single(forU1);
@@ -149,11 +149,11 @@ public class WorkTaskServiceTests
         notifications.Pushed.Clear();
 
         // Sửa nhưng giữ nguyên người → không push.
-        await service.UpdateAsync(task.Id, new UpdateWorkTaskDto("T sửa", null, u1.Id, null, 1, 1, null));
+        await service.UpdateAsync(task.Id, new UpdateWorkTaskDto("T sửa", null, u1.Id, null, 1, 1, null, null, null));
         Assert.Empty(notifications.Pushed);
 
         // Đổi sang người khác → push cho người mới.
-        await service.UpdateAsync(task.Id, new UpdateWorkTaskDto("T sửa", null, u2.Id, null, 1, 1, null));
+        await service.UpdateAsync(task.Id, new UpdateWorkTaskDto("T sửa", null, u2.Id, null, 1, 1, null, null, null));
         Assert.Single(notifications.Pushed);
         Assert.Equal(u2.Id, notifications.Pushed[0].UserId);
     }

@@ -46,6 +46,8 @@ public sealed class WorkTaskService(
             Priority = dto.Priority,
             Status = dto.Status,
             RelatedOrderId = dto.RelatedOrderId,
+            WorkflowId = dto.WorkflowId,
+            SectionId = dto.SectionId,
         };
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
@@ -72,6 +74,8 @@ public sealed class WorkTaskService(
         entity.Priority = dto.Priority;
         entity.Status = dto.Status;
         entity.RelatedOrderId = dto.RelatedOrderId;
+        entity.WorkflowId = dto.WorkflowId;
+        entity.SectionId = dto.SectionId;
         repo.Update(entity);
         await repo.SaveChangesAsync();
 
@@ -123,5 +127,5 @@ public sealed class WorkTaskService(
     private static WorkTaskDto Map(WorkTask x, Dictionary<Guid, string> names) => new(
         x.Id, x.Title, x.Description, x.AssigneeUserId,
         x.AssigneeUserId is { } uid && names.TryGetValue(uid, out var n) ? n : null,
-        x.DueDate, x.Priority, x.Status, x.RelatedOrderId);
+        x.DueDate, x.Priority, x.Status, x.RelatedOrderId, x.WorkflowId, x.SectionId);
 }

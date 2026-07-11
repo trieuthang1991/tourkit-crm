@@ -14,4 +14,6 @@ public sealed class WorkTask : BaseEntity, ITenantEntity
     public int Priority { get; set; }                  // WorkTaskPriority
     public int Status { get; set; }                    // WorkTaskStatus
     public Guid? RelatedOrderId { get; set; }          // gắn với đơn (tuỳ chọn) — theo dõi việc theo đơn
+    public Guid? WorkflowId { get; set; }              // board Kanban chứa thẻ việc (legacy Tasking.WorkflowId)
+    public Guid? SectionId { get; set; }               // cột hiện tại trong board (kéo/thả đổi cột)
 }

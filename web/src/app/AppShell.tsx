@@ -20,6 +20,7 @@ const NAV: NavItem[] = [
   { key: '/leads', label: 'Lead (CRM)', perm: 'lead.view' },
   { key: '/customer-cares', label: 'Chăm sóc KH', perm: 'care.view' },
   { key: '/work-tasks', label: 'Công việc', perm: 'task.view' },
+  { key: '/workflows', label: 'Board Kanban', perm: 'workflow.view' },
   { key: '/tour-ratings', label: 'Đánh giá tour', perm: 'rating.view' },
   { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
   { key: '/departures', label: 'Chuyến đi', perm: 'departure.view' },

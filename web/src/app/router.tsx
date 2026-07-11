@@ -21,6 +21,8 @@ import { DepartmentsPage } from '../features/departments/DepartmentsPage';
 import { PositionsPage } from '../features/departments/PositionsPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { WorkTasksPage } from '../features/workTasks/WorkTasksPage';
+import { WorkflowsPage } from '../features/workflows/WorkflowsPage';
+import { WorkflowBoardPage } from '../features/workflows/WorkflowBoardPage';
 import { NotificationsPage } from '../features/notifications/NotificationsPage';
 import { PostsPage } from '../features/posts/PostsPage';
 import { PostCategoriesPage } from '../features/posts/PostCategoriesPage';
@@ -107,6 +109,8 @@ export function AppRouter() {
         <Route path="/language-types" element={<LanguageTypesPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/work-tasks" element={<WorkTasksPage />} />
+        <Route path="/workflows" element={<WorkflowsPage />} />
+        <Route path="/workflows/:id" element={<WorkflowBoardPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/posts" element={<PostsPage />} />
         <Route path="/post-categories" element={<PostCategoriesPage />} />
