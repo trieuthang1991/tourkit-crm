@@ -77,6 +77,11 @@ Phần lõi groundable đã làm. **149 backend + 59 web test xanh; smoke SQLite
 
 `BackgroundJobs` (job nền: nhắc hạn giữ chỗ, gửi chăm sóc tự động) · `LogSystem` (audit) · `Upload` (đính kèm file) · `BankHub` (đối soát ngân hàng).
 
+- ✅ **Hạ tầng Hangfire** (in-memory dev, dashboard `/hangfire`, guard testhost) + **Email** (`IEmailSender`: LogEmailSender dev / SmtpEmailSender prod qua `Email:Provider`).
+- ✅ **`LogSystem`** = ActivityLog interceptor (audit tự động) · **`Upload`** = IFileStorage (local dev, tách theo tenant).
+- ✅ **Job gửi chăm sóc tự động** (`CareReminderJob`): quét CustomerCare tới hạn nhắc → email người phụ trách; đa-tenant đúng cách (IgnoreQueryFilters + xử lý per-tenant). Dev log, prod SMTP.
+- ◻️ Job "nhắc hạn giữ chỗ" (cần chốt: mốc nhắc + người nhận) · `BankHub` (cần API ngân hàng).
+
 ---
 
 ## Đề xuất mở rộng cấu trúc dữ liệu (bám hệ cũ)
