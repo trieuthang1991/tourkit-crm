@@ -76,6 +76,9 @@ public static class Permissions
     public const string GuideView = "guide.view";
     public const string GuideManage = "guide.manage";
 
+    public const string ServiceBookingView = "servicebooking.view";      // đặt dịch vụ lẻ (hotel/vé/visa)
+    public const string ServiceBookingManage = "servicebooking.manage";
+
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
     [
@@ -107,5 +110,6 @@ public static class Permissions
         (CareView, "CRM"), (CareManage, "CRM"), (RatingView, "CRM"), (RatingManage, "CRM"),
         (VehicleView, "Booking"), (VehicleManage, "Booking"),
         (GuideView, "Booking"), (GuideManage, "Booking"),
+        (ServiceBookingView, "Booking"), (ServiceBookingManage, "Booking"),
     ];
 }
