@@ -28,3 +28,13 @@ public sealed record CommissionByUserRowDto(
 /// <summary>Một dòng doanh thu/lợi nhuận theo phòng ban (gom đơn theo phòng ban của sales phụ trách).</summary>
 public sealed record TurnoverByDepartmentRowDto(
     Guid? DepartmentId, string DepartmentName, int OrderCount, decimal Turnover, decimal Cost, decimal Profit);
+
+/// <summary>
+/// KPI phễu kinh doanh (legacy KeyPerformanceIndicator): báo giá → chấp nhận → chuyển đơn → thu tiền.
+/// Các tỉ lệ là phân số 0..1 (FE hiển thị %). Tính từ dữ liệu sẵn có, không phụ thuộc ngoài.
+/// </summary>
+public sealed record KpiSummaryDto(
+    int QuoteCount, int QuoteAcceptedCount, int QuoteConvertedCount,
+    decimal AcceptanceRate, decimal ConversionRate,
+    int OrderCount, decimal TotalRevenue, decimal AvgOrderValue,
+    decimal TotalReceived, decimal CollectionRate);

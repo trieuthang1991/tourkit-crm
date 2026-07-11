@@ -241,4 +241,26 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
 
         return rows;
     }
+
+    /// <summary>
+    /// KPI phễu kinh doanh (legacy KeyPerformanceIndicator): báo giá → chấp nhận (Status=2) → chuyển đơn
+    /// (ConvertedOrderId != null) → thu tiền. Các tỉ lệ 0..1 (FE hiển thị %). Từ dữ liệu sẵn có.
+    /// </summary>
+    public async Task<KpiSummaryDto> GetKpiSummaryAsync()
+    {
+        var quoteCount = await db.Quotes.CountAsync();
+        var accepted = await db.Quotes.CountAsync(q => q.Status == 2);
+        var converted = await db.Quotes.CountAsync(q => q.ConvertedOrderId != null);
+
+        var orderCount = await db.Orders.CountAsync();
+        var totalRevenue = await db.Orders.SumAsync(o => o.TotalRevenue);
+        var totalReceived = await db.ReceiptVouchers.Recognized().SumAsync(r => r.Amount);
+
+        return new KpiSummaryDto(
+            quoteCount, accepted, converted,
+            OrderMath.Rate(accepted, quoteCount),       // tỉ lệ chấp nhận = chấp nhận / tổng báo giá
+            OrderMath.Rate(converted, accepted),        // tỉ lệ chuyển đơn = chuyển đơn / đã chấp nhận
+            orderCount, totalRevenue, OrderMath.Rate(totalRevenue, orderCount),  // giá trị đơn TB
+            totalReceived, OrderMath.Rate(totalReceived, totalRevenue));         // tỉ lệ thu
+    }
 }

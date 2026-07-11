@@ -11,6 +11,7 @@ type NavItem = { key: string; label: string; perm: string };
 
 const NAV: NavItem[] = [
   { key: '/dashboard', label: 'Tổng quan', perm: 'report.dashboard.view' },
+  { key: '/reports/kpi', label: 'KPI phễu', perm: 'report.dashboard.view' },
   { key: '/customers', label: 'Khách hàng', perm: 'customer.view' },
   { key: '/customer-types', label: 'Loại khách hàng', perm: 'customertype.view' },
   { key: '/customer-sources', label: 'Nguồn khách hàng', perm: 'customertype.view' },

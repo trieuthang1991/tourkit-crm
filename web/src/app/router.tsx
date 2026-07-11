@@ -39,6 +39,7 @@ import { CashFlowReportPage } from '../features/reports/CashFlowReportPage';
 import { TurnoverReportPage } from '../features/reports/TurnoverReportPage';
 import { CommissionByUserReportPage } from '../features/reports/CommissionByUserReportPage';
 import { TurnoverByDepartmentReportPage } from '../features/reports/TurnoverByDepartmentReportPage';
+import { KpiReportPage } from '../features/reports/KpiReportPage';
 import { CommissionRulesPage } from '../features/commission/CommissionRulesPage';
 import { RegistrationPage } from '../features/registration/RegistrationPage';
 import { CustomerCaresPage } from '../features/care/CustomerCaresPage';
@@ -121,6 +122,7 @@ export function AppRouter() {
         <Route path="/reports/turnover" element={<TurnoverReportPage />} />
         <Route path="/reports/commission-by-user" element={<CommissionByUserReportPage />} />
         <Route path="/reports/turnover-by-department" element={<TurnoverByDepartmentReportPage />} />
+        <Route path="/reports/kpi" element={<KpiReportPage />} />
         <Route path="/commission-rules" element={<CommissionRulesPage />} />
         <Route path="/customer-cares" element={<CustomerCaresPage />} />
         <Route path="/tour-ratings" element={<TourRatingsPage />} />

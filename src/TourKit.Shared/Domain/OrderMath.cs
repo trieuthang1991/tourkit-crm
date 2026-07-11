@@ -26,4 +26,8 @@ public static class OrderMath
     /// </summary>
     public static decimal SurchargeAmount(int calcType, decimal value, decimal baseRevenue)
         => calcType == (int)Enums.SurchargeCalcType.Percent ? baseRevenue * value / 100m : value;
+
+    /// <summary>Tỉ lệ an toàn chia-0: numerator/denominator, trả 0 khi mẫu = 0. Dùng cho KPI (0..1).</summary>
+    public static decimal Rate(decimal numerator, decimal denominator)
+        => denominator == 0 ? 0 : numerator / denominator;
 }

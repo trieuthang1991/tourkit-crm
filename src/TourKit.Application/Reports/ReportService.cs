@@ -18,4 +18,6 @@ public sealed class ReportService(IReportQueries queries) : IReportService
     public Task<IReadOnlyList<CommissionByUserRowDto>> GetCommissionByUserAsync() => queries.GetCommissionByUserAsync();
 
     public Task<IReadOnlyList<TurnoverByDepartmentRowDto>> GetTurnoverByDepartmentAsync() => queries.GetTurnoverByDepartmentAsync();
+
+    public Task<KpiSummaryDto> GetKpiSummaryAsync() => queries.GetKpiSummaryAsync();
 }

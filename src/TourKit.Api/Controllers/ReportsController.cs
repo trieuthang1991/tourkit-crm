@@ -65,4 +65,12 @@ public sealed class ReportsController(IReportService service) : ControllerBase
         var rows = await service.GetTurnoverByDepartmentAsync();
         return Ok(rows);
     }
+
+    [HttpGet("kpi")]
+    [Authorize(Permissions.ReportDashboardView)]
+    public async Task<IActionResult> Kpi()
+    {
+        var summary = await service.GetKpiSummaryAsync();
+        return Ok(summary);
+    }
 }
