@@ -71,6 +71,12 @@ builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Custome
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 // Repo riêng cho query phức tạp/nhiều bảng (báo cáo GROUP BY) — không dịch được bằng IRepository<T> generic.
 builder.Services.AddScoped<IReportQueries, ReportQueries>();
+// File storage: local ở dev (conventions §8) — đổi provider (S3/Azure) bằng cấu hình, không sửa code gọi.
+builder.Services.AddScoped<TourKit.Application.Files.IFileStorage>(sp =>
+    new TourKit.Infrastructure.Storage.LocalFileStorage(
+        sp.GetRequiredService<TourKit.Shared.Tenancy.ITenantContext>(),
+        builder.Configuration["FileStorage:LocalRoot"]
+            ?? Path.Combine(AppContext.BaseDirectory, "App_Data", "uploads")));
 // Auto-register mọi Application service (I<X>Service → <X>Service) — khỏi khai báo tay từng cái.
 builder.Services.Scan(scan => scan.FromAssemblyOf<TourKit.Application.Customers.ICustomerService>()
     .AddClasses(c => c.Where(t => t.Name.EndsWith("Service", StringComparison.Ordinal)))
