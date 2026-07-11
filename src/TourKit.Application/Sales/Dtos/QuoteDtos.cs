@@ -14,7 +14,8 @@ public sealed record QuoteDto(
 
 /// <summary>Dòng tóm tắt cho danh sách (không kèm chi tiết dòng).</summary>
 public sealed record QuoteSummaryDto(
-    Guid Id, string Code, string CustomerName, string Title, DateTimeOffset? ValidUntil, int Status, decimal TotalAmount);
+    Guid Id, string Code, string CustomerName, string Title, DateTimeOffset? ValidUntil, int Status, decimal TotalAmount,
+    Guid? ConvertedOrderId);
 
 public sealed record CreateQuoteLineDto(
     string Description, int Quantity, decimal UnitPrice,

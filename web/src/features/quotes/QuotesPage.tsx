@@ -154,9 +154,15 @@ export function QuotesPage() {
             <Button size="small" onClick={() => window.open(`/quotes/${item.id}/print`, '_blank')}>
               In
             </Button>
-            {item.status === 2 ? (
+            {item.status === 2 && !item.convertedOrderId ? (
               <Button size="small" type="primary" onClick={() => setConvertingId(item.id)}>
                 Chuyển đơn
+              </Button>
+            ) : null}
+            {item.convertedOrderId ? (
+              // Đã chuyển đơn → mở đơn để thu tiền (đề nghị thanh toán = flow phiếu thu + duyệt sẵn có).
+              <Button size="small" onClick={() => window.open(`/orders/${item.convertedOrderId}`, '_blank')}>
+                Đơn
               </Button>
             ) : null}
             <Popconfirm title="Xoá báo giá này?" onConfirm={() => onDelete(item.id)}>

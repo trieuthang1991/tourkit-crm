@@ -47,6 +47,7 @@ export const quoteSummarySchema = z.object({
   validUntil: z.string().nullable(),
   status: z.number(),
   totalAmount: z.number(),
+  convertedOrderId: z.string().nullable(), // đơn đã sinh — hiện nút mở đơn để thu tiền (BillPaymentRequest = flow phiếu thu sẵn có)
 });
 export type QuoteSummary = z.infer<typeof quoteSummarySchema>;
 

@@ -22,7 +22,7 @@ public sealed class QuoteService(
     {
         var (items, total) = await quoteRepo.PageAsync(page, size);
         var dtos = items
-            .Select(q => new QuoteSummaryDto(q.Id, q.Code, q.CustomerName, q.Title, q.ValidUntil, q.Status, q.TotalAmount))
+            .Select(q => new QuoteSummaryDto(q.Id, q.Code, q.CustomerName, q.Title, q.ValidUntil, q.Status, q.TotalAmount, q.ConvertedOrderId))
             .ToList();
         return new PagedResult<QuoteSummaryDto>(dtos, total, page, size);
     }
