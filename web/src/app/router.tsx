@@ -26,6 +26,7 @@ import { CommissionRulesPage } from '../features/commission/CommissionRulesPage'
 import { RegistrationPage } from '../features/registration/RegistrationPage';
 import { CustomerCaresPage } from '../features/care/CustomerCaresPage';
 import { TourRatingsPage } from '../features/ratings/TourRatingsPage';
+import { OperationsCalendarPage } from '../features/operations/OperationsCalendarPage';
 
 export function AppRouter() {
   return (
@@ -50,6 +51,7 @@ export function AppRouter() {
         <Route path="/market-types" element={<MarketTypesPage />} />
         <Route path="/departures" element={<DeparturesPage />} />
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
+        <Route path="/operations-calendar" element={<OperationsCalendarPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />

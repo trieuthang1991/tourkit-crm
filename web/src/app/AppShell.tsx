@@ -15,6 +15,7 @@ const NAV: NavItem[] = [
   { key: '/tour-ratings', label: 'Đánh giá tour', perm: 'rating.view' },
   { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
   { key: '/departures', label: 'Chuyến đi', perm: 'departure.view' },
+  { key: '/operations-calendar', label: 'Lịch điều hành', perm: 'departure.view' },
   { key: '/orders', label: 'Đơn hàng', perm: 'booking.view' },
   { key: '/providers', label: 'Nhà cung cấp', perm: 'provider.view' },
   { key: '/service-items', label: 'Danh mục dịch vụ', perm: 'service.view' },
