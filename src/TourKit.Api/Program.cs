@@ -64,6 +64,18 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
+// --- Email (conventions §8): dev ghi log; prod dùng SMTP khi Email:Provider=Smtp (giống IFileStorage) ---
+builder.Services.Configure<TourKit.Infrastructure.Notifications.EmailOptions>(
+    builder.Configuration.GetSection(TourKit.Infrastructure.Notifications.EmailOptions.SectionName));
+if (string.Equals(builder.Configuration["Email:Provider"], "Smtp", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<TourKit.Application.Notifications.IEmailSender, TourKit.Infrastructure.Notifications.SmtpEmailSender>();
+}
+else
+{
+    builder.Services.AddScoped<TourKit.Application.Notifications.IEmailSender, TourKit.Infrastructure.Notifications.LogEmailSender>();
+}
+
 // --- FluentValidation: quét validator ở tầng Application ---
 builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Customers.Validators.CreateCustomerValidator>();
 
