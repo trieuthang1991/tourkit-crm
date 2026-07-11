@@ -9,8 +9,9 @@ public sealed class ProviderService : BaseEntity, ITenantEntity
     public Guid ProviderId { get; set; }
     public Guid? ServiceItemId { get; set; }
     public string? PriceName { get; set; }        // price_name
-    public decimal ContractPrice { get; set; }    // contract_price
-    public decimal PublicPrice { get; set; }      // public_price
+    public decimal ContractPrice { get; set; }    // contract_price (theo CurrencyCode)
+    public decimal PublicPrice { get; set; }      // public_price (theo CurrencyCode)
+    public string? CurrencyCode { get; set; }     // mã tiền tệ giá vốn (null/"VND" = VND); quy đổi qua Currency
     public int AmountOfPeople { get; set; }       // amount_of_people
     public string? Note { get; set; }
     public int Status { get; set; }

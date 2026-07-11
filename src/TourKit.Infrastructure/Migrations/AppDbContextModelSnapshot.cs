@@ -405,6 +405,52 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("CommissionRules");
                 });
 
+            modelBuilder.Entity("TourKit.Shared.Entities.Currency", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("RateToVnd")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Currencies");
+                });
+
             modelBuilder.Entity("TourKit.Shared.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1771,6 +1817,9 @@ namespace TourKit.Infrastructure.Migrations
 
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("CurrencyCode")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");

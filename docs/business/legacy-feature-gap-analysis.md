@@ -43,7 +43,7 @@
 4. **LoaiDonHang / TrangThaiDonHang** → catalog loại đơn + trạng thái đơn (hiện `Order.Status` là int trần — mirror kiểu CustomerType keyed Code).
 5. ✅ **CarType** (ĐÃ LÀM): catalog loại xe keyed theo số ghế (Code) → tên "Xe N chỗ", khớp Vehicle.SeatType. Dùng quyền `vehicle.*`.
 6. ✅ **LanguagesType** (ĐÃ LÀM): catalog ngôn ngữ HDV (tên + mã ISO), dùng quyền `guide.*`. Chuẩn bị cho gán ngôn ngữ vào TourGuideAssignment sau.
-7. **ExchangeRate** → tỷ giá (đa tiền tệ) — cần chốt điểm dùng (giá vốn NCC ngoại tệ?).
+7. ✅ **ExchangeRate → Currency** (ĐÃ LÀM): danh mục tỷ giá (Code/RateToVnd). ProviderService += CurrencyCode → giá vốn NCC nhập ngoại tệ, ProviderServiceService quy đổi VND tập trung (ContractPriceVnd/PublicPriceVnd trong DTO); picker OrderCost/Quote dùng giá VND (khoá tại thời điểm chọn). Quyền `service.*`.
 8. ✅ **ConfigSurcharge / SurchargeServices** (ĐÃ LÀM): danh mục loại phụ thu (Fixed/Percent) + dòng phụ thu theo đơn cộng thẳng vào `Order.TotalRevenue` (tự chảy vào công nợ/hoa hồng/báo cáo, không sửa downstream). Bất biến `TotalRevenue = gốc + Σ phụ thu` → % luôn tính trên gốc bất kể thứ tự. `OrderMath.SurchargeAmount` một chỗ; panel trên chi tiết đơn + catalog. Quyền `booking.*`.
 9. **ServicePaymentTerm** → điều khoản thanh toán NCC.
 10. **age_type** → đã xử lý ngầm (NL/TE/TN trong báo giá) — chỉ cần nếu muốn cấu hình bậc tuổi động.
@@ -89,6 +89,7 @@
 | Cơ cấu tổ chức (Department/Position + Users) | PhongBan/Position | `feat(admin): cơ cấu tổ chức` |
 | Phụ thu theo đơn (Surcharge/OrderSurcharge) | ConfigSurcharge/SurchargeServices | `feat(booking): phụ thu theo đơn` |
 | Báo cáo doanh thu theo phòng ban | (dùng Department) | `feat(reports): doanh thu theo phòng ban` |
+| Tỷ giá + giá vốn NCC ngoại tệ (Currency) | ExchangeRate | `feat(catalog): tỷ giá + giá vốn ngoại tệ` |
 
 **Ghi chú:** LoaiDonHang/TrangThaiDonHang **bỏ qua** — hệ mới đã model `Order.Status`/`Order.BookingType` bằng enum (tốt hơn bảng trạng thái legacy), không mirror redundant.
 

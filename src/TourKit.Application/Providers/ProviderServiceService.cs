@@ -11,6 +11,7 @@ namespace TourKit.Application.Providers;
 public sealed class ProviderServiceService(
     IRepository<ProviderServiceEntity> repo,
     IRepository<Provider> providerRepo,
+    IRepository<Currency> currencyRepo,
     IValidator<CreateProviderServiceDto> createValidator,
     IValidator<UpdateProviderServiceDto> updateValidator) : IProviderServiceService
 {
@@ -18,19 +19,16 @@ public sealed class ProviderServiceService(
     {
         var (items, total) = await repo.PageAsync(
             page, size, providerId is null ? null : x => x.ProviderId == providerId.Value);
-        var dtos = items.Select(Map).ToList();
+        var rates = await LoadRatesAsync();
+        var dtos = items.Select(p => Map(p, RateFor(rates, p.CurrencyCode))).ToList();
         return new PagedResult<ProviderServiceDto>(dtos, total, page, size);
     }
 
     public async Task<ProviderServiceDto> GetAsync(Guid id)
     {
-        var entity = await repo.GetByIdAsync(id);
-        if (entity is null)
-        {
-            throw new NotFoundException();
-        }
-
-        return Map(entity);
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+        var rates = await LoadRatesAsync();
+        return Map(entity, RateFor(rates, entity.CurrencyCode));
     }
 
     public async Task<ProviderServiceDto> CreateAsync(CreateProviderServiceDto dto)
@@ -49,6 +47,7 @@ public sealed class ProviderServiceService(
             PriceName = dto.PriceName,
             ContractPrice = dto.ContractPrice,
             PublicPrice = dto.PublicPrice,
+            CurrencyCode = NormalizeCurrency(dto.CurrencyCode),
             AmountOfPeople = dto.AmountOfPeople,
             Note = dto.Note,
             Status = dto.Status,
@@ -56,23 +55,21 @@ public sealed class ProviderServiceService(
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
-        return Map(entity);
+        var rates = await LoadRatesAsync();
+        return Map(entity, RateFor(rates, entity.CurrencyCode));
     }
 
     public async Task UpdateAsync(Guid id, UpdateProviderServiceDto dto)
     {
         await Validate(updateValidator, dto);
 
-        var entity = await repo.GetByIdAsync(id);
-        if (entity is null)
-        {
-            throw new NotFoundException();
-        }
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
 
         entity.ServiceItemId = dto.ServiceItemId;
         entity.PriceName = dto.PriceName;
         entity.ContractPrice = dto.ContractPrice;
         entity.PublicPrice = dto.PublicPrice;
+        entity.CurrencyCode = NormalizeCurrency(dto.CurrencyCode);
         entity.AmountOfPeople = dto.AmountOfPeople;
         entity.Note = dto.Note;
         entity.Status = dto.Status;
@@ -82,14 +79,32 @@ public sealed class ProviderServiceService(
 
     public async Task DeleteAsync(Guid id)
     {
-        var entity = await repo.GetByIdAsync(id);
-        if (entity is null)
-        {
-            throw new NotFoundException();
-        }
-
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
         repo.Remove(entity);
         await repo.SaveChangesAsync();
+    }
+
+    private static string? NormalizeCurrency(string? code)
+    {
+        var trimmed = code?.Trim().ToUpperInvariant();
+        return string.IsNullOrEmpty(trimmed) ? null : trimmed;
+    }
+
+    /// <summary>Tỷ giá → VND theo mã tiền tệ: VND/null/không tìm thấy = 1.</summary>
+    private async Task<Dictionary<string, decimal>> LoadRatesAsync()
+    {
+        var currencies = await currencyRepo.ListAsync();
+        return currencies.ToDictionary(c => c.Code, c => c.RateToVnd);
+    }
+
+    private static decimal RateFor(Dictionary<string, decimal> rates, string? code)
+    {
+        if (string.IsNullOrEmpty(code) || string.Equals(code, "VND", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1m;
+        }
+
+        return rates.GetValueOrDefault(code, 1m);
     }
 
     private static async Task Validate<T>(IValidator<T> validator, T dto)
@@ -101,7 +116,8 @@ public sealed class ProviderServiceService(
         }
     }
 
-    private static ProviderServiceDto Map(ProviderServiceEntity p) => new(
+    private static ProviderServiceDto Map(ProviderServiceEntity p, decimal rate) => new(
         p.Id, p.ProviderId, p.ServiceItemId, p.PriceName, p.ContractPrice, p.PublicPrice,
+        p.CurrencyCode, p.ContractPrice * rate, p.PublicPrice * rate,
         p.AmountOfPeople, p.Note, p.Status);
 }

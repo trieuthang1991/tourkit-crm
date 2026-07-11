@@ -38,6 +38,7 @@ const NAV: NavItem[] = [
   { key: '/providers', label: 'Nhà cung cấp', perm: 'provider.view' },
   { key: '/service-items', label: 'Danh mục dịch vụ', perm: 'service.view' },
   { key: '/provider-services', label: 'Bảng giá NCC', perm: 'service.view' },
+  { key: '/currencies', label: 'Tỷ giá tiền tệ', perm: 'service.view' },
   { key: '/marketing', label: 'Marketing', perm: 'marketing.view' },
   { key: '/market-types', label: 'Loại thị trường', perm: 'market.view' },
   { key: '/reports/order-debt', label: 'Công nợ', perm: 'report.debt.view' },

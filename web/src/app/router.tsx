@@ -21,6 +21,7 @@ import { DepartmentsPage } from '../features/departments/DepartmentsPage';
 import { PositionsPage } from '../features/departments/PositionsPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { SurchargesPage } from '../features/surcharges/SurchargesPage';
+import { CurrenciesPage } from '../features/currencies/CurrenciesPage';
 import { DeparturesPage } from '../features/booking/DeparturesPage';
 import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
 import { OrdersPage } from '../features/booking/OrdersPage';
@@ -92,6 +93,7 @@ export function AppRouter() {
         <Route path="/departments" element={<DepartmentsPage />} />
         <Route path="/positions" element={<PositionsPage />} />
         <Route path="/surcharges" element={<SurchargesPage />} />
+        <Route path="/currencies" element={<CurrenciesPage />} />
         <Route path="/departures" element={<DeparturesPage />} />
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
         <Route path="/operations-calendar" element={<OperationsCalendarPage />} />

@@ -16,7 +16,10 @@ export function QuoteLinesField() {
   const priceOptions = useMemo(
     () =>
       (prices.data ?? []).map((s) => ({
-        label: `${s.priceName ?? 'Giá'} — ${s.contractPrice.toLocaleString('vi-VN')}₫`,
+        label:
+          s.currencyCode && s.currencyCode !== 'VND'
+            ? `${s.priceName ?? 'Giá'} — ${s.contractPrice.toLocaleString('vi-VN')} ${s.currencyCode} (${s.contractPriceVnd.toLocaleString('vi-VN')}₫)`
+            : `${s.priceName ?? 'Giá'} — ${s.contractPriceVnd.toLocaleString('vi-VN')}₫`,
         value: s.id,
       })),
     [prices.data],
@@ -54,7 +57,8 @@ export function QuoteLinesField() {
                   const picked = (prices.data ?? []).find((s) => s.id === v);
                   setValue(`lines.${index}.providerServiceId`, v ?? null);
                   if (picked) {
-                    setValue(`lines.${index}.unitCost`, picked.contractPrice);
+                    // Lưu giá vốn VND (đã quy đổi theo tỷ giá).
+                    setValue(`lines.${index}.unitCost`, picked.contractPriceVnd);
                   }
                 }}
               />

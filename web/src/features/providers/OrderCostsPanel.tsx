@@ -37,7 +37,10 @@ function CreateOrderCostModal({ orderId, open, onClose }: { orderId: string; ope
   const priceOptions = useMemo(
     () =>
       (prices.data ?? []).map((s) => ({
-        label: `${s.priceName ?? 'Giá'} — ${s.contractPrice.toLocaleString('vi-VN')}₫`,
+        label:
+          s.currencyCode && s.currencyCode !== 'VND'
+            ? `${s.priceName ?? 'Giá'} — ${s.contractPrice.toLocaleString('vi-VN')} ${s.currencyCode} (${s.contractPriceVnd.toLocaleString('vi-VN')}₫)`
+            : `${s.priceName ?? 'Giá'} — ${s.contractPriceVnd.toLocaleString('vi-VN')}₫`,
         value: s.id,
       })),
     [prices.data],
@@ -86,8 +89,9 @@ function CreateOrderCostModal({ orderId, open, onClose }: { orderId: string; ope
               ...f,
               providerServiceId: v ?? null,
               serviceName: picked?.priceName ?? f.serviceName,
-              expectedAmount: picked ? picked.contractPrice : f.expectedAmount,
-              actualAmount: picked ? picked.contractPrice : f.actualAmount,
+              // Lưu VND (đã quy đổi theo tỷ giá) — cost line luôn là VND.
+              expectedAmount: picked ? picked.contractPriceVnd : f.expectedAmount,
+              actualAmount: picked ? picked.contractPriceVnd : f.actualAmount,
             }));
           }}
         />

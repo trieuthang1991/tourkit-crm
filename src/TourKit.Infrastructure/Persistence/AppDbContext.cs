@@ -64,6 +64,7 @@ public class AppDbContext : DbContext
     public DbSet<Position> Positions => Set<Position>();
     public DbSet<Surcharge> Surcharges => Set<Surcharge>();
     public DbSet<OrderSurcharge> OrderSurcharges => Set<OrderSurcharge>();
+    public DbSet<Currency> Currencies => Set<Currency>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();

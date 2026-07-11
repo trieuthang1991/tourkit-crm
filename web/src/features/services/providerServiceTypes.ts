@@ -7,6 +7,9 @@ export const providerServiceSchema = z.object({
   priceName: z.string().nullable(),
   contractPrice: z.number(),
   publicPrice: z.number(),
+  currencyCode: z.string().nullable(),
+  contractPriceVnd: z.number(), // quy đổi VND theo tỷ giá hiện hành (server tính)
+  publicPriceVnd: z.number(),
   amountOfPeople: z.number(),
   note: z.string().nullable(),
   status: z.number(),
@@ -18,6 +21,7 @@ const providerServiceCommonFields = {
   priceName: z.string().nullable().transform((v) => (v ? v : null)),
   contractPrice: z.number(),
   publicPrice: z.number(),
+  currencyCode: z.string().nullable().transform((v) => (v ? v : null)),
   amountOfPeople: z.number(),
   note: z.string().nullable().transform((v) => (v ? v : null)),
   status: z.number(),

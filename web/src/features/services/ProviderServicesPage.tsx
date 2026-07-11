@@ -1,8 +1,12 @@
 import type { ColumnsType } from 'antd/es/table';
+import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
+import { httpClient } from '../../shared/api/httpClient';
 import { money } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { ResourcePage } from '../../shared/ui/ResourcePage';
+import { currencySchema } from '../currencies/types';
 import { providersCrud } from '../providers/providersCrud';
 import { providerServicesCrud } from './providerServicesCrud';
 import { providerServiceCreateSchema, providerServiceUpdateSchema } from './providerServiceTypes';
@@ -12,8 +16,16 @@ import { serviceItemsCrud } from './serviceItemsCrud';
 const columns: ColumnsType<ProviderService> = [
   { title: 'NCC', dataIndex: 'providerId', key: 'providerId' },
   { title: 'Tên gói giá', dataIndex: 'priceName', key: 'priceName' },
-  { title: 'Giá hợp đồng', dataIndex: 'contractPrice', key: 'contractPrice', render: (v: number) => money(v) },
-  { title: 'Giá công bố', dataIndex: 'publicPrice', key: 'publicPrice', render: (v: number) => money(v) },
+  {
+    title: 'Giá hợp đồng',
+    key: 'contractPrice',
+    render: (_: unknown, r: ProviderService) =>
+      r.currencyCode && r.currencyCode !== 'VND'
+        ? `${r.contractPrice.toLocaleString('vi-VN')} ${r.currencyCode} = ${money(r.contractPriceVnd)}`
+        : money(r.contractPriceVnd),
+  },
+  { title: 'Giá công bố', key: 'publicPrice', render: (_: unknown, r: ProviderService) => money(r.publicPriceVnd) },
+  { title: 'Tiền tệ', dataIndex: 'currencyCode', key: 'currencyCode', render: (v: string | null) => v ?? 'VND' },
   { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
 ];
 
@@ -32,6 +44,22 @@ function ServiceItemIdField() {
   return <SelectField name="serviceItemId" label="Dịch vụ" options={options} allowClear />;
 }
 
+function CurrencyCodeField() {
+  const list = useQuery({
+    queryKey: ['currencies'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/currencies');
+      return z.array(currencySchema).parse(data);
+    },
+  });
+  // Mặc định VND; chọn ngoại tệ để nhập giá vốn theo tiền tệ đó (hệ quy đổi VND theo tỷ giá).
+  const options = [
+    { label: 'VND', value: 'VND' },
+    ...(list.data ?? []).filter((c) => c.code !== 'VND').map((c) => ({ label: `${c.code} — ${c.name}`, value: c.code })),
+  ];
+  return <SelectField name="currencyCode" label="Tiền tệ giá vốn" options={options} allowClear />;
+}
+
 export function ProviderServicesPage() {
   return (
     <ResourcePage<ProviderService, ProviderServiceForm>
@@ -45,6 +73,7 @@ export function ProviderServicesPage() {
         priceName: p?.priceName ?? null,
         contractPrice: p?.contractPrice ?? 0,
         publicPrice: p?.publicPrice ?? 0,
+        currencyCode: p?.currencyCode ?? null,
         amountOfPeople: p?.amountOfPeople ?? 0,
         note: p?.note ?? null,
         status: p?.status ?? 1,
@@ -65,6 +94,7 @@ export function ProviderServicesPage() {
           <TextField name="priceName" label="Tên gói giá" />
           <NumberField name="contractPrice" label="Giá hợp đồng" required />
           <NumberField name="publicPrice" label="Giá công bố" required />
+          <CurrencyCodeField />
           <NumberField name="amountOfPeople" label="Số người" required />
           <TextAreaField name="note" label="Ghi chú" />
           <NumberField name="status" label="Trạng thái" required />
