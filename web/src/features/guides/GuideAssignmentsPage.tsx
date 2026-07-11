@@ -4,6 +4,7 @@ import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, NumberField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { ResourcePage } from '../../shared/ui/ResourcePage';
 import { guideAssignmentsCrud } from './guideAssignmentsCrud';
+import { GuideTransactionCell } from './GuideTransactionCell';
 import { guideAssignmentCreateSchema, guideAssignmentUpdateSchema } from './guideAssignmentTypes';
 import type { GuideAssignment, GuideAssignmentForm } from './guideAssignmentTypes';
 
@@ -17,6 +18,12 @@ const columns: ColumnsType<GuideAssignment> = [
     render: (v: string | null) => dateText(v),
   },
   { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
+  {
+    title: 'Thu-chi',
+    key: '__tx',
+    width: 100,
+    render: (_: unknown, item: GuideAssignment) => <GuideTransactionCell assignmentId={item.id} />,
+  },
 ];
 
 export function GuideAssignmentsPage() {

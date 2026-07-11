@@ -812,6 +812,49 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("FileUploads");
                 });
 
+            modelBuilder.Entity("TourKit.Shared.Entities.GuideTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("REAL");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("OccurredAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TourGuideAssignmentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "TourGuideAssignmentId");
+
+                    b.ToTable("GuideTransactions");
+                });
+
             modelBuilder.Entity("TourKit.Shared.Entities.Invoice", b =>
                 {
                     b.Property<Guid>("Id")

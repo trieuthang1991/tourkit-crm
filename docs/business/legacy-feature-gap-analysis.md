@@ -56,7 +56,7 @@
 
 - ✅ **Chuyển tour/đổi lịch** (`TransferHistory`/`CustomerHistoryChangeTour`) **ĐÃ LÀM** (chốt nghiệp vụ chuyên gia: đổi lịch GIỮ NGUYÊN giá/doanh thu): `POST /orders/{id}/transfers` dời đơn + toàn bộ chỗ sang chuyến đích, kiểm sức chứa (tái dùng guard overbooking), chặn chuyến đã đóng, ghi lịch sử + lý do. Chênh giá/cọc xử lý qua chi phí/phụ thu (ngoài thao tác đổi lịch). Panel + lịch sử trên chi tiết đơn. `ReasonSwitch`/`DetailReasonSwitch` (lý do chuẩn hoá) — làm khi cần.
 - **Hotel/vé/visa chi tiết** (`class_hotel`, `hotel_type`, `ScanPassportHistory`, `VisaTourGuide`): đặt phòng theo hạng, hộ chiếu từng khách — đã ghi ở roadmap Đợt 5.
-- **HDV nâng cao** (`RevenueExpensesInTourGuide`, `HandoverNote`, ký giờ): thu-chi hộ, bàn giao, ký xác nhận.
+- ✅ **HDV thu-chi hộ** (`RevenueExpensesInTourGuide`) **ĐÃ LÀM**: GuideTransaction theo phân công HDV (thu hộ/bán thêm + chi hộ vé/tip/ăn), đối soát net = Σ thu − Σ chi; panel Thu-chi trên trang Phân công HDV. Còn `HandoverNote`/ký giờ (bàn giao + ký xác nhận) — làm khi cần.
 - **contract_tour** (hợp đồng tour — cần chốt mẫu HĐ). ✅ **BatchCreateTour ĐÃ LÀM**: `POST /tour-departures/batch` mở hàng loạt chuyến từ 1 mẫu (mỗi ngày → 1 chuyến Code=Prefix-STT, kế thừa mẫu); FE nút "Mở hàng loạt" sinh ngày định kỳ (số chuyến × khoảng cách ngày). (Phụ thu đã làm — xem trên.)
 
 ## 🔴 Tích hợp ngoài / subsystem lớn (làm khi có nhu cầu + API)

@@ -71,6 +71,7 @@ public class AppDbContext : DbContext
     public DbSet<PostCategory> PostCategories => Set<PostCategory>();
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<TourTransfer> TourTransfers => Set<TourTransfer>();
+    public DbSet<GuideTransaction> GuideTransactions => Set<GuideTransaction>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();
