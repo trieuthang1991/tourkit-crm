@@ -28,6 +28,7 @@ import { CustomerCaresPage } from '../features/care/CustomerCaresPage';
 import { TourRatingsPage } from '../features/ratings/TourRatingsPage';
 import { VehiclesPage } from '../features/vehicles/VehiclesPage';
 import { GuideAssignmentsPage } from '../features/guides/GuideAssignmentsPage';
+import { VehicleAssignmentsPage } from '../features/vehicleAssignments/VehicleAssignmentsPage';
 import { ActivityLogsPage } from '../features/activityLogs/ActivityLogsPage';
 import { OperationsCalendarPage } from '../features/operations/OperationsCalendarPage';
 import { ServiceBookingsPage } from '../features/serviceBookings/ServiceBookingsPage';
@@ -91,6 +92,7 @@ export function AppRouter() {
         <Route path="/tour-ratings" element={<TourRatingsPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/guide-assignments" element={<GuideAssignmentsPage />} />
+        <Route path="/vehicle-assignments" element={<VehicleAssignmentsPage />} />
         <Route path="/activity-logs" element={<ActivityLogsPage />} />
         <Route path="/quotes" element={<QuotesPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />

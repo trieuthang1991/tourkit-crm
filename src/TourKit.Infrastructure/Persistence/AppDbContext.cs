@@ -53,6 +53,7 @@ public class AppDbContext : DbContext
     public DbSet<TourRating> TourRatings => Set<TourRating>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<TourGuideAssignment> TourGuideAssignments => Set<TourGuideAssignment>();
+    public DbSet<VehicleAssignment> VehicleAssignments => Set<VehicleAssignment>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();

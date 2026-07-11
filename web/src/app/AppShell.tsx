@@ -19,6 +19,7 @@ const NAV: NavItem[] = [
   { key: '/orders', label: 'Đơn hàng', perm: 'booking.view' },
   { key: '/vehicles', label: 'Xe', perm: 'vehicle.view' },
   { key: '/guide-assignments', label: 'Phân công HDV', perm: 'guide.view' },
+  { key: '/vehicle-assignments', label: 'Phân xe cho chuyến', perm: 'vehicle.view' },
   { key: '/service-bookings', label: 'Đặt dịch vụ lẻ', perm: 'servicebooking.view' },
   { key: '/agents', label: 'Đại lý (B2B)', perm: 'agent.view' },
   { key: '/customer-commission-rules', label: 'HH theo loại khách', perm: 'commission.view' },

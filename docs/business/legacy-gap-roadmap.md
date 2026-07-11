@@ -72,11 +72,14 @@ Phần lõi groundable đã làm. **149 backend + 59 web test xanh; smoke SQLite
 - ◻️ (Cần requirement) **Đặt hotel/vé/visa nâng cao** (chi tiết phòng/chuyến bay/hộ chiếu từng khách) — cần chốt tiếp với chủ dự án.
 - ✅ (Follow-up) liên kết `OrderCost.ProviderServiceId` → chọn giá từ bảng giá NCC thay vì gõ tay (validate bảng giá thuộc đúng NCC; UI gợi ý sẵn tên dịch vụ + chi phí từ giá hợp đồng).
 
-## Đợt 6 — Điều hành tour (Operations) 🚌
+## Đợt 6 — Điều hành tour (Operations) 🚌 ✅ LÕI ĐÃ XONG
 
-- **Quản lý HDV (`TourGuideManagement`)**: ngôn ngữ, lịch rảnh, ký giờ đi/về, quỹ vé ứng.
-- **Quản lý xe (`CarManagement`)**.
-- **Lịch điều hành (`Calendar`)**.
+- ✅ **Danh mục xe (`Vehicle`, =legacy `vehicle`)**: CRUD tên/hãng/loại ghế.
+- ✅ **Phân công HDV cho chuyến (`TourGuideAssignment`, =legacy `TourGuide`)**: HDV = `Provider` (Guide) gắn vào chuyến + giờ đi/về/trả tour.
+- ✅ **Phân xe cho chuyến (`VehicleAssignment`)**: song song phân công HDV — gắn `Vehicle` vào chuyến + tài xế (tên/SĐT) + giờ đón/trả (TimeCome ≥ TimeGo); một chuyến nhiều xe; CRUD lọc theo chuyến; dùng chung permission `vehicle.view/manage`. FE trang "Phân xe cho chuyến".
+- ✅ **Lịch điều hành (`Calendar`)**: trang `OperationsCalendarPage` hiển thị chuyến theo ngày (view UI trên departures).
+- ✅ **Quỹ vé ứng HDV (`TicketFund`)**: đã làm (Finance).
+- ◻️ (Cần requirement) Quản lý HDV nâng cao: ngôn ngữ/lịch rảnh, ký xác nhận giờ (`SignatureGuide`), thu-chi hộ trên tour.
 
 ## Đợt 7 — Hạ tầng & tích hợp ⚙️ (làm khi cần)
 

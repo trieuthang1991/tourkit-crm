@@ -1,11 +1,13 @@
 # TourKit — Điểm bắt đầu (đọc file này trước)
 
 > Nền tảng SaaS điều hành tour đa doanh nghiệp, viết lại greenfield từ hệ cũ (`script.sql`, 144 bảng, đã phân mảnh).
-> Cập nhật lần cuối: 2026-07-08.
+> Cập nhật lần cuối: 2026-07-11.
 
 ## Trạng thái hiện tại
 
-Backend `.NET 9` + EF Core 9 (SQLite dev) — **77 test xanh, build 0 warning, 13 migration**. Frontend shell `web/` (React+Vite+AntD, build xanh). **Toàn bộ khối MVP (P0–P7) + nâng cao đã implement:**
+Backend `.NET 9` + EF Core 9 (SQLite dev) — **307 test xanh (4 arch + 214 unit + 89 integration), build 0 warning, 28 migration**. Frontend `web/` (React+Vite+AntD+TanStack Query) — **76 test xanh, build + lint sạch**, đã phủ đầy đủ các màn nghiệp vụ (không còn là shell). **Toàn bộ khối MVP (P0–P7) + nâng cao đã implement:**
+
+> **Tiến độ bù legacy (Đợt 0–7):** xem `docs/business/legacy-gap-roadmap.md` — nguồn sự thật cho các đợt vá khoảng trống so với hệ cũ (tài chính chi, báo cáo, hoa hồng, CSKH, dịch vụ lẻ + cụm Báo giá, điều hành tour, hạ tầng jobs/email/audit). Đợt 0–5 + 7 xong; Đợt 6 (điều hành) lõi xong.
 
 | Phase | Nội dung | Trạng thái |
 |---|---|---|
@@ -28,14 +30,15 @@ Backend `.NET 9` + EF Core 9 (SQLite dev) — **77 test xanh, build 0 warning, 1
 - ✅ Middleware chặn subscription hết hạn (402)
 - ✅ Engine duyệt phiếu phân cấp (`ReceiptApproval`/`StepUser`, method One/All, rewind)
 - ✅ Catalog 1b (PriceScenario giá theo cỡ đoàn, TourAssignee chuẩn hóa CSV, MarketType)
-- ✅ **React shell (0b-5)** — `web/`: Vite+React+TS+AntD+TanStack Query, login + danh sách tour-templates (build xanh)
+- ✅ **React frontend (0b-5)** — `web/`: Vite+React+TS+AntD+TanStack Query, đã phủ đầy đủ các màn nghiệp vụ (auth, catalog, booking, finance, quotes/báo giá, B2B agent, điều hành…).
 
 **Còn lại (cần môi trường/quyết định — không làm được offline):**
 - Materialized View cho grid tổng hợp — **cần PostgreSQL** đang chạy (SQLite dev không hỗ trợ MV).
 - Chuyển provider **SQL Server / PostgreSQL** cho production — cần DB server (đổi `Database:Provider`).
 - Đối soát cọc↔phiếu thu — *chủ động defer*: hệ cũ để 2 khái niệm song song, ép nối = "tính năng không rõ ràng".
 - Recall (thu hồi) trong engine duyệt — minor, defer.
-- Frontend đầy đủ các màn nghiệp vụ (hiện mới shell + 1 màn) · i18n · e2e.
+- HDV nâng cao (ngôn ngữ/lịch rảnh/ký giờ `SignatureGuide`) · đặt hotel/vé/visa chi tiết từng khách · `BankHub` — **cần requirement/API ngoài**.
+- i18n · e2e.
 
 > **Điều chỉnh so với thiết kế gốc:** **.NET 9** (thay 10), **SQLite dev** (SQL Server/PostgreSQL prod, đổi bằng cấu hình), **không stored proc, không trigger** (đồng bộ ở domain service).
 
