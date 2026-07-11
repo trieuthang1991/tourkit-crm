@@ -3103,6 +3103,47 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("TourRatings");
                 });
 
+            modelBuilder.Entity("TourKit.Shared.Entities.TourTransfer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("FromDepartureId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ToDepartureId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("TransferredAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "OrderId");
+
+                    b.ToTable("TourTransfers");
+                });
+
             modelBuilder.Entity("TourKit.Shared.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")

@@ -54,7 +54,7 @@
 
 ## 🟠 Cần requirement/quyết định trước khi làm
 
-- **Chuyển tour** (`TransferHistory`, `ReasonSwitch`, `DetailReasonSwitch`, `HistoryDetailReasonSwitchs`, `CustomerHistoryChangeTour`): dời khách sang chuyến khác + lý do + lịch sử. Groundable nhưng cần chốt nghiệp vụ (giữ tiền/cọc, chênh giá).
+- ✅ **Chuyển tour/đổi lịch** (`TransferHistory`/`CustomerHistoryChangeTour`) **ĐÃ LÀM** (chốt nghiệp vụ chuyên gia: đổi lịch GIỮ NGUYÊN giá/doanh thu): `POST /orders/{id}/transfers` dời đơn + toàn bộ chỗ sang chuyến đích, kiểm sức chứa (tái dùng guard overbooking), chặn chuyến đã đóng, ghi lịch sử + lý do. Chênh giá/cọc xử lý qua chi phí/phụ thu (ngoài thao tác đổi lịch). Panel + lịch sử trên chi tiết đơn. `ReasonSwitch`/`DetailReasonSwitch` (lý do chuẩn hoá) — làm khi cần.
 - **Hotel/vé/visa chi tiết** (`class_hotel`, `hotel_type`, `ScanPassportHistory`, `VisaTourGuide`): đặt phòng theo hạng, hộ chiếu từng khách — đã ghi ở roadmap Đợt 5.
 - **HDV nâng cao** (`RevenueExpensesInTourGuide`, `HandoverNote`, ký giờ): thu-chi hộ, bàn giao, ký xác nhận.
 - **Surcharge/phụ thu**, **contract_tour** (hợp đồng tour), **BatchCreateTour** (tạo hàng loạt chuyến).
