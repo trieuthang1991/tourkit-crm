@@ -70,6 +70,7 @@ public class AppDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<PostCategory> PostCategories => Set<PostCategory>();
     public DbSet<Post> Posts => Set<Post>();
+    public DbSet<PostComment> PostComments => Set<PostComment>();
     public DbSet<TourTransfer> TourTransfers => Set<TourTransfer>();
     public DbSet<GuideTransaction> GuideTransactions => Set<GuideTransaction>();
     public DbSet<RoomClass> RoomClasses => Set<RoomClass>();

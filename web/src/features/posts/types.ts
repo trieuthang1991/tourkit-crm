@@ -26,6 +26,7 @@ export const postSchema = z.object({
   categoryName: z.string().nullable(),
   status: z.number(),
   publishedAt: z.string().nullable(),
+  likeCount: z.number(),
 });
 export type Post = z.infer<typeof postSchema>;
 
@@ -36,8 +37,26 @@ export const postFormSchema = z.object({
   body: z.string().min(1, 'Bắt buộc'),
   categoryId: z.string().nullable(),
   status: z.number(),
+  likeCount: z.number(),
 });
 export type PostForm = z.infer<typeof postFormSchema>;
+
+export const postCommentSchema = z.object({
+  id: z.string().uuid(),
+  postId: z.string().uuid(),
+  authorName: z.string(),
+  content: z.string(),
+  isApproved: z.boolean(),
+  createdAt: z.string(),
+});
+export type PostComment = z.infer<typeof postCommentSchema>;
+
+export const postCommentCreateSchema = z.object({
+  authorName: z.string().min(1, 'Bắt buộc'),
+  content: z.string().min(1, 'Bắt buộc'),
+  isApproved: z.boolean(),
+});
+export type PostCommentCreateForm = z.infer<typeof postCommentCreateSchema>;
 
 export const POST_STATUS_OPTIONS = [
   { value: 0, label: 'Nháp' },

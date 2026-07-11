@@ -15,4 +15,5 @@ public sealed class Post : BaseEntity, ITenantEntity
     public int Status { get; set; }                    // 0 nháp, 1 đã xuất bản
     public DateTimeOffset? PublishedAt { get; set; }   // set khi chuyển sang xuất bản
     public Guid? AuthorUserId { get; set; }
+    public int LikeCount { get; set; }                 // legacy Likes — số lượt thích (biên tập/curated)
 }

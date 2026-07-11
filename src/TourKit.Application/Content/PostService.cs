@@ -69,6 +69,7 @@ public sealed class PostService(
         entity.Body = dto.Body;
         entity.CategoryId = dto.CategoryId;
         entity.Status = dto.Status;
+        entity.LikeCount = dto.LikeCount;
         // Lần đầu xuất bản → ghi thời điểm; gỡ xuất bản (về nháp) → xoá thời điểm.
         if (dto.Status == Published)
         {
@@ -124,5 +125,5 @@ public sealed class PostService(
     private static PostDto Map(Post p, Dictionary<Guid, string> names) => new(
         p.Id, p.Title, p.Slug, p.Summary, p.Body, p.CategoryId,
         p.CategoryId is { } cid && names.TryGetValue(cid, out var n) ? n : null,
-        p.Status, p.PublishedAt);
+        p.Status, p.PublishedAt, p.LikeCount);
 }

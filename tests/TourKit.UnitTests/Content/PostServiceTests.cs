@@ -53,10 +53,10 @@ public class PostServiceTests
         var service = NewPosts(out _, out _);
         var created = await service.CreateAsync(NewDto(status: 0));
 
-        await service.UpdateAsync(created.Id, new UpdatePostDto("T", "khuyen-mai-he", null, "Body", null, 1));
+        await service.UpdateAsync(created.Id, new UpdatePostDto("T", "khuyen-mai-he", null, "Body", null, 1, 0));
         Assert.NotNull((await service.GetAsync(created.Id)).PublishedAt);
 
-        await service.UpdateAsync(created.Id, new UpdatePostDto("T", "khuyen-mai-he", null, "Body", null, 0));
+        await service.UpdateAsync(created.Id, new UpdatePostDto("T", "khuyen-mai-he", null, "Body", null, 0, 0));
         Assert.Null((await service.GetAsync(created.Id)).PublishedAt);
     }
 

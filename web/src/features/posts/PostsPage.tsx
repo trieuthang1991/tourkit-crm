@@ -6,9 +6,10 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
-import { SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
+import { NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { useAuth } from '../auth/AuthContext';
+import { PostCommentsModal } from './PostCommentsModal';
 import {
   POST_STATUS_OPTIONS,
   postCategorySchema,
@@ -71,7 +72,7 @@ function useDelete() {
   });
 }
 
-const EMPTY: PostForm = { title: '', slug: '', summary: null, body: '', categoryId: null, status: 0 };
+const EMPTY: PostForm = { title: '', slug: '', summary: null, body: '', categoryId: null, status: 0, likeCount: 0 };
 
 export function PostsPage() {
   const { message } = App.useApp();
@@ -79,6 +80,7 @@ export function PostsPage() {
   const canManage = has('post.manage');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Post | null>(null);
+  const [commentsFor, setCommentsFor] = useState<Post | null>(null);
   const list = usePosts();
   const categories = useCategoryOptions();
   const create = useCreate();
@@ -129,6 +131,17 @@ export function PostsPage() {
       key: 'publishedAt',
       render: (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—'),
     },
+    { title: 'Lượt thích', dataIndex: 'likeCount', key: 'likeCount', width: 100 },
+    {
+      title: '',
+      key: '__comments',
+      width: 110,
+      render: (_: unknown, item: Post) => (
+        <Button size="small" onClick={() => setCommentsFor(item)}>
+          Bình luận
+        </Button>
+      ),
+    },
     ...(canManage
       ? [
           {
@@ -160,6 +173,7 @@ export function PostsPage() {
         body: editing.body,
         categoryId: editing.categoryId,
         status: editing.status,
+        likeCount: editing.likeCount,
       }
     : EMPTY;
 
@@ -192,7 +206,11 @@ export function PostsPage() {
           <TextField name="summary" label="Tóm tắt" />
           <TextAreaField name="body" label="Nội dung" />
           <SelectField name="status" label="Trạng thái" options={POST_STATUS_OPTIONS} required />
+          <NumberField name="likeCount" label="Lượt thích" />
         </CrudFormModal>
+      ) : null}
+      {commentsFor ? (
+        <PostCommentsModal post={commentsFor} canManage={canManage} onClose={() => setCommentsFor(null)} />
       ) : null}
     </>
   );
