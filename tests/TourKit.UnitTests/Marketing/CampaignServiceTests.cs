@@ -2,6 +2,7 @@ using TourKit.Application.Common;
 using TourKit.Application.Marketing;
 using TourKit.Application.Marketing.Dtos;
 using TourKit.Application.Marketing.Validators;
+using TourKit.Application.Notifications;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Enums;
 
@@ -13,12 +14,30 @@ namespace TourKit.UnitTests.Marketing;
 /// </summary>
 public class CampaignServiceTests
 {
+    /// <summary>Fake email sender: đếm số email gửi; có thể mô phỏng lỗi cho địa chỉ nhất định.</summary>
+    private sealed class FakeEmailSender(string? failFor = null) : IEmailSender
+    {
+        public List<string> Sent { get; } = [];
+        public Task SendAsync(string to, string subject, string body, CancellationToken ct = default)
+        {
+            if (to == failFor)
+            {
+                throw new InvalidOperationException("SMTP từ chối");
+            }
+
+            Sent.Add(to);
+            return Task.CompletedTask;
+        }
+    }
+
     private static CampaignService NewService(
-        out FakeRepository<MarketingCampaign> repo, out FakeRepository<MarketingSendLog> logRepo)
+        out FakeRepository<MarketingCampaign> repo, out FakeRepository<MarketingSendLog> logRepo,
+        IEmailSender? emailSender = null)
     {
         repo = new FakeRepository<MarketingCampaign>();
         logRepo = new FakeRepository<MarketingSendLog>();
-        return new CampaignService(repo, logRepo, new CreateCampaignValidator(), new UpdateCampaignValidator());
+        return new CampaignService(
+            repo, logRepo, emailSender ?? new FakeEmailSender(), new CreateCampaignValidator(), new UpdateCampaignValidator());
     }
 
     private static CreateCampaignDto NewCreateDto(string name = "Hè 2026") =>
@@ -105,6 +124,49 @@ public class CampaignServiceTests
         Assert.Equal(3, logs.Count);
         var updated = await repo.GetByIdAsync(campaign.Id);
         Assert.Equal(1, updated!.Status);
+    }
+
+    [Fact]
+    public async Task SendAsync_email_channel_sends_via_email_sender()
+    {
+        var sender = new FakeEmailSender();
+        var service = NewService(out _, out var logRepo, sender);
+        var campaign = await service.CreateAsync(NewCreateDto());   // kênh Email
+
+        await service.SendAsync(campaign.Id, new SendCampaignDto(["a@x.com", "b@x.com"]));
+
+        Assert.Equal(new[] { "a@x.com", "b@x.com" }, sender.Sent);   // đã gọi gửi thật
+        var logs = await logRepo.ListAsync(l => l.CampaignId == campaign.Id);
+        Assert.All(logs, l => Assert.Equal(1, l.Status));            // đều thành công
+    }
+
+    [Fact]
+    public async Task SendAsync_email_failure_marks_that_recipient_failed_but_continues()
+    {
+        var sender = new FakeEmailSender(failFor: "bad@x.com");
+        var service = NewService(out _, out var logRepo, sender);
+        var campaign = await service.CreateAsync(NewCreateDto());
+
+        var result = await service.SendAsync(campaign.Id, new SendCampaignDto(["a@x.com", "bad@x.com", "c@x.com"]));
+
+        Assert.Equal(3, result.Sent);                               // vẫn ghi log cả 3
+        Assert.Equal(new[] { "a@x.com", "c@x.com" }, sender.Sent);  // chỉ 2 địa chỉ tốt được gửi
+        var logs = await logRepo.ListAsync(l => l.CampaignId == campaign.Id);
+        Assert.Equal(1, logs.Count(l => l.Status == 2));            // 1 địa chỉ lỗi
+        Assert.Equal(2, logs.Count(l => l.Status == 1));
+    }
+
+    [Fact]
+    public async Task SendAsync_sms_channel_does_not_call_email_sender()
+    {
+        var sender = new FakeEmailSender();
+        var service = NewService(out var repo, out _, sender);
+        var campaign = await service.CreateAsync(new CreateCampaignDto("SMS", MarketingChannel.Sms, null, "Nội dung"));
+
+        await service.SendAsync(campaign.Id, new SendCampaignDto(["0900000000"]));
+
+        Assert.Empty(sender.Sent);   // SMS chưa có provider — không gọi email
+        _ = repo;
     }
 
     [Fact]

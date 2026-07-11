@@ -1,18 +1,26 @@
 using FluentValidation;
 using TourKit.Application.Common;
 using TourKit.Application.Marketing.Dtos;
+using TourKit.Application.Notifications;
 using TourKit.Shared.Entities;
+using TourKit.Shared.Enums;
 
 namespace TourKit.Application.Marketing;
 
 /// <summary>Quản lý chiến dịch marketing (Email/SMS/Zalo) + ghi log gửi.
-/// Gửi thật (Email/SMS/Zalo provider) nằm ngoài phạm vi — chỉ ghi log; follow-up.</summary>
+/// Kênh Email gửi THẬT qua <see cref="IEmailSender"/> (dev ghi log, prod SMTP khi cấu hình);
+/// SMS/Zalo vẫn mô phỏng — cần provider ngoài.</summary>
 public sealed class CampaignService(
     IRepository<MarketingCampaign> repo,
     IRepository<MarketingSendLog> logRepo,
+    IEmailSender emailSender,
     IValidator<CreateCampaignDto> createValidator,
     IValidator<UpdateCampaignDto> updateValidator) : ICampaignService
 {
+    // MarketingSendLog.Status: 1 = gửi thành công (hoặc mô phỏng cho kênh chưa có provider), 2 = lỗi.
+    private const int StatusSent = 1;
+    private const int StatusFailed = 2;
+
     public async Task<PagedResult<CampaignDto>> ListAsync(int page, int size)
     {
         var (items, total) = await repo.PageAsync(page, size);
@@ -90,12 +98,19 @@ public sealed class CampaignService(
         var now = DateTimeOffset.UtcNow;
         foreach (var recipient in dto.Recipients)
         {
-            // Chưa tích hợp gửi thật (Email/SMS/Zalo provider) — chỉ ghi log; follow-up.
+            // Kênh Email: gửi thật qua IEmailSender (dev ghi log, prod SMTP). Một địa chỉ lỗi không
+            // làm hỏng cả chiến dịch — ghi Status=Failed cho địa chỉ đó rồi tiếp tục.
+            var status = StatusSent;
+            if (campaign.Channel == MarketingChannel.Email)
+            {
+                status = await TrySendEmailAsync(recipient, campaign);
+            }
+
             await logRepo.AddAsync(new MarketingSendLog
             {
                 CampaignId = id,
                 Recipient = recipient,
-                Status = 1, // sent-simulated
+                Status = status,
                 SentAt = now,
             });
         }
@@ -109,6 +124,21 @@ public sealed class CampaignService(
         await repo.SaveChangesAsync();
 
         return new SendResultDto(dto.Recipients.Length);
+    }
+
+    private async Task<int> TrySendEmailAsync(string recipient, MarketingCampaign campaign)
+    {
+        try
+        {
+            await emailSender.SendAsync(recipient, campaign.Subject ?? campaign.Name, campaign.Body);
+            return StatusSent;
+        }
+#pragma warning disable CA1031 // Gửi campaign phải bền: 1 địa chỉ lỗi (SMTP từ chối…) không được chặn các địa chỉ khác.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            return StatusFailed;
+        }
     }
 
     public async Task<IReadOnlyList<SendLogDto>> ListLogsAsync(Guid id)
