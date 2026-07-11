@@ -18,6 +18,17 @@ const QUOTE_STATUS: Record<number, string> = {
   3: 'Từ chối',
 };
 
+const EMPTY_LINE = {
+  description: '',
+  quantity: 1,
+  unitPrice: 0,
+  serviceType: 0,
+  scope: 1,
+  providerServiceId: null,
+  unitCost: 0,
+  marginPercent: 0,
+};
+
 const EMPTY_FORM: QuoteForm = {
   code: '',
   customerName: '',
@@ -25,7 +36,12 @@ const EMPTY_FORM: QuoteForm = {
   validUntil: null,
   status: 0,
   note: null,
-  lines: [{ description: '', quantity: 1, unitPrice: 0 }],
+  adults: 0,
+  children: 0,
+  infants: 0,
+  childPercent: 75,
+  infantPercent: 50,
+  lines: [{ ...EMPTY_LINE }],
 };
 
 export function QuotesPage() {
@@ -55,10 +71,20 @@ export function QuotesPage() {
           validUntil: detail.data.validUntil,
           status: detail.data.status,
           note: detail.data.note,
+          adults: detail.data.adults,
+          children: detail.data.children,
+          infants: detail.data.infants,
+          childPercent: detail.data.childPercent,
+          infantPercent: detail.data.infantPercent,
           lines: detail.data.lines.map((l) => ({
             description: l.description,
             quantity: l.quantity,
             unitPrice: l.unitPrice,
+            serviceType: l.serviceType,
+            scope: l.scope,
+            providerServiceId: l.providerServiceId,
+            unitCost: l.unitCost,
+            marginPercent: l.marginPercent,
           })),
         }
       : EMPTY_FORM;
@@ -155,8 +181,33 @@ export function QuotesPage() {
           <DatePickerField name="validUntil" label="Hiệu lực đến" />
           <NumberField name="status" label="Trạng thái (0 nháp/1 gửi/2 chấp nhận/3 từ chối)" required />
           <TextAreaField name="note" label="Ghi chú" />
+          {/* Dự trù giá: số khách theo hạng + % giá trẻ so với NL (spec 2026-07-11). */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <NumberField name="adults" label="Người lớn" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <NumberField name="children" label="Trẻ em" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <NumberField name="infants" label="Trẻ nhỏ" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <NumberField name="childPercent" label="% giá TE" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <NumberField name="infantPercent" label="% giá TN" />
+            </div>
+          </div>
           <Typography.Text strong>Các dòng báo giá</Typography.Text>
           <QuoteLinesField />
+          {isEdit && detail.data ? (
+            <Typography.Text type="secondary">
+              Giá NL: {money(detail.data.adultPrice)} · TE: {money(detail.data.childPrice)} · TN:{' '}
+              {money(detail.data.infantPrice)} — Vốn: {money(detail.data.totalCost)} · Bán:{' '}
+              {money(detail.data.totalAmount)} · Lãi dự kiến: {money(detail.data.totalProfit)}
+            </Typography.Text>
+          ) : null}
         </CrudFormModal>
       ) : null}
     </>

@@ -14,5 +14,14 @@ public sealed class Quote : BaseEntity, ITenantEntity
     public DateTimeOffset? ValidUntil { get; set; }       // hạn hiệu lực
     public int Status { get; set; }                       // 0 nháp, 1 đã gửi, 2 chấp nhận, 3 từ chối
     public string? Note { get; set; }
-    public decimal TotalAmount { get; set; }              // = Σ (Quantity × UnitPrice) các dòng, tính khi ghi
+    public decimal TotalAmount { get; set; }              // tổng giá bán — QuoteMath.Price, tính khi ghi
+
+    // --- Dự trù giá (spec 2026-07-11): số khách theo hạng + % giá trẻ so với người lớn ---
+    public int Adults { get; set; }
+    public int Children { get; set; }
+    public int Infants { get; set; }
+    public decimal ChildPercent { get; set; } = 75m;      // legacy percent_price_tre_em
+    public decimal InfantPercent { get; set; } = 50m;     // legacy percent_price_tre_nho
+    public decimal TotalCost { get; set; }                // tổng giá vốn dự trù
+    public decimal TotalProfit { get; set; }              // legacy loi_nhuan_du_kien = bán − vốn
 }

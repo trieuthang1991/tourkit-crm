@@ -1,10 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
+import { providerServiceSchema } from '../services/providerServiceTypes';
 import { quoteSchema, quoteSummarySchema } from './types';
 import type { QuoteForm } from './types';
 
 const KEY = ['quotes'];
+
+/// Toàn bộ bảng giá NCC (mọi provider) — nguồn giá vốn cho dòng dự trù (spec 2026-07-11).
+export function useAllProviderPrices() {
+  return useQuery({
+    queryKey: ['provider-prices', 'all'] as const,
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/provider-services', {
+        params: { page: 1, size: 200 },
+      });
+      return z.object({ items: z.array(providerServiceSchema) }).parse(data).items;
+    },
+  });
+}
 
 export function useQuotes(page: number, size: number) {
   return useQuery({

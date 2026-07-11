@@ -1431,6 +1431,15 @@ namespace TourKit.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Adults")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("ChildPercent")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Children")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1446,6 +1455,12 @@ namespace TourKit.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
+
+                    b.Property<double>("InfantPercent")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Infants")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
@@ -1466,6 +1481,12 @@ namespace TourKit.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<double>("TotalAmount")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("TotalCost")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("TotalProfit")
                         .HasColumnType("REAL");
 
                     b.Property<long?>("UpdatedAt")
@@ -1498,14 +1519,29 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double>("MarginPercent")
+                        .HasColumnType("REAL");
+
+                    b.Property<Guid?>("ProviderServiceId")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("INTEGER");
 
                     b.Property<Guid>("QuoteId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Scope")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ServiceType")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("TEXT");
+
+                    b.Property<double>("UnitCost")
+                        .HasColumnType("REAL");
 
                     b.Property<double>("UnitPrice")
                         .HasColumnType("REAL");
