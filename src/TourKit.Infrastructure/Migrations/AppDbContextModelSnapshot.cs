@@ -18,7 +18,6 @@ namespace TourKit.Infrastructure.Migrations
             modelBuilder.HasAnnotation("ProductVersion", "9.0.17");
 
             modelBuilder.Entity("TourKit.Shared.Entities.ActivityLog", b =>
-            modelBuilder.Entity("TourKit.Shared.Entities.Agent", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,6 +29,46 @@ namespace TourKit.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Changes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntityName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EntityName", "EntityId");
+
+                    b.ToTable("ActivityLogs");
+                });
+
+            modelBuilder.Entity("TourKit.Shared.Entities.Agent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Address")
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
@@ -46,14 +85,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("EntityId")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("EntityName")
-                        .IsRequired()
-                        .HasMaxLength(128)
                     b.Property<double>("CreditLimit")
                         .HasColumnType("REAL");
 
@@ -86,14 +117,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<long?>("UpdatedAt")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "EntityName", "EntityId");
-
-                    b.ToTable("ActivityLogs");
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "Code");
@@ -438,9 +461,41 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("CustomerCares");
                 });
 
-            modelBuilder.Entity("TourKit.Shared.Entities.FileUpload", b =>
             modelBuilder.Entity("TourKit.Shared.Entities.CustomerCommissionRule", b =>
-            modelBuilder.Entity("TourKit.Shared.Entities.Invoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CustomerType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Percentage")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CustomerType");
+
+                    b.ToTable("CustomerCommissionRules");
+                });
+
+            modelBuilder.Entity("TourKit.Shared.Entities.FileUpload", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -449,6 +504,46 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<string>("ContentType")
                         .IsRequired()
                         .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CreatedAt");
+
+                    b.ToTable("FileUploads");
+                });
+
+            modelBuilder.Entity("TourKit.Shared.Entities.Invoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("BuyerAddress")
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
@@ -465,29 +560,12 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("TEXT");
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CustomerType")
                     b.Property<long>("InvoiceDate")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
-                    b.Property<long>("Size")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("StorageKey")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("TEXT");
-                    b.Property<double>("Percentage")
-                        .HasColumnType("REAL");
                     b.Property<string>("Note")
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
@@ -508,20 +586,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "CreatedAt");
-
-                    b.ToTable("FileUploads");
-                    b.HasIndex("TenantId", "CustomerType");
-
-                    b.ToTable("CustomerCommissionRules");
                     b.Property<double>("Subtotal")
                         .HasColumnType("REAL");
 
