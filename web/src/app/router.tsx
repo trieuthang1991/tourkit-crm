@@ -29,6 +29,7 @@ import { TourRatingsPage } from '../features/ratings/TourRatingsPage';
 import { VehiclesPage } from '../features/vehicles/VehiclesPage';
 import { GuideAssignmentsPage } from '../features/guides/GuideAssignmentsPage';
 import { ActivityLogsPage } from '../features/activityLogs/ActivityLogsPage';
+import { OperationsCalendarPage } from '../features/operations/OperationsCalendarPage';
 
 export function AppRouter() {
   return (
@@ -53,6 +54,7 @@ export function AppRouter() {
         <Route path="/market-types" element={<MarketTypesPage />} />
         <Route path="/departures" element={<DeparturesPage />} />
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
+        <Route path="/operations-calendar" element={<OperationsCalendarPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
