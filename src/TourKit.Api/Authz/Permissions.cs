@@ -20,6 +20,9 @@ public static class Permissions
     public const string TaskView = "task.view";        // công việc nội bộ (legacy Tasking)
     public const string TaskManage = "task.manage";
 
+    public const string PostView = "post.view";        // bài viết/tin tức (legacy Posts)
+    public const string PostManage = "post.manage";
+
     public const string TourView = "tour.view";
     public const string TourCreate = "tour.create";
     public const string TourUpdate = "tour.update";
@@ -115,6 +118,7 @@ public static class Permissions
         (PaymentAccountView, "Finance"), (PaymentAccountManage, "Finance"),
         (UserView, "Admin"), (UserManage, "Admin"),
         (TaskView, "Work"), (TaskManage, "Work"),
+        (PostView, "Content"), (PostManage, "Content"),
         (TourView, "Catalog"), (TourCreate, "Catalog"),
         (TourUpdate, "Catalog"), (TourDelete, "Catalog"),
         (LeadView, "CRM"), (LeadCreate, "CRM"), (LeadUpdate, "CRM"),

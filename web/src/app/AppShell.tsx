@@ -45,6 +45,8 @@ const NAV: NavItem[] = [
   { key: '/payment-terms', label: 'Điều khoản TT NCC', perm: 'provider.view' },
   { key: '/marketing', label: 'Marketing', perm: 'marketing.view' },
   { key: '/market-types', label: 'Loại thị trường', perm: 'market.view' },
+  { key: '/posts', label: 'Bài viết', perm: 'post.view' },
+  { key: '/post-categories', label: 'Chuyên mục bài viết', perm: 'post.view' },
   { key: '/reports/order-debt', label: 'Công nợ', perm: 'report.debt.view' },
   { key: '/reports/provider-debt', label: 'Công nợ NCC', perm: 'report.providerdebt.view' },
   { key: '/reports/cash-flow', label: 'Dòng tiền', perm: 'report.cashflow.view' },

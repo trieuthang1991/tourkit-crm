@@ -22,6 +22,8 @@ import { PositionsPage } from '../features/departments/PositionsPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { WorkTasksPage } from '../features/workTasks/WorkTasksPage';
 import { NotificationsPage } from '../features/notifications/NotificationsPage';
+import { PostsPage } from '../features/posts/PostsPage';
+import { PostCategoriesPage } from '../features/posts/PostCategoriesPage';
 import { SurchargesPage } from '../features/surcharges/SurchargesPage';
 import { CurrenciesPage } from '../features/currencies/CurrenciesPage';
 import { PaymentTermsPage } from '../features/paymentTerms/PaymentTermsPage';
@@ -95,6 +97,8 @@ export function AppRouter() {
         <Route path="/users" element={<UsersPage />} />
         <Route path="/work-tasks" element={<WorkTasksPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/posts" element={<PostsPage />} />
+        <Route path="/post-categories" element={<PostCategoriesPage />} />
         <Route path="/departments" element={<DepartmentsPage />} />
         <Route path="/positions" element={<PositionsPage />} />
         <Route path="/surcharges" element={<SurchargesPage />} />

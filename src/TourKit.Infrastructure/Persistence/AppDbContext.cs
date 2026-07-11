@@ -68,6 +68,8 @@ public class AppDbContext : DbContext
     public DbSet<PaymentTerm> PaymentTerms => Set<PaymentTerm>();
     public DbSet<WorkTask> WorkTasks => Set<WorkTask>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<PostCategory> PostCategories => Set<PostCategory>();
+    public DbSet<Post> Posts => Set<Post>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();

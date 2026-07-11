@@ -64,7 +64,7 @@
 - **Gửi thật đa kênh**: ✅ **CẢ 3 KÊNH (Email/SMS/Zalo) đã nối qua abstraction** — CampaignService gửi qua `IEmailSender`/`ISmsSender`/`IZaloSender`, mỗi kênh dev ghi log (chạy ngay) / prod drop-in provider thật đọc `{Email,Sms,Zalo}:Provider`; bền per-recipient (lỗi → Status=Failed, không chặn). Email đã có SMTP thật. Còn lại chỉ là **implementation provider prod cụ thể** (SMS: Twilio/eSMS; Zalo: OA API) — cần API key + chọn nhà cung cấp; thêm 1 class không sửa code gọi.
 - 🟡 **Notification in-app** (`Notification`/`NotificationOfEachUser`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần API ngoài): thông báo cá nhân + chuông đếm chưa đọc ở header + đánh dấu đã đọc/tất cả. Nối Tasking→Notification (giao việc → thông báo người nhận). Chỉ cần đăng nhập (thông báo cá nhân, lọc theo user hiện tại).
 - 🟡 **Tasking** (`Tasking`/`UserInTasks`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần API ngoài): WorkTask — giao/theo dõi công việc nội bộ (tiêu đề/mô tả/người được giao/hạn/ưu tiên/trạng thái/gắn đơn), lọc theo người+trạng thái, quyền `task.*`. Còn `Workflow`/`KPI`/`SectionWork` (quy trình động + chỉ số) là phần nâng cao, cần thiết kế.
-- **CMS/blog** (`Posts`/`CategoriesPost`/`CommentsPost`/`Likes`) — ngoài phạm vi điều hành tour.
+- 🟡 **CMS bài viết** (`Posts`/`CategoriesPost`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần external): Post + PostCategory (tiêu đề/slug/tóm tắt/nội dung/chuyên mục/nháp-xuất bản, PublishedAt tự set khi publish, slug duy nhất/tenant), lọc theo chuyên mục/trạng thái, quyền `post.*` (nhóm Content). Còn `CommentsPost`/`Likes` (tương tác công khai) — làm khi có cổng public.
 - **BankHub** (`BankHub`/`APIKeyMifi`) — đối soát ngân hàng, cần API.
 - **BookingTickets** — hệ ticket hỗ trợ nội bộ.
 
