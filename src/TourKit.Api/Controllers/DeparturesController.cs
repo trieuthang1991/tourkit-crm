@@ -35,6 +35,14 @@ public sealed class DeparturesController(IDepartureService service) : Controller
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
+    [HttpPost("batch")]
+    [Authorize(Permissions.DepartureCreate)]
+    public async Task<IActionResult> BatchCreate([FromBody] BatchCreateDeparturesDto dto)
+    {
+        var result = await service.BatchCreateAsync(dto);
+        return Ok(result);
+    }
+
     [HttpPost("{id:guid}/close")]
     [Authorize(Permissions.DepartureClose)]
     public async Task<IActionResult> Close(Guid id)

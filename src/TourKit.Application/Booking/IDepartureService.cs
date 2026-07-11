@@ -8,5 +8,6 @@ public interface IDepartureService
     Task<PagedResult<DepartureDto>> ListAsync(int page, int size);
     Task<DepartureDto> GetAsync(Guid id);
     Task<DepartureDto> CreateAsync(CreateDepartureDto dto);
+    Task<BatchCreateResultDto> BatchCreateAsync(BatchCreateDeparturesDto dto);
     Task<DepartureDto> CloseAsync(Guid id);
 }

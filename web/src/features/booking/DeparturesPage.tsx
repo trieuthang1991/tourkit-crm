@@ -6,6 +6,7 @@ import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, NumberField, TextField } from '../../shared/ui/Field';
 import { ResourcePage } from '../../shared/ui/ResourcePage';
 import { departuresCrud } from './departuresApi';
+import { BatchDepartureButton } from './BatchDepartureButton';
 import { departureFormSchema } from './departureTypes';
 import type { Departure, DepartureForm } from './departureTypes';
 
@@ -41,6 +42,8 @@ export function DeparturesPage() {
   ];
 
   return (
+    <>
+    <BatchDepartureButton />
     <ResourcePage<Departure, DepartureForm>
       title="Chuyến đi"
       columns={columns}
@@ -74,5 +77,6 @@ export function DeparturesPage() {
         </CrudFormModal>
       )}
     />
+    </>
   );
 }

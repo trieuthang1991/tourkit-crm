@@ -30,6 +30,39 @@ public sealed class DepartureService(
         return Map(departure);
     }
 
+    /// <summary>
+    /// Mở HÀNG LOẠT chuyến từ 1 mẫu (legacy BatchCreateTour): mỗi ngày trong Items → 1 chuyến,
+    /// Code = "CodePrefix-STT". Tái dùng <see cref="CreateAsync"/> (kế thừa mẫu, tạo lịch trình). Idempotent-free:
+    /// nếu 1 chuyến lỗi (trùng Code…) sẽ ném — client sửa rồi thử lại; các chuyến trước đó đã lưu.
+    /// </summary>
+    public async Task<BatchCreateResultDto> BatchCreateAsync(BatchCreateDeparturesDto dto)
+    {
+        if (dto.Items.Length == 0)
+        {
+            throw new ValidationAppException("Cần ít nhất 1 ngày khởi hành.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.CodePrefix))
+        {
+            throw new ValidationAppException("Cần tiền tố mã chuyến (CodePrefix).");
+        }
+
+        var template = await templateRepo.GetByIdAsync(dto.TemplateId)
+            ?? throw new ValidationAppException("Mẫu tour không tồn tại.");
+
+        var title = string.IsNullOrWhiteSpace(dto.Title) ? template.Title : dto.Title.Trim();
+        var created = new List<DepartureDto>(dto.Items.Length);
+        for (var i = 0; i < dto.Items.Length; i++)
+        {
+            var item = dto.Items[i];
+            created.Add(await CreateAsync(new CreateDepartureDto(
+                dto.TemplateId, $"{dto.CodePrefix.Trim()}-{i + 1}", title,
+                item.DepartureDate, item.EndDate, dto.TotalSlots)));
+        }
+
+        return new BatchCreateResultDto(created.Count, created.ToArray());
+    }
+
     /// <summary>Mở chuyến từ mẫu tour (nếu có) — kế thừa loại tour/sức chứa/lịch trình từ template.</summary>
     public async Task<DepartureDto> CreateAsync(CreateDepartureDto dto)
     {
