@@ -4,12 +4,13 @@ import { useMemo, useState } from 'react';
 import { errorMessage } from '../../shared/api/problem';
 import { money } from '../../shared/format';
 import { useAuth } from '../auth/AuthContext';
-import { useCreateOrderCost, useOrderCosts } from './orderCostApi';
+import { useCreateOrderCost, useOrderCosts, useProviderPriceList } from './orderCostApi';
 import type { CreateOrderCostForm, OrderCost } from './orderCostApi';
 import { providersCrud } from './providersCrud';
 
 const EMPTY_FORM: CreateOrderCostForm = {
   providerId: '',
+  providerServiceId: null,
   serviceName: null,
   dayIndex: 1,
   expectedAmount: 0,
@@ -26,9 +27,20 @@ function CreateOrderCostModal({ orderId, open, onClose }: { orderId: string; ope
   const providers = providersCrud.useList({ page: 1, size: 200 });
   const [form, setForm] = useState<CreateOrderCostForm>(EMPTY_FORM);
 
+  const prices = useProviderPriceList(form.providerId || undefined);
+
   const providerOptions = useMemo(
     () => (providers.data?.items ?? []).map((p) => ({ label: p.name, value: p.id })),
     [providers.data],
+  );
+
+  const priceOptions = useMemo(
+    () =>
+      (prices.data ?? []).map((s) => ({
+        label: `${s.priceName ?? 'Giá'} — ${s.contractPrice.toLocaleString('vi-VN')}₫`,
+        value: s.id,
+      })),
+    [prices.data],
   );
 
   return (
@@ -56,7 +68,28 @@ function CreateOrderCostModal({ orderId, open, onClose }: { orderId: string; ope
           loading={providers.isLoading}
           options={providerOptions}
           value={form.providerId ? form.providerId : undefined}
-          onChange={(v) => setForm((f) => ({ ...f, providerId: v }))}
+          // Đổi NCC thì bỏ liên kết bảng giá cũ (bảng giá thuộc NCC khác sẽ bị backend từ chối).
+          onChange={(v) => setForm((f) => ({ ...f, providerId: v, providerServiceId: null }))}
+        />
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Chọn từ bảng giá NCC (tuỳ chọn)"
+          allowClear
+          disabled={!form.providerId}
+          loading={prices.isLoading}
+          options={priceOptions}
+          value={form.providerServiceId ?? undefined}
+          onChange={(v) => {
+            const picked = (prices.data ?? []).find((s) => s.id === v);
+            // Chọn giá: gợi ý sẵn tên dịch vụ + chi phí dự kiến/thực tế từ giá hợp đồng (vẫn sửa được).
+            setForm((f) => ({
+              ...f,
+              providerServiceId: v ?? null,
+              serviceName: picked?.priceName ?? f.serviceName,
+              expectedAmount: picked ? picked.contractPrice : f.expectedAmount,
+              actualAmount: picked ? picked.contractPrice : f.actualAmount,
+            }));
+          }}
         />
         <Input
           value={form.serviceName ?? ''}

@@ -65,7 +65,7 @@ Phần lõi groundable đã làm. **149 backend + 59 web test xanh; smoke SQLite
 - ✅ **Catalog dịch vụ (`ServiceItem`, =legacy `services`)**: CRUD danh mục dịch vụ (phòng/xe/vé/visa...).
 - ✅ **Bảng giá NCC (`ProviderService`, =`provider_services`+`provider_service_pricing`)**: CRUD giá hợp đồng/công bố theo NCC, lọc theo provider. Lấp gap `OrderCost.ServiceName` free-text.
 - ◻️ (Cần requirement, chưa làm) **Báo giá (`BaoGia`)** · **Tour lẻ/FIT (`SingleTour`)** · **Đặt hotel/vé/visa (`BookingHotel`/`AirPlaneTicket`/`Visa`/`BookingTicket`)** · **Hoá đơn VAT (`InvoiceBranch`)** — hệ con lớn, cần chốt nghiệp vụ với chủ dự án.
-- ◻️ (Follow-up) liên kết `OrderCost.ProviderServiceId` để chọn giá từ bảng giá thay vì nhập tay.
+- ✅ (Follow-up) liên kết `OrderCost.ProviderServiceId` → chọn giá từ bảng giá NCC thay vì gõ tay (validate bảng giá thuộc đúng NCC; UI gợi ý sẵn tên dịch vụ + chi phí từ giá hợp đồng).
 
 ## Đợt 6 — Điều hành tour (Operations) 🚌
 

@@ -66,7 +66,7 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
         var order = await CreateOrderAsync(client);
         var provider = await CreateProviderAsync(client);
         await client.PostAsJsonAsync($"/api/v1/orders/{order.Id}/costs",
-            new CreateOrderCostDto(provider.Id, "Phòng khách sạn", 1, 3_000_000m, 3_000_000m, 0m, 0m, 0m, 1));
+            new CreateOrderCostDto(provider.Id, null, "Phòng khách sạn", 1, 3_000_000m, 3_000_000m, 0m, 0m, 0m, 1));
         return order;
     }
 

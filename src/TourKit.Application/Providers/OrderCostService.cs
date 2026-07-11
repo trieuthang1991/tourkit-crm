@@ -3,6 +3,8 @@ using TourKit.Application.Common;
 using TourKit.Application.Providers.Dtos;
 using TourKit.Shared.Domain;
 using TourKit.Shared.Entities;
+// Tránh nhầm với class service TourKit.Application.Providers.ProviderService cùng namespace.
+using ProviderServiceEntity = TourKit.Shared.Entities.ProviderService;
 
 namespace TourKit.Application.Providers;
 
@@ -15,6 +17,7 @@ public sealed class OrderCostService(
     IRepository<OrderCost> repo,
     IRepository<Order> orderRepo,
     IRepository<Provider> providerRepo,
+    IRepository<ProviderServiceEntity> providerServiceRepo,
     IValidator<CreateOrderCostDto> createValidator) : IOrderCostService
 {
     public async Task<IReadOnlyList<OrderCostDto>> ListByOrderAsync(Guid orderId)
@@ -38,10 +41,18 @@ public sealed class OrderCostService(
             throw new ValidationAppException("Nhà cung cấp không tồn tại.");
         }
 
+        // Nếu chọn giá từ bảng giá NCC: dòng giá phải tồn tại và thuộc đúng NCC của chi phí này.
+        if (dto.ProviderServiceId is { } priceId
+            && !await providerServiceRepo.AnyAsync(s => s.Id == priceId && s.ProviderId == dto.ProviderId))
+        {
+            throw new ValidationAppException("Bảng giá không tồn tại hoặc không thuộc nhà cung cấp đã chọn.");
+        }
+
         var cost = new OrderCost
         {
             OrderId = orderId,
             ProviderId = dto.ProviderId,
+            ProviderServiceId = dto.ProviderServiceId,
             ServiceName = dto.ServiceName,
             DayIndex = dto.DayIndex,
             ExpectedAmount = dto.ExpectedAmount,
@@ -73,6 +84,6 @@ public sealed class OrderCostService(
     }
 
     private static OrderCostDto Map(OrderCost c) => new(
-        c.Id, c.OrderId, c.ProviderId, c.ServiceName, c.DayIndex,
+        c.Id, c.OrderId, c.ProviderId, c.ProviderServiceId, c.ServiceName, c.DayIndex,
         c.ExpectedAmount, c.ActualAmount, c.Deposit, c.Surcharge, c.Vat, c.Status);
 }

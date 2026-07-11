@@ -68,7 +68,7 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
         var provider = await CreateProviderAsync(client);
 
         var costResponse = await client.PostAsJsonAsync($"/api/v1/orders/{order.Id}/costs",
-            new CreateOrderCostDto(provider.Id, "Phòng khách sạn", 1, 2_000_000m, 2_000_000m, 0m, 0m, 0m, 1));
+            new CreateOrderCostDto(provider.Id, null, "Phòng khách sạn", 1, 2_000_000m, 2_000_000m, 0m, 0m, 0m, 1));
         Assert.Equal(HttpStatusCode.Created, costResponse.StatusCode);
         var cost = await costResponse.Content.ReadFromJsonAsync<OrderCostDto>();
         Assert.Equal(2_000_000m, cost!.ActualAmount);
@@ -86,7 +86,7 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
 
         // Thêm dòng chi phí thứ 2 → TotalCost cộng dồn.
         var costResponse2 = await client.PostAsJsonAsync($"/api/v1/orders/{order.Id}/costs",
-            new CreateOrderCostDto(provider.Id, "Phụ thu", 1, 500_000m, 500_000m, 0m, 0m, 0m, 1));
+            new CreateOrderCostDto(provider.Id, null, "Phụ thu", 1, 500_000m, 500_000m, 0m, 0m, 0m, 1));
         Assert.Equal(HttpStatusCode.Created, costResponse2.StatusCode);
 
         var ordersAfterSecond = await client.GetFromJsonAsync<PagedResult<OrderDto>>("/api/v1/orders");
@@ -100,7 +100,7 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
         var provider = await CreateProviderAsync(client);
 
         var response = await client.PostAsJsonAsync($"/api/v1/orders/{Guid.NewGuid()}/costs",
-            new CreateOrderCostDto(provider.Id, "X", 1, 100_000m, 100_000m, 0m, 0m, 0m, 1));
+            new CreateOrderCostDto(provider.Id, null, "X", 1, 100_000m, 100_000m, 0m, 0m, 0m, 1));
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -111,7 +111,7 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
         var order = await CreateOrderAsync(client);
 
         var response = await client.PostAsJsonAsync($"/api/v1/orders/{order.Id}/costs",
-            new CreateOrderCostDto(Guid.NewGuid(), "X", 1, 100_000m, 100_000m, 0m, 0m, 0m, 1));
+            new CreateOrderCostDto(Guid.NewGuid(), null, "X", 1, 100_000m, 100_000m, 0m, 0m, 0m, 1));
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -123,7 +123,7 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
         var provider = await CreateProviderAsync(client);
 
         var response = await client.PostAsJsonAsync($"/api/v1/orders/{order.Id}/costs",
-            new CreateOrderCostDto(provider.Id, "X", 1, 100_000m, -1m, 0m, 0m, 0m, 1));
+            new CreateOrderCostDto(provider.Id, null, "X", 1, 100_000m, -1m, 0m, 0m, 0m, 1));
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -134,7 +134,7 @@ public class OrderCostTests : IClassFixture<AuthTestFactory>
         var orderA = await CreateOrderAsync(clientA);
         var providerA = await CreateProviderAsync(clientA);
         await clientA.PostAsJsonAsync($"/api/v1/orders/{orderA.Id}/costs",
-            new CreateOrderCostDto(providerA.Id, "X", 1, 100_000m, 100_000m, 0m, 0m, 0m, 1));
+            new CreateOrderCostDto(providerA.Id, null, "X", 1, 100_000m, 100_000m, 0m, 0m, 0m, 1));
 
         var clientB = await LoggedInClientAsync("cost-iso-b");
         var costsB = await clientB.GetFromJsonAsync<List<OrderCostDto>>($"/api/v1/orders/{orderA.Id}/costs");
