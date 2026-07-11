@@ -26,6 +26,7 @@ import { CommissionRulesPage } from '../features/commission/CommissionRulesPage'
 import { RegistrationPage } from '../features/registration/RegistrationPage';
 import { CustomerCaresPage } from '../features/care/CustomerCaresPage';
 import { TourRatingsPage } from '../features/ratings/TourRatingsPage';
+import { ServiceBookingsPage } from '../features/serviceBookings/ServiceBookingsPage';
 
 export function AppRouter() {
   return (
@@ -52,6 +53,7 @@ export function AppRouter() {
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
+        <Route path="/service-bookings" element={<ServiceBookingsPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
         <Route path="/tour-templates/:id" element={<TourTemplateDetailPage />} />
         <Route path="/billing" element={<BillingPage />} />

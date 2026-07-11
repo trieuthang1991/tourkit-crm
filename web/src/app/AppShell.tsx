@@ -16,6 +16,7 @@ const NAV: NavItem[] = [
   { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
   { key: '/departures', label: 'Chuyến đi', perm: 'departure.view' },
   { key: '/orders', label: 'Đơn hàng', perm: 'booking.view' },
+  { key: '/service-bookings', label: 'Đặt dịch vụ lẻ', perm: 'servicebooking.view' },
   { key: '/providers', label: 'Nhà cung cấp', perm: 'provider.view' },
   { key: '/service-items', label: 'Danh mục dịch vụ', perm: 'service.view' },
   { key: '/provider-services', label: 'Bảng giá NCC', perm: 'service.view' },
