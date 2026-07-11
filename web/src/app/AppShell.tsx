@@ -48,6 +48,7 @@ const NAV: NavItem[] = [
   { key: '/currencies', label: 'Tỷ giá tiền tệ', perm: 'service.view' },
   { key: '/payment-terms', label: 'Điều khoản TT NCC', perm: 'provider.view' },
   { key: '/marketing', label: 'Marketing', perm: 'marketing.view' },
+  { key: '/message-templates', label: 'Mẫu tin nhắn', perm: 'marketing.view' },
   { key: '/market-types', label: 'Loại thị trường', perm: 'market.view' },
   { key: '/posts', label: 'Bài viết', perm: 'post.view' },
   { key: '/post-categories', label: 'Chuyên mục bài viết', perm: 'post.view' },

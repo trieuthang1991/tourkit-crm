@@ -24,6 +24,7 @@ import { WorkTasksPage } from '../features/workTasks/WorkTasksPage';
 import { WorkflowsPage } from '../features/workflows/WorkflowsPage';
 import { WorkflowBoardPage } from '../features/workflows/WorkflowBoardPage';
 import { ApprovalProcessesPage } from '../features/approvalProcesses/ApprovalProcessesPage';
+import { MessageTemplatesPage } from '../features/messageTemplates/MessageTemplatesPage';
 import { NotificationsPage } from '../features/notifications/NotificationsPage';
 import { PostsPage } from '../features/posts/PostsPage';
 import { PostCategoriesPage } from '../features/posts/PostCategoriesPage';
@@ -113,6 +114,7 @@ export function AppRouter() {
         <Route path="/workflows" element={<WorkflowsPage />} />
         <Route path="/workflows/:id" element={<WorkflowBoardPage />} />
         <Route path="/approval-processes" element={<ApprovalProcessesPage />} />
+        <Route path="/message-templates" element={<MessageTemplatesPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/posts" element={<PostsPage />} />
         <Route path="/post-categories" element={<PostCategoriesPage />} />

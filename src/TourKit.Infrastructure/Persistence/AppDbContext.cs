@@ -73,6 +73,7 @@ public class AppDbContext : DbContext
     public DbSet<PostComment> PostComments => Set<PostComment>();
     public DbSet<Workflow> Workflows => Set<Workflow>();
     public DbSet<WorkflowSection> WorkflowSections => Set<WorkflowSection>();
+    public DbSet<MessageTemplate> MessageTemplates => Set<MessageTemplate>();
     public DbSet<ApprovalProcess> ApprovalProcesses => Set<ApprovalProcess>();
     public DbSet<ApprovalProcessStep> ApprovalProcessSteps => Set<ApprovalProcessStep>();
     public DbSet<ApprovalProcessStepUser> ApprovalProcessStepUsers => Set<ApprovalProcessStepUser>();
