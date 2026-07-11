@@ -30,6 +30,9 @@ import { VehiclesPage } from '../features/vehicles/VehiclesPage';
 import { GuideAssignmentsPage } from '../features/guides/GuideAssignmentsPage';
 import { ActivityLogsPage } from '../features/activityLogs/ActivityLogsPage';
 import { OperationsCalendarPage } from '../features/operations/OperationsCalendarPage';
+import { ServiceBookingsPage } from '../features/serviceBookings/ServiceBookingsPage';
+import { AgentsPage } from '../features/agents/AgentsPage';
+import { CustomerCommissionRulesPage } from '../features/customerCommissionRules/CustomerCommissionRulesPage';
 
 export function AppRouter() {
   return (
@@ -57,6 +60,9 @@ export function AppRouter() {
         <Route path="/operations-calendar" element={<OperationsCalendarPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
+        <Route path="/service-bookings" element={<ServiceBookingsPage />} />
+        <Route path="/agents" element={<AgentsPage />} />
+        <Route path="/customer-commission-rules" element={<CustomerCommissionRulesPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
         <Route path="/tour-templates/:id" element={<TourTemplateDetailPage />} />
         <Route path="/billing" element={<BillingPage />} />
