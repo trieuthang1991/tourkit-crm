@@ -1,6 +1,7 @@
 import { Button } from 'antd';
 import { useParams } from 'react-router-dom';
 import { money } from '../../shared/format';
+import { useCompanyProfile } from '../settings/companyApi';
 import { useDefaultPaymentAccount, useQuote } from './quotesApi';
 import { SERVICE_TYPE_OPTIONS } from './types';
 
@@ -13,12 +14,14 @@ export function QuotePrintPage() {
   const { id } = useParams<{ id: string }>();
   const quote = useQuote(id ?? '');
   const account = useDefaultPaymentAccount();
+  const company = useCompanyProfile();
 
   if (!quote.data) {
     return <div style={{ padding: 24 }}>Đang tải báo giá…</div>;
   }
 
   const q = quote.data;
+  const co = company.data;
   const paxTotal = q.adults + q.children + q.infants;
 
   return (
@@ -31,6 +34,19 @@ export function QuotePrintPage() {
         <Button onClick={() => window.close()}>Đóng</Button>
       </div>
       <style>{`@media print { .no-print { display: none !important; } }`}</style>
+
+      {co?.name ? (
+        <div style={{ marginBottom: 16, borderBottom: '2px solid #333', paddingBottom: 8 }}>
+          <div style={{ fontSize: 18, fontWeight: 'bold' }}>{co.name}</div>
+          {co.address ? <div>{co.address}</div> : null}
+          <div>
+            {co.hotline ? `Hotline: ${co.hotline}` : ''}
+            {co.email ? `${co.hotline ? ' · ' : ''}Email: ${co.email}` : ''}
+            {co.website ? `${co.hotline || co.email ? ' · ' : ''}${co.website}` : ''}
+          </div>
+          {co.taxCode ? <div>MST: {co.taxCode}</div> : null}
+        </div>
+      ) : null}
 
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <h1 style={{ margin: 0, fontSize: 28 }}>BÁO GIÁ TOUR</h1>
