@@ -63,7 +63,7 @@
 
 - **Gửi thật đa kênh**: `SMS`/`SMS_Campaign`/`Send_Sms_History` (SMS gateway), `Email_*`/`MailHistory` (email campaign — hạ tầng IEmailSender đã có, thiếu campaign UI), `ZaloCampain`/`ZaloUID`/`ZaloZNS` (Zalo OA).
 - **Notification** in-app (`Notification`/`NotificationOfEachUser`/`NotifiInUser`).
-- **Tasking/Workflow/KPI** (`Tasking`/`UserInTasks`/`Workflow`/`KeyPerformanceIndicator`/`SectionWork`) — subsystem quản trị công việc.
+- 🟡 **Tasking** (`Tasking`/`UserInTasks`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần API ngoài): WorkTask — giao/theo dõi công việc nội bộ (tiêu đề/mô tả/người được giao/hạn/ưu tiên/trạng thái/gắn đơn), lọc theo người+trạng thái, quyền `task.*`. Còn `Workflow`/`KPI`/`SectionWork` (quy trình động + chỉ số) là phần nâng cao, cần thiết kế.
 - **CMS/blog** (`Posts`/`CategoriesPost`/`CommentsPost`/`Likes`) — ngoài phạm vi điều hành tour.
 - **BankHub** (`BankHub`/`APIKeyMifi`) — đối soát ngân hàng, cần API.
 - **BookingTickets** — hệ ticket hỗ trợ nội bộ.

@@ -66,6 +66,7 @@ public class AppDbContext : DbContext
     public DbSet<OrderSurcharge> OrderSurcharges => Set<OrderSurcharge>();
     public DbSet<Currency> Currencies => Set<Currency>();
     public DbSet<PaymentTerm> PaymentTerms => Set<PaymentTerm>();
+    public DbSet<WorkTask> WorkTasks => Set<WorkTask>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();
