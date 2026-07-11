@@ -13,6 +13,7 @@ const NAV: NavItem[] = [
   { key: '/customer-types', label: 'Loại khách hàng', perm: 'customertype.view' },
   { key: '/customer-sources', label: 'Nguồn khách hàng', perm: 'customertype.view' },
   { key: '/customer-tags', label: 'Nhãn khách hàng', perm: 'customertype.view' },
+  { key: '/payment-accounts', label: 'Tài khoản nhận tiền', perm: 'paymentaccount.view' },
   { key: '/leads', label: 'Lead (CRM)', perm: 'lead.view' },
   { key: '/customer-cares', label: 'Chăm sóc KH', perm: 'care.view' },
   { key: '/tour-ratings', label: 'Đánh giá tour', perm: 'rating.view' },

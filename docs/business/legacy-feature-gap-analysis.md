@@ -38,7 +38,7 @@
 ## 🟡 Groundable — nên làm (ưu tiên giảm dần)
 
 1. **customer_tag / Tags / TagMappings** → `CustomerTag` catalog (m-n) hoặc giữ `Customer.Tag` string + catalog chuẩn hoá. Bổ sung màu (legacy Tags.color). *Cùng cụm phân loại khách vừa làm.*
-2. **PaymentMethod** → catalog **tài khoản/phương thức nhận tiền** (NameMethod, BankName, AccountNumber, QR, nội dung CK) để in trên báo giá/hoá đơn. ⚠️ Đặt tên entity khác `PaymentMethod` (đã là property string trên Receipt/PaymentVoucher) — vd `PaymentAccount`.
+2. ✅ **PaymentMethod → `PaymentAccount`** (ĐÃ LÀM): catalog tài khoản nhận tiền (tên hiển thị, ngân hàng, số TK, chủ TK, chi nhánh, nội dung CK mặc định) để in báo giá/hoá đơn. Quy tắc: 1 tài khoản `IsDefault`/tenant. Permission `paymentaccount.*` (nhóm Finance). *Còn lại: in tài khoản mặc định lên bản in báo giá — làm khi nối.*
 3. **PhongBan (Department) + Position + User_PhongBan** → cơ cấu tổ chức; gắn `User.DepartmentId/PositionId` (đụng User — chạy impact trước). Phục vụ báo cáo theo phòng ban.
 4. **LoaiDonHang / TrangThaiDonHang** → catalog loại đơn + trạng thái đơn (hiện `Order.Status` là int trần — mirror kiểu CustomerType keyed Code).
 5. **CarType** → catalog loại xe (Vehicle.SeatType hiện int trần).
@@ -81,5 +81,7 @@
 | Phân xe cho chuyến (VehicleAssignment) | (điều hành, song song TourGuide) | `feat(operations): phân xe cho chuyến` |
 | Danh mục loại khách (CustomerType) | customer_type | `feat(catalog): danh mục loại khách` |
 | Danh mục nguồn khách (CustomerSource) | customer_source | `feat(catalog): danh mục nguồn khách` |
+| Danh mục nhãn khách (CustomerTag) | Tags/customer_tag | `feat(catalog): danh mục nhãn khách` |
+| Tài khoản nhận tiền (PaymentAccount) | PaymentMethod | `feat(catalog): tài khoản nhận tiền` |
 
-**Đề xuất làm tiếp (theo ưu tiên 🟡):** CustomerTag → PaymentAccount → Department/Position → LoaiDonHang/TrangThaiDonHang. Mỗi cái mirror mẫu catalog có sẵn, thuần additive, ~1 commit.
+**Đề xuất làm tiếp (theo ưu tiên 🟡):** Department/Position (cơ cấu tổ chức, đụng User — chạy impact trước) → LoaiDonHang/TrangThaiDonHang → CarType → LanguagesType. Mỗi cái mirror mẫu catalog có sẵn, thuần additive, ~1 commit. Ngoài ra: in tài khoản mặc định lên bản in báo giá (nối PaymentAccount vào QuotePrintPage).

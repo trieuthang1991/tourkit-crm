@@ -1,10 +1,27 @@
-import { DatePicker, Form, Input, InputNumber, Select } from 'antd';
+import { Checkbox, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import { Controller, useFormContext } from 'react-hook-form';
 
 const { TextArea } = Input;
 
 type Option = { label: string; value: number | string };
+
+export function CheckboxField({ name, label }: { name: string; label: string }) {
+  const { control } = useFormContext();
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field }) => (
+        <Form.Item>
+          <Checkbox checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)}>
+            {label}
+          </Checkbox>
+        </Form.Item>
+      )}
+    />
+  );
+}
 
 export function TextField({ name, label, required }: { name: string; label: string; required?: boolean }) {
   const { control, formState } = useFormContext();

@@ -11,6 +11,9 @@ public static class Permissions
     public const string CustomerTypeView = "customertype.view";
     public const string CustomerTypeManage = "customertype.manage";
 
+    public const string PaymentAccountView = "paymentaccount.view";
+    public const string PaymentAccountManage = "paymentaccount.manage";
+
     public const string TourView = "tour.view";
     public const string TourCreate = "tour.create";
     public const string TourUpdate = "tour.update";
@@ -103,6 +106,7 @@ public static class Permissions
         (CustomerView, "Customer"), (CustomerCreate, "Customer"),
         (CustomerUpdate, "Customer"), (CustomerDelete, "Customer"),
         (CustomerTypeView, "Customer"), (CustomerTypeManage, "Customer"),
+        (PaymentAccountView, "Finance"), (PaymentAccountManage, "Finance"),
         (TourView, "Catalog"), (TourCreate, "Catalog"),
         (TourUpdate, "Catalog"), (TourDelete, "Catalog"),
         (LeadView, "CRM"), (LeadCreate, "CRM"), (LeadUpdate, "CRM"),
