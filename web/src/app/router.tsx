@@ -34,6 +34,7 @@ import { ServiceBookingsPage } from '../features/serviceBookings/ServiceBookings
 import { AgentsPage } from '../features/agents/AgentsPage';
 import { CustomerCommissionRulesPage } from '../features/customerCommissionRules/CustomerCommissionRulesPage';
 import { QuotesPage } from '../features/quotes/QuotesPage';
+import { QuotePrintPage } from '../features/quotes/QuotePrintPage';
 import { InvoicesPage } from '../features/invoices/InvoicesPage';
 import { AgentQuotesPage } from '../features/agentQuotes/AgentQuotesPage';
 import { TicketFundsPage } from '../features/ticketFunds/TicketFundsPage';
@@ -44,6 +45,15 @@ export function AppRouter() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegistrationPage />} />
+      {/* Bản in báo giá: cần đăng nhập nhưng nằm NGOÀI AppShell để trang in sạch (không sidebar). */}
+      <Route
+        path="/quotes/:id/print"
+        element={
+          <ProtectedRoute>
+            <QuotePrintPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         element={
           <ProtectedRoute>

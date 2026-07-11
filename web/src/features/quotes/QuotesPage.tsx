@@ -151,6 +151,9 @@ export function QuotesPage() {
             <Button size="small" onClick={() => setEditingId(item.id)}>
               Sửa
             </Button>
+            <Button size="small" onClick={() => window.open(`/quotes/${item.id}/print`, '_blank')}>
+              In
+            </Button>
             {item.status === 2 ? (
               <Button size="small" type="primary" onClick={() => setConvertingId(item.id)}>
                 Chuyển đơn

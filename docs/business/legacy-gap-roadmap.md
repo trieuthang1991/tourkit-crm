@@ -66,7 +66,8 @@ Phần lõi groundable đã làm. **149 backend + 59 web test xanh; smoke SQLite
 - ✅ **Bảng giá NCC (`ProviderService`, =`provider_services`+`provider_service_pricing`)**: CRUD giá hợp đồng/công bố theo NCC, lọc theo provider. Lấp gap `OrderCost.ServiceName` free-text.
 - ✅ **Dự trù giá tour trong Báo giá** (lõi `BaoGia`/`DuTruTours` — spec `docs/superpowers/specs/2026-07-11-quote-cost-estimation-design.md`, đã chốt với chủ dự án): giá vốn/dòng chọn từ bảng giá NCC + %LN/dòng (legacy `percent_loi_nhuan_khach`) → giá bán; 3 hạng khách NL/TE/TN (legacy `percent_price_tre_em/tre_nho`); chi phí đoàn vs theo khách; tổng vốn/bán/lãi (`loi_nhuan_du_kien`) — công thức 1 chỗ `QuoteMath`.
 - ✅ **Chuyển báo giá → đơn** (legacy `DuyetBooking`): quote Chấp nhận + có KH thật → đặt chỗ qua flow chuẩn (giữ chống overbooking, NL/TE/TN → hạng chỗ), doanh thu đơn = giá chốt báo giá, dòng KS/xe/visa/vé/vé bay sinh `ServiceBooking` (SL theo phạm vi, giá = giá vốn phải trả NCC), idempotent (`ConvertedOrderId`). FE nút "Chuyển đơn" + chọn chuyến.
-- ◻️ (Đợt sau của cụm BaoGia) mẫu in GroupTour/SingleTour · BillPaymentRequest. ◻️ (Cần requirement) **Tour lẻ/FIT (`SingleTour`)** · **Đặt hotel/vé/visa nâng cao** — cần chốt tiếp với chủ dự án.
+- ✅ **Bản in báo giá** (`/quotes/:id/print`, thay legacy template .docx): mẫu thích ứng — có số khách in bảng giá 3 hạng (kiểu GroupTour), không có in bảng dòng đơn thuần (kiểu SingleTour); **chỉ hiện giá bán** (giá vốn/%LN/lãi là số nội bộ, không in); nút In/Xuất PDF (print dialog), trang sạch ngoài AppShell.
+- ◻️ (Đợt sau của cụm BaoGia) BillPaymentRequest. ◻️ (Cần requirement) **Tour lẻ/FIT (`SingleTour`)** · **Đặt hotel/vé/visa nâng cao** — cần chốt tiếp với chủ dự án.
 - ✅ (Follow-up) liên kết `OrderCost.ProviderServiceId` → chọn giá từ bảng giá NCC thay vì gõ tay (validate bảng giá thuộc đúng NCC; UI gợi ý sẵn tên dịch vụ + chi phí từ giá hợp đồng).
 
 ## Đợt 6 — Điều hành tour (Operations) 🚌
