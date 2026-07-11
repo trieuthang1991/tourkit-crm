@@ -40,6 +40,13 @@ public sealed class CustomerService(
             Source = dto.Source,
             Tag = dto.Tag,
             TempBalance = dto.TempBalance,
+            Email = dto.Email,
+            Address = dto.Address,
+            DateOfBirth = dto.DateOfBirth,
+            IdCardNumber = dto.IdCardNumber,
+            PassportNumber = dto.PassportNumber,
+            PassportExpiry = dto.PassportExpiry,
+            Nationality = dto.Nationality,
         };
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
@@ -63,6 +70,13 @@ public sealed class CustomerService(
         entity.Source = dto.Source;
         entity.Tag = dto.Tag;
         entity.TempBalance = dto.TempBalance;
+        entity.Email = dto.Email;
+        entity.Address = dto.Address;
+        entity.DateOfBirth = dto.DateOfBirth;
+        entity.IdCardNumber = dto.IdCardNumber;
+        entity.PassportNumber = dto.PassportNumber;
+        entity.PassportExpiry = dto.PassportExpiry;
+        entity.Nationality = dto.Nationality;
         repo.Update(entity);
         await repo.SaveChangesAsync();
     }
@@ -89,5 +103,6 @@ public sealed class CustomerService(
     }
 
     private static CustomerDto Map(Customer c) =>
-        new(c.Id, c.FullName, c.Phone, c.CustomerType, c.Source, c.Tag, c.TempBalance);
+        new(c.Id, c.FullName, c.Phone, c.CustomerType, c.Source, c.Tag, c.TempBalance,
+            c.Email, c.Address, c.DateOfBirth, c.IdCardNumber, c.PassportNumber, c.PassportExpiry, c.Nationality);
 }

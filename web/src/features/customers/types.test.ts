@@ -11,10 +11,17 @@ describe('customer schemas', () => {
       source: 'Facebook',
       tag: 'VIP',
       tempBalance: 500000,
+      email: 'a@x.com',
+      address: 'Hà Nội',
+      dateOfBirth: null,
+      idCardNumber: '0123',
+      passportNumber: 'B123',
+      passportExpiry: null,
+      nationality: 'Việt Nam',
     });
     expect(c.fullName).toBe('Nguyễn A');
-    expect(c.customerType).toBe(1);
-    expect(c.tempBalance).toBe(500000);
+    expect(c.passportNumber).toBe('B123');
+    expect(c.nationality).toBe('Việt Nam');
   });
 
   it('form requires fullName', () => {

@@ -79,6 +79,25 @@ public class CustomerServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_persists_passport_and_personal_fields()
+    {
+        var service = NewService(out var repo);
+        var expiry = DateTimeOffset.UtcNow.AddYears(5);
+
+        var dto = await service.CreateAsync(new CreateCustomerDto(
+            "Trần B", "0911111111",
+            Email: "b@x.com", Address: "Hà Nội", IdCardNumber: "0123456789",
+            PassportNumber: "B1234567", PassportExpiry: expiry, Nationality: "Việt Nam"));
+
+        Assert.Equal("b@x.com", dto.Email);
+        Assert.Equal("B1234567", dto.PassportNumber);
+        Assert.Equal("Việt Nam", dto.Nationality);
+        var stored = await repo.GetByIdAsync(dto.Id);
+        Assert.Equal("B1234567", stored!.PassportNumber);
+        Assert.Equal(expiry, stored.PassportExpiry);
+    }
+
+    [Fact]
     public async Task GetAsync_unknown_id_throws_NotFoundException()
     {
         var service = NewService(out _);

@@ -1,7 +1,7 @@
 import type { ColumnsType } from 'antd/es/table';
 import { money } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
-import { NumberField, TextField } from '../../shared/ui/Field';
+import { DatePickerField, NumberField, TextField } from '../../shared/ui/Field';
 import { ResourcePage } from '../../shared/ui/ResourcePage';
 import { customersCrud } from './customersCrud';
 import { customerFormSchema } from './types';
@@ -30,6 +30,13 @@ export function CustomersPage() {
         source: c?.source ?? null,
         tag: c?.tag ?? null,
         tempBalance: c?.tempBalance ?? 0,
+        email: c?.email ?? null,
+        address: c?.address ?? null,
+        dateOfBirth: c?.dateOfBirth ?? null,
+        idCardNumber: c?.idCardNumber ?? null,
+        passportNumber: c?.passportNumber ?? null,
+        passportExpiry: c?.passportExpiry ?? null,
+        nationality: c?.nationality ?? null,
       })}
       renderForm={() => null}
       formModal={({ open, mode, submitting, onCancel, onSubmit, defaultValues }) => (
@@ -48,6 +55,13 @@ export function CustomersPage() {
           <TextField name="source" label="Nguồn" />
           <TextField name="tag" label="Nhãn" />
           <NumberField name="tempBalance" label="Tạm ứng" required />
+          <TextField name="email" label="Email" />
+          <TextField name="address" label="Địa chỉ" />
+          <DatePickerField name="dateOfBirth" label="Ngày sinh" />
+          <TextField name="idCardNumber" label="CMND/CCCD" />
+          <TextField name="nationality" label="Quốc tịch" />
+          <TextField name="passportNumber" label="Số hộ chiếu" />
+          <DatePickerField name="passportExpiry" label="Hộ chiếu hết hạn" />
         </CrudFormModal>
       )}
     />
