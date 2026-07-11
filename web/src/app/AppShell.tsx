@@ -22,6 +22,8 @@ const NAV: NavItem[] = [
   { key: '/service-bookings', label: 'Đặt dịch vụ lẻ', perm: 'servicebooking.view' },
   { key: '/agents', label: 'Đại lý (B2B)', perm: 'agent.view' },
   { key: '/customer-commission-rules', label: 'HH theo loại khách', perm: 'commission.view' },
+  { key: '/quotes', label: 'Báo giá', perm: 'quote.view' },
+  { key: '/invoices', label: 'Hoá đơn VAT', perm: 'invoice.view' },
   { key: '/providers', label: 'Nhà cung cấp', perm: 'provider.view' },
   { key: '/service-items', label: 'Danh mục dịch vụ', perm: 'service.view' },
   { key: '/provider-services', label: 'Bảng giá NCC', perm: 'service.view' },

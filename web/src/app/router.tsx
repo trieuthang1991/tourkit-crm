@@ -33,6 +33,8 @@ import { OperationsCalendarPage } from '../features/operations/OperationsCalenda
 import { ServiceBookingsPage } from '../features/serviceBookings/ServiceBookingsPage';
 import { AgentsPage } from '../features/agents/AgentsPage';
 import { CustomerCommissionRulesPage } from '../features/customerCommissionRules/CustomerCommissionRulesPage';
+import { QuotesPage } from '../features/quotes/QuotesPage';
+import { InvoicesPage } from '../features/invoices/InvoicesPage';
 
 export function AppRouter() {
   return (
@@ -77,6 +79,8 @@ export function AppRouter() {
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/guide-assignments" element={<GuideAssignmentsPage />} />
         <Route path="/activity-logs" element={<ActivityLogsPage />} />
+        <Route path="/quotes" element={<QuotesPage />} />
+        <Route path="/invoices" element={<InvoicesPage />} />
       </Route>
     </Routes>
   );
