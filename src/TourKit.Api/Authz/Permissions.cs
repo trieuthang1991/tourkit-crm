@@ -14,6 +14,9 @@ public static class Permissions
     public const string PaymentAccountView = "paymentaccount.view";
     public const string PaymentAccountManage = "paymentaccount.manage";
 
+    public const string UserView = "user.view";        // quản lý user + cơ cấu tổ chức (phòng ban/chức vụ)
+    public const string UserManage = "user.manage";
+
     public const string TourView = "tour.view";
     public const string TourCreate = "tour.create";
     public const string TourUpdate = "tour.update";
@@ -107,6 +110,7 @@ public static class Permissions
         (CustomerUpdate, "Customer"), (CustomerDelete, "Customer"),
         (CustomerTypeView, "Customer"), (CustomerTypeManage, "Customer"),
         (PaymentAccountView, "Finance"), (PaymentAccountManage, "Finance"),
+        (UserView, "Admin"), (UserManage, "Admin"),
         (TourView, "Catalog"), (TourCreate, "Catalog"),
         (TourUpdate, "Catalog"), (TourDelete, "Catalog"),
         (LeadView, "CRM"), (LeadCreate, "CRM"), (LeadUpdate, "CRM"),

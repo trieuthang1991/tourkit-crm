@@ -17,6 +17,9 @@ import { CustomerTagsPage } from '../features/customerTags/CustomerTagsPage';
 import { PaymentAccountsPage } from '../features/paymentAccounts/PaymentAccountsPage';
 import { CarTypesPage } from '../features/carTypes/CarTypesPage';
 import { LanguageTypesPage } from '../features/languageTypes/LanguageTypesPage';
+import { DepartmentsPage } from '../features/departments/DepartmentsPage';
+import { PositionsPage } from '../features/departments/PositionsPage';
+import { UsersPage } from '../features/users/UsersPage';
 import { DeparturesPage } from '../features/booking/DeparturesPage';
 import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
 import { OrdersPage } from '../features/booking/OrdersPage';
@@ -83,6 +86,9 @@ export function AppRouter() {
         <Route path="/payment-accounts" element={<PaymentAccountsPage />} />
         <Route path="/car-types" element={<CarTypesPage />} />
         <Route path="/language-types" element={<LanguageTypesPage />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/departments" element={<DepartmentsPage />} />
+        <Route path="/positions" element={<PositionsPage />} />
         <Route path="/departures" element={<DeparturesPage />} />
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
         <Route path="/operations-calendar" element={<OperationsCalendarPage />} />

@@ -60,6 +60,8 @@ public class AppDbContext : DbContext
     public DbSet<PaymentAccount> PaymentAccounts => Set<PaymentAccount>();
     public DbSet<CarType> CarTypes => Set<CarType>();
     public DbSet<LanguageType> LanguageTypes => Set<LanguageType>();
+    public DbSet<Department> Departments => Set<Department>();
+    public DbSet<Position> Positions => Set<Position>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();

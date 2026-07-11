@@ -656,6 +656,47 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("CustomerTypes");
                 });
 
+            modelBuilder.Entity("TourKit.Shared.Entities.Department", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Departments");
+                });
+
             modelBuilder.Entity("TourKit.Shared.Entities.FileUpload", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1469,6 +1510,43 @@ namespace TourKit.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Plans");
+                });
+
+            modelBuilder.Entity("TourKit.Shared.Entities.Position", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Positions");
                 });
 
             modelBuilder.Entity("TourKit.Shared.Entities.PriceScenario", b =>
@@ -2706,6 +2784,9 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -2728,6 +2809,9 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("PositionId")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("TenantId")

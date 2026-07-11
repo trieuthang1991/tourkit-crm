@@ -39,7 +39,7 @@
 
 1. **customer_tag / Tags / TagMappings** → `CustomerTag` catalog (m-n) hoặc giữ `Customer.Tag` string + catalog chuẩn hoá. Bổ sung màu (legacy Tags.color). *Cùng cụm phân loại khách vừa làm.*
 2. ✅ **PaymentMethod → `PaymentAccount`** (ĐÃ LÀM): catalog tài khoản nhận tiền (tên hiển thị, ngân hàng, số TK, chủ TK, chi nhánh, nội dung CK mặc định) để in báo giá/hoá đơn. Quy tắc: 1 tài khoản `IsDefault`/tenant. Permission `paymentaccount.*` (nhóm Finance). *Còn lại: in tài khoản mặc định lên bản in báo giá — làm khi nối.*
-3. **PhongBan (Department) + Position + User_PhongBan** → cơ cấu tổ chức; gắn `User.DepartmentId/PositionId` (đụng User — chạy impact trước). Phục vụ báo cáo theo phòng ban.
+3. ✅ **PhongBan (Department) + Position** (ĐÃ LÀM): cơ cấu tổ chức + `User.DepartmentId/PositionId` (nullable, additive — impact analysis báo CRITICAL 394 symbol nhưng 89 integration test auth/provisioning vẫn xanh vì chỉ thêm cột). Trang Users (list + gán inline phòng ban/chức vụ), perm `user.*` nhóm Admin. UserAdminService chỉ đọc + gán (không tạo/xoá user).
 4. **LoaiDonHang / TrangThaiDonHang** → catalog loại đơn + trạng thái đơn (hiện `Order.Status` là int trần — mirror kiểu CustomerType keyed Code).
 5. ✅ **CarType** (ĐÃ LÀM): catalog loại xe keyed theo số ghế (Code) → tên "Xe N chỗ", khớp Vehicle.SeatType. Dùng quyền `vehicle.*`.
 6. ✅ **LanguagesType** (ĐÃ LÀM): catalog ngôn ngữ HDV (tên + mã ISO), dùng quyền `guide.*`. Chuẩn bị cho gán ngôn ngữ vào TourGuideAssignment sau.
@@ -86,6 +86,7 @@
 | In TK mặc định lên báo giá | (nối PaymentAccount) | `feat(quotes): in tài khoản nhận tiền` |
 | Loại xe (CarType) | CarType | `feat(catalog): loại xe` |
 | Ngôn ngữ HDV (LanguageType) | LanguagesType | `feat(catalog): ngôn ngữ HDV` |
+| Cơ cấu tổ chức (Department/Position + Users) | PhongBan/Position | `feat(admin): cơ cấu tổ chức` |
 
 **Ghi chú:** LoaiDonHang/TrangThaiDonHang **bỏ qua** — hệ mới đã model `Order.Status`/`Order.BookingType` bằng enum (tốt hơn bảng trạng thái legacy), không mirror redundant.
 
