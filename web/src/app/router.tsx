@@ -26,6 +26,7 @@ import { CommissionRulesPage } from '../features/commission/CommissionRulesPage'
 import { RegistrationPage } from '../features/registration/RegistrationPage';
 import { CustomerCaresPage } from '../features/care/CustomerCaresPage';
 import { TourRatingsPage } from '../features/ratings/TourRatingsPage';
+import { ActivityLogsPage } from '../features/activityLogs/ActivityLogsPage';
 
 export function AppRouter() {
   return (
@@ -63,6 +64,7 @@ export function AppRouter() {
         <Route path="/commission-rules" element={<CommissionRulesPage />} />
         <Route path="/customer-cares" element={<CustomerCaresPage />} />
         <Route path="/tour-ratings" element={<TourRatingsPage />} />
+        <Route path="/activity-logs" element={<ActivityLogsPage />} />
       </Route>
     </Routes>
   );

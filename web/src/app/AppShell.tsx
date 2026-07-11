@@ -28,6 +28,7 @@ const NAV: NavItem[] = [
   { key: '/reports/commission-by-user', label: 'Hoa hồng NV', perm: 'report.commission.view' },
   { key: '/commission-rules', label: 'Cấu hình hoa hồng', perm: 'commission.view' },
   { key: '/billing', label: 'Gói dịch vụ', perm: 'subscription.view' },
+  { key: '/activity-logs', label: 'Nhật ký thao tác', perm: 'activitylog.view' },
 ];
 
 export function AppShell() {
