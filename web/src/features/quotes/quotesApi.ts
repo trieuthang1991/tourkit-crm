@@ -3,10 +3,23 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { providerServiceSchema } from '../services/providerServiceTypes';
+import { paymentAccountSchema } from '../paymentAccounts/types';
 import { quoteSchema, quoteSummarySchema } from './types';
 import type { QuoteForm } from './types';
 
 const KEY = ['quotes'];
+
+/// Tài khoản nhận tiền mặc định — in lên bản báo giá để khách biết chuyển khoản vào đâu.
+export function useDefaultPaymentAccount() {
+  return useQuery({
+    queryKey: ['payment-accounts', 'default'] as const,
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/payment-accounts');
+      const accounts = z.array(paymentAccountSchema).parse(data);
+      return accounts.find((a) => a.isDefault) ?? accounts[0] ?? null;
+    },
+  });
+}
 
 /// Toàn bộ bảng giá NCC (mọi provider) — nguồn giá vốn cho dòng dự trù (spec 2026-07-11).
 export function useAllProviderPrices() {

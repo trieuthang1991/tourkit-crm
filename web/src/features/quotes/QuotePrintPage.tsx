@@ -1,7 +1,7 @@
 import { Button } from 'antd';
 import { useParams } from 'react-router-dom';
 import { money } from '../../shared/format';
-import { useQuote } from './quotesApi';
+import { useDefaultPaymentAccount, useQuote } from './quotesApi';
 import { SERVICE_TYPE_OPTIONS } from './types';
 
 const serviceTypeLabel = (v: number) => SERVICE_TYPE_OPTIONS.find((o) => o.value === v)?.label ?? 'Khác';
@@ -12,6 +12,7 @@ const serviceTypeLabel = (v: number) => SERVICE_TYPE_OPTIONS.find((o) => o.value
 export function QuotePrintPage() {
   const { id } = useParams<{ id: string }>();
   const quote = useQuote(id ?? '');
+  const account = useDefaultPaymentAccount();
 
   if (!quote.data) {
     return <div style={{ padding: 24 }}>Đang tải báo giá…</div>;
@@ -128,6 +129,20 @@ export function QuotePrintPage() {
       {q.note ? (
         <div style={{ marginBottom: 24 }}>
           <strong>Ghi chú:</strong> {q.note}
+        </div>
+      ) : null}
+
+      {account.data ? (
+        <div style={{ marginBottom: 24, padding: 12, border: '1px solid #ddd' }}>
+          <div>
+            <strong>Thông tin thanh toán:</strong>
+          </div>
+          <div>{account.data.name}</div>
+          {account.data.bankName ? <div>Ngân hàng: {account.data.bankName}</div> : null}
+          {account.data.accountNumber ? <div>Số tài khoản: {account.data.accountNumber}</div> : null}
+          {account.data.accountHolder ? <div>Chủ tài khoản: {account.data.accountHolder}</div> : null}
+          {account.data.branch ? <div>Chi nhánh: {account.data.branch}</div> : null}
+          {account.data.transferNote ? <div>Nội dung CK: {account.data.transferNote}</div> : null}
         </div>
       ) : null}
 
