@@ -440,6 +440,9 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<long?>("RemindAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long?>("ReminderSentAt")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 

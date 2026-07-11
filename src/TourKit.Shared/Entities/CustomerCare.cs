@@ -12,4 +12,6 @@ public sealed class CustomerCare : BaseEntity, ITenantEntity
     public string? Feedback { get; set; }                 // Feedback
     public Guid? AssignedToUserId { get; set; }
     public int Status { get; set; }
+    /// <summary>Thời điểm job nhắc-hạn đã gửi email cho người phụ trách (idempotency — mỗi lịch nhắc gửi 1 lần). Null = chưa gửi.</summary>
+    public DateTimeOffset? ReminderSentAt { get; set; }
 }
