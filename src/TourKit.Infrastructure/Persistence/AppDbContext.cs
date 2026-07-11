@@ -58,6 +58,7 @@ public class AppDbContext : DbContext
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();
     public DbSet<FileUpload> FileUploads => Set<FileUpload>();
     public DbSet<CustomerCommissionRule> CustomerCommissionRules => Set<CustomerCommissionRule>();
+    public DbSet<TicketFund> TicketFunds => Set<TicketFund>();
 
     public override int SaveChanges()
     {
