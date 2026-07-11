@@ -61,6 +61,8 @@ public class AppDbContext : DbContext
     public DbSet<TicketFund> TicketFunds => Set<TicketFund>();
     public DbSet<Quote> Quotes => Set<Quote>();
     public DbSet<QuoteLine> QuoteLines => Set<QuoteLine>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<InvoiceLine> InvoiceLines => Set<InvoiceLine>();
 
     public override int SaveChanges()
     {

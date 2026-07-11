@@ -85,6 +85,8 @@ public static class Permissions
     public const string TicketFundManage = "ticketfund.manage";
     public const string QuoteView = "quote.view";      // báo giá
     public const string QuoteManage = "quote.manage";
+    public const string InvoiceView = "invoice.view";      // hoá đơn VAT
+    public const string InvoiceManage = "invoice.manage";
 
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
@@ -122,5 +124,6 @@ public static class Permissions
         (FileView, "System"), (FileManage, "System"),
         (TicketFundView, "Finance"), (TicketFundManage, "Finance"),
         (QuoteView, "CRM"), (QuoteManage, "CRM"),
+        (InvoiceView, "Finance"), (InvoiceManage, "Finance"),
     ];
 }
