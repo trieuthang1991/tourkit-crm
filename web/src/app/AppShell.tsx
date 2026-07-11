@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
   { key: '/vehicles', label: 'Xe', perm: 'vehicle.view' },
   { key: '/car-types', label: 'Loại xe', perm: 'vehicle.view' },
   { key: '/guide-assignments', label: 'Phân công HDV', perm: 'guide.view' },
+  { key: '/language-types', label: 'Ngôn ngữ HDV', perm: 'guide.view' },
   { key: '/vehicle-assignments', label: 'Phân xe cho chuyến', perm: 'vehicle.view' },
   { key: '/service-bookings', label: 'Đặt dịch vụ lẻ', perm: 'servicebooking.view' },
   { key: '/agents', label: 'Đại lý (B2B)', perm: 'agent.view' },

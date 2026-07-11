@@ -42,7 +42,7 @@
 3. **PhongBan (Department) + Position + User_PhongBan** → cơ cấu tổ chức; gắn `User.DepartmentId/PositionId` (đụng User — chạy impact trước). Phục vụ báo cáo theo phòng ban.
 4. **LoaiDonHang / TrangThaiDonHang** → catalog loại đơn + trạng thái đơn (hiện `Order.Status` là int trần — mirror kiểu CustomerType keyed Code).
 5. ✅ **CarType** (ĐÃ LÀM): catalog loại xe keyed theo số ghế (Code) → tên "Xe N chỗ", khớp Vehicle.SeatType. Dùng quyền `vehicle.*`.
-6. **LanguagesType** → catalog ngôn ngữ HDV (dùng cho TourGuideAssignment nâng cao).
+6. ✅ **LanguagesType** (ĐÃ LÀM): catalog ngôn ngữ HDV (tên + mã ISO), dùng quyền `guide.*`. Chuẩn bị cho gán ngôn ngữ vào TourGuideAssignment sau.
 7. **ExchangeRate** → tỷ giá (đa tiền tệ) — cần chốt điểm dùng (giá vốn NCC ngoại tệ?).
 8. **ConfigSurcharge / SurchargeServices** → phụ thu — cần chốt cách áp vào đơn.
 9. **ServicePaymentTerm** → điều khoản thanh toán NCC.
@@ -85,5 +85,8 @@
 | Tài khoản nhận tiền (PaymentAccount) | PaymentMethod | `feat(catalog): tài khoản nhận tiền` |
 | In TK mặc định lên báo giá | (nối PaymentAccount) | `feat(quotes): in tài khoản nhận tiền` |
 | Loại xe (CarType) | CarType | `feat(catalog): loại xe` |
+| Ngôn ngữ HDV (LanguageType) | LanguagesType | `feat(catalog): ngôn ngữ HDV` |
 
-**Đề xuất làm tiếp (theo ưu tiên 🟡):** LanguagesType (ngôn ngữ HDV) → LoaiDonHang/TrangThaiDonHang → Department/Position (cơ cấu tổ chức, đụng User — chạy impact trước). Mỗi cái mirror mẫu catalog có sẵn, thuần additive, ~1 commit. Ngoài ra: in tài khoản mặc định lên bản in báo giá (nối PaymentAccount vào QuotePrintPage).
+**Ghi chú:** LoaiDonHang/TrangThaiDonHang **bỏ qua** — hệ mới đã model `Order.Status`/`Order.BookingType` bằng enum (tốt hơn bảng trạng thái legacy), không mirror redundant.
+
+**Đề xuất làm tiếp (theo ưu tiên 🟡):** Department/Position (cơ cấu tổ chức, đụng `User` — chạy impact analysis trước) → ExchangeRate/ConfigSurcharge/ServicePaymentTerm (cần chốt điểm dùng). Các catalog thuần đã phủ hết. Mỗi cái mirror mẫu catalog có sẵn, thuần additive, ~1 commit. Ngoài ra: in tài khoản mặc định lên bản in báo giá (nối PaymentAccount vào QuotePrintPage).
