@@ -18,5 +18,7 @@ public sealed class OrderCostConfiguration : IEntityTypeConfiguration<OrderCost>
         // Index bắt đầu bằng TenantId (conventions §5): tăng tốc mọi truy vấn đã bị lọc theo tenant.
         builder.HasIndex(x => new { x.TenantId, x.OrderId });
         builder.HasIndex(x => new { x.TenantId, x.ProviderId });
+        // Soft-FK tới bảng giá NCC (không navigation, chỉ Guid) — lọc chi phí theo dòng giá đã chọn.
+        builder.HasIndex(x => new { x.TenantId, x.ProviderServiceId });
     }
 }

@@ -463,6 +463,9 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<Guid>("ProviderId")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ProviderServiceId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ServiceName")
                         .HasMaxLength(250)
                         .HasColumnType("TEXT");
@@ -489,6 +492,8 @@ namespace TourKit.Infrastructure.Migrations
                     b.HasIndex("TenantId", "OrderId");
 
                     b.HasIndex("TenantId", "ProviderId");
+
+                    b.HasIndex("TenantId", "ProviderServiceId");
 
                     b.ToTable("OrderCosts");
                 });

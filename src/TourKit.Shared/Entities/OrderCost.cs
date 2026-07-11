@@ -11,6 +11,11 @@ public sealed class OrderCost : BaseEntity, ITenantEntity
     public Guid TenantId { get; set; }
     public Guid OrderId { get; set; }
     public Guid ProviderId { get; set; }
+    /// <summary>
+    /// Liên kết (tuỳ chọn) tới 1 dòng bảng giá NCC (<see cref="ProviderService"/>) để chọn giá hợp đồng
+    /// thay vì gõ tay — grounded ở legacy ServiceId. Null = nhập chi phí thủ công qua ServiceName.
+    /// </summary>
+    public Guid? ProviderServiceId { get; set; }
     public string? ServiceName { get; set; }
     public int DayIndex { get; set; }
     public decimal ExpectedAmount { get; set; }
