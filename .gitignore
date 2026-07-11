@@ -9,3 +9,4 @@ appsettings.*.local.json
 *.db
 *.db-shm
 *.db-wal
+.gitnexus
