@@ -44,7 +44,8 @@ builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<AmbientTe
 // --- DB provider theo cấu hình ---
 var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
 var connectionString = builder.Configuration.GetConnectionString("Default");
-builder.Services.AddDbContext<AppDbContext>(opt =>
+builder.Services.AddScoped<AuditSaveChangesInterceptor>();
+builder.Services.AddDbContext<AppDbContext>((sp, opt) =>
 {
     if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
     {
@@ -54,6 +55,9 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     {
         opt.UseSqlite(connectionString);
     }
+
+    // Audit log tự động ở tầng ghi (ghi ActivityLog mỗi SaveChanges) — conventions §8.
+    opt.AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>());
 });
 
 // --- Auth services ---
@@ -63,6 +67,9 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+// ICurrentUserContext (Shared) trỏ về cùng instance CurrentUser — cho Infrastructure/interceptor đọc UserId.
+builder.Services.AddScoped<TourKit.Shared.Security.ICurrentUserContext>(
+    sp => (TourKit.Shared.Security.ICurrentUserContext)sp.GetRequiredService<ICurrentUser>());
 
 // --- FluentValidation: quét validator ở tầng Application ---
 builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Customers.Validators.CreateCustomerValidator>();
