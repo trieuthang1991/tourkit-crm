@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { errorMessage } from '../../shared/api/problem';
 import { useAuth } from '../auth/AuthContext';
 import { departuresCrud } from './departuresApi';
-import { useTransferOrder, useTransfers } from './transferApi';
+import { useTransferOrder, useTransferReasons, useTransfers } from './transferApi';
 import type { TourTransfer } from './transferApi';
 
 export function OrderTransferPanel({ orderId }: { orderId: string }) {
@@ -12,11 +12,18 @@ export function OrderTransferPanel({ orderId }: { orderId: string }) {
   const { message } = App.useApp();
   const [open, setOpen] = useState(false);
   const [toDepartureId, setToDepartureId] = useState<string | undefined>();
+  const [reasonId, setReasonId] = useState<string | undefined>();
   const [reason, setReason] = useState('');
 
   const history = useTransfers(orderId);
   const departures = departuresCrud.useList({ page: 1, size: 200 });
+  const reasons = useTransferReasons();
   const transfer = useTransferOrder(orderId);
+
+  const reasonOptions = useMemo(
+    () => (reasons.data ?? []).map((r) => ({ label: r.name, value: r.id })),
+    [reasons.data],
+  );
 
   const departureName = useMemo(() => {
     const map = new Map((departures.data?.items ?? []).map((d) => [d.id, `${d.code} — ${d.title}`]));
@@ -31,10 +38,11 @@ export function OrderTransferPanel({ orderId }: { orderId: string }) {
   async function onTransfer() {
     if (!toDepartureId) return;
     try {
-      await transfer.mutateAsync({ toDepartureId, reason: reason.trim() || null });
+      await transfer.mutateAsync({ toDepartureId, reason: reason.trim() || null, reasonId: reasonId ?? null });
       message.success('Đã chuyển chuyến');
       setOpen(false);
       setToDepartureId(undefined);
+      setReasonId(undefined);
       setReason('');
     } catch (e) {
       message.error(errorMessage(e));
@@ -44,7 +52,11 @@ export function OrderTransferPanel({ orderId }: { orderId: string }) {
   const columns: ColumnsType<TourTransfer> = [
     { title: 'Từ chuyến', dataIndex: 'fromDepartureId', key: 'from', render: (v: string) => departureName(v) },
     { title: 'Sang chuyến', dataIndex: 'toDepartureId', key: 'to', render: (v: string) => departureName(v) },
-    { title: 'Lý do', dataIndex: 'reason', key: 'reason', render: (v: string | null) => v ?? '—' },
+    {
+      title: 'Lý do',
+      key: 'reason',
+      render: (_: unknown, t: TourTransfer) => t.reasonName ?? t.reason ?? '—',
+    },
     {
       title: 'Thời điểm',
       dataIndex: 'transferredAt',
@@ -90,8 +102,17 @@ export function OrderTransferPanel({ orderId }: { orderId: string }) {
             value={toDepartureId}
             onChange={setToDepartureId}
           />
+          <Select
+            style={{ width: '100%' }}
+            placeholder="Lý do chuẩn (tuỳ chọn)"
+            allowClear
+            loading={reasons.isLoading}
+            options={reasonOptions}
+            value={reasonId}
+            onChange={(v) => setReasonId(v)}
+          />
           <Input.TextArea
-            placeholder="Lý do (tuỳ chọn)"
+            placeholder="Ghi chú lý do thêm (tuỳ chọn)"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={2}

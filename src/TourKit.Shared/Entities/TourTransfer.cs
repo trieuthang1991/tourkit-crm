@@ -11,5 +11,6 @@ public sealed class TourTransfer : BaseEntity, ITenantEntity
     public Guid FromDepartureId { get; set; }
     public Guid ToDepartureId { get; set; }
     public string? Reason { get; set; }
+    public Guid? ReasonId { get; set; }                // lý do chuẩn từ danh mục TransferReason (tuỳ chọn)
     public DateTimeOffset TransferredAt { get; set; }
 }

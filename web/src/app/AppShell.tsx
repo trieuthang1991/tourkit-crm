@@ -28,6 +28,7 @@ const NAV: NavItem[] = [
   { key: '/operations-calendar', label: 'Lịch điều hành', perm: 'departure.view' },
   { key: '/orders', label: 'Đơn hàng', perm: 'booking.view' },
   { key: '/surcharges', label: 'Loại phụ thu', perm: 'booking.view' },
+  { key: '/transfer-reasons', label: 'Lý do chuyển chuyến', perm: 'booking.view' },
   { key: '/vehicles', label: 'Xe', perm: 'vehicle.view' },
   { key: '/car-types', label: 'Loại xe', perm: 'vehicle.view' },
   { key: '/guide-assignments', label: 'Phân công HDV', perm: 'guide.view' },

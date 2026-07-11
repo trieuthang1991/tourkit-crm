@@ -58,7 +58,7 @@ public class TourTransferTests : IClassFixture<AuthTestFactory>
         var revenueBefore = order!.TotalRevenue;
 
         var transfer = await client.PostAsJsonAsync($"/api/v1/orders/{order.Id}/transfers",
-            new TransferOrderDto(depB, "Khách kẹt lịch"));
+            new TransferOrderDto(depB, "Khách kẹt lịch", null));
         Assert.Equal(HttpStatusCode.Created, transfer.StatusCode);
 
         // Đơn đã sang chuyến B, giá không đổi (đọc từ danh sách đơn — không có GET đơn lẻ).
@@ -95,7 +95,7 @@ public class TourTransferTests : IClassFixture<AuthTestFactory>
             new CreateBookingDto(c1!.Id, 3, 0, 0, 0))).Content.ReadFromJsonAsync<OrderDto>();
         await client.PostAsJsonAsync($"/api/v1/tour-departures/{depB}/bookings", new CreateBookingDto(c2!.Id, 1, 0, 0, 0));
 
-        var transfer = await client.PostAsJsonAsync($"/api/v1/orders/{order!.Id}/transfers", new TransferOrderDto(depB, null));
+        var transfer = await client.PostAsJsonAsync($"/api/v1/orders/{order!.Id}/transfers", new TransferOrderDto(depB, null, null));
 
         Assert.Equal(HttpStatusCode.Conflict, transfer.StatusCode);
     }
@@ -114,7 +114,7 @@ public class TourTransferTests : IClassFixture<AuthTestFactory>
         var order = await (await client.PostAsJsonAsync($"/api/v1/tour-departures/{depA}/bookings",
             new CreateBookingDto(customer!.Id, 1, 0, 0, 0))).Content.ReadFromJsonAsync<OrderDto>();
 
-        var transfer = await client.PostAsJsonAsync($"/api/v1/orders/{order!.Id}/transfers", new TransferOrderDto(depA, null));
+        var transfer = await client.PostAsJsonAsync($"/api/v1/orders/{order!.Id}/transfers", new TransferOrderDto(depA, null, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, transfer.StatusCode);
     }

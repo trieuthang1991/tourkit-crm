@@ -14,7 +14,8 @@ public sealed class TourTransferService(
     IRepository<TourTransfer> transferRepo,
     IRepository<Order> orderRepo,
     IRepository<TourCustomer> seatRepo,
-    IRepository<TourDeparture> departureRepo) : ITourTransferService
+    IRepository<TourDeparture> departureRepo,
+    IRepository<TransferReason> reasonRepo) : ITourTransferService
 {
     public async Task<TourTransferDto> TransferAsync(Guid orderId, TransferOrderDto dto)
     {
@@ -31,6 +32,11 @@ public sealed class TourTransferService(
         if (target.IsClosed)
         {
             throw new ConflictException("Chuyến đích đã đóng, không thể chuyển sang.");
+        }
+
+        if (dto.ReasonId is { } reasonId && !await reasonRepo.AnyAsync(r => r.Id == reasonId))
+        {
+            throw new ValidationAppException("Lý do chuyển chuyến không tồn tại.");
         }
 
         var seats = await seatRepo.ListAsync(s => s.OrderId == orderId);
@@ -62,6 +68,7 @@ public sealed class TourTransferService(
             FromDepartureId = fromDepartureId,
             ToDepartureId = dto.ToDepartureId,
             Reason = dto.Reason?.Trim(),
+            ReasonId = dto.ReasonId,
             TransferredAt = DateTimeOffset.UtcNow,
         };
         await transferRepo.AddAsync(transfer);
@@ -70,15 +77,24 @@ public sealed class TourTransferService(
         await seatRepo.SaveChangesAsync();
         await transferRepo.SaveChangesAsync();
 
-        return Map(transfer);
+        return Map(transfer, await LoadReasonNamesAsync());
     }
 
     public async Task<IReadOnlyList<TourTransferDto>> ListByOrderAsync(Guid orderId)
     {
         var items = await transferRepo.ListAsync(t => t.OrderId == orderId);
-        return items.OrderByDescending(t => t.TransferredAt).Select(Map).ToList();
+        var names = await LoadReasonNamesAsync();
+        return items.OrderByDescending(t => t.TransferredAt).Select(t => Map(t, names)).ToList();
     }
 
-    private static TourTransferDto Map(TourTransfer t) => new(
-        t.Id, t.OrderId, t.FromDepartureId, t.ToDepartureId, t.Reason, t.TransferredAt);
+    private async Task<Dictionary<Guid, string>> LoadReasonNamesAsync()
+    {
+        var reasons = await reasonRepo.ListAsync();
+        return reasons.ToDictionary(r => r.Id, r => r.Name);
+    }
+
+    private static TourTransferDto Map(TourTransfer t, Dictionary<Guid, string> reasonNames) => new(
+        t.Id, t.OrderId, t.FromDepartureId, t.ToDepartureId, t.Reason, t.ReasonId,
+        t.ReasonId is { } rid && reasonNames.TryGetValue(rid, out var n) ? n : null,
+        t.TransferredAt);
 }

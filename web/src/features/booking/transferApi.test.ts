@@ -9,9 +9,12 @@ describe('tourTransferSchema', () => {
       fromDepartureId: crypto.randomUUID(),
       toDepartureId: crypto.randomUUID(),
       reason: 'Khách kẹt lịch',
+      reasonId: crypto.randomUUID(),
+      reasonName: 'Khách đổi lịch',
       transferredAt: new Date().toISOString(),
     });
     expect(t.reason).toBe('Khách kẹt lịch');
+    expect(t.reasonName).toBe('Khách đổi lịch');
   });
 
   it('allows null reason', () => {
@@ -21,8 +24,11 @@ describe('tourTransferSchema', () => {
       fromDepartureId: crypto.randomUUID(),
       toDepartureId: crypto.randomUUID(),
       reason: null,
+      reasonId: null,
+      reasonName: null,
       transferredAt: new Date().toISOString(),
     });
     expect(t.reason).toBeNull();
+    expect(t.reasonId).toBeNull();
   });
 });
