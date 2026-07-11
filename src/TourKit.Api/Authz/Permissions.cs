@@ -79,6 +79,8 @@ public static class Permissions
     public const string GuideManage = "guide.manage";
 
     public const string ActivityLogView = "activitylog.view";   // xem nhật ký thao tác (audit)
+    public const string FileView = "file.view";      // xem/tải tệp đính kèm
+    public const string FileManage = "file.manage";  // upload tệp đính kèm
 
     /// <summary>Toàn bộ mã quyền + nhóm hiển thị. Dùng để seed + đăng ký policy.</summary>
     public static readonly IReadOnlyList<(string Code, string Group)> All =
@@ -113,5 +115,6 @@ public static class Permissions
         (VehicleView, "Booking"), (VehicleManage, "Booking"),
         (GuideView, "Booking"), (GuideManage, "Booking"),
         (ActivityLogView, "System"),
+        (FileView, "System"), (FileManage, "System"),
     ];
 }
