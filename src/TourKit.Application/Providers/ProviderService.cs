@@ -50,6 +50,7 @@ public sealed class ProviderService(
             ContactPerson = dto.ContactPerson,
             BankAccount = dto.BankAccount,
             BankName = dto.BankName,
+            PaymentTermId = dto.PaymentTermId,
             Rate = dto.Rate,
             Status = dto.Status,
         };
@@ -78,6 +79,7 @@ public sealed class ProviderService(
         entity.ContactPerson = dto.ContactPerson;
         entity.BankAccount = dto.BankAccount;
         entity.BankName = dto.BankName;
+        entity.PaymentTermId = dto.PaymentTermId;
         entity.Rate = dto.Rate;
         entity.Status = dto.Status;
         repo.Update(entity);
@@ -107,5 +109,5 @@ public sealed class ProviderService(
 
     private static ProviderDto Map(Provider p) => new(
         p.Id, p.Code, p.Name, p.Type, p.Phone, p.Email, p.Address,
-        p.TaxCode, p.ContactPerson, p.BankAccount, p.BankName, p.Rate, p.Status);
+        p.TaxCode, p.ContactPerson, p.BankAccount, p.BankName, p.PaymentTermId, p.Rate, p.Status);
 }

@@ -33,7 +33,7 @@ public class ProviderEndpointTests : IClassFixture<AuthTestFactory>
 
         var createResponse = await client.PostAsJsonAsync("/api/v1/providers", new CreateProviderDto(
             "NCC-1", "Khách sạn ABC", ProviderType.Hotel, "0900000000", "abc@ncc.vn", "123 Đường A",
-            "0101234567", "Nguyen Van B", "1234567890", "Vietcombank", 4, 1));
+            "0101234567", "Nguyen Van B", "1234567890", "Vietcombank", null, 4, 1));
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var created = await createResponse.Content.ReadFromJsonAsync<ProviderDto>();
         Assert.Equal("NCC-1", created!.Code);
@@ -47,7 +47,7 @@ public class ProviderEndpointTests : IClassFixture<AuthTestFactory>
 
         var updateResponse = await client.PutAsJsonAsync($"/api/v1/providers/{created.Id}", new UpdateProviderDto(
             "Khách sạn ABC (mới)", ProviderType.Hotel, "0911111111", "abc2@ncc.vn", "456 Đường B",
-            "0101234567", "Tran Thi C", "1234567890", "Vietcombank", 5, 1));
+            "0101234567", "Tran Thi C", "1234567890", "Vietcombank", null, 5, 1));
         Assert.Equal(HttpStatusCode.NoContent, updateResponse.StatusCode);
 
         var afterUpdate = await client.GetFromJsonAsync<ProviderDto>($"/api/v1/providers/{created.Id}");
@@ -67,7 +67,7 @@ public class ProviderEndpointTests : IClassFixture<AuthTestFactory>
         var client = await LoggedInClientAsync("prov-invalid");
 
         var response = await client.PostAsJsonAsync("/api/v1/providers", new CreateProviderDto(
-            "", "Không mã", ProviderType.Other, null, null, null, null, null, null, null, 0, 1));
+            "", "Không mã", ProviderType.Other, null, null, null, null, null, null, null, null, 0, 1));
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -76,7 +76,7 @@ public class ProviderEndpointTests : IClassFixture<AuthTestFactory>
     {
         var clientA = await LoggedInClientAsync("prov-iso-a");
         await clientA.PostAsJsonAsync("/api/v1/providers", new CreateProviderDto(
-            "P-A", "NCC A", ProviderType.Vehicle, null, null, null, null, null, null, null, 0, 1));
+            "P-A", "NCC A", ProviderType.Vehicle, null, null, null, null, null, null, null, null, 0, 1));
 
         var clientB = await LoggedInClientAsync("prov-iso-b");
         var listB = await clientB.GetFromJsonAsync<PagedResult<ProviderDto>>("/api/v1/providers");

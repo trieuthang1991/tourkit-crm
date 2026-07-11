@@ -15,6 +15,7 @@ describe('provider schemas', () => {
       contactPerson: null,
       bankAccount: null,
       bankName: null,
+      paymentTermId: null,
       rate: 0,
       status: 1,
     });
@@ -34,6 +35,7 @@ describe('provider schemas', () => {
         contactPerson: null,
         bankAccount: null,
         bankName: null,
+      paymentTermId: null,
         rate: 0,
         status: 1,
       }).success,

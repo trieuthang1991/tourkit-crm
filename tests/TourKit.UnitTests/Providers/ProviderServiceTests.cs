@@ -23,7 +23,7 @@ public class ProviderServiceTests
 
     private static CreateProviderDto NewCreateDto(string code = "NCC-1") => new(
         code, "Khách sạn ABC", ProviderType.Hotel, "0900000000", "abc@ncc.vn", "123 Đường A",
-        "0101234567", "Nguyen Van B", "1234567890", "Vietcombank", 4, 1);
+        "0101234567", "Nguyen Van B", "1234567890", "Vietcombank", null, 4, 1);
 
     [Fact]
     public async Task CreateAsync_returns_dto_and_persists_entity()
@@ -54,7 +54,7 @@ public class ProviderServiceTests
 
         await Assert.ThrowsAsync<ValidationAppException>(
             () => service.CreateAsync(new CreateProviderDto(
-                "NCC-2", "", ProviderType.Hotel, null, null, null, null, null, null, null, 0, 1)));
+                "NCC-2", "", ProviderType.Hotel, null, null, null, null, null, null, null, null, 0, 1)));
     }
 
     [Fact]
@@ -73,6 +73,6 @@ public class ProviderServiceTests
 
         await Assert.ThrowsAsync<NotFoundException>(() => service.UpdateAsync(
             Guid.NewGuid(),
-            new UpdateProviderDto("Ten moi", ProviderType.Hotel, null, null, null, null, null, null, null, 0, 1)));
+            new UpdateProviderDto("Ten moi", ProviderType.Hotel, null, null, null, null, null, null, null, null, 0, 1)));
     }
 }

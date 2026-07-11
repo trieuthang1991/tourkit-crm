@@ -12,6 +12,7 @@ export const providerSchema = z.object({
   contactPerson: z.string().nullable(),
   bankAccount: z.string().nullable(),
   bankName: z.string().nullable(),
+  paymentTermId: z.string().nullable(),
   rate: z.number(),
   status: z.number(),
 });
@@ -27,6 +28,7 @@ const providerCommonFields = {
   contactPerson: z.string().nullable().transform((v) => (v ? v : null)),
   bankAccount: z.string().nullable().transform((v) => (v ? v : null)),
   bankName: z.string().nullable().transform((v) => (v ? v : null)),
+  paymentTermId: z.string().nullable().transform((v) => (v ? v : null)),
   rate: z.number(),
   status: z.number(),
 };

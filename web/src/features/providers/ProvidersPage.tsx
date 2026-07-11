@@ -1,8 +1,12 @@
 import type { ColumnsType } from 'antd/es/table';
+import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
+import { httpClient } from '../../shared/api/httpClient';
 import { statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, SelectField, TextField } from '../../shared/ui/Field';
 import { ResourcePage } from '../../shared/ui/ResourcePage';
+import { paymentTermSchema } from '../paymentTerms/types';
 import { providersCrud } from './providersCrud';
 import { PROVIDER_TYPE, providerCreateSchema, providerUpdateSchema } from './types';
 import type { Provider, ProviderForm } from './types';
@@ -11,6 +15,18 @@ const PROVIDER_TYPE_OPTIONS = Object.entries(PROVIDER_TYPE).map(([value, label])
   value: Number(value),
   label,
 }));
+
+function PaymentTermField() {
+  const list = useQuery({
+    queryKey: ['payment-terms'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/payment-terms');
+      return z.array(paymentTermSchema).parse(data);
+    },
+  });
+  const options = (list.data ?? []).map((t) => ({ label: t.name, value: t.id }));
+  return <SelectField name="paymentTermId" label="Điều khoản thanh toán" options={options} allowClear />;
+}
 
 const columns: ColumnsType<Provider> = [
   { title: 'Mã', dataIndex: 'code', key: 'code' },
@@ -44,6 +60,7 @@ export function ProvidersPage() {
         contactPerson: p?.contactPerson ?? null,
         bankAccount: p?.bankAccount ?? null,
         bankName: p?.bankName ?? null,
+        paymentTermId: p?.paymentTermId ?? null,
         rate: p?.rate ?? 0,
         status: p?.status ?? 1,
       })}
@@ -68,6 +85,7 @@ export function ProvidersPage() {
           <TextField name="contactPerson" label="Người liên hệ" />
           <TextField name="bankAccount" label="Số tài khoản" />
           <TextField name="bankName" label="Ngân hàng" />
+          <PaymentTermField />
           <NumberField name="rate" label="Tỉ lệ" required />
           <NumberField name="status" label="Trạng thái" required />
         </CrudFormModal>

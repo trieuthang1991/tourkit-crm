@@ -56,7 +56,7 @@ public class CommissionTests : IClassFixture<AuthTestFactory>
     private static async Task<ProviderDto> CreateProviderAsync(HttpClient client)
     {
         var response = await client.PostAsJsonAsync("/api/v1/providers", new CreateProviderDto(
-            "NCC-COMM", "Khách sạn Hoa hồng", ProviderType.Hotel, null, null, null, null, null, null, null, 0, 1));
+            "NCC-COMM", "Khách sạn Hoa hồng", ProviderType.Hotel, null, null, null, null, null, null, null, null, 0, 1));
         return (await response.Content.ReadFromJsonAsync<ProviderDto>())!;
     }
 

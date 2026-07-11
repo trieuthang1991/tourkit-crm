@@ -45,7 +45,7 @@
 6. ✅ **LanguagesType** (ĐÃ LÀM): catalog ngôn ngữ HDV (tên + mã ISO), dùng quyền `guide.*`. Chuẩn bị cho gán ngôn ngữ vào TourGuideAssignment sau.
 7. ✅ **ExchangeRate → Currency** (ĐÃ LÀM): danh mục tỷ giá (Code/RateToVnd). ProviderService += CurrencyCode → giá vốn NCC nhập ngoại tệ, ProviderServiceService quy đổi VND tập trung (ContractPriceVnd/PublicPriceVnd trong DTO); picker OrderCost/Quote dùng giá VND (khoá tại thời điểm chọn). Quyền `service.*`.
 8. ✅ **ConfigSurcharge / SurchargeServices** (ĐÃ LÀM): danh mục loại phụ thu (Fixed/Percent) + dòng phụ thu theo đơn cộng thẳng vào `Order.TotalRevenue` (tự chảy vào công nợ/hoa hồng/báo cáo, không sửa downstream). Bất biến `TotalRevenue = gốc + Σ phụ thu` → % luôn tính trên gốc bất kể thứ tự. `OrderMath.SurchargeAmount` một chỗ; panel trên chi tiết đơn + catalog. Quyền `booking.*`.
-9. **ServicePaymentTerm** → điều khoản thanh toán NCC.
+9. ✅ **ServicePaymentTerm → PaymentTerm** (ĐÃ LÀM): catalog điều khoản thanh toán NCC (tên + mô tả) + Provider.PaymentTermId (nullable). Reference cho đội điều hành khi lên lịch trả NCC. Quyền `provider.*`.
 10. **age_type** → đã xử lý ngầm (NL/TE/TN trong báo giá) — chỉ cần nếu muốn cấu hình bậc tuổi động.
 
 > Mẫu triển khai chuẩn cho catalog: xem `CustomerType`/`CustomerSource` (entity Shared + config unique index + service Catalog + controller + permission + test + frontend feature). ~30 phút/catalog, thuần additive.
@@ -90,6 +90,9 @@
 | Phụ thu theo đơn (Surcharge/OrderSurcharge) | ConfigSurcharge/SurchargeServices | `feat(booking): phụ thu theo đơn` |
 | Báo cáo doanh thu theo phòng ban | (dùng Department) | `feat(reports): doanh thu theo phòng ban` |
 | Tỷ giá + giá vốn NCC ngoại tệ (Currency) | ExchangeRate | `feat(catalog): tỷ giá + giá vốn ngoại tệ` |
+| Điều khoản TT NCC (PaymentTerm + Provider link) | ServicePaymentTerm | `feat(catalog): điều khoản thanh toán NCC` |
+
+> **🟡 GROUNDABLE ĐÃ CẠN HẾT** (2026-07-11). Còn lại chỉ nhóm 🔴 (SMS/Zalo/Email gateway, Tasking/Workflow/KPI, CMS/blog, BankHub) — đều cần **API/credential ngoài** hoặc là subsystem lớn ngoài phạm vi điều hành tour.
 
 **Ghi chú:** LoaiDonHang/TrangThaiDonHang **bỏ qua** — hệ mới đã model `Order.Status`/`Order.BookingType` bằng enum (tốt hơn bảng trạng thái legacy), không mirror redundant.
 

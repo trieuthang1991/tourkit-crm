@@ -21,6 +21,7 @@ public sealed class Provider : BaseEntity, ITenantEntity
     public string? ContactPerson { get; set; }
     public string? BankAccount { get; set; }
     public string? BankName { get; set; }
+    public Guid? PaymentTermId { get; set; }       // điều khoản thanh toán NCC (legacy ServicePaymentTerm)
     public int Rate { get; set; }
     public int Status { get; set; }
 }
