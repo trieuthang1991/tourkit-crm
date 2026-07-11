@@ -107,6 +107,7 @@ builder.Services.Scan(scan => scan.FromAssemblyOf<TourKit.Application.Customers.
 builder.Services.AddHangfire(cfg => cfg.UseInMemoryStorage());
 builder.Services.AddScoped<TourKit.Api.BackgroundJobs.HeartbeatJob>();
 builder.Services.AddScoped<TourKit.Api.BackgroundJobs.CareReminderJob>();
+builder.Services.AddScoped<TourKit.Api.BackgroundJobs.HoldReminderJob>();
 var enableBackgroundJobs =
     System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name?.Contains("testhost", StringComparison.OrdinalIgnoreCase) != true
     && builder.Configuration.GetValue("BackgroundJobs:Enabled", true);
@@ -176,6 +177,9 @@ if (enableBackgroundJobs)
     // Gửi chăm sóc tự động (Đợt 7): quét lịch CSKH tới hạn nhắc mỗi giờ, email người phụ trách.
     RecurringJob.AddOrUpdate<TourKit.Api.BackgroundJobs.CareReminderJob>(
         "care-reminders", j => j.RunAsync(CancellationToken.None), "0 * * * *");
+    // Nhắc hạn giữ chỗ (Đợt 7): chỗ giữ sắp hết hạn (≤24h) → email sales phụ trách; lệch 15' tránh trùng giờ.
+    RecurringJob.AddOrUpdate<TourKit.Api.BackgroundJobs.HoldReminderJob>(
+        "hold-reminders", j => j.RunAsync(CancellationToken.None), "15 * * * *");
 }
 
 app.MapControllers();   // Customers, Providers, Crm (kiến trúc phân tầng)

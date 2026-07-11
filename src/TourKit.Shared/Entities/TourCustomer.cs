@@ -46,6 +46,8 @@ public sealed class TourCustomer : BaseEntity, ITenantEntity
     public decimal UpfrontAmount { get; set; }
     public string? ReservationCode { get; set; }
     public DateTimeOffset? HoldExpiresAt { get; set; }
+    /// <summary>Job nhắc-hạn-giữ-chỗ đã email sales lúc nào (idempotency — mỗi chỗ giữ nhắc 1 lần). Null = chưa nhắc.</summary>
+    public DateTimeOffset? HoldReminderSentAt { get; set; }
     public string? SeatSelected { get; set; }
     public bool IsMainContact { get; set; }
     public int Status { get; set; }

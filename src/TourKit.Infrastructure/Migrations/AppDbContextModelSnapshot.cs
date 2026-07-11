@@ -2230,6 +2230,9 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<long?>("HoldExpiresAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long?>("HoldReminderSentAt")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 

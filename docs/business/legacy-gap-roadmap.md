@@ -82,7 +82,8 @@ Phần lõi groundable đã làm. **149 backend + 59 web test xanh; smoke SQLite
 - ✅ **Hạ tầng Hangfire** (in-memory dev, dashboard `/hangfire`, guard testhost) + **Email** (`IEmailSender`: LogEmailSender dev / SmtpEmailSender prod qua `Email:Provider`).
 - ✅ **`LogSystem`** = ActivityLog interceptor (audit tự động) · **`Upload`** = IFileStorage (local dev, tách theo tenant).
 - ✅ **Job gửi chăm sóc tự động** (`CareReminderJob`): quét CustomerCare tới hạn nhắc → email người phụ trách; đa-tenant đúng cách (IgnoreQueryFilters + xử lý per-tenant). Dev log, prod SMTP.
-- ◻️ Job "nhắc hạn giữ chỗ" (cần chốt: mốc nhắc + người nhận) · `BankHub` (cần API ngân hàng).
+- ✅ **Job nhắc hạn giữ chỗ** (`HoldReminderJob`): chỗ đang giữ (chưa cọc/chưa huỷ, `Seat.HoldExpiresAt`) còn ≤24h → email sales phụ trách đơn; idempotent (`HoldReminderSentAt`); per-tenant như CareReminderJob.
+- ◻️ `BankHub` (cần API ngân hàng).
 
 ---
 
