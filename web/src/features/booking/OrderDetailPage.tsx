@@ -230,7 +230,10 @@ export function OrderDetailPage() {
 
   return (
     <>
-      <Typography.Title level={3}>Đơn hàng {order?.code ?? ''}</Typography.Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography.Title level={3}>Đơn hàng {order?.code ?? ''}</Typography.Title>
+        <Button onClick={() => window.open(`/orders/${orderId}/contract`, '_blank')}>In hợp đồng</Button>
+      </div>
       <Card loading={!order} style={{ marginBottom: 16 }}>
         <Descriptions column={2}>
           <Descriptions.Item label="Mã đơn">{order?.code}</Descriptions.Item>

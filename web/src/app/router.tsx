@@ -31,6 +31,7 @@ import { DeparturesPage } from '../features/booking/DeparturesPage';
 import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
 import { OrdersPage } from '../features/booking/OrdersPage';
 import { OrderDetailPage } from '../features/booking/OrderDetailPage';
+import { OrderContractPrintPage } from '../features/booking/OrderContractPrintPage';
 import { BillingPage } from '../features/billing/BillingPage';
 import { OrderDebtReportPage } from '../features/reports/OrderDebtReportPage';
 import { ProviderDebtReportPage } from '../features/reports/ProviderDebtReportPage';
@@ -71,6 +72,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <QuotePrintPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/orders/:id/contract"
+        element={
+          <ProtectedRoute>
+            <OrderContractPrintPage />
           </ProtectedRoute>
         }
       />
