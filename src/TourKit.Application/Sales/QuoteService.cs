@@ -188,6 +188,7 @@ public sealed class QuoteService(
             quote.ValidUntil, quote.Status, quote.Note, quote.TotalAmount, lineDtos,
             quote.Adults, quote.Children, quote.Infants, quote.ChildPercent, quote.InfantPercent,
             quote.TotalCost, quote.TotalProfit,
-            pricing.AdultPrice, pricing.ChildPrice, pricing.InfantPrice);
+            pricing.AdultPrice, pricing.ChildPrice, pricing.InfantPrice,
+            quote.ConvertedOrderId);
     }
 }

@@ -24,4 +24,5 @@ public sealed class Quote : BaseEntity, ITenantEntity
     public decimal InfantPercent { get; set; } = 50m;     // legacy percent_price_tre_nho
     public decimal TotalCost { get; set; }                // tổng giá vốn dự trù
     public decimal TotalProfit { get; set; }              // legacy loi_nhuan_du_kien = bán − vốn
+    public Guid? ConvertedOrderId { get; set; }           // đơn sinh từ báo giá (legacy DuyetBooking) — idempotency
 }

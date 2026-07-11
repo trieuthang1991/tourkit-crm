@@ -9,7 +9,8 @@ public sealed record QuoteDto(
     DateTimeOffset? ValidUntil, int Status, string? Note, decimal TotalAmount, QuoteLineDto[] Lines,
     int Adults, int Children, int Infants, decimal ChildPercent, decimal InfantPercent,
     decimal TotalCost, decimal TotalProfit,
-    decimal AdultPrice, decimal ChildPrice, decimal InfantPrice); // 3 giá hạng khách — derived, không lưu
+    decimal AdultPrice, decimal ChildPrice, decimal InfantPrice,  // 3 giá hạng khách — derived, không lưu
+    Guid? ConvertedOrderId);                                       // đơn đã sinh (null = chưa chuyển)
 
 /// <summary>Dòng tóm tắt cho danh sách (không kèm chi tiết dòng).</summary>
 public sealed record QuoteSummaryDto(
@@ -25,6 +26,11 @@ public sealed record CreateQuoteDto(
     DateTimeOffset? ValidUntil, int Status, string? Note, CreateQuoteLineDto[] Lines,
     int Adults = 0, int Children = 0, int Infants = 0,
     decimal ChildPercent = 75, decimal InfantPercent = 50);
+
+/// <summary>Chuyển báo giá chấp nhận → đơn: chọn chuyến khởi hành đích.</summary>
+public sealed record ConvertQuoteDto(Guid TourDepartureId);
+
+public sealed record ConvertQuoteResultDto(Guid OrderId, string OrderCode, int ServiceBookingCount);
 
 public sealed record UpdateQuoteDto(
     string Code, Guid? CustomerId, string CustomerName, string Title,

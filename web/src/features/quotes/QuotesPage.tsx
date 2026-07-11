@@ -1,13 +1,14 @@
-import { App, Button, Popconfirm, Space, Table, Typography } from 'antd';
+import { App, Button, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { errorMessage } from '../../shared/api/problem';
 import { money, statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, NumberField, TextAreaField, TextField } from '../../shared/ui/Field';
+import { departuresCrud } from '../booking/departuresApi';
 import { QuoteLinesField } from './QuoteLinesField';
-import { useCreateQuote, useDeleteQuote, useQuote, useQuotes, useUpdateQuote } from './quotesApi';
+import { useConvertQuote, useCreateQuote, useDeleteQuote, useQuote, useQuotes, useUpdateQuote } from './quotesApi';
 import { quoteFormSchema } from './types';
 import type { QuoteForm, QuoteSummary } from './types';
 
@@ -60,6 +61,28 @@ export function QuotesPage() {
   const create = useCreateQuote();
   const update = useUpdateQuote();
   const remove = useDeleteQuote();
+
+  // Chuyển báo giá chấp nhận → đơn: chọn chuyến khởi hành đích.
+  const convert = useConvertQuote();
+  const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [departureId, setDepartureId] = useState<string | undefined>();
+  const departures = departuresCrud.useList({ page: 1, size: 200 });
+  const departureOptions = useMemo(
+    () => (departures.data?.items ?? []).map((d) => ({ label: `${d.code} — ${d.title}`, value: d.id })),
+    [departures.data],
+  );
+
+  async function onConvert() {
+    if (!convertingId || !departureId) return;
+    try {
+      const result = await convert.mutateAsync({ id: convertingId, tourDepartureId: departureId });
+      setConvertingId(null);
+      setDepartureId(undefined);
+      message.success(`Đã tạo đơn ${result.orderCode} (+${result.serviceBookingCount} đặt dịch vụ)`);
+    } catch (e) {
+      message.error(errorMessage(e));
+    }
+  }
 
   const modalOpen = editingId === 'new' || (isEdit && !!detail.data);
   const defaultValues: QuoteForm =
@@ -128,6 +151,11 @@ export function QuotesPage() {
             <Button size="small" onClick={() => setEditingId(item.id)}>
               Sửa
             </Button>
+            {item.status === 2 ? (
+              <Button size="small" type="primary" onClick={() => setConvertingId(item.id)}>
+                Chuyển đơn
+              </Button>
+            ) : null}
             <Popconfirm title="Xoá báo giá này?" onConfirm={() => onDelete(item.id)}>
               <Button size="small" danger>
                 Xoá
@@ -210,6 +238,34 @@ export function QuotesPage() {
           ) : null}
         </CrudFormModal>
       ) : null}
+
+      <Modal
+        open={convertingId !== null}
+        title="Chuyển báo giá thành đơn"
+        okText="Chuyển"
+        okButtonProps={{ disabled: !departureId }}
+        confirmLoading={convert.isPending}
+        onCancel={() => {
+          setConvertingId(null);
+          setDepartureId(undefined);
+        }}
+        onOk={onConvert}
+      >
+        <Typography.Paragraph type="secondary">
+          Đơn sẽ đặt chỗ theo số khách của báo giá; doanh thu đơn = tổng báo giá; các dòng dịch vụ
+          (KS/xe/visa/vé/vé bay) sinh phiếu đặt dịch vụ lẻ.
+        </Typography.Paragraph>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Chọn chuyến khởi hành"
+          loading={departures.isLoading}
+          options={departureOptions}
+          value={departureId}
+          onChange={setDepartureId}
+          showSearch
+          optionFilterProp="label"
+        />
+      </Modal>
     </>
   );
 }

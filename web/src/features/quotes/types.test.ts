@@ -23,6 +23,7 @@ describe('quote schemas', () => {
       adultPrice: 2900000,
       childPrice: 2175000,
       infantPrice: 1450000,
+      convertedOrderId: null,
       lines: [
         {
           id: crypto.randomUUID(),

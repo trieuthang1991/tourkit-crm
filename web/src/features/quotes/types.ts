@@ -35,6 +35,7 @@ export const quoteSchema = z.object({
   adultPrice: z.number(),
   childPrice: z.number(),
   infantPrice: z.number(),
+  convertedOrderId: z.string().nullable(), // đơn đã sinh từ báo giá (null = chưa chuyển)
 });
 export type Quote = z.infer<typeof quoteSchema>;
 

@@ -63,6 +63,20 @@ export function useUpdateQuote() {
   });
 }
 
+/// Chuyển báo giá CHẤP NHẬN → đơn + đặt dịch vụ lẻ (legacy DuyetBooking).
+export function useConvertQuote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, tourDepartureId }: { id: string; tourDepartureId: string }) => {
+      const { data } = await httpClient.post<unknown>(`/api/v1/quotes/${id}/convert`, { tourDepartureId });
+      return z
+        .object({ orderId: z.string().uuid(), orderCode: z.string(), serviceBookingCount: z.number() })
+        .parse(data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
 export function useDeleteQuote() {
   const qc = useQueryClient();
   return useMutation({
