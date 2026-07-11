@@ -32,7 +32,15 @@ public sealed class CustomerService(
     {
         await Validate(createValidator, dto);
 
-        var entity = new Customer { FullName = dto.FullName.Trim(), Phone = dto.Phone };
+        var entity = new Customer
+        {
+            FullName = dto.FullName.Trim(),
+            Phone = dto.Phone,
+            CustomerType = dto.CustomerType,
+            Source = dto.Source,
+            Tag = dto.Tag,
+            TempBalance = dto.TempBalance,
+        };
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
@@ -51,6 +59,10 @@ public sealed class CustomerService(
 
         entity.FullName = dto.FullName.Trim();
         entity.Phone = dto.Phone;
+        entity.CustomerType = dto.CustomerType;
+        entity.Source = dto.Source;
+        entity.Tag = dto.Tag;
+        entity.TempBalance = dto.TempBalance;
         repo.Update(entity);
         await repo.SaveChangesAsync();
     }
@@ -76,5 +88,6 @@ public sealed class CustomerService(
         }
     }
 
-    private static CustomerDto Map(Customer c) => new(c.Id, c.FullName, c.Phone);
+    private static CustomerDto Map(Customer c) =>
+        new(c.Id, c.FullName, c.Phone, c.CustomerType, c.Source, c.Tag, c.TempBalance);
 }
