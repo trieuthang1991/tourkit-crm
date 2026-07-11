@@ -57,4 +57,12 @@ public sealed class ReportsController(IReportService service) : ControllerBase
         var rows = await service.GetCommissionByUserAsync();
         return Ok(rows);
     }
+
+    [HttpGet("turnover-by-department")]
+    [Authorize(Permissions.ReportTurnoverView)]
+    public async Task<IActionResult> TurnoverByDepartment()
+    {
+        var rows = await service.GetTurnoverByDepartmentAsync();
+        return Ok(rows);
+    }
 }

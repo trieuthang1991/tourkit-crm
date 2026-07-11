@@ -200,4 +200,45 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
 
         return rows;
     }
+
+    /// <summary>
+    /// Doanh thu/lợi nhuận theo PHÒNG BAN: gom đơn theo phòng ban của sales phụ trách (Order.SalesUserId →
+    /// User.DepartmentId). Đơn không gán sales hoặc sales chưa gán phòng ban gộp vào "Chưa phân bổ".
+    /// </summary>
+    public async Task<IReadOnlyList<TurnoverByDepartmentRowDto>> GetTurnoverByDepartmentAsync()
+    {
+        var orders = await db.Orders.AsNoTracking()
+            .Select(o => new { o.Id, o.TotalRevenue, o.SalesUserId })
+            .ToListAsync();
+
+        var userDepartment = (await db.Users.AsNoTracking()
+                .Select(u => new { u.Id, u.DepartmentId })
+                .ToListAsync())
+            .ToDictionary(u => u.Id, u => u.DepartmentId);
+
+        var departmentName = (await db.Departments.AsNoTracking()
+                .Select(d => new { d.Id, d.Name })
+                .ToListAsync())
+            .ToDictionary(d => d.Id, d => d.Name);
+
+        var costByOrder = (await db.OrderCosts.AsNoTracking()
+                .GroupBy(c => c.OrderId)
+                .Select(g => new { OrderId = g.Key, Cost = g.Sum(x => x.ActualAmount) })
+                .ToListAsync())
+            .ToDictionary(x => x.OrderId, x => x.Cost);
+
+        IReadOnlyList<TurnoverByDepartmentRowDto> rows = orders
+            .GroupBy(o => o.SalesUserId is { } uid ? userDepartment.GetValueOrDefault(uid) : null)
+            .Select(g =>
+            {
+                var turnover = g.Sum(x => x.TotalRevenue);
+                var cost = g.Sum(x => costByOrder.GetValueOrDefault(x.Id, 0m));
+                var name = g.Key is { } did ? departmentName.GetValueOrDefault(did, "(phòng ban đã xoá)") : "Chưa phân bổ";
+                return new TurnoverByDepartmentRowDto(g.Key, name, g.Count(), turnover, cost, OrderMath.Profit(turnover, cost));
+            })
+            .OrderByDescending(r => r.Profit)
+            .ToList();
+
+        return rows;
+    }
 }

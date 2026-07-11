@@ -88,6 +88,7 @@
 | Ngôn ngữ HDV (LanguageType) | LanguagesType | `feat(catalog): ngôn ngữ HDV` |
 | Cơ cấu tổ chức (Department/Position + Users) | PhongBan/Position | `feat(admin): cơ cấu tổ chức` |
 | Phụ thu theo đơn (Surcharge/OrderSurcharge) | ConfigSurcharge/SurchargeServices | `feat(booking): phụ thu theo đơn` |
+| Báo cáo doanh thu theo phòng ban | (dùng Department) | `feat(reports): doanh thu theo phòng ban` |
 
 **Ghi chú:** LoaiDonHang/TrangThaiDonHang **bỏ qua** — hệ mới đã model `Order.Status`/`Order.BookingType` bằng enum (tốt hơn bảng trạng thái legacy), không mirror redundant.
 

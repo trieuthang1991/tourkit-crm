@@ -15,4 +15,5 @@ public interface IReportQueries
     Task<IReadOnlyList<CashFlowRowDto>> GetCashFlowAsync();
     Task<IReadOnlyList<TurnoverRowDto>> GetTurnoverAsync();
     Task<IReadOnlyList<CommissionByUserRowDto>> GetCommissionByUserAsync();
+    Task<IReadOnlyList<TurnoverByDepartmentRowDto>> GetTurnoverByDepartmentAsync();
 }

@@ -44,6 +44,7 @@ const NAV: NavItem[] = [
   { key: '/reports/provider-debt', label: 'Công nợ NCC', perm: 'report.providerdebt.view' },
   { key: '/reports/cash-flow', label: 'Dòng tiền', perm: 'report.cashflow.view' },
   { key: '/reports/turnover', label: 'Doanh thu', perm: 'report.turnover.view' },
+  { key: '/reports/turnover-by-department', label: 'Doanh thu theo phòng ban', perm: 'report.turnover.view' },
   { key: '/reports/commission-by-user', label: 'Hoa hồng NV', perm: 'report.commission.view' },
   { key: '/commission-rules', label: 'Cấu hình hoa hồng', perm: 'commission.view' },
   { key: '/users', label: 'Người dùng', perm: 'user.view' },

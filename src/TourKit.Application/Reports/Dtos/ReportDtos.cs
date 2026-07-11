@@ -24,3 +24,7 @@ public sealed record TurnoverRowDto(Guid OrderId, string OrderCode, decimal Reve
 /// <summary>Một dòng hoa hồng/lợi nhuận theo nhân viên sales.</summary>
 public sealed record CommissionByUserRowDto(
     Guid UserId, decimal Turnover, decimal Cost, decimal Profit, decimal CommissionRate, decimal CommissionAmount);
+
+/// <summary>Một dòng doanh thu/lợi nhuận theo phòng ban (gom đơn theo phòng ban của sales phụ trách).</summary>
+public sealed record TurnoverByDepartmentRowDto(
+    Guid? DepartmentId, string DepartmentName, int OrderCount, decimal Turnover, decimal Cost, decimal Profit);
