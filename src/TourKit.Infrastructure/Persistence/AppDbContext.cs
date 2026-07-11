@@ -62,6 +62,8 @@ public class AppDbContext : DbContext
     public DbSet<LanguageType> LanguageTypes => Set<LanguageType>();
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<Position> Positions => Set<Position>();
+    public DbSet<Surcharge> Surcharges => Set<Surcharge>();
+    public DbSet<OrderSurcharge> OrderSurcharges => Set<OrderSurcharge>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();

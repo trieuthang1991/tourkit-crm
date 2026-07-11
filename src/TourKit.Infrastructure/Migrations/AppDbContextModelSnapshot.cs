@@ -1205,6 +1205,53 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("OrderCosts");
                 });
 
+            modelBuilder.Entity("TourKit.Shared.Entities.OrderSurcharge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("CalcType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("SurchargeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Value")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "OrderId");
+
+                    b.ToTable("OrderSurcharges");
+                });
+
             modelBuilder.Entity("TourKit.Shared.Entities.PaymentAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2311,6 +2358,50 @@ namespace TourKit.Infrastructure.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Subscriptions");
+                });
+
+            modelBuilder.Entity("TourKit.Shared.Entities.Surcharge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CalcType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("DefaultValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("REAL");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Surcharges");
                 });
 
             modelBuilder.Entity("TourKit.Shared.Entities.Tenant", b =>

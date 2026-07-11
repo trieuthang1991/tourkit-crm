@@ -19,4 +19,11 @@ public static class OrderMath
 
     /// <summary>Công nợ còn lại = tổng phải − đã (thu/chi ĐÃ ghi nhận). Dùng cho công nợ phải thu &amp; phải trả.</summary>
     public static decimal Outstanding(decimal total, decimal settled) => total - settled;
+
+    /// <summary>
+    /// Thành tiền 1 dòng phụ thu: cố định = value; % = value% × doanh thu GỐC (chưa gồm phụ thu khác).
+    /// Một chỗ duy nhất — dùng cả khi thêm dòng lẫn khi tính lại.
+    /// </summary>
+    public static decimal SurchargeAmount(int calcType, decimal value, decimal baseRevenue)
+        => calcType == (int)Enums.SurchargeCalcType.Percent ? baseRevenue * value / 100m : value;
 }

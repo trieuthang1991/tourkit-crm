@@ -9,6 +9,7 @@ import { CommissionPanel } from '../commission/CommissionPanel';
 import { PaymentsPanel } from '../finance/PaymentsPanel';
 import { ReceiptsPanel } from '../finance/ReceiptsPanel';
 import { OrderCostsPanel } from '../providers/OrderCostsPanel';
+import { OrderSurchargesPanel } from './OrderSurchargesPanel';
 import { ordersCrud, useAssignSales } from './bookingApi';
 import { useCancelSeat, useConfirmSeat, useDepositSeat, useOrderLines } from './orderLinesApi';
 import type { BookingLine } from './orderLinesApi';
@@ -258,6 +259,11 @@ export function OrderDetailPage() {
       {has('payment.view') ? (
         <div style={{ marginTop: 16 }}>
           <PaymentsPanel orderId={orderId} />
+        </div>
+      ) : null}
+      {has('booking.view') ? (
+        <div style={{ marginTop: 16 }}>
+          <OrderSurchargesPanel orderId={orderId} />
         </div>
       ) : null}
       {has('cost.view') ? (
