@@ -1,7 +1,9 @@
-import { Button, Layout, Menu, Typography } from 'antd';
+import { Badge, Button, Layout, Menu, Typography } from 'antd';
+import { BellOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
+import { useUnreadCount } from '../features/notifications/api';
 
 const { Header, Sider, Content } = Layout;
 
@@ -61,6 +63,7 @@ export function AppShell() {
   const { has, email, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const unread = useUnreadCount();
 
   const items: MenuProps['items'] = NAV.filter((n) => has(n.perm)).map((n) => ({ key: n.key, label: n.label }));
 
@@ -81,6 +84,9 @@ export function AppShell() {
       </Sider>
       <Layout>
         <Header style={{ background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
+          <Badge count={unread.data ?? 0} size="small">
+            <Button type="text" icon={<BellOutlined />} onClick={() => navigate('/notifications')} aria-label="Thông báo" />
+          </Badge>
           <span>{email}</span>
           <Button onClick={logout}>Đăng xuất</Button>
         </Header>

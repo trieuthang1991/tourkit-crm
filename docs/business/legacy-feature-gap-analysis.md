@@ -62,7 +62,7 @@
 ## 🔴 Tích hợp ngoài / subsystem lớn (làm khi có nhu cầu + API)
 
 - **Gửi thật đa kênh**: `SMS`/`SMS_Campaign`/`Send_Sms_History` (SMS gateway), `Email_*`/`MailHistory` (email campaign — hạ tầng IEmailSender đã có, thiếu campaign UI), `ZaloCampain`/`ZaloUID`/`ZaloZNS` (Zalo OA).
-- **Notification** in-app (`Notification`/`NotificationOfEachUser`/`NotifiInUser`).
+- 🟡 **Notification in-app** (`Notification`/`NotificationOfEachUser`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần API ngoài): thông báo cá nhân + chuông đếm chưa đọc ở header + đánh dấu đã đọc/tất cả. Nối Tasking→Notification (giao việc → thông báo người nhận). Chỉ cần đăng nhập (thông báo cá nhân, lọc theo user hiện tại).
 - 🟡 **Tasking** (`Tasking`/`UserInTasks`) ✅ **ĐÃ LÀM** (groundable, KHÔNG cần API ngoài): WorkTask — giao/theo dõi công việc nội bộ (tiêu đề/mô tả/người được giao/hạn/ưu tiên/trạng thái/gắn đơn), lọc theo người+trạng thái, quyền `task.*`. Còn `Workflow`/`KPI`/`SectionWork` (quy trình động + chỉ số) là phần nâng cao, cần thiết kế.
 - **CMS/blog** (`Posts`/`CategoriesPost`/`CommentsPost`/`Likes`) — ngoài phạm vi điều hành tour.
 - **BankHub** (`BankHub`/`APIKeyMifi`) — đối soát ngân hàng, cần API.

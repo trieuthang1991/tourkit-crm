@@ -1,5 +1,6 @@
 using FluentValidation;
 using TourKit.Application.Common;
+using TourKit.Application.Notifications;
 using TourKit.Shared.Entities;
 
 namespace TourKit.Application.Work;
@@ -7,10 +8,12 @@ namespace TourKit.Application.Work;
 /// <summary>
 /// Công việc nội bộ (legacy Tasking) — CRUD + lọc theo người được giao/trạng thái. Không phụ thuộc
 /// dịch vụ ngoài. Validate người được giao tồn tại (nếu có); resolve tên người được giao khi trả về.
+/// Khi giao việc (gán/đổi người) → đẩy thông báo in-app cho người nhận (<see cref="INotificationService"/>).
 /// </summary>
 public sealed class WorkTaskService(
     IRepository<WorkTask> repo,
     IRepository<User> userRepo,
+    INotificationService notifications,
     IValidator<CreateWorkTaskDto> createValidator,
     IValidator<UpdateWorkTaskDto> updateValidator) : IWorkTaskService
 {
@@ -47,6 +50,8 @@ public sealed class WorkTaskService(
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
+        await NotifyAssigneeAsync(entity);
+
         var names = await LoadUserNamesAsync();
         return Map(entity, names);
     }
@@ -58,6 +63,8 @@ public sealed class WorkTaskService(
         var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
         await EnsureAssigneeAsync(dto.AssigneeUserId);
 
+        var previousAssignee = entity.AssigneeUserId;
+
         entity.Title = dto.Title.Trim();
         entity.Description = dto.Description?.Trim();
         entity.AssigneeUserId = dto.AssigneeUserId;
@@ -67,6 +74,12 @@ public sealed class WorkTaskService(
         entity.RelatedOrderId = dto.RelatedOrderId;
         repo.Update(entity);
         await repo.SaveChangesAsync();
+
+        // Chỉ thông báo khi ĐỔI người được giao (tránh spam mỗi lần sửa).
+        if (entity.AssigneeUserId != previousAssignee)
+        {
+            await NotifyAssigneeAsync(entity);
+        }
     }
 
     public async Task DeleteAsync(Guid id)
@@ -74,6 +87,14 @@ public sealed class WorkTaskService(
         var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
         repo.Remove(entity);
         await repo.SaveChangesAsync();
+    }
+
+    private async Task NotifyAssigneeAsync(WorkTask task)
+    {
+        if (task.AssigneeUserId is { } uid)
+        {
+            await notifications.PushAsync(uid, "Bạn được giao công việc", task.Title, "/work-tasks");
+        }
     }
 
     private async Task EnsureAssigneeAsync(Guid? assigneeUserId)
