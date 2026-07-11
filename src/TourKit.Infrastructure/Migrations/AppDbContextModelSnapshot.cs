@@ -2519,6 +2519,43 @@ namespace TourKit.Infrastructure.Migrations
                     b.ToTable("RolePermissions");
                 });
 
+            modelBuilder.Entity("TourKit.Shared.Entities.RoomClass", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("RoomClasses");
+                });
+
             modelBuilder.Entity("TourKit.Shared.Entities.ServiceBooking", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2556,6 +2593,9 @@ namespace TourKit.Infrastructure.Migrations
 
                     b.Property<int>("Quantity")
                         .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("RoomClassId")
+                        .HasColumnType("TEXT");
 
                     b.Property<long?>("StartDate")
                         .HasColumnType("INTEGER");

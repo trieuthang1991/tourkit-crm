@@ -1,8 +1,12 @@
 import type { ColumnsType } from 'antd/es/table';
+import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
+import { httpClient } from '../../shared/api/httpClient';
 import { dateText, money, statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { ResourcePage } from '../../shared/ui/ResourcePage';
+import { roomClassSchema } from '../roomClasses/types';
 import { serviceBookingsCrud } from './serviceBookingsCrud';
 import { SERVICE_BOOKING_TYPE, serviceBookingFormSchema } from './types';
 import type { ServiceBooking, ServiceBookingForm } from './types';
@@ -11,6 +15,18 @@ const TYPE_OPTIONS = Object.entries(SERVICE_BOOKING_TYPE).map(([value, label]) =
   value: Number(value),
   label,
 }));
+
+function RoomClassField() {
+  const list = useQuery({
+    queryKey: ['room-classes'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/room-classes');
+      return z.array(roomClassSchema).parse(data);
+    },
+  });
+  const options = (list.data ?? []).map((r) => ({ label: r.name, value: r.id }));
+  return <SelectField name="roomClassId" label="Hạng phòng (khi đặt KS)" options={options} allowClear />;
+}
 
 const columns: ColumnsType<ServiceBooking> = [
   { title: 'Mã', dataIndex: 'code', key: 'code' },
@@ -41,6 +57,7 @@ export function ServiceBookingsPage() {
         unitPrice: s?.unitPrice ?? 0,
         status: s?.status ?? 0,
         note: s?.note ?? null,
+        roomClassId: s?.roomClassId ?? null,
       })}
       renderForm={() => null}
       formModal={({ open, mode, submitting, onCancel, onSubmit, defaultValues }) => (
@@ -63,6 +80,7 @@ export function ServiceBookingsPage() {
           <NumberField name="quantity" label="Số lượng" required />
           <NumberField name="unitPrice" label="Đơn giá" required />
           <NumberField name="status" label="Trạng thái" required />
+          <RoomClassField />
           <TextAreaField name="note" label="Ghi chú" />
         </CrudFormModal>
       )}

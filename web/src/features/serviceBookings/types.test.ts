@@ -17,6 +17,7 @@ describe('service booking schemas', () => {
       totalAmount: 2000000,
       status: 0,
       note: null,
+      roomClassId: null,
     });
     expect(s.type).toBe(1);
     expect(s.totalAmount).toBe(2000000);

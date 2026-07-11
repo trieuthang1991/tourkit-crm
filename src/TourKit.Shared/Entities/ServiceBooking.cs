@@ -13,6 +13,7 @@ public sealed class ServiceBooking : BaseEntity, ITenantEntity
     public ServiceBookingType Type { get; set; }
     public Guid? OrderId { get; set; }
     public Guid? ProviderId { get; set; }
+    public Guid? RoomClassId { get; set; }                    // hạng phòng (chỉ ý nghĩa khi Type=Hotel)
     public string Description { get; set; } = string.Empty;   // tên KS / chuyến bay / loại visa / vé...
     public DateTimeOffset? StartDate { get; set; }            // check-in / ngày bay / ngày cấp
     public DateTimeOffset? EndDate { get; set; }              // check-out / ngày về

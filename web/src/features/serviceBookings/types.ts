@@ -23,6 +23,7 @@ export const serviceBookingSchema = z.object({
   totalAmount: z.number(),
   status: z.number(),
   note: z.string().nullable(),
+  roomClassId: z.string().uuid().nullable(),
 });
 export type ServiceBooking = z.infer<typeof serviceBookingSchema>;
 
@@ -47,5 +48,6 @@ export const serviceBookingFormSchema = z.object({
     .string()
     .nullable()
     .transform((v) => (v ? v : null)),
+  roomClassId: z.string().nullable(),
 });
 export type ServiceBookingForm = z.infer<typeof serviceBookingFormSchema>;

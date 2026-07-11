@@ -50,6 +50,7 @@ import { VehicleAssignmentsPage } from '../features/vehicleAssignments/VehicleAs
 import { ActivityLogsPage } from '../features/activityLogs/ActivityLogsPage';
 import { OperationsCalendarPage } from '../features/operations/OperationsCalendarPage';
 import { ServiceBookingsPage } from '../features/serviceBookings/ServiceBookingsPage';
+import { RoomClassesPage } from '../features/roomClasses/RoomClassesPage';
 import { AgentsPage } from '../features/agents/AgentsPage';
 import { CustomerCommissionRulesPage } from '../features/customerCommissionRules/CustomerCommissionRulesPage';
 import { QuotesPage } from '../features/quotes/QuotesPage';
@@ -111,6 +112,7 @@ export function AppRouter() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/service-bookings" element={<ServiceBookingsPage />} />
+        <Route path="/room-classes" element={<RoomClassesPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/customer-commission-rules" element={<CustomerCommissionRulesPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />

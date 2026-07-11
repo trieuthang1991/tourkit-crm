@@ -42,6 +42,7 @@ public sealed class ServiceBookingService(
             TotalAmount = dto.Quantity * dto.UnitPrice,
             Status = dto.Status,
             Note = dto.Note,
+            RoomClassId = dto.RoomClassId,
         };
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
@@ -67,6 +68,7 @@ public sealed class ServiceBookingService(
         entity.TotalAmount = dto.Quantity * dto.UnitPrice;
         entity.Status = dto.Status;
         entity.Note = dto.Note;
+        entity.RoomClassId = dto.RoomClassId;
         repo.Update(entity);
         await repo.SaveChangesAsync();
     }
@@ -89,5 +91,5 @@ public sealed class ServiceBookingService(
 
     private static ServiceBookingDto Map(ServiceBooking b) =>
         new(b.Id, b.Code, b.Type, b.OrderId, b.ProviderId, b.Description,
-            b.StartDate, b.EndDate, b.Quantity, b.UnitPrice, b.TotalAmount, b.Status, b.Note);
+            b.StartDate, b.EndDate, b.Quantity, b.UnitPrice, b.TotalAmount, b.Status, b.Note, b.RoomClassId);
 }

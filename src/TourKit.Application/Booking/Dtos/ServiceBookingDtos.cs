@@ -5,12 +5,14 @@ namespace TourKit.Application.Booking.Dtos;
 public sealed record ServiceBookingDto(
     Guid Id, string Code, ServiceBookingType Type, Guid? OrderId, Guid? ProviderId, string Description,
     DateTimeOffset? StartDate, DateTimeOffset? EndDate, int Quantity, decimal UnitPrice, decimal TotalAmount,
-    int Status, string? Note);
+    int Status, string? Note, Guid? RoomClassId);
 
 public sealed record CreateServiceBookingDto(
     string Code, ServiceBookingType Type, Guid? OrderId, Guid? ProviderId, string Description,
-    DateTimeOffset? StartDate, DateTimeOffset? EndDate, int Quantity, decimal UnitPrice, int Status, string? Note);
+    DateTimeOffset? StartDate, DateTimeOffset? EndDate, int Quantity, decimal UnitPrice, int Status, string? Note,
+    Guid? RoomClassId = null);
 
 public sealed record UpdateServiceBookingDto(
     string Code, ServiceBookingType Type, Guid? OrderId, Guid? ProviderId, string Description,
-    DateTimeOffset? StartDate, DateTimeOffset? EndDate, int Quantity, decimal UnitPrice, int Status, string? Note);
+    DateTimeOffset? StartDate, DateTimeOffset? EndDate, int Quantity, decimal UnitPrice, int Status, string? Note,
+    Guid? RoomClassId = null);
