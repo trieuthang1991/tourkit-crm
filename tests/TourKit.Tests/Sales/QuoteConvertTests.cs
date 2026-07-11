@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using TourKit.Api.Auth;
 using TourKit.Application.Booking.Dtos;
+using TourKit.Application.Common;
 using TourKit.Application.Catalog.Dtos;
 using TourKit.Application.Sales.Dtos;
 using TourKit.Tests.Support;
@@ -89,6 +90,42 @@ public class QuoteConvertTests : IClassFixture<AuthTestFactory>
         // Chuyển lần 2 → 409 (đã chuyển).
         var again = await client.PostAsJsonAsync($"/api/v1/quotes/{quote.Id}/convert", new ConvertQuoteDto(departureId));
         Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+    }
+
+    [Fact]
+    public async Task Convert_fit_without_departure_creates_private_departure_and_order()
+    {
+        var client = await LoggedInClientAsync("quote-cvt-fit");
+        var (customerId, _) = await SeedCustomerAndDepartureAsync(client, "F");
+        var quote = await CreateQuoteAsync(client, customerId, status: 2);
+
+        // FIT: không chọn chuyến — chỉ nhập ngày khởi hành → hệ tự tạo chuyến riêng.
+        var response = await client.PostAsJsonAsync($"/api/v1/quotes/{quote.Id}/convert",
+            new ConvertQuoteDto(null, DateTimeOffset.UtcNow.AddDays(20)));
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK,
+            $"Expected 200, got {(int)response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
+        var result = await response.Content.ReadFromJsonAsync<ConvertQuoteResultDto>();
+        Assert.NotEqual(Guid.Empty, result!.OrderId);
+
+        // Chuyến riêng FIT-<code> đã được tạo, TotalSlots = đúng số khách (2 NL + 1 TE = 3 → chuyến kín).
+        var departures = await client.GetFromJsonAsync<PagedResult<DepartureDto>>("/api/v1/tour-departures?page=1&size=200");
+        var fit = departures!.Items.Single(d => d.Code == "FIT-" + quote.Code);
+        Assert.Equal(3, fit.TotalSlots);
+        Assert.Null(fit.TemplateId);
+    }
+
+    [Fact]
+    public async Task Convert_fit_without_departure_and_date_returns_400()
+    {
+        var client = await LoggedInClientAsync("quote-cvt-nodate");
+        var (customerId, _) = await SeedCustomerAndDepartureAsync(client, "N");
+        var quote = await CreateQuoteAsync(client, customerId, status: 2);
+
+        var response = await client.PostAsJsonAsync($"/api/v1/quotes/{quote.Id}/convert",
+            new ConvertQuoteDto(null));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

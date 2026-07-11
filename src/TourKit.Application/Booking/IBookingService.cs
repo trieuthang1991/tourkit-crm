@@ -5,8 +5,9 @@ namespace TourKit.Application.Booking;
 
 public interface IBookingService
 {
-    /// <summary>Đặt khách "chốt" ngay (không giữ chỗ): Order Confirmed, upfront = 0.</summary>
-    Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto);
+    /// <summary>Đặt khách "chốt" ngay (không giữ chỗ): Order Confirmed, upfront = 0.
+    /// priceOverride: giá chỗ tường minh cho chuyến FIT không template (mặc định lấy giá mẫu tour).</summary>
+    Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null);
 
     /// <summary>Giữ chỗ: Order Draft, upfront = 0, HoldExpiresAt = now + ReservationHours (đếm ngược).</summary>
     Task<SeatDto> CreateHoldAsync(Guid departureId, CreateBookingDto dto);

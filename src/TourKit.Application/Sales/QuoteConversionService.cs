@@ -2,6 +2,7 @@ using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Common;
 using TourKit.Application.Sales.Dtos;
+using TourKit.Shared.Domain;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Enums;
 
@@ -22,7 +23,8 @@ public sealed class QuoteConversionService(
     IRepository<Order> orderRepo,
     IRepository<ServiceBooking> serviceBookingRepo,
     IRepository<ProviderService> providerServiceRepo,
-    IBookingService bookingService) : IQuoteConversionService
+    IBookingService bookingService,
+    IDepartureService departureService) : IQuoteConversionService
 {
     /// <summary>Dòng báo giá loại nào sinh ServiceBooking (đặt dịch vụ lẻ với NCC) — còn lại là chi phí điều hành.</summary>
     private static readonly Dictionary<int, ServiceBookingType> BookableTypes = new()
@@ -53,9 +55,43 @@ public sealed class QuoteConversionService(
             throw new ValidationAppException("Cần gán khách hàng (CustomerId) cho báo giá trước khi chuyển thành đơn.");
         }
 
+        var paxTotal = quote.Adults + quote.Children + quote.Infants;
+
+        // Chuyến đích: ghép chuyến sẵn có, hoặc FIT — tự tạo CHUYẾN RIÊNG (legacy SingleTour).
+        Guid departureId;
+        if (dto.TourDepartureId is { } existingDeparture)
+        {
+            departureId = existingDeparture;
+        }
+        else
+        {
+            if (dto.DepartureDate is null)
+            {
+                throw new ValidationAppException("Chọn chuyến sẵn có hoặc nhập ngày khởi hành để tạo chuyến riêng (FIT).");
+            }
+
+            if (paxTotal < 1)
+            {
+                throw new ValidationAppException("Tour lẻ FIT cần số khách ≥ 1 trên báo giá.");
+            }
+
+            // Chuyến riêng: không template, TotalSlots = đúng số khách → chuyến kín, không nhận thêm khách ngoài.
+            var fit = await departureService.CreateAsync(new CreateDepartureDto(
+                null, "FIT-" + quote.Code, quote.Title, dto.DepartureDate, dto.EndDate, paxTotal));
+            departureId = fit.Id;
+        }
+
+        // Giá chỗ = giá 3 hạng khách CỦA BÁO GIÁ (QuoteMath) — giá đã chốt với khách,
+        // không phải giá niêm yết mẫu tour; đồng thời cho phép chuyến FIT không template.
+        var lines = await lineRepo.ListAsync(l => l.QuoteId == quoteId);
+        var pricing = QuoteMath.Price(
+            lines, quote.Adults, quote.Children, quote.Infants, quote.ChildPercent, quote.InfantPercent);
+
         // Đặt chỗ qua flow chuẩn — giữ nguyên chống overbooking + sinh Order/Seat.
-        var order = await bookingService.CreateBookingAsync(dto.TourDepartureId, new CreateBookingDto(
-            quote.CustomerId.Value, quote.Adults, quote.Children, quote.Infants, 0));
+        var order = await bookingService.CreateBookingAsync(
+            departureId,
+            new CreateBookingDto(quote.CustomerId.Value, quote.Adults, quote.Children, quote.Infants, 0),
+            new SeatPrices(pricing.AdultPrice, pricing.ChildPrice, pricing.InfantPrice, 0m));
 
         // Doanh thu đơn = giá chốt của báo giá (không phải giá niêm yết chuyến).
         var orderEntity = await orderRepo.GetByIdAsync(order.Id) ?? throw new NotFoundException();
@@ -63,8 +99,6 @@ public sealed class QuoteConversionService(
         orderRepo.Update(orderEntity);
 
         // Dòng dịch vụ đặt-ngoài → ServiceBooking gắn vào đơn.
-        var lines = await lineRepo.ListAsync(l => l.QuoteId == quoteId);
-        var totalPax = quote.Adults + quote.Children + quote.Infants;
         var bookingCount = 0;
         foreach (var line in lines)
         {
@@ -80,7 +114,7 @@ public sealed class QuoteConversionService(
             }
 
             var quantity = line.Scope == (int)QuoteLineScope.PerPerson
-                ? line.Quantity * Math.Max(totalPax, 1)
+                ? line.Quantity * Math.Max(paxTotal, 1)
                 : line.Quantity;
 
             await serviceBookingRepo.AddAsync(new ServiceBooking

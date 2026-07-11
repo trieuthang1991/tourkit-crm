@@ -1,4 +1,5 @@
-import { App, Button, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { App, Button, DatePicker, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -66,6 +67,7 @@ export function QuotesPage() {
   const convert = useConvertQuote();
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const [departureId, setDepartureId] = useState<string | undefined>();
+  const [fitDate, setFitDate] = useState<string | null>(null); // FIT: ngày khởi hành chuyến riêng
   const departures = departuresCrud.useList({ page: 1, size: 200 });
   const departureOptions = useMemo(
     () => (departures.data?.items ?? []).map((d) => ({ label: `${d.code} — ${d.title}`, value: d.id })),
@@ -73,11 +75,16 @@ export function QuotesPage() {
   );
 
   async function onConvert() {
-    if (!convertingId || !departureId) return;
+    if (!convertingId || (!departureId && !fitDate)) return;
     try {
-      const result = await convert.mutateAsync({ id: convertingId, tourDepartureId: departureId });
+      const result = await convert.mutateAsync({
+        id: convertingId,
+        tourDepartureId: departureId ?? null,
+        departureDate: departureId ? null : fitDate,
+      });
       setConvertingId(null);
       setDepartureId(undefined);
+      setFitDate(null);
       message.success(`Đã tạo đơn ${result.orderCode} (+${result.serviceBookingCount} đặt dịch vụ)`);
     } catch (e) {
       message.error(errorMessage(e));
@@ -252,27 +259,41 @@ export function QuotesPage() {
         open={convertingId !== null}
         title="Chuyển báo giá thành đơn"
         okText="Chuyển"
-        okButtonProps={{ disabled: !departureId }}
+        okButtonProps={{ disabled: !departureId && !fitDate }}
         confirmLoading={convert.isPending}
         onCancel={() => {
           setConvertingId(null);
           setDepartureId(undefined);
+          setFitDate(null);
         }}
         onOk={onConvert}
       >
         <Typography.Paragraph type="secondary">
-          Đơn sẽ đặt chỗ theo số khách của báo giá; doanh thu đơn = tổng báo giá; các dòng dịch vụ
-          (KS/xe/visa/vé/vé bay) sinh phiếu đặt dịch vụ lẻ.
+          Đơn sẽ đặt chỗ theo số khách của báo giá (giá chỗ = giá báo giá); doanh thu đơn = tổng báo
+          giá; các dòng dịch vụ (KS/xe/visa/vé/vé bay) sinh phiếu đặt dịch vụ lẻ.
         </Typography.Paragraph>
         <Select
-          style={{ width: '100%' }}
-          placeholder="Chọn chuyến khởi hành"
+          style={{ width: '100%', marginBottom: 8 }}
+          placeholder="Ghép chuyến khởi hành sẵn có"
+          allowClear
           loading={departures.isLoading}
           options={departureOptions}
           value={departureId}
-          onChange={setDepartureId}
+          onChange={(v) => {
+            setDepartureId(v ?? undefined);
+            if (v) setFitDate(null); // chọn chuyến sẵn → bỏ chế độ FIT
+          }}
           showSearch
           optionFilterProp="label"
+        />
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 4 }}>
+          Hoặc tour lẻ FIT — nhập ngày khởi hành, hệ tự tạo chuyến riêng (kín, đúng số khách):
+        </Typography.Paragraph>
+        <DatePicker
+          style={{ width: '100%' }}
+          disabled={!!departureId}
+          value={fitDate ? dayjs(fitDate) : null}
+          onChange={(d) => setFitDate(d ? d.toISOString() : null)}
         />
       </Modal>
     </>

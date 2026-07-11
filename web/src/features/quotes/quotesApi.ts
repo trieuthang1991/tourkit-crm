@@ -64,11 +64,23 @@ export function useUpdateQuote() {
 }
 
 /// Chuyển báo giá CHẤP NHẬN → đơn + đặt dịch vụ lẻ (legacy DuyetBooking).
+/// Ghép chuyến sẵn (tourDepartureId) HOẶC tour lẻ FIT (departureDate → hệ tạo chuyến riêng).
 export function useConvertQuote() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, tourDepartureId }: { id: string; tourDepartureId: string }) => {
-      const { data } = await httpClient.post<unknown>(`/api/v1/quotes/${id}/convert`, { tourDepartureId });
+    mutationFn: async ({
+      id,
+      tourDepartureId,
+      departureDate,
+    }: {
+      id: string;
+      tourDepartureId: string | null;
+      departureDate?: string | null;
+    }) => {
+      const { data } = await httpClient.post<unknown>(`/api/v1/quotes/${id}/convert`, {
+        tourDepartureId,
+        departureDate: departureDate ?? null,
+      });
       return z
         .object({ orderId: z.string().uuid(), orderCode: z.string(), serviceBookingCount: z.number() })
         .parse(data);

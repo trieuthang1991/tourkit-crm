@@ -28,8 +28,13 @@ public sealed record CreateQuoteDto(
     int Adults = 0, int Children = 0, int Infants = 0,
     decimal ChildPercent = 75, decimal InfantPercent = 50);
 
-/// <summary>Chuyển báo giá chấp nhận → đơn: chọn chuyến khởi hành đích.</summary>
-public sealed record ConvertQuoteDto(Guid TourDepartureId);
+/// <summary>
+/// Chuyển báo giá chấp nhận → đơn. Hai chế độ:
+/// - Ghép chuyến sẵn có: truyền <paramref name="TourDepartureId"/>.
+/// - Tour lẻ FIT (legacy SingleTour): bỏ trống chuyến + truyền <paramref name="DepartureDate"/>
+///   → hệ tự tạo CHUYẾN RIÊNG (không template, TotalSlots = đúng số khách báo giá — chuyến kín).
+/// </summary>
+public sealed record ConvertQuoteDto(Guid? TourDepartureId, DateTimeOffset? DepartureDate = null, DateTimeOffset? EndDate = null);
 
 public sealed record ConvertQuoteResultDto(Guid OrderId, string OrderCode, int ServiceBookingCount);
 

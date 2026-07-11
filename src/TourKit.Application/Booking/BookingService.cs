@@ -20,17 +20,19 @@ public sealed class BookingService(
     IRepository<CancelSeat> cancelSeatRepo,
     IValidator<DepositDto> depositValidator) : IBookingService
 {
-    public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto)
+    public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null)
     {
         var (order, _) = await BuildAsync(
-            departureId, dto.CustomerId, dto.AdultQty, dto.ChildQty, dto.ChildSmallQty, dto.BabyQty, isHold: false);
+            departureId, dto.CustomerId, dto.AdultQty, dto.ChildQty, dto.ChildSmallQty, dto.BabyQty,
+            isHold: false, priceOverride);
         return MapOrder(order);
     }
 
     public async Task<SeatDto> CreateHoldAsync(Guid departureId, CreateBookingDto dto)
     {
         var (_, seat) = await BuildAsync(
-            departureId, dto.CustomerId, dto.AdultQty, dto.ChildQty, dto.ChildSmallQty, dto.BabyQty, isHold: true);
+            departureId, dto.CustomerId, dto.AdultQty, dto.ChildQty, dto.ChildSmallQty, dto.BabyQty,
+            isHold: true, priceOverride: null);
         return MapSeat(seat);
     }
 
@@ -146,7 +148,8 @@ public sealed class BookingService(
     /// isHold = true → giữ chỗ (upfront 0 + đếm ngược). Guard OVERBOOKING + chuyến đã đóng nằm ở ĐÂY.
     /// </summary>
     private async Task<(Order Order, TourCustomer Seat)> BuildAsync(
-        Guid departureId, Guid customerId, int adultQty, int childQty, int childSmallQty, int babyQty, bool isHold)
+        Guid departureId, Guid customerId, int adultQty, int childQty, int childSmallQty, int babyQty,
+        bool isHold, SeatPrices? priceOverride)
     {
         var departure = await departureRepo.GetByIdAsync(departureId);
         if (departure is null)
@@ -154,7 +157,8 @@ public sealed class BookingService(
             throw new NotFoundException();
         }
 
-        if (departure.ParentTourId is null)
+        // Giá chỗ: từ mẫu tour (mặc định) hoặc override tường minh (chuyến FIT không template).
+        if (departure.ParentTourId is null && priceOverride is null)
         {
             throw new ValidationAppException("Chuyến chưa gắn mẫu tour để tính giá.");
         }
@@ -164,10 +168,20 @@ public sealed class BookingService(
             throw new ValidationAppException("Khách hàng không tồn tại.");
         }
 
-        var template = await templateRepo.GetByIdAsync(departure.ParentTourId.Value);
-        if (template is null)
+        TourTemplate? template = null;
+        if (departure.ParentTourId is { } parentId)
         {
-            throw new ValidationAppException("Không tìm thấy mẫu tour của chuyến.");
+            template = await templateRepo.GetByIdAsync(parentId);
+            if (template is null)
+            {
+                throw new ValidationAppException("Không tìm thấy mẫu tour của chuyến.");
+            }
+        }
+
+        if (isHold && template is null)
+        {
+            // Giữ chỗ cần ReservationHours của mẫu tour — chuyến FIT đặt chốt ngay, không giữ chỗ.
+            throw new ValidationAppException("Chuyến FIT không hỗ trợ giữ chỗ — đặt chốt ngay.");
         }
 
         if (departure.IsClosed)
@@ -202,15 +216,15 @@ public sealed class BookingService(
             AmountChildren = childQty,
             AmountChildrenSmall = childSmallQty,
             QuantityBaby = babyQty,
-            PriceAdult = template.PriceAdult,
-            PriceChild = template.PriceChild,
-            PriceChildSmall = template.PriceChildSmall,
-            PriceBaby = template.PriceBaby,
+            PriceAdult = priceOverride?.Adult ?? template!.PriceAdult,
+            PriceChild = priceOverride?.Child ?? template!.PriceChild,
+            PriceChildSmall = priceOverride?.ChildSmall ?? template!.PriceChildSmall,
+            PriceBaby = priceOverride?.Baby ?? template!.PriceBaby,
             IsMainContact = true,
         };
         if (isHold)
         {
-            seat.HoldExpiresAt = DateTimeOffset.UtcNow.AddHours(template.ReservationHours);
+            seat.HoldExpiresAt = DateTimeOffset.UtcNow.AddHours(template!.ReservationHours);
             seat.ReservationCode = "RSV-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         }
 
