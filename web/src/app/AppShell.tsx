@@ -61,6 +61,7 @@ const NAV: NavItem[] = [
   { key: '/reports/commission-by-user', label: 'Hoa hồng NV', perm: 'report.commission.view' },
   { key: '/commission-rules', label: 'Cấu hình hoa hồng', perm: 'commission.view' },
   { key: '/users', label: 'Người dùng', perm: 'user.view' },
+  { key: '/company-profile', label: 'Hồ sơ công ty', perm: 'company.manage' },
   { key: '/departments', label: 'Phòng ban', perm: 'user.view' },
   { key: '/positions', label: 'Chức vụ', perm: 'user.view' },
   { key: '/billing', label: 'Gói dịch vụ', perm: 'subscription.view' },

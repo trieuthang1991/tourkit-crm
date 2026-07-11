@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { money } from '../../shared/format';
+import { useCompanyProfile } from '../settings/companyApi';
 
 const contractSchema = z.object({
   orderCode: z.string(),
@@ -36,12 +37,14 @@ export function OrderContractPrintPage() {
     },
     enabled: !!id,
   });
+  const company = useCompanyProfile();
 
   if (!contract.data) {
     return <div style={{ padding: 24 }}>Đang tải hợp đồng…</div>;
   }
 
   const c = contract.data;
+  const co = company.data;
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 32, background: '#fff', color: '#000' }}>
@@ -61,7 +64,12 @@ export function OrderContractPrintPage() {
       </div>
 
       <p>
-        <strong>BÊN A (Bên cung cấp dịch vụ):</strong> Công ty du lịch …
+        <strong>BÊN A (Bên cung cấp dịch vụ):</strong> {co?.name ? co.name : 'Công ty du lịch …'}
+        {co?.address ? ` · Địa chỉ: ${co.address}` : ''}
+        {co?.taxCode ? ` · MST: ${co.taxCode}` : ''}
+        {co?.hotline ? ` · Hotline: ${co.hotline}` : ''}
+        {co?.legalRepName ? ` · Đại diện: ${co.legalRepName}${co.legalRepTitle ? ` (${co.legalRepTitle})` : ''}` : ''}
+        {co?.licenseNumber ? ` · GPKD: ${co.licenseNumber}` : ''}
       </p>
       <p>
         <strong>BÊN B (Khách hàng):</strong> {c.customerName}

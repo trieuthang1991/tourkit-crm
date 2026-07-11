@@ -26,6 +26,8 @@ public static class Permissions
     public const string ApprovalProcessView = "approvalprocess.view";     // quy trình duyệt cấu hình (legacy ApprovalProcess)
     public const string ApprovalProcessManage = "approvalprocess.manage";
 
+    public const string CompanyManage = "company.manage";                 // hồ sơ công ty (legacy Config)
+
     public const string PostView = "post.view";        // bài viết/tin tức (legacy Posts)
     public const string PostManage = "post.manage";
 
@@ -137,6 +139,7 @@ public static class Permissions
         (ReceiptView, "Finance"), (ReceiptCreate, "Finance"), (ReceiptApprove, "Finance"),
         (ReceiptApprovalStart, "Finance"), (ReceiptApprovalAct, "Finance"),
         (ApprovalProcessView, "Finance"), (ApprovalProcessManage, "Finance"),
+        (CompanyManage, "Settings"),
         (PaymentView, "Finance"), (PaymentCreate, "Finance"), (PaymentApprove, "Finance"),
         (PaymentApprovalStart, "Finance"), (PaymentApprovalAct, "Finance"),
         (ReportDebtView, "Report"),

@@ -75,6 +75,7 @@ public class AppDbContext : DbContext
     public DbSet<WorkflowSection> WorkflowSections => Set<WorkflowSection>();
     public DbSet<MessageTemplate> MessageTemplates => Set<MessageTemplate>();
     public DbSet<TransferReason> TransferReasons => Set<TransferReason>();
+    public DbSet<CompanyProfile> CompanyProfiles => Set<CompanyProfile>();
     public DbSet<ApprovalProcess> ApprovalProcesses => Set<ApprovalProcess>();
     public DbSet<ApprovalProcessStep> ApprovalProcessSteps => Set<ApprovalProcessStep>();
     public DbSet<ApprovalProcessStepUser> ApprovalProcessStepUsers => Set<ApprovalProcessStepUser>();

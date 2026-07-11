@@ -26,6 +26,7 @@ import { WorkflowBoardPage } from '../features/workflows/WorkflowBoardPage';
 import { ApprovalProcessesPage } from '../features/approvalProcesses/ApprovalProcessesPage';
 import { MessageTemplatesPage } from '../features/messageTemplates/MessageTemplatesPage';
 import { TransferReasonsPage } from '../features/booking/TransferReasonsPage';
+import { CompanyProfilePage } from '../features/settings/CompanyProfilePage';
 import { NotificationsPage } from '../features/notifications/NotificationsPage';
 import { PostsPage } from '../features/posts/PostsPage';
 import { PostCategoriesPage } from '../features/posts/PostCategoriesPage';
@@ -117,6 +118,7 @@ export function AppRouter() {
         <Route path="/approval-processes" element={<ApprovalProcessesPage />} />
         <Route path="/message-templates" element={<MessageTemplatesPage />} />
         <Route path="/transfer-reasons" element={<TransferReasonsPage />} />
+        <Route path="/company-profile" element={<CompanyProfilePage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/posts" element={<PostsPage />} />
         <Route path="/post-categories" element={<PostCategoriesPage />} />
