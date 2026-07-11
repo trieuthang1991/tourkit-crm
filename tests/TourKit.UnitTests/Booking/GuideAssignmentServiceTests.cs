@@ -84,6 +84,36 @@ public sealed class GuideAssignmentServiceTests
     }
 
     [Fact]
+    public async Task HandoverAsync_sets_content_and_timestamp()
+    {
+        var (svc, depId, provId) = await NewServiceWithSeedAsync();
+        var created = await svc.CreateAsync(new CreateGuideAssignmentDto(depId, provId, null, null, null, null, 1));
+        Assert.Null(created.HandoverContent);
+
+        var result = await svc.HandoverAsync(created.Id, new HandoverDto("Tour ổn, khách hài lòng; còn 1 vé chưa hoàn."));
+
+        Assert.Equal("Tour ổn, khách hài lòng; còn 1 vé chưa hoàn.", result.HandoverContent);
+        Assert.NotNull(result.HandedOverAt);
+    }
+
+    [Fact]
+    public async Task HandoverAsync_empty_content_throws()
+    {
+        var (svc, depId, provId) = await NewServiceWithSeedAsync();
+        var created = await svc.CreateAsync(new CreateGuideAssignmentDto(depId, provId, null, null, null, null, 1));
+
+        await Assert.ThrowsAsync<ValidationAppException>(() => svc.HandoverAsync(created.Id, new HandoverDto("")));
+    }
+
+    [Fact]
+    public async Task HandoverAsync_unknown_throws_NotFound()
+    {
+        var (svc, _, _) = await NewServiceWithSeedAsync();
+
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.HandoverAsync(Guid.NewGuid(), new HandoverDto("x")));
+    }
+
+    [Fact]
     public async Task UpdateAsync_throws_NotFound_for_missing()
     {
         var (svc, _, provId) = await NewServiceWithSeedAsync();

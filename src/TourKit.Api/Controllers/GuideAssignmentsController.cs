@@ -38,6 +38,11 @@ public sealed class GuideAssignmentsController(IGuideAssignmentService service) 
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/handover")]
+    [Authorize(Permissions.GuideManage)]
+    public async Task<IActionResult> Handover(Guid id, [FromBody] HandoverDto dto)
+        => Ok(await service.HandoverAsync(id, dto));
+
     [HttpDelete("{id:guid}")]
     [Authorize(Permissions.GuideManage)]
     public async Task<IActionResult> Delete(Guid id)

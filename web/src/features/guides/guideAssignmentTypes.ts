@@ -9,6 +9,8 @@ export const guideAssignmentSchema = z.object({
   timeReturn: z.string().nullable(),
   note: z.string().nullable(),
   status: z.number(),
+  handoverContent: z.string().nullable(),
+  handedOverAt: z.string().nullable(),
 });
 export type GuideAssignment = z.infer<typeof guideAssignmentSchema>;
 

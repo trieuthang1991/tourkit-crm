@@ -5,6 +5,7 @@ import { DatePickerField, NumberField, TextAreaField, TextField } from '../../sh
 import { ResourcePage } from '../../shared/ui/ResourcePage';
 import { guideAssignmentsCrud } from './guideAssignmentsCrud';
 import { GuideTransactionCell } from './GuideTransactionCell';
+import { GuideHandoverCell } from './GuideHandoverCell';
 import { guideAssignmentCreateSchema, guideAssignmentUpdateSchema } from './guideAssignmentTypes';
 import type { GuideAssignment, GuideAssignmentForm } from './guideAssignmentTypes';
 
@@ -23,6 +24,12 @@ const columns: ColumnsType<GuideAssignment> = [
     key: '__tx',
     width: 100,
     render: (_: unknown, item: GuideAssignment) => <GuideTransactionCell assignmentId={item.id} />,
+  },
+  {
+    title: 'Bàn giao',
+    key: '__handover',
+    width: 110,
+    render: (_: unknown, item: GuideAssignment) => <GuideHandoverCell item={item} />,
   },
 ];
 

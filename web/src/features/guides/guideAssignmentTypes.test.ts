@@ -12,6 +12,8 @@ describe('guide assignment schemas', () => {
       timeReturn: null,
       note: 'HDV chính',
       status: 1,
+      handoverContent: null,
+      handedOverAt: null,
     });
     expect(g.note).toBe('HDV chính');
   });
@@ -26,6 +28,8 @@ describe('guide assignment schemas', () => {
         timeReturn: null,
         note: null,
         status: 1,
+      handoverContent: null,
+      handedOverAt: null,
       }).success,
     ).toBe(false);
   });

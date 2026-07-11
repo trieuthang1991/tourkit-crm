@@ -8,7 +8,12 @@ public sealed record GuideAssignmentDto(
     DateTimeOffset? TimeCome,
     DateTimeOffset? TimeReturn,
     string? Note,
-    int Status);
+    int Status,
+    string? HandoverContent,
+    DateTimeOffset? HandedOverAt);
+
+/// <summary>HDV nộp biên bản bàn giao sau tour.</summary>
+public sealed record HandoverDto(string Content);
 
 public sealed record CreateGuideAssignmentDto(
     Guid TourDepartureId,

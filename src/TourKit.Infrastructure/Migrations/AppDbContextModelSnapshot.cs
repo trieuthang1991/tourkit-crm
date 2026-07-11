@@ -3046,6 +3046,13 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long?>("HandedOverAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HandoverContent")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 

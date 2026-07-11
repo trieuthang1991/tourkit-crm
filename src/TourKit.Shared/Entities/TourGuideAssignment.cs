@@ -16,4 +16,8 @@ public sealed class TourGuideAssignment : BaseEntity, ITenantEntity
     public DateTimeOffset? TimeReturn { get; set; }   // giờ trả tour/hoàn tất
     public string? Note { get; set; }
     public int Status { get; set; } = 1;              // legacy State: 1=Created, 2=Active, 4=Delete
+
+    // Bàn giao sau tour (legacy HandoverNote): HDV nộp biên bản bàn giao (sự cố/còn tồn/phản hồi khách).
+    public string? HandoverContent { get; set; }
+    public DateTimeOffset? HandedOverAt { get; set; }
 }

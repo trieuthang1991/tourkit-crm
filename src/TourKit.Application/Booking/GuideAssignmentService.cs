@@ -63,6 +63,22 @@ public sealed class GuideAssignmentService(
         await repo.SaveChangesAsync();
     }
 
+    public async Task<GuideAssignmentDto> HandoverAsync(Guid id, HandoverDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Content))
+        {
+            throw new ValidationAppException("Cần nội dung bàn giao.");
+        }
+
+        var assignment = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+        assignment.HandoverContent = dto.Content.Trim();
+        assignment.HandedOverAt = DateTimeOffset.UtcNow;
+        repo.Update(assignment);
+        await repo.SaveChangesAsync();
+
+        return Map(assignment);
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var assignment = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
@@ -96,5 +112,6 @@ public sealed class GuideAssignmentService(
     }
 
     private static GuideAssignmentDto Map(TourGuideAssignment a) =>
-        new(a.Id, a.TourDepartureId, a.ProviderId, a.TimeGo, a.TimeCome, a.TimeReturn, a.Note, a.Status);
+        new(a.Id, a.TourDepartureId, a.ProviderId, a.TimeGo, a.TimeCome, a.TimeReturn, a.Note, a.Status,
+            a.HandoverContent, a.HandedOverAt);
 }
