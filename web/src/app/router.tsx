@@ -15,6 +15,7 @@ import { CustomerTypesPage } from '../features/customerTypes/CustomerTypesPage';
 import { CustomerSourcesPage } from '../features/customerSources/CustomerSourcesPage';
 import { CustomerTagsPage } from '../features/customerTags/CustomerTagsPage';
 import { PaymentAccountsPage } from '../features/paymentAccounts/PaymentAccountsPage';
+import { CarTypesPage } from '../features/carTypes/CarTypesPage';
 import { DeparturesPage } from '../features/booking/DeparturesPage';
 import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
 import { OrdersPage } from '../features/booking/OrdersPage';
@@ -79,6 +80,7 @@ export function AppRouter() {
         <Route path="/customer-sources" element={<CustomerSourcesPage />} />
         <Route path="/customer-tags" element={<CustomerTagsPage />} />
         <Route path="/payment-accounts" element={<PaymentAccountsPage />} />
+        <Route path="/car-types" element={<CarTypesPage />} />
         <Route path="/departures" element={<DeparturesPage />} />
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
         <Route path="/operations-calendar" element={<OperationsCalendarPage />} />

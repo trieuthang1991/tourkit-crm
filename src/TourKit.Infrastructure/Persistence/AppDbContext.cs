@@ -58,6 +58,7 @@ public class AppDbContext : DbContext
     public DbSet<CustomerSource> CustomerSources => Set<CustomerSource>();
     public DbSet<CustomerTag> CustomerTags => Set<CustomerTag>();
     public DbSet<PaymentAccount> PaymentAccounts => Set<PaymentAccount>();
+    public DbSet<CarType> CarTypes => Set<CarType>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();

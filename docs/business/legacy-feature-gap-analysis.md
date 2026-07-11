@@ -41,7 +41,7 @@
 2. ✅ **PaymentMethod → `PaymentAccount`** (ĐÃ LÀM): catalog tài khoản nhận tiền (tên hiển thị, ngân hàng, số TK, chủ TK, chi nhánh, nội dung CK mặc định) để in báo giá/hoá đơn. Quy tắc: 1 tài khoản `IsDefault`/tenant. Permission `paymentaccount.*` (nhóm Finance). *Còn lại: in tài khoản mặc định lên bản in báo giá — làm khi nối.*
 3. **PhongBan (Department) + Position + User_PhongBan** → cơ cấu tổ chức; gắn `User.DepartmentId/PositionId` (đụng User — chạy impact trước). Phục vụ báo cáo theo phòng ban.
 4. **LoaiDonHang / TrangThaiDonHang** → catalog loại đơn + trạng thái đơn (hiện `Order.Status` là int trần — mirror kiểu CustomerType keyed Code).
-5. **CarType** → catalog loại xe (Vehicle.SeatType hiện int trần).
+5. ✅ **CarType** (ĐÃ LÀM): catalog loại xe keyed theo số ghế (Code) → tên "Xe N chỗ", khớp Vehicle.SeatType. Dùng quyền `vehicle.*`.
 6. **LanguagesType** → catalog ngôn ngữ HDV (dùng cho TourGuideAssignment nâng cao).
 7. **ExchangeRate** → tỷ giá (đa tiền tệ) — cần chốt điểm dùng (giá vốn NCC ngoại tệ?).
 8. **ConfigSurcharge / SurchargeServices** → phụ thu — cần chốt cách áp vào đơn.
@@ -83,5 +83,7 @@
 | Danh mục nguồn khách (CustomerSource) | customer_source | `feat(catalog): danh mục nguồn khách` |
 | Danh mục nhãn khách (CustomerTag) | Tags/customer_tag | `feat(catalog): danh mục nhãn khách` |
 | Tài khoản nhận tiền (PaymentAccount) | PaymentMethod | `feat(catalog): tài khoản nhận tiền` |
+| In TK mặc định lên báo giá | (nối PaymentAccount) | `feat(quotes): in tài khoản nhận tiền` |
+| Loại xe (CarType) | CarType | `feat(catalog): loại xe` |
 
-**Đề xuất làm tiếp (theo ưu tiên 🟡):** Department/Position (cơ cấu tổ chức, đụng User — chạy impact trước) → LoaiDonHang/TrangThaiDonHang → CarType → LanguagesType. Mỗi cái mirror mẫu catalog có sẵn, thuần additive, ~1 commit. Ngoài ra: in tài khoản mặc định lên bản in báo giá (nối PaymentAccount vào QuotePrintPage).
+**Đề xuất làm tiếp (theo ưu tiên 🟡):** LanguagesType (ngôn ngữ HDV) → LoaiDonHang/TrangThaiDonHang → Department/Position (cơ cấu tổ chức, đụng User — chạy impact trước). Mỗi cái mirror mẫu catalog có sẵn, thuần additive, ~1 commit. Ngoài ra: in tài khoản mặc định lên bản in báo giá (nối PaymentAccount vào QuotePrintPage).
