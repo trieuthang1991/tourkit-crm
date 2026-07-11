@@ -11,6 +11,7 @@ import { ServiceItemsPage } from '../features/services/ServiceItemsPage';
 import { ProviderServicesPage } from '../features/services/ProviderServicesPage';
 import { MarketingPage } from '../features/marketing/MarketingPage';
 import { MarketTypesPage } from '../features/marketTypes/MarketTypesPage';
+import { CustomerTypesPage } from '../features/customerTypes/CustomerTypesPage';
 import { DeparturesPage } from '../features/booking/DeparturesPage';
 import { DepartureDetailPage } from '../features/booking/DepartureDetailPage';
 import { OrdersPage } from '../features/booking/OrdersPage';
@@ -71,6 +72,7 @@ export function AppRouter() {
         <Route path="/provider-services" element={<ProviderServicesPage />} />
         <Route path="/marketing" element={<MarketingPage />} />
         <Route path="/market-types" element={<MarketTypesPage />} />
+        <Route path="/customer-types" element={<CustomerTypesPage />} />
         <Route path="/departures" element={<DeparturesPage />} />
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
         <Route path="/operations-calendar" element={<OperationsCalendarPage />} />

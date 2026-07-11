@@ -8,6 +8,9 @@ public static class Permissions
     public const string CustomerUpdate = "customer.update";
     public const string CustomerDelete = "customer.delete";
 
+    public const string CustomerTypeView = "customertype.view";
+    public const string CustomerTypeManage = "customertype.manage";
+
     public const string TourView = "tour.view";
     public const string TourCreate = "tour.create";
     public const string TourUpdate = "tour.update";
@@ -99,6 +102,7 @@ public static class Permissions
     [
         (CustomerView, "Customer"), (CustomerCreate, "Customer"),
         (CustomerUpdate, "Customer"), (CustomerDelete, "Customer"),
+        (CustomerTypeView, "Customer"), (CustomerTypeManage, "Customer"),
         (TourView, "Catalog"), (TourCreate, "Catalog"),
         (TourUpdate, "Catalog"), (TourDelete, "Catalog"),
         (LeadView, "CRM"), (LeadCreate, "CRM"), (LeadUpdate, "CRM"),
