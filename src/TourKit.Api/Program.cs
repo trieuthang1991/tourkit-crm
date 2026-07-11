@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using FluentValidation;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -76,6 +77,18 @@ builder.Services.Scan(scan => scan.FromAssemblyOf<TourKit.Application.Customers.
     .AddClasses(c => c.Where(t => t.Name.EndsWith("Service", StringComparison.Ordinal)))
         .AsImplementedInterfaces().WithScopedLifetime());
 
+// --- Background jobs (Hangfire, conventions §8) — nền hạ tầng: storage in-memory (dev), server + job.
+// Tắt server dưới testhost để không nhiễu integration test (WebApplicationFactory). Job nghiệp vụ thật thêm sau.
+builder.Services.AddHangfire(cfg => cfg.UseInMemoryStorage());
+builder.Services.AddScoped<TourKit.Api.BackgroundJobs.HeartbeatJob>();
+var enableBackgroundJobs =
+    System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name?.Contains("testhost", StringComparison.OrdinalIgnoreCase) != true
+    && builder.Configuration.GetValue("BackgroundJobs:Enabled", true);
+if (enableBackgroundJobs)
+{
+    builder.Services.AddHangfireServer();
+}
+
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -125,6 +138,16 @@ app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();   // sau Authentication để đọc được claim
 app.UseMiddleware<SubscriptionGuardMiddleware>();  // chặn nếu subscription hết hạn (miễn trừ auth/đăng ký/billing)
 app.UseAuthorization();
+
+if (enableBackgroundJobs)
+{
+    // Dashboard chỉ cho user đã xác thực; job heartbeat mỗi 30 phút (demo hạ tầng).
+    app.MapHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = [new TourKit.Api.BackgroundJobs.HangfireDashboardAuthFilter()],
+    });
+    RecurringJob.AddOrUpdate<TourKit.Api.BackgroundJobs.HeartbeatJob>("heartbeat", j => j.Run(), "*/30 * * * *");
+}
 
 app.MapControllers();   // Customers, Providers, Crm (kiến trúc phân tầng)
 
