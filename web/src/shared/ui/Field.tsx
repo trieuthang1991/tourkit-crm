@@ -124,6 +124,7 @@ export function SelectField({
   required,
   allowClear,
   showSearch,
+  mode,
 }: {
   name: string;
   label: string;
@@ -131,8 +132,10 @@ export function SelectField({
   required?: boolean;
   allowClear?: boolean;
   showSearch?: boolean;
+  mode?: 'multiple' | 'tags';
 }) {
   const { control, formState } = useFormContext();
+  const multi = mode === 'multiple' || mode === 'tags';
   return (
     <Controller
       name={name}
@@ -146,12 +149,13 @@ export function SelectField({
         >
           <Select
             {...field}
-            value={field.value ?? undefined}
+            mode={mode}
+            value={field.value ?? (multi ? [] : undefined)}
             options={options}
             allowClear={allowClear}
-            showSearch={showSearch}
-            optionFilterProp={showSearch ? 'label' : undefined}
-            onChange={(v) => field.onChange(v ?? null)}
+            showSearch={showSearch || multi}
+            optionFilterProp={showSearch || multi ? 'label' : undefined}
+            onChange={(v) => field.onChange(v ?? (multi ? [] : null))}
           />
         </Form.Item>
       )}

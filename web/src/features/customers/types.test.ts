@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { customerFormSchema, customerSchema } from './types';
+import { customerFormSchema, customerSchema, customerTypeLabel } from './types';
 
 describe('customer schemas', () => {
-  it('parses a customer', () => {
+  it('parses a customer with CRM lists + aggregates', () => {
     const c = customerSchema.parse({
       id: crypto.randomUUID(),
+      code: 'KH_ABCD1234',
       fullName: 'Nguyễn A',
       phone: null,
       customerType: 1,
@@ -18,22 +19,60 @@ describe('customer schemas', () => {
       passportNumber: 'B123',
       passportExpiry: null,
       nationality: 'Việt Nam',
+      gender: 'Nam',
+      city: 'Hà Nội',
+      marketGroup: null,
+      initialNeed: null,
+      collaboratorName: null,
+      campaign: null,
+      createdBy: null,
+      createdByName: 'Admin',
+      segments: ['B2B', 'VIP'],
+      tags: ['Nóng'],
+      assignedTo: ['u1'],
+      assignedToNames: ['Trần B'],
+      createdAt: new Date().toISOString(),
+      purchaseCount: 3,
+      revenue: 15000000,
+      lastCareAt: null,
+      lastCareContent: null,
     });
-    expect(c.fullName).toBe('Nguyễn A');
-    expect(c.passportNumber).toBe('B123');
-    expect(c.nationality).toBe('Việt Nam');
+    expect(c.code).toBe('KH_ABCD1234');
+    expect(c.segments).toEqual(['B2B', 'VIP']);
+    expect(c.assignedToNames).toEqual(['Trần B']);
+    expect(c.purchaseCount).toBe(3);
   });
 
-  it('form requires fullName', () => {
-    expect(
-      customerFormSchema.safeParse({
-        fullName: '',
-        phone: '',
-        customerType: 0,
-        source: '',
-        tag: '',
-        tempBalance: 0,
-      }).success,
-    ).toBe(false);
+  it('form requires fullName and accepts list fields', () => {
+    const base = {
+      phone: null,
+      customerType: 0,
+      source: null,
+      tag: null,
+      tempBalance: 0,
+      email: null,
+      address: null,
+      dateOfBirth: null,
+      idCardNumber: null,
+      passportNumber: null,
+      passportExpiry: null,
+      nationality: null,
+      gender: null,
+      city: null,
+      marketGroup: null,
+      initialNeed: null,
+      collaboratorName: null,
+      campaign: null,
+      segments: [],
+      tags: [],
+      assignedTo: [],
+    };
+    expect(customerFormSchema.safeParse({ ...base, fullName: '' }).success).toBe(false);
+    expect(customerFormSchema.safeParse({ ...base, fullName: 'A', segments: ['B2B'], assignedTo: ['u1'] }).success).toBe(true);
+  });
+
+  it('maps customer type labels', () => {
+    expect(customerTypeLabel(0)).toBe('Cá nhân');
+    expect(customerTypeLabel(3)).toBe('CTV');
   });
 });

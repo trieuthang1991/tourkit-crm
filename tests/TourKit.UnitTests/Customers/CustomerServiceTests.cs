@@ -4,6 +4,7 @@ using TourKit.Application.Customers;
 using TourKit.Application.Customers.Dtos;
 using TourKit.Application.Customers.Validators;
 using TourKit.Shared.Entities;
+using TourKit.Shared.Security;
 
 namespace TourKit.UnitTests.Customers;
 
@@ -58,10 +59,17 @@ public class CustomerServiceTests
             => Task.FromResult(_items.AsQueryable().Any(predicate));
     }
 
+    private sealed class FakeCurrentUser : ICurrentUserContext
+    {
+        public Guid? UserId => null;
+    }
+
     private static CustomerService NewService(out FakeRepository<Customer> repo)
     {
         repo = new FakeRepository<Customer>();
-        return new CustomerService(repo, new CreateCustomerValidator(), new UpdateCustomerValidator());
+        return new CustomerService(
+            repo, new FakeRepository<Order>(), new FakeRepository<CustomerCare>(), new FakeRepository<User>(),
+            new FakeCurrentUser(), new CreateCustomerValidator(), new UpdateCustomerValidator());
     }
 
     [Fact]
