@@ -25,6 +25,7 @@ import { customersCrud } from '../customers/customersCrud';
 import { useNotifications } from '../notifications/api';
 import { useOrderDebt } from '../reports/reportApi';
 import { customerCareSchema } from '../care/customerCareTypes';
+import { DepartureCalendar } from '../booking/DepartureCalendar';
 import { receiptListItemSchema, paymentListItemSchema } from '../finance/listTypes';
 import { postSchema } from '../posts/types';
 import { workTaskSchema, priorityLabel, statusLabel } from '../workTasks/types';
@@ -351,13 +352,13 @@ export function WorkspacePage() {
         </Col>
       </Row>
 
-      {/* Lịch khởi hành (link tới lịch điều hành đầy đủ) */}
+      {/* Lịch khởi hành: lịch tháng các chuyến (bám widget hệ cũ) */}
       {has('departure.view') ? (
         <Card
           title={<Space><CalendarOutlined /> Lịch khởi hành</Space>}
-          extra={<Button type="link" onClick={() => navigate('/operations-calendar')}>Xem lịch đầy đủ →</Button>}
+          extra={<Button type="link" onClick={() => navigate('/operations-calendar')}>Xem lịch điều hành →</Button>}
         >
-          <Typography.Text type="secondary">Xem lịch khởi hành các chuyến theo tháng ở trang Lịch điều hành.</Typography.Text>
+          <DepartureCalendar />
         </Card>
       ) : null}
 
