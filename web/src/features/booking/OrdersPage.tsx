@@ -44,7 +44,26 @@ type OrderAdv = {
   departureTo?: string;
   tourType?: string;
   providerId?: string;
+  marketTypeId?: string;
+  tourGroupId?: string;
+  bookingType?: number;
+  commissionSettled?: boolean;
 };
+
+// Loại tour (legacy BookingType): FIT/GIT/LandTour/Booking/Dịch vụ/Visa/Xe.
+const BOOKING_TYPE_OPTIONS = [
+  { value: 0, label: 'Tour FIT' },
+  { value: 1, label: 'Tour GIT' },
+  { value: 2, label: 'LandTour/Combo' },
+  { value: 3, label: 'Booking phòng' },
+  { value: 4, label: 'Dịch vụ lẻ' },
+  { value: 5, label: 'Visa' },
+  { value: 6, label: 'Xe' },
+];
+const COMMISSION_OPTIONS = [
+  { value: 'true', label: 'Đã chốt hoa hồng' },
+  { value: 'false', label: 'Chưa chốt hoa hồng' },
+];
 
 // Bỏ field rỗng để không gửi param thừa.
 function clean(obj: Record<string, unknown>): Record<string, unknown> {
@@ -115,11 +134,27 @@ export function OrdersPage() {
         .parse(data);
     },
   });
+  const marketTypes = useQuery({
+    queryKey: ['market-types'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/market-types');
+      return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
+    },
+  });
+  const tourGroups = useQuery({
+    queryKey: ['tour-groups'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/tour-groups');
+      return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
+    },
+  });
   const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
   const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
   const deptOpts = (departments.data ?? []).map((d) => ({ label: d.name, value: d.id }));
   const tourTypeOpts = (filterOptions.data?.tourTypes ?? []).map((t) => ({ label: t, value: t }));
   const providerOpts = (filterOptions.data?.providers ?? []).map((p) => ({ label: p.name, value: p.id }));
+  const marketOpts = (marketTypes.data ?? []).map((m) => ({ label: m.name, value: m.id }));
+  const groupOpts = (tourGroups.data ?? []).map((g) => ({ label: g.name, value: g.id }));
 
   const list = useQuery({
     queryKey: ['orders', 'list', page.page, page.size, q, payStatus, adv],
@@ -242,12 +277,29 @@ export function OrdersPage() {
               options={deptOpts} value={draft.departmentId} onChange={(v) => setD({ departmentId: v ?? undefined })} />
           </Col>
           <Col xs={12} sm={8} lg={4}>
-            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Loại tour"
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Loại hình"
               options={tourTypeOpts} value={draft.tourType} onChange={(v) => setD({ tourType: v ?? undefined })} />
           </Col>
           <Col xs={12} sm={8} lg={5}>
             <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Nhà cung cấp"
               options={providerOpts} value={draft.providerId} onChange={(v) => setD({ providerId: v ?? undefined })} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select allowClear style={{ width: '100%' }} placeholder="Loại tour" options={BOOKING_TYPE_OPTIONS}
+              value={draft.bookingType} onChange={(v) => setD({ bookingType: v ?? undefined })} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Thị trường"
+              options={marketOpts} value={draft.marketTypeId} onChange={(v) => setD({ marketTypeId: v ?? undefined })} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Nhóm"
+              options={groupOpts} value={draft.tourGroupId} onChange={(v) => setD({ tourGroupId: v ?? undefined })} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select allowClear style={{ width: '100%' }} placeholder="TT hoa hồng" options={COMMISSION_OPTIONS}
+              value={draft.commissionSettled === undefined ? undefined : String(draft.commissionSettled)}
+              onChange={(v) => setD({ commissionSettled: v === undefined ? undefined : v === 'true' })} />
           </Col>
           <Col span={24}>
             <Space>
@@ -256,7 +308,7 @@ export function OrdersPage() {
               </Button>
               <Button onClick={resetFilters}>Đặt lại</Button>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                (Thị trường / CTV: chưa có quan hệ trong model — bổ sung sau)
+                (CTV / TT hóa đơn / Tình trạng vận hành: đang bổ sung ở phase sau)
               </Typography.Text>
             </Space>
           </Col>
