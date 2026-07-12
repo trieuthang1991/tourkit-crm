@@ -90,7 +90,7 @@ type AdvFilters = {
 };
 
 // Bỏ field rỗng để không gửi param thừa.
-function cleanParams(obj: Record<string, unknown>): Record<string, unknown> {
+export function cleanParams(obj: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''),
   );

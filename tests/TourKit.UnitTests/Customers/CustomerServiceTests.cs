@@ -72,6 +72,43 @@ public class CustomerServiceTests
             new FakeCurrentUser(), new CreateCustomerValidator(), new UpdateCustomerValidator());
     }
 
+    private static CustomerService NewServiceFull(
+        out FakeRepository<Customer> customers, out FakeRepository<Order> orders, out FakeRepository<CustomerCare> cares)
+    {
+        customers = new FakeRepository<Customer>();
+        orders = new FakeRepository<Order>();
+        cares = new FakeRepository<CustomerCare>();
+        return new CustomerService(
+            customers, orders, cares, new FakeRepository<User>(),
+            new FakeCurrentUser(), new CreateCustomerValidator(), new UpdateCustomerValidator());
+    }
+
+    private static Customer NewCustomer(
+        string name, int type = 0, string? source = null, string? phone = null, string? email = null,
+        string? code = null, DateTimeOffset? createdAt = null, DateTimeOffset? dob = null, CustomerCrmProfile? profile = null)
+        => new()
+        {
+            FullName = name,
+            CustomerType = type,
+            Source = source,
+            Phone = phone,
+            Email = email,
+            Code = code,
+            CreatedAt = createdAt ?? DateTimeOffset.UtcNow,
+            DateOfBirth = dob,
+            CrmProfileJson = profile?.ToJsonOrNull(),
+        };
+
+    private static async Task SeedAsync(FakeRepository<Customer> repo, params Customer[] items)
+    {
+        foreach (var c in items)
+        {
+            await repo.AddAsync(c);
+        }
+
+        await repo.SaveChangesAsync();
+    }
+
     [Fact]
     public async Task CreateAsync_returns_dto_and_persists_entity()
     {
@@ -128,5 +165,171 @@ public class CustomerServiceTests
 
         await Assert.ThrowsAsync<NotFoundException>(
             () => service.UpdateAsync(Guid.NewGuid(), new UpdateCustomerDto("Ten moi", null)));
+    }
+
+    // ---- Lọc danh sách (bám thanh "Xem thêm bộ lọc" hệ cũ) ----
+
+    [Theory]
+    [InlineData("Bình")]     // theo tên
+    [InlineData("KH_007")]   // theo mã
+    [InlineData("0987")]     // theo SĐT
+    [InlineData("binh@")]    // theo email
+    public async Task ListAsync_q_matches_name_code_phone_email(string q)
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        await SeedAsync(customers,
+            NewCustomer("Nguyễn Bình", code: "KH_007", phone: "0987654321", email: "binh@x.com"),
+            NewCustomer("Trần Khác", code: "KH_999", phone: "0900000000", email: "khac@x.com"));
+
+        var result = await service.ListAsync(1, 20, new CustomerListFilter(Q: q));
+
+        Assert.Equal("Nguyễn Bình", Assert.Single(result.Items).FullName);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_customerType()
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        await SeedAsync(customers, NewCustomer("Cá nhân A", type: 0), NewCustomer("Doanh nghiệp B", type: 1));
+
+        var result = await service.ListAsync(1, 20, new CustomerListFilter(CustomerType: 1));
+
+        Assert.Equal("Doanh nghiệp B", Assert.Single(result.Items).FullName);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_jsonb_city_contains_caseInsensitive()
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        await SeedAsync(customers,
+            NewCustomer("A", profile: new CustomerCrmProfile { City = "Hà Nội" }),
+            NewCustomer("B", profile: new CustomerCrmProfile { City = "TP.HCM" }));
+
+        var result = await service.ListAsync(1, 20, new CustomerListFilter(City: "hà nội"));
+
+        Assert.Equal("A", Assert.Single(result.Items).FullName);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_list_membership_segment_tag_assignedTo()
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        await SeedAsync(customers,
+            NewCustomer("A", profile: new CustomerCrmProfile { Segments = ["VIP"], Tags = ["Nóng"], AssignedTo = ["u1"] }),
+            NewCustomer("B", profile: new CustomerCrmProfile { Segments = ["Thường"], Tags = ["Nguội"], AssignedTo = ["u2"] }));
+
+        Assert.Equal("A", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(Segment: "VIP"))).Items).FullName);
+        Assert.Equal("A", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(Tag: "Nóng"))).Items).FullName);
+        Assert.Equal("A", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(AssignedTo: "u1"))).Items).FullName);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_new_softFields_branch_group_department()
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        await SeedAsync(customers,
+            NewCustomer("A", profile: new CustomerCrmProfile { Branch = "CN1", Group = "Nhóm1", Department = "Sales" }),
+            NewCustomer("B", profile: new CustomerCrmProfile { Branch = "CN2", Group = "Nhóm2", Department = "Ops" }));
+
+        Assert.Equal("A", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(Branch: "CN1"))).Items).FullName);
+        Assert.Equal("A", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(Group: "Nhóm1"))).Items).FullName);
+        Assert.Equal("A", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(Department: "Sales"))).Items).FullName);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_revenue_range()
+    {
+        var service = NewServiceFull(out var customers, out var orders, out _);
+        var rich = NewCustomer("Rich");
+        var poor = NewCustomer("Poor");
+        await SeedAsync(customers, rich, poor);
+        await orders.AddAsync(new Order { CustomerId = rich.Id, TotalRevenue = 5_000_000m });
+        await orders.SaveChangesAsync();
+
+        Assert.Equal("Rich", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(RevenueFrom: 1_000_000m))).Items).FullName);
+        Assert.Empty((await service.ListAsync(1, 20, new CustomerListFilter(RevenueFrom: 10_000_000m))).Items);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_created_range()
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        var jan = new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero);
+        var jun = new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero);
+        await SeedAsync(customers, NewCustomer("Old", createdAt: jan), NewCustomer("New", createdAt: jun));
+
+        var result = await service.ListAsync(1, 20, new CustomerListFilter(
+            CreatedFrom: new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero)));
+
+        Assert.Equal("New", Assert.Single(result.Items).FullName);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_birthday_month()
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        await SeedAsync(customers,
+            NewCustomer("March", dob: new DateTimeOffset(1990, 3, 20, 0, 0, 0, TimeSpan.Zero)),
+            NewCustomer("July", dob: new DateTimeOffset(1988, 7, 2, 0, 0, 0, TimeSpan.Zero)));
+
+        var result = await service.ListAsync(1, 20, new CustomerListFilter(BirthdayMonth: 3));
+
+        Assert.Equal("March", Assert.Single(result.Items).FullName);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_care_date_range()
+    {
+        var service = NewServiceFull(out var customers, out _, out var cares);
+        var cared = NewCustomer("Cared");
+        var neglected = NewCustomer("Neglected");
+        await SeedAsync(customers, cared, neglected);
+        await cares.AddAsync(new CustomerCare
+        {
+            CustomerId = cared.Id,
+            Title = "Gọi hỏi thăm",
+            CreatedAt = new DateTimeOffset(2026, 6, 10, 0, 0, 0, TimeSpan.Zero),
+        });
+        await cares.SaveChangesAsync();
+
+        var result = await service.ListAsync(1, 20, new CustomerListFilter(
+            CareFrom: new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero),
+            CareTo: new DateTimeOffset(2026, 6, 30, 23, 59, 59, TimeSpan.Zero)));
+
+        Assert.Equal("Cared", Assert.Single(result.Items).FullName);
+    }
+
+    [Fact]
+    public async Task ListAsync_orders_by_createdAt_desc_and_pages()
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        await SeedAsync(customers,
+            NewCustomer("Oldest", createdAt: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)),
+            NewCustomer("Middle", createdAt: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero)),
+            NewCustomer("Newest", createdAt: new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero)));
+
+        var page1 = await service.ListAsync(1, 2, null);
+
+        Assert.Equal(3, page1.Total);
+        Assert.Equal(2, page1.Items.Count);
+        Assert.Equal("Newest", page1.Items[0].FullName);   // sắp ngày tạo giảm dần
+        Assert.Equal("Middle", page1.Items[1].FullName);
+    }
+
+    [Fact]
+    public async Task GetFilterOptionsAsync_returns_distinct_sorted_nonEmpty()
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        await SeedAsync(customers,
+            NewCustomer("A", source: "Facebook", profile: new CustomerCrmProfile { City = "Hà Nội", Tags = ["VIP"], Segments = ["Tiềm năng"] }),
+            NewCustomer("B", source: "Facebook", profile: new CustomerCrmProfile { City = "Đà Nẵng", Tags = ["VIP", "Nóng"], Segments = [] }),
+            NewCustomer("C", source: null, profile: new CustomerCrmProfile { City = "  " }));
+
+        var opts = await service.GetFilterOptionsAsync();
+
+        Assert.Equal(["Facebook"], opts.Sources);              // distinct + bỏ null
+        Assert.Equal(["Nóng", "VIP"], opts.Tags);              // distinct + sort
+        Assert.Equal(["Đà Nẵng", "Hà Nội"], opts.Cities);      // bỏ chuỗi rỗng, sort
+        Assert.Equal(["Tiềm năng"], opts.Segments);
     }
 }
