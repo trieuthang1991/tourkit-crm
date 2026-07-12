@@ -115,8 +115,9 @@ public sealed class PaymentService(
         // Nạp theo lô: mã đơn + tên NCC (phiếu chi trả cho NCC) để danh sách tổng hiển thị được.
         var orderIds = all.Select(p => p.OrderId).ToHashSet();
         var providerIds = all.Where(p => p.ProviderId != null).Select(p => p.ProviderId!.Value).ToHashSet();
-        var orderCodes = (await orderRepo.ListAsync(o => orderIds.Contains(o.Id)))
-            .ToDictionary(o => o.Id, o => o.Code);
+        var relatedOrders = await orderRepo.ListAsync(o => orderIds.Contains(o.Id));
+        var orderCodes = relatedOrders.ToDictionary(o => o.Id, o => o.Code);
+        var orderBranch = relatedOrders.ToDictionary(o => o.Id, o => o.BranchId);
         var providerNames = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id)))
             .ToDictionary(p => p.Id, p => p.Name);
 
@@ -137,7 +138,11 @@ public sealed class PaymentService(
             (d.Partner?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
             (d.ReceiverName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
 
-        var filtered = rows.Where(x => MatchQ(x.Dto)).OrderByDescending(x => x.CreatedAt).ToList();
+        var filtered = rows
+            .Where(x => MatchQ(x.Dto)
+                && (f.BranchId == null || orderBranch.GetValueOrDefault(x.Dto.OrderId) == f.BranchId))
+            .OrderByDescending(x => x.CreatedAt)
+            .ToList();
         var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(x => x.Dto).ToList();
         return new PagedResult<PaymentListItemDto>(pageItems, filtered.Count, page, size);
     }

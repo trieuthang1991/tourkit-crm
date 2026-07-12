@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Segmented, Space, Statistic, Table, Tag } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -40,12 +40,13 @@ export function ReceiptsListPage() {
   const [pm, setPm] = useState('');
   const [amtFrom, setAmtFrom] = useState<number | undefined>();
   const [amtTo, setAmtTo] = useState<number | undefined>();
-  const [adv, setAdv] = useState<{ paymentMethod?: string; amountFrom?: number; amountTo?: number }>({});
+  const [brId, setBrId] = useState<string | undefined>();
+  const [adv, setAdv] = useState<{ paymentMethod?: string; amountFrom?: number; amountTo?: number; branchId?: string }>({});
 
   const applyFilters = () => {
     setQ(search);
     setRangeApplied(range);
-    setAdv({ paymentMethod: pm || undefined, amountFrom: amtFrom, amountTo: amtTo });
+    setAdv({ paymentMethod: pm || undefined, amountFrom: amtFrom, amountTo: amtTo, branchId: brId });
     setPage({ ...page, page: 1 });
   };
   const resetFilters = () => {
@@ -57,9 +58,19 @@ export function ReceiptsListPage() {
     setPm('');
     setAmtFrom(undefined);
     setAmtTo(undefined);
+    setBrId(undefined);
     setAdv({});
     setPage({ ...page, page: 1 });
   };
+
+  const branches = useQuery({
+    queryKey: ['branches'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/branches');
+      return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
+    },
+  });
+  const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
 
   const stats = useQuery({
     queryKey: ['receipts', 'stats'],
@@ -200,6 +211,10 @@ export function ReceiptsListPage() {
           </Col>
           <Col xs={6} sm={4} lg={2}>
             <InputNumber style={{ width: '100%' }} placeholder="đến" min={0} value={amtTo} onChange={(v) => setAmtTo(v ?? undefined)} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Chi nhánh"
+              options={branchOpts} value={brId} onChange={(v) => setBrId(v ?? undefined)} />
           </Col>
           <Col span={24}>
             <Space>

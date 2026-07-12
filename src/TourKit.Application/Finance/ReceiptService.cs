@@ -133,7 +133,11 @@ public sealed class ReceiptService(
             (d.CustomerName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
             (d.Partner?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
 
-        var filtered = rows.Where(x => MatchQ(x.Dto)).OrderByDescending(x => x.CreatedAt).ToList();
+        var filtered = rows
+            .Where(x => MatchQ(x.Dto)
+                && (f.BranchId == null || (orders.TryGetValue(x.Dto.OrderId, out var ord) && ord.BranchId == f.BranchId)))
+            .OrderByDescending(x => x.CreatedAt)
+            .ToList();
         var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(x => x.Dto).ToList();
         return new PagedResult<ReceiptListItemDto>(pageItems, filtered.Count, page, size);
     }

@@ -13,6 +13,7 @@ const list = { items: [], total: 0, page: 1, size: 20 };
 
 function mockGet(url: string) {
   if (url.includes('/receipts/stats')) return Promise.resolve({ data: stats });
+  if (url.includes('/branches')) return Promise.resolve({ data: [] });
   return Promise.resolve({ data: list });
 }
 
