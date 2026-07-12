@@ -25,10 +25,13 @@ public sealed record OrderListFilter(
     DateTimeOffset? DepartureFrom = null, DateTimeOffset? DepartureTo = null,
     DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null,
     Guid? SalesUserId = null, Guid? BranchId = null, Guid? CreatedByUserId = null, Guid? DepartmentId = null,
-    string? TourType = null);
+    string? TourType = null, Guid? ProviderId = null);
+
+/// <summary>NCC xuất hiện trong đơn (dùng cho Select lọc theo nhà cung cấp).</summary>
+public sealed record OrderFilterProviderDto(Guid Id, string Name);
 
 /// <summary>Tuỳ chọn lọc động cho màn Đơn hàng (lấy từ dữ liệu thật, không hardcode).</summary>
-public sealed record OrderFilterOptionsDto(IReadOnlyList<string> TourTypes);
+public sealed record OrderFilterOptionsDto(IReadOnlyList<string> TourTypes, IReadOnlyList<OrderFilterProviderDto> Providers);
 
 /// <summary>Thẻ thống kê đầu màn Đơn hàng: tổng đơn + tiền + đếm theo trạng thái + trạng thái thanh toán.</summary>
 public sealed record OrderStatsDto(

@@ -43,6 +43,7 @@ type OrderAdv = {
   departureFrom?: string;
   departureTo?: string;
   tourType?: string;
+  providerId?: string;
 };
 
 // Bỏ field rỗng để không gửi param thừa.
@@ -106,13 +107,19 @@ export function OrdersPage() {
     queryKey: ['orders', 'filter-options'],
     queryFn: async () => {
       const { data } = await httpClient.get<unknown>('/api/v1/orders/filter-options');
-      return z.object({ tourTypes: z.array(z.string()) }).parse(data);
+      return z
+        .object({
+          tourTypes: z.array(z.string()),
+          providers: z.array(z.object({ id: z.string().uuid(), name: z.string() })),
+        })
+        .parse(data);
     },
   });
   const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
   const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
   const deptOpts = (departments.data ?? []).map((d) => ({ label: d.name, value: d.id }));
   const tourTypeOpts = (filterOptions.data?.tourTypes ?? []).map((t) => ({ label: t, value: t }));
+  const providerOpts = (filterOptions.data?.providers ?? []).map((p) => ({ label: p.name, value: p.id }));
 
   const list = useQuery({
     queryKey: ['orders', 'list', page.page, page.size, q, payStatus, adv],
@@ -238,6 +245,10 @@ export function OrdersPage() {
             <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Loại tour"
               options={tourTypeOpts} value={draft.tourType} onChange={(v) => setD({ tourType: v ?? undefined })} />
           </Col>
+          <Col xs={12} sm={8} lg={5}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Nhà cung cấp"
+              options={providerOpts} value={draft.providerId} onChange={(v) => setD({ providerId: v ?? undefined })} />
+          </Col>
           <Col span={24}>
             <Space>
               <Button type="primary" onClick={applyFilters}>
@@ -245,7 +256,7 @@ export function OrdersPage() {
               </Button>
               <Button onClick={resetFilters}>Đặt lại</Button>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                (Thị trường / NCC / CTV: chưa có quan hệ trong model — bổ sung sau)
+                (Thị trường / CTV: chưa có quan hệ trong model — bổ sung sau)
               </Typography.Text>
             </Space>
           </Col>

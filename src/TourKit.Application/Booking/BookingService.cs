@@ -21,7 +21,9 @@ public sealed class BookingService(
     IRepository<ReceiptVoucher> receiptRepo,
     IValidator<DepositDto> depositValidator,
     TourKit.Shared.Security.ICurrentUserContext currentUser,
-    IRepository<User> userRepo) : IBookingService
+    IRepository<User> userRepo,
+    IRepository<OrderCost> orderCostRepo,
+    IRepository<Provider> providerRepo) : IBookingService
 {
     public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null)
     {
@@ -164,8 +166,14 @@ public sealed class BookingService(
             ? new Dictionary<Guid, Guid?>()
             : (await userRepo.ListAsync()).ToDictionary(u => u.Id, u => u.DepartmentId);
 
+        // NCC: đơn có ít nhất một dòng chi phí trỏ tới nhà cung cấp này (OrderCost.ProviderId).
+        var providerOrderIds = f.ProviderId is { } prov
+            ? (await orderCostRepo.ListAsync(c => c.ProviderId == prov)).Select(c => c.OrderId).ToHashSet()
+            : null;
+
         var filtered = enriched
             .Where(x => MatchQ(x.Dto)
+                && (providerOrderIds == null || providerOrderIds.Contains(x.Dto.Id))
                 && (f.DepartureFrom == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate >= f.DepartureFrom))
                 && (f.DepartureTo == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate <= f.DepartureTo))
                 && (f.PaymentStatus == null || PaymentBucketOf(x.Dto.AmountPaid, x.Dto.TotalRevenue) == f.PaymentStatus)
@@ -229,7 +237,17 @@ public sealed class BookingService(
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(s => s, StringComparer.CurrentCulture)
             .ToList();
-        return new OrderFilterOptionsDto(tourTypes);
+
+        // NCC có trong đơn (qua dòng chi phí) — chỉ liệt kê nhà cung cấp thực sự xuất hiện.
+        var orderIds = orders.Select(o => o.Id).ToHashSet();
+        var providerIds = (await orderCostRepo.ListAsync(c => orderIds.Contains(c.OrderId)))
+            .Select(c => c.ProviderId).ToHashSet();
+        var providers = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id)))
+            .Select(p => new OrderFilterProviderDto(p.Id, p.Name))
+            .OrderBy(p => p.Name, StringComparer.CurrentCulture)
+            .ToList();
+
+        return new OrderFilterOptionsDto(tourTypes, providers);
     }
 
     // Trạng thái thanh toán (bám hệ cũ): 0 chưa TT · 1 đã cọc (trả một phần) · 2 TT hết.

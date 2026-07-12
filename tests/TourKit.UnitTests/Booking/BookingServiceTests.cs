@@ -17,7 +17,9 @@ public sealed class BookingServiceTests
         FakeRepository<TourTemplate>? templateRepo = null,
         FakeRepository<CancelSeat>? cancelSeatRepo = null,
         FakeRepository<ReceiptVoucher>? receiptRepo = null,
-        FakeRepository<User>? userRepo = null)
+        FakeRepository<User>? userRepo = null,
+        FakeRepository<OrderCost>? orderCostRepo = null,
+        FakeRepository<Provider>? providerRepo = null)
         => new(
             departureRepo ?? new FakeRepository<TourDeparture>(),
             seatRepo ?? new FakeRepository<TourCustomer>(),
@@ -28,7 +30,9 @@ public sealed class BookingServiceTests
             receiptRepo ?? new FakeRepository<ReceiptVoucher>(),
             new DepositValidator(),
             new FakeCurrentUser(),
-            userRepo ?? new FakeRepository<User>());
+            userRepo ?? new FakeRepository<User>(),
+            orderCostRepo ?? new FakeRepository<OrderCost>(),
+            providerRepo ?? new FakeRepository<Provider>());
 
     private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
     {
@@ -281,6 +285,50 @@ public sealed class BookingServiceTests
 
         // Chỉ loại tour của chuyến ĐANG có đơn (domestic không có đơn → không xuất hiện).
         Assert.Equal(new[] { "inbound", "outbound" }, opts.TourTypes);
+    }
+
+    [Fact]
+    public async Task ListOrdersAsync_filters_by_provider_via_orderCost()
+    {
+        var provA = Guid.NewGuid();
+        var orderRepo = new FakeRepository<Order>();
+        var oA = new Order { Code = "O-A", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        var oB = new Order { Code = "O-B", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        await orderRepo.AddAsync(oA);
+        await orderRepo.AddAsync(oB);
+        await orderRepo.SaveChangesAsync();
+        var orderCostRepo = new FakeRepository<OrderCost>();
+        await orderCostRepo.AddAsync(new OrderCost { OrderId = oA.Id, ProviderId = provA });
+        await orderCostRepo.AddAsync(new OrderCost { OrderId = oB.Id, ProviderId = Guid.NewGuid() });
+        await orderCostRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo, orderCostRepo: orderCostRepo);
+
+        Assert.Equal("O-A", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(ProviderId: provA))).Items).Code);
+    }
+
+    [Fact]
+    public async Task GetOrderFilterOptionsAsync_returns_providers_present_in_orders()
+    {
+        var provA = Guid.NewGuid();
+        var orderRepo = new FakeRepository<Order>();
+        var oA = new Order { Code = "O-A", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        await orderRepo.AddAsync(oA);
+        await orderRepo.SaveChangesAsync();
+        var providerRepo = new FakeRepository<Provider>();
+        var pA = new Provider { Code = "NCC-A", Name = "Khách sạn A" };
+        var pUnused = new Provider { Code = "NCC-Z", Name = "Không dùng" };
+        await providerRepo.AddAsync(pA);
+        await providerRepo.AddAsync(pUnused);
+        await providerRepo.SaveChangesAsync();
+        var orderCostRepo = new FakeRepository<OrderCost>();
+        await orderCostRepo.AddAsync(new OrderCost { OrderId = oA.Id, ProviderId = pA.Id });
+        await orderCostRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo, orderCostRepo: orderCostRepo, providerRepo: providerRepo);
+
+        var opts = await service.GetOrderFilterOptionsAsync();
+
+        var p = Assert.Single(opts.Providers);
+        Assert.Equal("Khách sạn A", p.Name);
     }
 
     [Fact]
