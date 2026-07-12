@@ -42,7 +42,10 @@ const GROUPS: NavGroup[] = [
     key: 'g-workspace',
     label: 'Bàn làm việc',
     icon: <DashboardOutlined />,
-    children: [{ key: '/dashboard', label: 'Tổng quan', perm: 'report.dashboard.view' }],
+    children: [
+      { key: '/workspace', label: 'Bàn làm việc', perm: 'report.dashboard.view' },
+      { key: '/dashboard', label: 'Tổng quan', perm: 'report.dashboard.view' },
+    ],
   },
   {
     key: 'g-provider',

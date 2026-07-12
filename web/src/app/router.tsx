@@ -44,6 +44,7 @@ import { BillingPage } from '../features/billing/BillingPage';
 import { OrderDebtReportPage } from '../features/reports/OrderDebtReportPage';
 import { ProviderDebtReportPage } from '../features/reports/ProviderDebtReportPage';
 import { DashboardPage } from '../features/reports/DashboardPage';
+import { WorkspacePage } from '../features/workspace/WorkspacePage';
 import { CashFlowReportPage } from '../features/reports/CashFlowReportPage';
 import { TurnoverReportPage } from '../features/reports/TurnoverReportPage';
 import { CommissionByUserReportPage } from '../features/reports/CommissionByUserReportPage';
@@ -98,7 +99,8 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/workspace" replace />} />
+        <Route path="/workspace" element={<WorkspacePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/leads" element={<LeadsPage />} />
