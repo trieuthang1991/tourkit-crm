@@ -129,6 +129,8 @@ public class PaymentServiceTests
 
         Assert.Equal("PC1", Assert.Single((await service.ListAllAsync(1, 20, new PaymentListFilter(Status: 0))).Items).Code);
         Assert.Equal("PC2", Assert.Single((await service.ListAllAsync(1, 20, new PaymentListFilter(Q: "PC2"))).Items).Code);
+        Assert.Equal("PC2", Assert.Single((await service.ListAllAsync(1, 20, new PaymentListFilter(AmountFrom: 1_500_000m))).Items).Code);
+        Assert.Equal(2, (await service.ListAllAsync(1, 20, new PaymentListFilter(PaymentMethod: "cash"))).Items.Count);
 
         var stats = await service.GetStatsAsync();
         Assert.Equal(2, stats.Total);

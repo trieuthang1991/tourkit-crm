@@ -102,11 +102,15 @@ public sealed class PaymentService(
         var f = filter ?? new PaymentListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        // Lọc cột thật (trạng thái, khoảng ngày) ở DB; q (mã phiếu/mã đơn/NCC/người nhận) lọc sau khi làm giàu.
+        // Lọc cột thật (trạng thái, ngày, hình thức, số tiền) ở DB; q (mã phiếu/mã đơn/NCC/người nhận) sau khi làm giàu.
+        var pm = string.IsNullOrWhiteSpace(f.PaymentMethod) ? null : f.PaymentMethod.Trim();
         var all = await paymentRepo.ListAsync(p =>
             (f.Status == null || p.Status == f.Status) &&
             (f.From == null || p.IssuedAt >= f.From) &&
-            (f.To == null || p.IssuedAt <= f.To));
+            (f.To == null || p.IssuedAt <= f.To) &&
+            (pm == null || p.PaymentMethod.Contains(pm)) &&
+            (f.AmountFrom == null || p.Amount >= f.AmountFrom) &&
+            (f.AmountTo == null || p.Amount <= f.AmountTo));
 
         // Nạp theo lô: mã đơn + tên NCC (phiếu chi trả cho NCC) để danh sách tổng hiển thị được.
         var orderIds = all.Select(p => p.OrderId).ToHashSet();

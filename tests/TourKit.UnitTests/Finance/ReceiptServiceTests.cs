@@ -149,6 +149,8 @@ public class ReceiptServiceTests
 
         Assert.Equal("PT1", Assert.Single((await service.ListAllAsync(1, 20, new ReceiptListFilter(Status: 0))).Items).Code);
         Assert.Equal("PT2", Assert.Single((await service.ListAllAsync(1, 20, new ReceiptListFilter(Q: "PT2"))).Items).Code);
+        Assert.Equal("PT2", Assert.Single((await service.ListAllAsync(1, 20, new ReceiptListFilter(AmountFrom: 1_500_000m))).Items).Code);
+        Assert.Equal(2, (await service.ListAllAsync(1, 20, new ReceiptListFilter(PaymentMethod: "cash"))).Items.Count);
 
         var stats = await service.GetStatsAsync();
         Assert.Equal(2, stats.Total);

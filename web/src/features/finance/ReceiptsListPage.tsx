@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Space, Statistic, Table, Tag } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Segmented, Space, Statistic, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -37,10 +37,15 @@ export function ReceiptsListPage() {
   const [status, setStatus] = useState<number | undefined>();
   const [range, setRange] = useState<{ from?: string; to?: string }>({});
   const [rangeApplied, setRangeApplied] = useState<{ from?: string; to?: string }>({});
+  const [pm, setPm] = useState('');
+  const [amtFrom, setAmtFrom] = useState<number | undefined>();
+  const [amtTo, setAmtTo] = useState<number | undefined>();
+  const [adv, setAdv] = useState<{ paymentMethod?: string; amountFrom?: number; amountTo?: number }>({});
 
   const applyFilters = () => {
     setQ(search);
     setRangeApplied(range);
+    setAdv({ paymentMethod: pm || undefined, amountFrom: amtFrom, amountTo: amtTo });
     setPage({ ...page, page: 1 });
   };
   const resetFilters = () => {
@@ -49,6 +54,10 @@ export function ReceiptsListPage() {
     setStatus(undefined);
     setRange({});
     setRangeApplied({});
+    setPm('');
+    setAmtFrom(undefined);
+    setAmtTo(undefined);
+    setAdv({});
     setPage({ ...page, page: 1 });
   };
 
@@ -61,10 +70,10 @@ export function ReceiptsListPage() {
   });
 
   const list = useQuery({
-    queryKey: [...KEY, page.page, page.size, q, status, rangeApplied],
+    queryKey: [...KEY, page.page, page.size, q, status, rangeApplied, adv],
     queryFn: async () => {
       const { data } = await httpClient.get<unknown>('/api/v1/receipts', {
-        params: clean({ page: page.page, size: page.size, q: q || undefined, status, from: rangeApplied.from, to: rangeApplied.to }),
+        params: clean({ page: page.page, size: page.size, q: q || undefined, status, from: rangeApplied.from, to: rangeApplied.to, ...adv }),
       });
       return pagedSchema(receiptListItemSchema).parse(data);
     },
@@ -182,6 +191,15 @@ export function ReceiptsListPage() {
               value={range.from && range.to ? [dayjs(range.from), dayjs(range.to)] : null}
               onChange={(d) => setRange({ from: d?.[0]?.startOf('day').toISOString(), to: d?.[1]?.endOf('day').toISOString() })}
             />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Input allowClear placeholder="PT thanh toán" value={pm} onChange={(e) => setPm(e.target.value)} onPressEnter={applyFilters} />
+          </Col>
+          <Col xs={6} sm={4} lg={2}>
+            <InputNumber style={{ width: '100%' }} placeholder="Số tiền từ" min={0} value={amtFrom} onChange={(v) => setAmtFrom(v ?? undefined)} />
+          </Col>
+          <Col xs={6} sm={4} lg={2}>
+            <InputNumber style={{ width: '100%' }} placeholder="đến" min={0} value={amtTo} onChange={(v) => setAmtTo(v ?? undefined)} />
           </Col>
           <Col span={24}>
             <Space>

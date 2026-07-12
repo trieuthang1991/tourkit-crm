@@ -98,11 +98,15 @@ public sealed class ReceiptService(
         var f = filter ?? new ReceiptListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        // Lọc cột thật (trạng thái, khoảng ngày) ở DB; q (mã phiếu/mã đơn/khách/người nộp) lọc sau khi làm giàu.
+        // Lọc cột thật (trạng thái, ngày, hình thức, số tiền) ở DB; q (mã phiếu/mã đơn/khách/người nộp) sau khi làm giàu.
+        var pm = string.IsNullOrWhiteSpace(f.PaymentMethod) ? null : f.PaymentMethod.Trim();
         var all = await receiptRepo.ListAsync(r =>
             (f.Status == null || r.Status == f.Status) &&
             (f.From == null || r.IssuedAt >= f.From) &&
-            (f.To == null || r.IssuedAt <= f.To));
+            (f.To == null || r.IssuedAt <= f.To) &&
+            (pm == null || r.PaymentMethod.Contains(pm)) &&
+            (f.AmountFrom == null || r.Amount >= f.AmountFrom) &&
+            (f.AmountTo == null || r.Amount <= f.AmountTo));
 
         // Nạp theo lô: mã đơn + tên khách của các đơn liên quan (để danh sách tổng hiển thị được).
         var orderIds = all.Select(r => r.OrderId).ToHashSet();
