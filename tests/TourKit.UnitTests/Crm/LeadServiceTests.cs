@@ -102,6 +102,18 @@ public class LeadServiceTests
     }
 
     [Fact]
+    public async Task ListAsync_filters_by_branch()
+    {
+        var service = NewService(out var repo, out _);
+        var branchA = Guid.NewGuid();
+        await repo.AddAsync(new Lead { FullName = "A", BranchId = branchA });
+        await repo.AddAsync(new Lead { FullName = "B", BranchId = Guid.NewGuid() });
+        await repo.SaveChangesAsync();
+
+        Assert.Equal("A", Assert.Single((await service.ListAsync(1, 20, new LeadListFilter(BranchId: branchA))).Items).FullName);
+    }
+
+    [Fact]
     public async Task GetStatsAsync_counts_by_status_and_converted()
     {
         var service = NewService(out var repo, out _);

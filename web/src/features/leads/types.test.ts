@@ -12,6 +12,7 @@ describe('lead schemas', () => {
       status: 1,
       assignedToUserId: null,
       convertedCustomerId: null,
+      branchId: null,
     });
     expect(l.status).toBe(1);
   });

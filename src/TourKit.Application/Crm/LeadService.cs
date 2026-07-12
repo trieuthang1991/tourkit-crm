@@ -24,6 +24,7 @@ public sealed class LeadService(
         var (items, total) = await repo.PageAsync(page, size, l =>
             (f.Status == null || (int)l.Status == f.Status) &&
             (f.AssignedToUserId == null || l.AssignedToUserId == f.AssignedToUserId) &&
+            (f.BranchId == null || l.BranchId == f.BranchId) &&
             (src == null || (l.Source != null && l.Source.Contains(src))) &&
             (f.CreatedFrom == null || l.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || l.CreatedAt <= f.CreatedTo) &&
@@ -83,6 +84,7 @@ public sealed class LeadService(
             Email = dto.Email,
             Source = dto.Source,
             AssignedToUserId = dto.AssignedToUserId,
+            BranchId = dto.BranchId,
         };
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
@@ -106,6 +108,7 @@ public sealed class LeadService(
         entity.Source = dto.Source;
         entity.Status = dto.Status;
         entity.AssignedToUserId = dto.AssignedToUserId;
+        entity.BranchId = dto.BranchId;
         repo.Update(entity);
         await repo.SaveChangesAsync();
     }
@@ -158,5 +161,5 @@ public sealed class LeadService(
     }
 
     private static LeadDto Map(Lead l) => new(
-        l.Id, l.FullName, l.Phone, l.Email, l.Source, l.Status, l.AssignedToUserId, l.ConvertedCustomerId);
+        l.Id, l.FullName, l.Phone, l.Email, l.Source, l.Status, l.AssignedToUserId, l.ConvertedCustomerId, l.BranchId);
 }

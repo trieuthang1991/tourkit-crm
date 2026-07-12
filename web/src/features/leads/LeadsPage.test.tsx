@@ -21,6 +21,7 @@ const list = { items: [], total: 0, page: 1, size: 20 };
 function mockGet(url: string) {
   if (url.includes('/leads/stats')) return Promise.resolve({ data: stats });
   if (url.includes('/leads/filter-options')) return Promise.resolve({ data: { sources: [] } });
+  if (url.includes('/branches')) return Promise.resolve({ data: [] });
   if (url.includes('/users')) return Promise.resolve({ data: [] });
   return Promise.resolve({ data: list });
 }

@@ -13,5 +13,6 @@ public sealed class Lead : BaseEntity, ITenantEntity
     public string? Source { get; set; }
     public LeadStatus Status { get; set; } = LeadStatus.New;
     public Guid? AssignedToUserId { get; set; }
+    public Guid? BranchId { get; set; }             // Chi nhánh (legacy ChiNhanh)
     public Guid? ConvertedCustomerId { get; set; }
 }

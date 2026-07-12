@@ -37,6 +37,7 @@ type Filters = {
   status?: number;
   source?: string;
   assignedToUserId?: string;
+  branchId?: string;
   createdFrom?: string;
   createdTo?: string;
 };
@@ -119,14 +120,22 @@ export function LeadsPage() {
     mutationFn: async ({ lead, status }: { lead: Lead; status: number }) => {
       await httpClient.put(`/api/v1/leads/${lead.id}`, {
         fullName: lead.fullName, phone: lead.phone, email: lead.email, source: lead.source,
-        assignedToUserId: lead.assignedToUserId, status,
+        assignedToUserId: lead.assignedToUserId, branchId: lead.branchId, status,
       });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
   });
 
+  const branches = useQuery({
+    queryKey: ['branches'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/branches');
+      return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
+    },
+  });
   const sourceOpts = (filterOptions.data?.sources ?? []).map((s) => ({ label: s, value: s }));
   const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
+  const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
 
   async function submit(values: LeadForm) {
     try {
@@ -194,7 +203,8 @@ export function LeadsPage() {
   const item = editing?.item ?? null;
   const defaultValues: LeadForm = {
     fullName: item?.fullName ?? '', phone: item?.phone ?? null, email: item?.email ?? null,
-    source: item?.source ?? null, assignedToUserId: item?.assignedToUserId ?? null, status: item?.status ?? 1,
+    source: item?.source ?? null, assignedToUserId: item?.assignedToUserId ?? null,
+    branchId: item?.branchId ?? null, status: item?.status ?? 1,
   };
 
   return (
@@ -255,7 +265,8 @@ export function LeadsPage() {
             <DatePicker.RangePicker style={{ width: '100%' }} placeholder={['Ngày tạo đơn', '']} disabled />
           </Col>
           <Col xs={12} sm={8} lg={4}>
-            <Select allowClear style={{ width: '100%' }} placeholder="Chi nhánh" options={[]} disabled />
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Chi nhánh"
+              options={branchOpts} value={draft.branchId} onChange={(v) => setD({ branchId: v ?? undefined })} />
           </Col>
           <Col xs={12} sm={8} lg={4}>
             <Select allowClear style={{ width: '100%' }} placeholder="Thẻ tag" options={[]} disabled />
@@ -265,7 +276,7 @@ export function LeadsPage() {
               <Button type="primary" onClick={applyFilters}>Tìm kiếm</Button>
               <Button onClick={resetFilters}>Đặt lại</Button>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                (Người tạo / Ngày tạo đơn / Chi nhánh / Thẻ tag: chờ bổ sung model)
+                (Người tạo / Ngày tạo đơn / Thẻ tag: chờ bổ sung model)
               </Typography.Text>
             </Space>
           </Col>
@@ -337,6 +348,7 @@ export function LeadsPage() {
           <TextField name="email" label="Email" />
           <TextField name="source" label="Nguồn" />
           <TextField name="assignedToUserId" label="Người phụ trách (userId)" />
+          <SelectField name="branchId" label="Chi nhánh" options={branchOpts} allowClear />
           {editing.mode === 'edit' ? (
             <SelectField name="status" label="Trạng thái" options={LEAD_STATUS_OPTIONS} required />
           ) : null}

@@ -9,6 +9,7 @@ export const leadSchema = z.object({
   status: z.number(),
   assignedToUserId: z.string().uuid().nullable(),
   convertedCustomerId: z.string().uuid().nullable(),
+  branchId: z.string().uuid().nullable(),
 });
 export type Lead = z.infer<typeof leadSchema>;
 
@@ -18,6 +19,7 @@ const leadBaseFields = {
   email: z.string().nullable().transform((v) => (v ? v : null)),
   source: z.string().nullable().transform((v) => (v ? v : null)),
   assignedToUserId: z.string().nullable().transform((v) => (v ? v : null)),
+  branchId: z.string().nullable().transform((v) => (v ? v : null)),
 };
 
 export const leadCreateSchema = z.object(leadBaseFields);
