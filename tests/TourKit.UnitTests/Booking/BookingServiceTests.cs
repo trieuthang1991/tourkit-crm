@@ -247,6 +247,23 @@ public sealed class BookingServiceTests
     }
 
     [Fact]
+    public async Task ListOrdersAsync_filters_by_bookingType_market_group_commission()
+    {
+        var market = Guid.NewGuid();
+        var group = Guid.NewGuid();
+        var orderRepo = new FakeRepository<Order>();
+        await orderRepo.AddAsync(new Order { Code = "O-FIT", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid(), BookingType = 0, MarketTypeId = market, TourGroupId = group, IsCommissionSettled = true });
+        await orderRepo.AddAsync(new Order { Code = "O-GIT", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid(), BookingType = 1, IsCommissionSettled = false });
+        await orderRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo);
+
+        Assert.Equal("O-FIT", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(BookingType: 0))).Items).Code);
+        Assert.Equal("O-FIT", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(MarketTypeId: market))).Items).Code);
+        Assert.Equal("O-FIT", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(TourGroupId: group))).Items).Code);
+        Assert.Equal("O-GIT", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(CommissionSettled: false))).Items).Code);
+    }
+
+    [Fact]
     public async Task ListOrdersAsync_filters_by_tourType_via_departure()
     {
         var departureRepo = new FakeRepository<TourDeparture>();

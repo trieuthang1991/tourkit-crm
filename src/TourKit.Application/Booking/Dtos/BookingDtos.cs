@@ -25,7 +25,8 @@ public sealed record OrderListFilter(
     DateTimeOffset? DepartureFrom = null, DateTimeOffset? DepartureTo = null,
     DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null,
     Guid? SalesUserId = null, Guid? BranchId = null, Guid? CreatedByUserId = null, Guid? DepartmentId = null,
-    string? TourType = null, Guid? ProviderId = null);
+    string? TourType = null, Guid? ProviderId = null,
+    Guid? MarketTypeId = null, Guid? TourGroupId = null, int? BookingType = null, bool? CommissionSettled = null);
 
 /// <summary>NCC xuất hiện trong đơn (dùng cho Select lọc theo nhà cung cấp).</summary>
 public sealed record OrderFilterProviderDto(Guid Id, string Name);

@@ -131,6 +131,10 @@ public sealed class BookingService(
             (f.SalesUserId == null || o.SalesUserId == f.SalesUserId) &&
             (f.CreatedByUserId == null || o.CreatedByUserId == f.CreatedByUserId) &&
             (f.BranchId == null || o.BranchId == f.BranchId) &&
+            (f.MarketTypeId == null || o.MarketTypeId == f.MarketTypeId) &&
+            (f.TourGroupId == null || o.TourGroupId == f.TourGroupId) &&
+            (f.BookingType == null || o.BookingType == f.BookingType) &&
+            (f.CommissionSettled == null || o.IsCommissionSettled == f.CommissionSettled) &&
             (f.CreatedFrom == null || o.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || o.CreatedAt <= f.CreatedTo));
 
