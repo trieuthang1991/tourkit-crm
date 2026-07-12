@@ -302,4 +302,22 @@ public sealed class BookingServiceTests
         Assert.Equal(1, stats.Deposit);
         Assert.Equal(1, stats.Paid);
     }
+
+    [Fact]
+    public async Task ListOrdersAsync_filters_by_branch_sales_and_createdRange()
+    {
+        var orderRepo = new FakeRepository<Order>();
+        var branchA = Guid.NewGuid();
+        var sales = Guid.NewGuid();
+        var match = new Order { Code = "M", BranchId = branchA, SalesUserId = sales, CreatedAt = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero), CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        var other = new Order { Code = "O", BranchId = Guid.NewGuid(), CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        await orderRepo.AddAsync(match);
+        await orderRepo.AddAsync(other);
+        await orderRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo);
+
+        Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(BranchId: branchA))).Items).Code);
+        Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(SalesUserId: sales))).Items).Code);
+        Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(CreatedFrom: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero)))).Items).Code);
+    }
 }

@@ -121,8 +121,13 @@ public sealed class BookingService(
         var f = filter ?? new OrderListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        // Lọc cột thật (trạng thái) ở DB; q (mã/tên KH/tên tour) + khoảng ngày đi lọc sau khi làm giàu.
-        var all = await orderRepo.ListAsync(o => f.Status == null || (int)o.Status == f.Status);
+        // Lọc cột thật (trạng thái, NV sales, chi nhánh, ngày tạo) ở DB; q + khoảng ngày đi lọc sau khi làm giàu.
+        var all = await orderRepo.ListAsync(o =>
+            (f.Status == null || (int)o.Status == f.Status) &&
+            (f.SalesUserId == null || o.SalesUserId == f.SalesUserId) &&
+            (f.BranchId == null || o.BranchId == f.BranchId) &&
+            (f.CreatedFrom == null || o.CreatedAt >= f.CreatedFrom) &&
+            (f.CreatedTo == null || o.CreatedAt <= f.CreatedTo));
 
         // Nạp theo lô để làm giàu danh sách: tên KH, tên tour + ngày đi, số đã thu (phiếu thu đã ghi nhận).
         var customerIds = all.Select(o => o.CustomerId).ToHashSet();

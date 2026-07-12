@@ -61,6 +61,7 @@ public class AppDbContext : DbContext
     public DbSet<CarType> CarTypes => Set<CarType>();
     public DbSet<LanguageType> LanguageTypes => Set<LanguageType>();
     public DbSet<Department> Departments => Set<Department>();
+    public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<Position> Positions => Set<Position>();
     public DbSet<Surcharge> Surcharges => Set<Surcharge>();
     public DbSet<OrderSurcharge> OrderSurcharges => Set<OrderSurcharge>();

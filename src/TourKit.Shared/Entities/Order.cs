@@ -16,6 +16,7 @@ public sealed class Order : BaseEntity, ITenantEntity
     public Guid TourDepartureId { get; set; }
     public Guid CustomerId { get; set; }
     public Guid? SalesUserId { get; set; }
+    public Guid? BranchId { get; set; }        // Chi nhánh (legacy ChiNhanh) — lọc/báo cáo theo chi nhánh
     public int BookingType { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Draft;
 

@@ -22,7 +22,9 @@ public sealed record OrderDto(
 /// <summary>Bộ lọc danh sách đơn hàng (bám thanh lọc hệ cũ). PaymentStatus: 0 chưa TT · 1 đã cọc · 2 TT hết.</summary>
 public sealed record OrderListFilter(
     string? Q = null, int? Status = null, int? PaymentStatus = null,
-    DateTimeOffset? DepartureFrom = null, DateTimeOffset? DepartureTo = null);
+    DateTimeOffset? DepartureFrom = null, DateTimeOffset? DepartureTo = null,
+    DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null,
+    Guid? SalesUserId = null, Guid? BranchId = null);
 
 /// <summary>Thẻ thống kê đầu màn Đơn hàng: tổng đơn + tiền + đếm theo trạng thái + trạng thái thanh toán.</summary>
 public sealed record OrderStatsDto(

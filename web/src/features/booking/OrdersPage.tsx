@@ -1,4 +1,4 @@
-import { Button, Card, Col, DatePicker, Input, Row, Segmented, Space, Statistic, Table, Tag } from 'antd';
+import { Button, Card, Col, DatePicker, Input, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -28,6 +28,20 @@ const statsSchema = z.object({
   paid: z.number(),
 });
 
+const branchSchema = z.object({ id: z.string().uuid(), name: z.string() });
+const userRowSchema = z.object({ id: z.string().uuid(), fullName: z.string() });
+const ORDER_STATUS_OPTIONS = Object.entries(ORDER_STATUS).map(([value, label]) => ({ value: Number(value), label }));
+
+type OrderAdv = {
+  status?: number;
+  salesUserId?: string;
+  branchId?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  departureFrom?: string;
+  departureTo?: string;
+};
+
 // Bỏ field rỗng để không gửi param thừa.
 function clean(obj: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''));
@@ -39,24 +53,21 @@ export function OrdersPage() {
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
   const [payStatus, setPayStatus] = useState<number | undefined>();
-  const [depFrom, setDepFrom] = useState<string | undefined>();
-  const [depTo, setDepTo] = useState<string | undefined>();
-  const [dep, setDep] = useState<string | undefined>();
-  const [depApplied, setDepApplied] = useState<{ from?: string; to?: string }>({});
+  const [draft, setDraft] = useState<OrderAdv>({});
+  const [adv, setAdv] = useState<OrderAdv>({});
 
+  const setD = (patch: Partial<OrderAdv>) => setDraft((d) => ({ ...d, ...patch }));
   const applyFilters = () => {
     setQ(search);
-    setDepApplied({ from: depFrom, to: depTo });
+    setAdv(draft);
     setPage({ ...page, page: 1 });
   };
   const resetFilters = () => {
     setSearch('');
     setQ('');
     setPayStatus(undefined);
-    setDepFrom(undefined);
-    setDepTo(undefined);
-    setDep(undefined);
-    setDepApplied({});
+    setDraft({});
+    setAdv({});
     setPage({ ...page, page: 1 });
   };
 
@@ -67,19 +78,28 @@ export function OrdersPage() {
       return statsSchema.parse(data);
     },
   });
+  const branches = useQuery({
+    queryKey: ['branches'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/branches');
+      return z.array(branchSchema).parse(data);
+    },
+  });
+  const users = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/users');
+      return z.array(userRowSchema).parse(data);
+    },
+  });
+  const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
+  const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
 
   const list = useQuery({
-    queryKey: ['orders', 'list', page.page, page.size, q, payStatus, depApplied],
+    queryKey: ['orders', 'list', page.page, page.size, q, payStatus, adv],
     queryFn: async () => {
       const { data } = await httpClient.get<unknown>('/api/v1/orders', {
-        params: clean({
-          page: page.page,
-          size: page.size,
-          q: q || undefined,
-          paymentStatus: payStatus,
-          departureFrom: depApplied.from,
-          departureTo: depApplied.to,
-        }),
+        params: clean({ page: page.page, size: page.size, q: q || undefined, paymentStatus: payStatus, ...adv }),
       });
       return pagedSchema(orderSchema).parse(data);
     },
@@ -158,29 +178,40 @@ export function OrdersPage() {
         ))}
       </Row>
 
-      {/* Thanh tìm kiếm + lọc */}
+      {/* Thanh lọc đầy đủ (bám staging /all-orders) */}
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
-          <Col xs={24} sm={12} lg={8}>
-            <Input.Search
-              allowClear
-              placeholder="Tìm theo mã đơn / khách / tour"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onSearch={applyFilters}
-            />
+          <Col xs={24} sm={12} lg={6}>
+            <Input.Search allowClear placeholder="Mã, tên tour, SĐT, tên KH" value={search}
+              onChange={(e) => setSearch(e.target.value)} onSearch={applyFilters} />
           </Col>
-          <Col xs={24} sm={12} lg={8}>
-            <DatePicker.RangePicker
-              style={{ width: '100%' }}
-              placeholder={['Ngày đi từ', 'đến']}
-              value={dep && depTo ? [dayjs(dep), dayjs(depTo)] : null}
-              onChange={(d) => {
-                setDep(d?.[0]?.startOf('day').toISOString());
-                setDepFrom(d?.[0]?.startOf('day').toISOString());
-                setDepTo(d?.[1]?.endOf('day').toISOString());
-              }}
-            />
+          <Col xs={12} sm={8} lg={4}>
+            <Select allowClear style={{ width: '100%' }} placeholder="Tình trạng đơn" options={ORDER_STATUS_OPTIONS}
+              value={draft.status} onChange={(v) => setD({ status: v ?? undefined })} />
+          </Col>
+          <Col xs={12} sm={8} lg={5}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="NV phụ trách"
+              options={userOpts} value={draft.salesUserId} onChange={(v) => setD({ salesUserId: v ?? undefined })} />
+          </Col>
+          <Col xs={12} sm={8} lg={5}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Chi nhánh"
+              options={branchOpts} value={draft.branchId} onChange={(v) => setD({ branchId: v ?? undefined })} />
+          </Col>
+          <Col xs={24} sm={12} lg={7}>
+            <DatePicker.RangePicker style={{ width: '100%' }} placeholder={['Ngày tạo từ', 'đến']}
+              value={draft.createdFrom && draft.createdTo ? [dayjs(draft.createdFrom), dayjs(draft.createdTo)] : null}
+              onChange={(d) => setD({ createdFrom: d?.[0]?.startOf('day').toISOString(), createdTo: d?.[1]?.endOf('day').toISOString() })} />
+          </Col>
+          <Col xs={24} sm={12} lg={7}>
+            <DatePicker.RangePicker style={{ width: '100%' }} placeholder={['Ngày khởi hành từ', 'đến']}
+              value={draft.departureFrom && draft.departureTo ? [dayjs(draft.departureFrom), dayjs(draft.departureTo)] : null}
+              onChange={(d) => setD({ departureFrom: d?.[0]?.startOf('day').toISOString(), departureTo: d?.[1]?.endOf('day').toISOString() })} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select allowClear style={{ width: '100%' }} placeholder="Phòng ban" options={[]} disabled />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select allowClear style={{ width: '100%' }} placeholder="Loại tour / Thị trường" options={[]} disabled />
           </Col>
           <Col span={24}>
             <Space>
@@ -188,6 +219,9 @@ export function OrdersPage() {
                 Tìm kiếm
               </Button>
               <Button onClick={resetFilters}>Đặt lại</Button>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                (Người tạo / Phòng ban / Loại tour / Thị trường / NCC / CTV: đang bổ sung quan hệ model)
+              </Typography.Text>
             </Space>
           </Col>
         </Row>
