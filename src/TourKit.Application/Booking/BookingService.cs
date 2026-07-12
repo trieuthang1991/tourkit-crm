@@ -167,12 +167,42 @@ public sealed class BookingService(
             .GroupBy(c => c.OrderId)
             .ToDictionary(g => g.Key, g => g.Sum(c => c.ActualAmount));
 
+        // Khách hàng theo trạng thái chỗ (pax): tổng · giữ (Held) · bán (Deposited/Paid) · còn lại (chốt chưa bán).
+        var seatsByOrder = (await seatRepo.ListAsync(s => orderIds.Contains(s.OrderId)))
+            .GroupBy(s => s.OrderId)
+            .ToDictionary(g => g.Key, g =>
+            {
+                int total = 0, held = 0, sold = 0;
+                foreach (var s in g)
+                {
+                    var status = BookingMath.DeriveSeatStatus(s);
+                    if (status == SeatStatus.Cancelled)
+                    {
+                        continue;
+                    }
+
+                    var pax = s.Quantity + s.AmountChildren + s.AmountChildrenSmall + s.QuantityBaby;
+                    total += pax;
+                    if (status == SeatStatus.Held)
+                    {
+                        held += pax;
+                    }
+                    else if (status is SeatStatus.Deposited or SeatStatus.Paid)
+                    {
+                        sold += pax;
+                    }
+                }
+
+                return (Total: total, Held: held, Sold: sold, Remaining: total - held - sold);
+            });
+
         var enriched = all.Select(o =>
         {
             departures.TryGetValue(o.TourDepartureId, out var dep);
             var dto = MapOrder(o, customerNames.GetValueOrDefault(o.CustomerId), dep?.Title, dep?.DepartureDate,
                 paidByOrder.GetValueOrDefault(o.Id), actualCostByOrder.GetValueOrDefault(o.Id),
-                totalCostByOrder.TryGetValue(o.Id, out var tc) ? tc : (decimal?)null);
+                totalCostByOrder.TryGetValue(o.Id, out var tc) ? tc : (decimal?)null,
+                seatsByOrder.GetValueOrDefault(o.Id));
             return (o.CreatedAt, Dto: dto, TourType: dep?.TourType);
         });
 
@@ -480,9 +510,10 @@ public sealed class BookingService(
     private static OrderDto MapOrder(
         Order o, string? customerName = null, string? tourTitle = null,
         DateTimeOffset? departureDate = null, decimal amountPaid = 0m, decimal actualCost = 0m,
-        decimal? totalCost = null) => new(
+        decimal? totalCost = null, (int Total, int Held, int Sold, int Remaining) seats = default) => new(
         o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, totalCost ?? o.TotalCost, o.Status, o.SalesUserId,
-        customerName, tourTitle, departureDate, amountPaid, OrderMath.Outstanding(o.TotalRevenue, amountPaid), actualCost);
+        customerName, tourTitle, departureDate, amountPaid, OrderMath.Outstanding(o.TotalRevenue, amountPaid), actualCost,
+        seats.Total, seats.Held, seats.Sold, seats.Remaining);
 
     /// <summary>Chiếu TourCustomer (chỗ) → SeatDto. Công thức tiền &amp; suy trạng thái nằm ở BookingMath (một chỗ).</summary>
     private static SeatDto MapSeat(TourCustomer s) => new(

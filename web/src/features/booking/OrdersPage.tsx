@@ -218,6 +218,19 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
     { title: 'Mã đơn', dataIndex: 'code', key: 'code', fixed: 'left', width: 130 },
     { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName', width: 170, render: dash },
     { title: 'Tour', dataIndex: 'tourTitle', key: 'tourTitle', width: 200, ellipsis: true, render: dash },
+    {
+      title: 'Khách (chỗ)',
+      key: '__seats',
+      width: 165,
+      render: (_: unknown, o: Order) => (
+        <Space size={4}>
+          <Tag color="blue" style={{ margin: 0 }} title="Tổng chỗ">{o.seatTotal ?? 0}</Tag>
+          <Tag color="gold" style={{ margin: 0 }} title="Giữ chỗ">{o.seatHeld ?? 0}</Tag>
+          <Tag color="green" style={{ margin: 0 }} title="Đã bán">{o.seatSold ?? 0}</Tag>
+          <Tag color="red" style={{ margin: 0 }} title="Còn lại">{o.seatRemaining ?? 0}</Tag>
+        </Space>
+      ),
+    },
     { title: 'Ngày đi', dataIndex: 'departureDate', key: 'departureDate', width: 110, render: dateVi },
     {
       title: 'Thu tiền',
@@ -421,6 +434,16 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
             { label: `Thanh toán hết (${s?.paid ?? 0})`, value: '2' },
           ]}
         />
+      </div>
+
+      <div style={{ marginBottom: 8 }}>
+        <Space size={6}>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>Chú thích chỗ:</Typography.Text>
+          <Tag color="blue" style={{ margin: 0 }}>Tổng chỗ</Tag>
+          <Tag color="gold" style={{ margin: 0 }}>Giữ chỗ</Tag>
+          <Tag color="green" style={{ margin: 0 }}>Đã bán</Tag>
+          <Tag color="red" style={{ margin: 0 }}>Còn lại</Tag>
+        </Space>
       </div>
 
       <Table

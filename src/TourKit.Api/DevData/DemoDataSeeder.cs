@@ -265,6 +265,28 @@ public static class DemoDataSeeder
             }
         }
 
+        // 7i) Chỗ (TourCustomer) cho đơn demo — mỗi đơn 1 dòng, trạng thái xen kẽ để cột "Khách (chỗ)" có số.
+        if (!await db.Set<TourCustomer>().AnyAsync())
+        {
+            foreach (var (o, i) in opsOrders.Select((o, i) => (o, i)))
+            {
+                var seat = new TourCustomer
+                {
+                    OrderId = o.Id, TourDepartureId = o.TourDepartureId, CustomerId = o.CustomerId,
+                    Quantity = 2, PriceAdult = 1_000_000m, IsMainContact = true, Status = 0,
+                };
+                switch (i % 4)
+                {
+                    case 0: seat.HoldExpiresAt = now.AddDays(3); seat.UpfrontAmount = 0m; break;        // Giữ chỗ
+                    case 1: seat.UpfrontAmount = 2_000_000m; break;                                     // Đã bán (thanh toán)
+                    case 2: seat.UpfrontAmount = 500_000m; break;                                       // Đã bán (đã cọc)
+                    default: seat.UpfrontAmount = 0m; break;                                            // Còn lại (chốt chưa bán)
+                }
+                db.Add(seat);
+            }
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {

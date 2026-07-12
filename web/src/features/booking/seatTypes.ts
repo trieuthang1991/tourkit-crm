@@ -15,6 +15,10 @@ export const orderSchema = z.object({
   amountPaid: z.number().optional(),
   outstanding: z.number().optional(),
   actualCost: z.number().optional(),
+  seatTotal: z.number().optional(),
+  seatHeld: z.number().optional(),
+  seatSold: z.number().optional(),
+  seatRemaining: z.number().optional(),
 });
 export type Order = z.infer<typeof orderSchema>;
 
