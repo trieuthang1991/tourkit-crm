@@ -4,6 +4,13 @@ namespace TourKit.Application.Customers.Dtos;
 public sealed record CustomerStatsDto(
     int Total, int NewToday, int NewThisMonth, int FirstTimeBuyers, int RepeatBuyers);
 
+/// <summary>Giá trị có sẵn cho các dropdown lọc (facets) — gom distinct từ data thực để user chọn, không gõ tay.</summary>
+public sealed record CustomerFilterOptionsDto(
+    IReadOnlyList<string> Sources, IReadOnlyList<string> Cities, IReadOnlyList<string> MarketGroups,
+    IReadOnlyList<string> Campaigns, IReadOnlyList<string> Collaborators, IReadOnlyList<string> Branches,
+    IReadOnlyList<string> Groups, IReadOnlyList<string> Departments,
+    IReadOnlyList<string> Tags, IReadOnlyList<string> Segments);
+
 public sealed record CustomerDto(
     Guid Id, string? Code, string FullName, string? Phone, int CustomerType, string? Source, string? Tag, decimal TempBalance,
     string? Email, string? Address, DateTimeOffset? DateOfBirth,

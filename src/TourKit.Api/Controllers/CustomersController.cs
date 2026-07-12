@@ -25,6 +25,11 @@ public sealed class CustomersController(ICustomerService service) : ControllerBa
     [Authorize(Permissions.CustomerView)]
     public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
+    // Giá trị có sẵn cho dropdown lọc (nguồn, tag, chi nhánh, chiến dịch...) — user chọn thay vì gõ tay.
+    [HttpGet("filter-options")]
+    [Authorize(Permissions.CustomerView)]
+    public async Task<IActionResult> FilterOptions() => Ok(await service.GetFilterOptionsAsync());
+
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.CustomerView)]
     public async Task<IActionResult> Get(Guid id)

@@ -116,6 +116,32 @@ public sealed class CustomerService(
             RepeatBuyers: orderCountByCustomer.Count(kv => kv.Value > 1));
     }
 
+    public async Task<CustomerFilterOptionsDto> GetFilterOptionsAsync()
+    {
+        // Gom distinct từ data thực để dropdown lọc chọn được (không gõ tay). Dev nhỏ nên quét toàn bộ.
+        var customers = await repo.ListAsync();
+        var profiles = customers.Select(c => CustomerCrmProfile.Parse(c.CrmProfileJson)).ToList();
+
+        static IReadOnlyList<string> Distinct(IEnumerable<string?> vals) =>
+            vals.Where(v => !string.IsNullOrWhiteSpace(v))
+                .Select(v => v!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(v => v, StringComparer.CurrentCulture)
+                .ToList();
+
+        return new CustomerFilterOptionsDto(
+            Distinct(customers.Select(c => c.Source)),
+            Distinct(profiles.Select(p => p.City)),
+            Distinct(profiles.Select(p => p.MarketGroup)),
+            Distinct(profiles.Select(p => p.Campaign)),
+            Distinct(profiles.Select(p => p.CollaboratorName)),
+            Distinct(profiles.Select(p => p.Branch)),
+            Distinct(profiles.Select(p => p.Group)),
+            Distinct(profiles.Select(p => p.Department)),
+            Distinct(profiles.SelectMany(p => p.Tags)),
+            Distinct(profiles.SelectMany(p => p.Segments)));
+    }
+
     public async Task<CustomerDto> GetAsync(Guid id)
     {
         var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();

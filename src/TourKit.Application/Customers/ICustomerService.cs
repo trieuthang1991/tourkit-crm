@@ -7,6 +7,7 @@ public interface ICustomerService
 {
     Task<PagedResult<CustomerDto>> ListAsync(int page, int size, CustomerListFilter? filter = null);
     Task<CustomerStatsDto> GetStatsAsync();
+    Task<CustomerFilterOptionsDto> GetFilterOptionsAsync();
     Task<CustomerDto> GetAsync(Guid id);
     Task<CustomerDto> CreateAsync(CreateCustomerDto dto);
     Task UpdateAsync(Guid id, UpdateCustomerDto dto);

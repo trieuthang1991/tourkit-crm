@@ -39,6 +39,19 @@ import {
 import type { Customer, CustomerForm } from './types';
 
 const userRowSchema = z.object({ id: z.string().uuid(), fullName: z.string() });
+const strList = z.array(z.string());
+const filterOptionsSchema = z.object({
+  sources: strList,
+  cities: strList,
+  marketGroups: strList,
+  campaigns: strList,
+  collaborators: strList,
+  branches: strList,
+  groups: strList,
+  departments: strList,
+  tags: strList,
+  segments: strList,
+});
 const statsSchema = z.object({
   total: z.number(),
   newToday: z.number(),
@@ -149,6 +162,25 @@ export function CustomersPage() {
       return pagedSchema(customerSchema).parse(data);
     },
   });
+
+  // Danh sách giá trị cho dropdown lọc (facets) + nhân viên (NV phụ trách / người tạo).
+  const filterOptions = useQuery({
+    queryKey: ['customers', 'filter-options'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/customers/filter-options');
+      return filterOptionsSchema.parse(data);
+    },
+  });
+  const users = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/users');
+      return z.array(userRowSchema).parse(data);
+    },
+  });
+  const fo = filterOptions.data;
+  const strOpts = (xs?: string[]) => (xs ?? []).map((v) => ({ label: v, value: v }));
+  const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
 
   const create = customersCrud.useCreate();
   const update = customersCrud.useUpdate();
@@ -378,47 +410,63 @@ export function CustomersPage() {
                 />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Chi nhánh" value={draft.branch} onChange={(e) => setD({ branch: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Chi nhánh" options={strOpts(fo?.branches)} value={draft.branch}
+                  onChange={(v) => setD({ branch: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Nhóm" value={draft.group} onChange={(e) => setD({ group: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Nhóm" options={strOpts(fo?.groups)} value={draft.group}
+                  onChange={(v) => setD({ group: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Nguồn khách" value={draft.source} onChange={(e) => setD({ source: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Nguồn khách" options={strOpts(fo?.sources)} value={draft.source}
+                  onChange={(v) => setD({ source: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Người tạo" value={draft.createdBy} onChange={(e) => setD({ createdBy: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Người tạo" options={userOpts} value={draft.createdBy}
+                  onChange={(v) => setD({ createdBy: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Thị trường" value={draft.marketGroup} onChange={(e) => setD({ marketGroup: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Thị trường" options={strOpts(fo?.marketGroups)} value={draft.marketGroup}
+                  onChange={(v) => setD({ marketGroup: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Tỉnh thành" value={draft.city} onChange={(e) => setD({ city: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Tỉnh thành" options={strOpts(fo?.cities)} value={draft.city}
+                  onChange={(v) => setD({ city: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Phòng ban" value={draft.department} onChange={(e) => setD({ department: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Phòng ban" options={strOpts(fo?.departments)} value={draft.department}
+                  onChange={(v) => setD({ department: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Select
-                  allowClear
-                  style={{ width: '100%' }}
-                  placeholder="Giới tính"
-                  options={GENDER_OPTIONS}
-                  value={draft.gender}
-                  onChange={(v) => setD({ gender: v ?? undefined })}
-                />
+                <Select allowClear style={{ width: '100%' }} placeholder="Giới tính" options={GENDER_OPTIONS}
+                  value={draft.gender} onChange={(v) => setD({ gender: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Tên CTV" value={draft.collaborator} onChange={(e) => setD({ collaborator: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Tên CTV" options={strOpts(fo?.collaborators)} value={draft.collaborator}
+                  onChange={(v) => setD({ collaborator: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Tag" value={draft.tag} onChange={(e) => setD({ tag: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Tag" options={strOpts(fo?.tags)} value={draft.tag}
+                  onChange={(v) => setD({ tag: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="Chiến dịch" value={draft.campaign} onChange={(e) => setD({ campaign: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="Chiến dịch" options={strOpts(fo?.campaigns)} value={draft.campaign}
+                  onChange={(v) => setD({ campaign: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Input placeholder="NV phụ trách" value={draft.assignedTo} onChange={(e) => setD({ assignedTo: e.target.value })} />
+                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
+                  placeholder="NV phụ trách" options={userOpts} value={draft.assignedTo}
+                  onChange={(v) => setD({ assignedTo: v ?? undefined })} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
                 <Select
