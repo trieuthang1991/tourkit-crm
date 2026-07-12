@@ -168,6 +168,16 @@ using (var scope = app.Services.CreateScope())
     }
     await TourKit.Api.Authz.PermissionSeeder.SeedAsync(db);
     await PlanSeeder.SeedAsync(db);
+
+    // Chỉ Development: seed bộ data mẫu vào DB để kiểm tra trực quan các thanh lọc.
+    if (app.Environment.IsDevelopment() && db.Database.IsRelational())
+    {
+        await TourKit.Api.DevData.DemoDataSeeder.SeedAsync(
+            db,
+            scope.ServiceProvider.GetRequiredService<TourKit.Api.Tenancy.AmbientTenantContext>(),
+            scope.ServiceProvider.GetRequiredService<TourKit.Api.Provisioning.IProvisioningService>(),
+            scope.ServiceProvider.GetRequiredService<TourKit.Api.Auth.IPasswordHasher>());
+    }
 }
 
 app.UseSerilogRequestLogging();   // log mỗi request (method/path/status/thời gian) có cấu trúc
