@@ -97,6 +97,26 @@ public sealed class PaymentService(
         return payments.OrderBy(p => p.IssuedAt).Select(Map).ToList();
     }
 
+    public async Task<PagedResult<PaymentListItemDto>> ListAllAsync(int page, int size)
+    {
+        var (items, total) = await paymentRepo.PageAsync(page, size);
+
+        // Nạp theo lô: mã đơn + tên NCC (phiếu chi trả cho NCC) để danh sách tổng hiển thị được.
+        var orderIds = items.Select(p => p.OrderId).ToHashSet();
+        var providerIds = items.Where(p => p.ProviderId != null).Select(p => p.ProviderId!.Value).ToHashSet();
+        var orderCodes = (await orderRepo.ListAsync(o => orderIds.Contains(o.Id)))
+            .ToDictionary(o => o.Id, o => o.Code);
+        var providerNames = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id)))
+            .ToDictionary(p => p.Id, p => p.Name);
+
+        var rows = items.Select(p => new PaymentListItemDto(
+            p.Id, p.Code, p.OrderId, orderCodes.GetValueOrDefault(p.OrderId),
+            p.ProviderId, p.ProviderId is { } pid ? providerNames.GetValueOrDefault(pid) : null,
+            p.Amount, p.PaymentMethod, p.IssuedAt, p.Partner, p.ReceiverName, p.Status, p.IsRecognized)).ToList();
+
+        return new PagedResult<PaymentListItemDto>(rows, total, page, size);
+    }
+
     private static async Task Validate<T>(IValidator<T> validator, T dto)
     {
         var result = await validator.ValidateAsync(dto);

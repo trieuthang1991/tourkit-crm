@@ -116,5 +116,36 @@ public class ReceiptEndpointTests : IClassFixture<AuthTestFactory>
         Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
     }
 
+    [Fact]
+    public async Task ListAll_receipts_returns_rows_with_order_code_and_customer()
+    {
+        var client = await LoggedInClientAsync("fin-rcp-all");
+        var orderId = await CreateOrderAsync(client);
+        await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
+            new CreateReceiptDto(2_000_000m, "cash", null, null));
+
+        var page = await client.GetFromJsonAsync<Paged<ReceiptListItemDto>>("/api/v1/receipts?page=1&size=20");
+        var row = Assert.Single(page!.Items);
+        Assert.Equal("A", row.CustomerName);
+        Assert.False(string.IsNullOrEmpty(row.OrderCode));
+        Assert.Equal(2_000_000m, row.Amount);
+    }
+
+    [Fact]
+    public async Task ListAll_payments_returns_rows_with_order_code()
+    {
+        var client = await LoggedInClientAsync("fin-pay-all");
+        var orderId = await CreateOrderAsync(client);
+        await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/payments",
+            new CreatePaymentDto(null, null, 1_500_000m, "transfer", "NCC X", "Kế toán", null));
+
+        var page = await client.GetFromJsonAsync<Paged<PaymentListItemDto>>("/api/v1/payments?page=1&size=20");
+        var row = Assert.Single(page!.Items);
+        Assert.False(string.IsNullOrEmpty(row.OrderCode));
+        Assert.Equal(1_500_000m, row.Amount);
+    }
+
+    private sealed record Paged<T>(List<T> Items, int Total);
+
     private sealed record CustomerRow(Guid Id, string FullName, string? Phone);
 }

@@ -17,7 +17,7 @@ public class ReceiptServiceTests
     {
         receiptRepo = new FakeRepository<ReceiptVoucher>();
         orderRepo = new FakeRepository<Order>();
-        return new ReceiptService(receiptRepo, orderRepo, new CreateReceiptValidator());
+        return new ReceiptService(receiptRepo, orderRepo, new FakeRepository<Customer>(), new CreateReceiptValidator());
     }
 
     private static async Task<Order> SeedOrderAsync(FakeRepository<Order> orderRepo, decimal revenue = 13_000_000m)

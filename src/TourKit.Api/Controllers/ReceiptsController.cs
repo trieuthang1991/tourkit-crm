@@ -45,6 +45,12 @@ public sealed class ReceiptsController(IReceiptService service) : ControllerBase
         return Ok(receipts);
     }
 
+    // Danh sách phiếu thu TỔNG (toàn tenant) — trang "Phiếu thu" độc lập.
+    [HttpGet("receipts")]
+    [Authorize(Permissions.ReceiptView)]
+    public async Task<IActionResult> ListAll([FromQuery] int page = 1, [FromQuery] int size = 20)
+        => Ok(await service.ListAllAsync(page, size));
+
     [HttpGet("orders/{orderId:guid}/balance")]
     [Authorize(Permissions.ReceiptView)]
     public async Task<IActionResult> GetBalance(Guid orderId)

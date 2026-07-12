@@ -10,3 +10,9 @@ public sealed record PaymentDto(
     Guid Id, string Code, Guid OrderId, Guid? ProviderId, Guid? OrderCostId,
     decimal Amount, string PaymentMethod, DateTimeOffset IssuedAt,
     string? Partner, string? ReceiverName, string? Note, int Status, bool IsRecognized);
+
+/// <summary>Dòng phiếu chi cho danh sách TỔNG (toàn tenant) — kèm mã đơn + tên NCC để hiển thị.</summary>
+public sealed record PaymentListItemDto(
+    Guid Id, string Code, Guid OrderId, string? OrderCode, Guid? ProviderId, string? ProviderName,
+    decimal Amount, string PaymentMethod, DateTimeOffset IssuedAt,
+    string? Partner, string? ReceiverName, int Status, bool IsRecognized);

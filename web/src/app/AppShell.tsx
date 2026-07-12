@@ -115,6 +115,8 @@ const GROUPS: NavGroup[] = [
     label: 'Tài chính / Kế toán',
     icon: <BankOutlined />,
     children: [
+      { key: '/receipts', label: 'Phiếu thu', perm: 'receipt.view' },
+      { key: '/payments', label: 'Phiếu chi', perm: 'payment.view' },
       { key: '/reports/order-debt', label: 'Công nợ khách', perm: 'report.debt.view' },
       { key: '/reports/provider-debt', label: 'Công nợ NCC', perm: 'report.providerdebt.view' },
       { key: '/invoices', label: 'Hoá đơn (VAT)', perm: 'invoice.view' },

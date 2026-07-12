@@ -10,3 +10,8 @@ public sealed record ReceiptDto(
 
 /// <summary>Công nợ phải thu của một đơn: tổng phải thu − đã thu (chỉ phiếu ĐÃ DUYỆT).</summary>
 public sealed record OrderBalanceDto(Guid OrderId, decimal Total, decimal Paid, decimal Outstanding);
+
+/// <summary>Dòng phiếu thu cho danh sách TỔNG (toàn tenant) — kèm mã đơn + tên khách để hiển thị.</summary>
+public sealed record ReceiptListItemDto(
+    Guid Id, string Code, Guid OrderId, string? OrderCode, string? CustomerName,
+    decimal Amount, string PaymentMethod, DateTimeOffset IssuedAt, string? Partner, int Status, bool IsRecognized);

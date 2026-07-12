@@ -24,6 +24,8 @@ import { WorkTasksPage } from '../features/workTasks/WorkTasksPage';
 import { WorkflowsPage } from '../features/workflows/WorkflowsPage';
 import { WorkflowBoardPage } from '../features/workflows/WorkflowBoardPage';
 import { ApprovalProcessesPage } from '../features/approvalProcesses/ApprovalProcessesPage';
+import { ReceiptsListPage } from '../features/finance/ReceiptsListPage';
+import { PaymentsListPage } from '../features/finance/PaymentsListPage';
 import { MessageTemplatesPage } from '../features/messageTemplates/MessageTemplatesPage';
 import { TransferReasonsPage } from '../features/booking/TransferReasonsPage';
 import { CompanyProfilePage } from '../features/settings/CompanyProfilePage';
@@ -116,6 +118,8 @@ export function AppRouter() {
         <Route path="/workflows" element={<WorkflowsPage />} />
         <Route path="/workflows/:id" element={<WorkflowBoardPage />} />
         <Route path="/approval-processes" element={<ApprovalProcessesPage />} />
+        <Route path="/receipts" element={<ReceiptsListPage />} />
+        <Route path="/payments" element={<PaymentsListPage />} />
         <Route path="/message-templates" element={<MessageTemplatesPage />} />
         <Route path="/transfer-reasons" element={<TransferReasonsPage />} />
         <Route path="/company-profile" element={<CompanyProfilePage />} />

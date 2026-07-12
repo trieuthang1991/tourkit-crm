@@ -42,4 +42,10 @@ public sealed class PaymentsController(IPaymentService service) : ControllerBase
         var payments = await service.ListByOrderAsync(orderId);
         return Ok(payments);
     }
+
+    // Danh sách phiếu chi TỔNG (toàn tenant) — trang "Phiếu chi" độc lập.
+    [HttpGet("payments")]
+    [Authorize(Permissions.PaymentView)]
+    public async Task<IActionResult> ListAll([FromQuery] int page = 1, [FromQuery] int size = 20)
+        => Ok(await service.ListAllAsync(page, size));
 }
