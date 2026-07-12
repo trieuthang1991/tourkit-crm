@@ -15,17 +15,26 @@ public sealed class CustomerService(
     IValidator<CreateCustomerDto> createValidator,
     IValidator<UpdateCustomerDto> updateValidator) : ICustomerService
 {
-    public async Task<PagedResult<CustomerDto>> ListAsync(int page, int size, string? q = null, int? customerType = null)
+    public async Task<PagedResult<CustomerDto>> ListAsync(int page, int size, CustomerListFilter? filter = null)
     {
-        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
-        var (items, total) = await repo.PageAsync(page, size, c =>
-            (customerType == null || c.CustomerType == customerType) &&
+        var f = filter ?? new CustomerListFilter();
+        var kw = Norm(f.Q);
+        var src = Norm(f.Source);
+
+        // B1: lọc tại DB các field là CỘT thật (nhanh). Field mềm trong jsonb + aggregate lọc ở bộ nhớ (B3).
+        // Prod scale (nhiều KH) có thể đẩy filter jsonb xuống Postgres (CrmProfileJson ->> ...); dev đủ dùng.
+        var candidates = await repo.ListAsync(c =>
+            (f.CustomerType == null || c.CustomerType == f.CustomerType) &&
             (kw == null ||
                 c.FullName.Contains(kw) ||
                 (c.Code != null && c.Code.Contains(kw)) ||
                 (c.Phone != null && c.Phone.Contains(kw)) ||
-                (c.Email != null && c.Email.Contains(kw))));
-        var ids = items.Select(c => c.Id).ToHashSet();
+                (c.Email != null && c.Email.Contains(kw))) &&
+            (src == null || (c.Source != null && c.Source.Contains(src))) &&
+            (f.CreatedFrom == null || c.CreatedAt >= f.CreatedFrom) &&
+            (f.CreatedTo == null || c.CreatedAt <= f.CreatedTo));
+
+        var ids = candidates.Select(c => c.Id).ToHashSet();
 
         // Map id(string) → tên NV để hiển thị người tạo / NV phụ trách. ID legacy không khớp sẽ giữ nguyên chuỗi.
         var userNames = (await userRepo.ListAsync()).ToDictionary(u => u.Id.ToString(), u => u.FullName);
@@ -41,14 +50,51 @@ public sealed class CustomerService(
             .GroupBy(c => c.CustomerId)
             .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.CreatedAt).First());
 
-        var dtos = items.Select(c =>
+        // B3: lọc field mềm (jsonb) + aggregate ở bộ nhớ; sắp theo ngày tạo giảm dần (bám hệ cũ) rồi phân trang.
+        var matched = new List<(Customer Cust, int Count, decimal Sum, DateTimeOffset? CareAt, string? CareTitle)>();
+        foreach (var c in candidates)
         {
+            var p = CustomerCrmProfile.Parse(c.CrmProfileJson);
             ordersByCustomer.TryGetValue(c.Id, out var agg);
             lastCareByCustomer.TryGetValue(c.Id, out var lastCare);
-            return Map(c, userNames, agg.Count, agg.Sum, lastCare?.CreatedAt, lastCare?.Title);
-        }).ToList();
 
-        return new PagedResult<CustomerDto>(dtos, total, page, size);
+            if (!Contains(p.City, f.City) || !Contains(p.Gender, f.Gender) ||
+                !Contains(p.MarketGroup, f.MarketGroup) || !Contains(p.CollaboratorName, f.Collaborator) ||
+                !Contains(p.Campaign, f.Campaign) || !Contains(p.Branch, f.Branch) ||
+                !Contains(p.Group, f.Group) || !Contains(p.Department, f.Department))
+            {
+                continue;
+            }
+
+            if (Norm(f.Segment) is { } seg && !p.Segments.Contains(seg)) { continue; }
+            if (Norm(f.Tag) is { } tag && !p.Tags.Contains(tag)) { continue; }
+            if (Norm(f.AssignedTo) is { } asg && !p.AssignedTo.Contains(asg)) { continue; }
+            if (Norm(f.CreatedBy) is { } cb && p.CreatedBy != cb) { continue; }
+            if (f.RevenueFrom is { } rf && agg.Sum < rf) { continue; }
+            if (f.RevenueTo is { } rt && agg.Sum > rt) { continue; }
+            if (f.CareFrom is { } caf && (lastCare == null || lastCare.CreatedAt < caf)) { continue; }
+            if (f.CareTo is { } cat && (lastCare == null || lastCare.CreatedAt > cat)) { continue; }
+            if (f.BirthdayMonth is { } bm && (c.DateOfBirth == null || c.DateOfBirth.Value.Month != bm)) { continue; }
+
+            matched.Add((c, agg.Count, agg.Sum, lastCare?.CreatedAt, lastCare?.Title));
+        }
+
+        var ordered = matched.OrderByDescending(x => x.Cust.CreatedAt).ToList();
+        var pageItems = ordered.Skip((page - 1) * size).Take(size);
+        var dtos = pageItems
+            .Select(x => Map(x.Cust, userNames, x.Count, x.Sum, x.CareAt, x.CareTitle))
+            .ToList();
+
+        return new PagedResult<CustomerDto>(dtos, ordered.Count, page, size);
+    }
+
+    private static string? Norm(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    // So khớp field mềm: bỏ qua nếu filter rỗng; ngược lại contains không phân biệt hoa thường.
+    private static bool Contains(string? value, string? needle)
+    {
+        var n = Norm(needle);
+        return n == null || (value != null && value.Contains(n, StringComparison.OrdinalIgnoreCase));
     }
 
     public async Task<CustomerStatsDto> GetStatsAsync()
@@ -89,6 +135,9 @@ public sealed class CustomerService(
             InitialNeed = dto.InitialNeed,
             CollaboratorName = dto.CollaboratorName,
             Campaign = dto.Campaign,
+            Branch = dto.Branch,
+            Group = dto.Group,
+            Department = dto.Department,
             CreatedBy = currentUser.UserId?.ToString(),
             Segments = dto.Segments ?? [],
             Tags = dto.Tags ?? [],
@@ -134,6 +183,9 @@ public sealed class CustomerService(
             InitialNeed = dto.InitialNeed,
             CollaboratorName = dto.CollaboratorName,
             Campaign = dto.Campaign,
+            Branch = dto.Branch,
+            Group = dto.Group,
+            Department = dto.Department,
             CreatedBy = existing.CreatedBy, // giữ nguyên người tạo gốc
             Segments = dto.Segments ?? [],
             Tags = dto.Tags ?? [],
@@ -190,6 +242,7 @@ public sealed class CustomerService(
             c.Id, c.Code, c.FullName, c.Phone, c.CustomerType, c.Source, c.Tag, c.TempBalance,
             c.Email, c.Address, c.DateOfBirth, c.IdCardNumber, c.PassportNumber, c.PassportExpiry, c.Nationality,
             p.Gender, p.City, p.MarketGroup, p.InitialNeed, p.CollaboratorName, p.Campaign,
+            p.Branch, p.Group, p.Department,
             p.CreatedBy, NameOf(p.CreatedBy),
             p.Segments, p.Tags, p.AssignedTo, assignedNames,
             c.CreatedAt, purchaseCount, revenue, lastCareAt, lastCareContent);

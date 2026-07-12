@@ -17,6 +17,9 @@ public sealed record CustomerCrmProfile
     public string? InitialNeed { get; init; }       // Nhu cầu ban đầu
     public string? CollaboratorName { get; init; }  // CTV
     public string? Campaign { get; init; }          // Chiến dịch
+    public string? Branch { get; init; }            // Chi nhánh (field mềm — nâng cấp entity link sau nếu cần)
+    public string? Group { get; init; }             // Nhóm khách (field mềm)
+    public string? Department { get; init; }        // Phòng ban phụ trách (field mềm)
     public string? CreatedBy { get; init; }         // Người tạo (string ref: GUID mới HOẶC id legacy)
     public IReadOnlyList<string> Segments { get; init; } = [];    // Loại KH / phân nhóm (multi tag)
     public IReadOnlyList<string> AssignedTo { get; init; } = [];  // NV phụ trách (multi string ref)
@@ -48,7 +51,8 @@ public sealed record CustomerCrmProfile
     public string? ToJsonOrNull()
     {
         var empty = Gender is null && City is null && MarketGroup is null && InitialNeed is null &&
-            CollaboratorName is null && Campaign is null && CreatedBy is null &&
+            CollaboratorName is null && Campaign is null && Branch is null && Group is null &&
+            Department is null && CreatedBy is null &&
             Segments.Count == 0 && AssignedTo.Count == 0 && Tags.Count == 0;
         return empty ? null : JsonSerializer.Serialize(this, Options);
     }

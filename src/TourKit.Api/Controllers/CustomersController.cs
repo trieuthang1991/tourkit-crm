@@ -14,9 +14,9 @@ public sealed class CustomersController(ICustomerService service) : ControllerBa
     [Authorize(Permissions.CustomerView)]
     public async Task<IActionResult> List(
         [FromQuery] int page = 1, [FromQuery] int size = 20,
-        [FromQuery] string? q = null, [FromQuery] int? customerType = null)
+        [FromQuery] CustomerListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size, q, customerType);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
 

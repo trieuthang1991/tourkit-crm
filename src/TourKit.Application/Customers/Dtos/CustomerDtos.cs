@@ -10,6 +10,7 @@ public sealed record CustomerDto(
     string? IdCardNumber, string? PassportNumber, DateTimeOffset? PassportExpiry, string? Nationality,
     // CRM bám hệ cũ (từ CrmProfileJson)
     string? Gender, string? City, string? MarketGroup, string? InitialNeed, string? CollaboratorName, string? Campaign,
+    string? Branch, string? Group, string? Department,
     string? CreatedBy, string? CreatedByName,
     IReadOnlyList<string> Segments, IReadOnlyList<string> Tags,
     IReadOnlyList<string> AssignedTo, IReadOnlyList<string> AssignedToNames,
@@ -25,7 +26,20 @@ public sealed record CreateCustomerDto(
     string? IdCardNumber = null, string? PassportNumber = null, DateTimeOffset? PassportExpiry = null, string? Nationality = null,
     string? Gender = null, string? City = null, string? MarketGroup = null, string? InitialNeed = null,
     string? CollaboratorName = null, string? Campaign = null,
+    string? Branch = null, string? Group = null, string? Department = null,
     IReadOnlyList<string>? Segments = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<string>? AssignedTo = null);
+
+/// <summary>Bộ lọc màn Data khách hàng (bám thanh lọc mở rộng hệ cũ). Tất cả optional.</summary>
+public sealed record CustomerListFilter(
+    string? Q = null, int? CustomerType = null,
+    string? Source = null, string? City = null, string? Gender = null, string? MarketGroup = null,
+    string? Collaborator = null, string? Campaign = null, string? Branch = null, string? Group = null,
+    string? Department = null, string? Segment = null, string? Tag = null, string? AssignedTo = null,
+    string? CreatedBy = null,
+    DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null,
+    DateTimeOffset? CareFrom = null, DateTimeOffset? CareTo = null,
+    decimal? RevenueFrom = null, decimal? RevenueTo = null,
+    int? BirthdayMonth = null);
 
 public sealed record UpdateCustomerDto(
     string FullName, string? Phone,
@@ -34,4 +48,5 @@ public sealed record UpdateCustomerDto(
     string? IdCardNumber = null, string? PassportNumber = null, DateTimeOffset? PassportExpiry = null, string? Nationality = null,
     string? Gender = null, string? City = null, string? MarketGroup = null, string? InitialNeed = null,
     string? CollaboratorName = null, string? Campaign = null,
+    string? Branch = null, string? Group = null, string? Department = null,
     IReadOnlyList<string>? Segments = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<string>? AssignedTo = null);
