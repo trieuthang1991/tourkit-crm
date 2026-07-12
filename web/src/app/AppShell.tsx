@@ -243,7 +243,7 @@ export function AppShell() {
         collapsed={collapsed}
         onCollapse={setCollapsed}
         trigger={null}
-        style={{ overflow: 'auto', height: '100vh', position: 'sticky', top: 0, left: 0 }}
+        style={{ overflow: 'auto', height: '100vh', position: 'sticky', top: 0, left: 0, background: '#333333' }}
       >
         <div
           style={{
@@ -260,7 +260,7 @@ export function AppShell() {
               width: 30,
               height: 30,
               borderRadius: 8,
-              background: 'linear-gradient(135deg,#1677ff,#0958d9)',
+              background: 'linear-gradient(135deg,#EB5324,#c73e17)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -327,7 +327,7 @@ export function AppShell() {
             }}
           >
             <Button type="text" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Avatar size="small" style={{ background: '#1677ff' }} icon={<UserOutlined />} />
+              <Avatar size="small" style={{ background: '#EB5324' }} icon={<UserOutlined />} />
               <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>{email}</span>
             </Button>
           </Dropdown>
