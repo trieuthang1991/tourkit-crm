@@ -111,6 +111,7 @@ export function ResourcePage<TItem, TForm>(props: ResourcePageProps<TItem, TForm
         columns={columns}
         dataSource={list.data?.items ?? []}
         loading={list.isLoading}
+        scroll={{ x: 'max-content' }}
         pagination={{
           current: page.page,
           pageSize: page.size,

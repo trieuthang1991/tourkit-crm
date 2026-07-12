@@ -7,13 +7,26 @@ import { customersCrud } from './customersCrud';
 import { customerFormSchema } from './types';
 import type { Customer, CustomerForm } from './types';
 
+const dash = (v: string | null | undefined) => (v ? v : '—');
+const dateVi = (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—');
+
+// Cột bám danh sách KH hệ cũ (danh-sach-KH.html): tên/ngày sinh/địa chỉ/SĐT/email + tạm ứng.
 const columns: ColumnsType<Customer> = [
-  { title: 'Họ tên', dataIndex: 'fullName', key: 'fullName' },
-  { title: 'Điện thoại', dataIndex: 'phone', key: 'phone' },
-  { title: 'Loại KH', dataIndex: 'customerType', key: 'customerType' },
-  { title: 'Nguồn', dataIndex: 'source', key: 'source' },
-  { title: 'Nhãn', dataIndex: 'tag', key: 'tag' },
-  { title: 'Tạm ứng', dataIndex: 'tempBalance', key: 'tempBalance', render: (v: number) => money(v) },
+  { title: 'Họ tên', dataIndex: 'fullName', key: 'fullName', fixed: 'left', width: 180 },
+  { title: 'Ngày sinh', dataIndex: 'dateOfBirth', key: 'dateOfBirth', width: 110, render: dateVi },
+  { title: 'Điện thoại', dataIndex: 'phone', key: 'phone', width: 120, render: dash },
+  { title: 'Email', dataIndex: 'email', key: 'email', width: 180, render: dash },
+  { title: 'Địa chỉ', dataIndex: 'address', key: 'address', ellipsis: true, render: dash },
+  { title: 'Nguồn', dataIndex: 'source', key: 'source', width: 110, render: dash },
+  { title: 'Nhãn', dataIndex: 'tag', key: 'tag', width: 110, render: dash },
+  {
+    title: 'Tạm ứng',
+    dataIndex: 'tempBalance',
+    key: 'tempBalance',
+    width: 130,
+    align: 'right',
+    render: (v: number) => money(v),
+  },
 ];
 
 export function CustomersPage() {
