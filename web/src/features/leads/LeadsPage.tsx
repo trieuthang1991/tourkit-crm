@@ -37,6 +37,7 @@ type Filters = {
   status?: number;
   source?: string;
   assignedToUserId?: string;
+  createdByUserId?: string;
   branchId?: string;
   createdFrom?: string;
   createdTo?: string;
@@ -254,7 +255,8 @@ export function LeadsPage() {
               options={userOpts} value={draft.assignedToUserId} onChange={(v) => setD({ assignedToUserId: v ?? undefined })} />
           </Col>
           <Col xs={12} sm={8} lg={3}>
-            <Select allowClear style={{ width: '100%' }} placeholder="Người tạo" options={userOpts} disabled />
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Người tạo"
+              options={userOpts} value={draft.createdByUserId} onChange={(v) => setD({ createdByUserId: v ?? undefined })} />
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <DatePicker.RangePicker style={{ width: '100%' }} placeholder={['Ngày lập từ', 'đến']}
@@ -276,7 +278,7 @@ export function LeadsPage() {
               <Button type="primary" onClick={applyFilters}>Tìm kiếm</Button>
               <Button onClick={resetFilters}>Đặt lại</Button>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                (Người tạo / Ngày tạo đơn / Thẻ tag: chờ bổ sung model)
+                (Ngày tạo đơn / Thẻ tag: chờ bổ sung model)
               </Typography.Text>
             </Space>
           </Col>

@@ -19,7 +19,8 @@ public sealed class BookingService(
     IRepository<TourTemplate> templateRepo,
     IRepository<CancelSeat> cancelSeatRepo,
     IRepository<ReceiptVoucher> receiptRepo,
-    IValidator<DepositDto> depositValidator) : IBookingService
+    IValidator<DepositDto> depositValidator,
+    TourKit.Shared.Security.ICurrentUserContext currentUser) : IBookingService
 {
     public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null)
     {
@@ -125,6 +126,7 @@ public sealed class BookingService(
         var all = await orderRepo.ListAsync(o =>
             (f.Status == null || (int)o.Status == f.Status) &&
             (f.SalesUserId == null || o.SalesUserId == f.SalesUserId) &&
+            (f.CreatedByUserId == null || o.CreatedByUserId == f.CreatedByUserId) &&
             (f.BranchId == null || o.BranchId == f.BranchId) &&
             (f.CreatedFrom == null || o.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || o.CreatedAt <= f.CreatedTo));
@@ -291,6 +293,7 @@ public sealed class BookingService(
             Code = "ORD-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(),
             TourDepartureId = departureId,
             CustomerId = customerId,
+            CreatedByUserId = currentUser.UserId,
             BookingType = 0,
             Status = isHold ? OrderStatus.Draft : OrderStatus.Confirmed,
         };

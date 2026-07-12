@@ -35,6 +35,7 @@ const ORDER_STATUS_OPTIONS = Object.entries(ORDER_STATUS).map(([value, label]) =
 type OrderAdv = {
   status?: number;
   salesUserId?: string;
+  createdByUserId?: string;
   branchId?: string;
   createdFrom?: string;
   createdTo?: string;
@@ -208,6 +209,10 @@ export function OrdersPage() {
               onChange={(d) => setD({ departureFrom: d?.[0]?.startOf('day').toISOString(), departureTo: d?.[1]?.endOf('day').toISOString() })} />
           </Col>
           <Col xs={12} sm={8} lg={4}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Người tạo"
+              options={userOpts} value={draft.createdByUserId} onChange={(v) => setD({ createdByUserId: v ?? undefined })} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
             <Select allowClear style={{ width: '100%' }} placeholder="Phòng ban" options={[]} disabled />
           </Col>
           <Col xs={12} sm={8} lg={4}>
@@ -220,7 +225,7 @@ export function OrdersPage() {
               </Button>
               <Button onClick={resetFilters}>Đặt lại</Button>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                (Người tạo / Phòng ban / Loại tour / Thị trường / NCC / CTV: đang bổ sung quan hệ model)
+                (Phòng ban / Loại tour / Thị trường / NCC / CTV: đang bổ sung quan hệ model)
               </Typography.Text>
             </Space>
           </Col>

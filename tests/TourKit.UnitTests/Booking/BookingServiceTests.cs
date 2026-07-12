@@ -25,7 +25,13 @@ public sealed class BookingServiceTests
             templateRepo ?? new FakeRepository<TourTemplate>(),
             cancelSeatRepo ?? new FakeRepository<CancelSeat>(),
             receiptRepo ?? new FakeRepository<ReceiptVoucher>(),
-            new DepositValidator());
+            new DepositValidator(),
+            new FakeCurrentUser());
+
+    private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
+    {
+        public Guid? UserId => null;
+    }
 
     private static async Task<(FakeRepository<TourDeparture> DepartureRepo, FakeRepository<TourTemplate> TemplateRepo,
         FakeRepository<Customer> CustomerRepo, Guid DepartureId, Guid CustomerId)> SeedAsync(
@@ -309,7 +315,8 @@ public sealed class BookingServiceTests
         var orderRepo = new FakeRepository<Order>();
         var branchA = Guid.NewGuid();
         var sales = Guid.NewGuid();
-        var match = new Order { Code = "M", BranchId = branchA, SalesUserId = sales, CreatedAt = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero), CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        var creator = Guid.NewGuid();
+        var match = new Order { Code = "M", BranchId = branchA, SalesUserId = sales, CreatedByUserId = creator, CreatedAt = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero), CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
         var other = new Order { Code = "O", BranchId = Guid.NewGuid(), CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
         await orderRepo.AddAsync(match);
         await orderRepo.AddAsync(other);
@@ -318,6 +325,7 @@ public sealed class BookingServiceTests
 
         Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(BranchId: branchA))).Items).Code);
         Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(SalesUserId: sales))).Items).Code);
+        Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(CreatedByUserId: creator))).Items).Code);
         Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(CreatedFrom: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero)))).Items).Code);
     }
 }

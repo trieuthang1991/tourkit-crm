@@ -14,7 +14,8 @@ public sealed class LeadService(
     IRepository<Lead> repo,
     IRepository<Customer> customerRepo,
     IValidator<CreateLeadDto> createValidator,
-    IValidator<UpdateLeadDto> updateValidator) : ILeadService
+    IValidator<UpdateLeadDto> updateValidator,
+    TourKit.Shared.Security.ICurrentUserContext currentUser) : ILeadService
 {
     public async Task<PagedResult<LeadDto>> ListAsync(int page, int size, LeadListFilter? filter = null)
     {
@@ -25,6 +26,7 @@ public sealed class LeadService(
             (f.Status == null || (int)l.Status == f.Status) &&
             (f.AssignedToUserId == null || l.AssignedToUserId == f.AssignedToUserId) &&
             (f.BranchId == null || l.BranchId == f.BranchId) &&
+            (f.CreatedByUserId == null || l.CreatedByUserId == f.CreatedByUserId) &&
             (src == null || (l.Source != null && l.Source.Contains(src))) &&
             (f.CreatedFrom == null || l.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || l.CreatedAt <= f.CreatedTo) &&
@@ -85,6 +87,7 @@ public sealed class LeadService(
             Source = dto.Source,
             AssignedToUserId = dto.AssignedToUserId,
             BranchId = dto.BranchId,
+            CreatedByUserId = currentUser.UserId,
         };
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();

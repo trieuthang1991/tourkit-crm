@@ -17,7 +17,12 @@ public class LeadServiceTests
     {
         repo = new FakeRepository<Lead>();
         customerRepo = new FakeRepository<Customer>();
-        return new LeadService(repo, customerRepo, new CreateLeadValidator(), new UpdateLeadValidator());
+        return new LeadService(repo, customerRepo, new CreateLeadValidator(), new UpdateLeadValidator(), new FakeCurrentUser());
+    }
+
+    private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
+    {
+        public Guid? UserId => null;
     }
 
     private static CreateLeadDto NewCreateDto(string name = "Nguyen Van A") =>
@@ -106,11 +111,13 @@ public class LeadServiceTests
     {
         var service = NewService(out var repo, out _);
         var branchA = Guid.NewGuid();
-        await repo.AddAsync(new Lead { FullName = "A", BranchId = branchA });
+        var creator = Guid.NewGuid();
+        await repo.AddAsync(new Lead { FullName = "A", BranchId = branchA, CreatedByUserId = creator });
         await repo.AddAsync(new Lead { FullName = "B", BranchId = Guid.NewGuid() });
         await repo.SaveChangesAsync();
 
         Assert.Equal("A", Assert.Single((await service.ListAsync(1, 20, new LeadListFilter(BranchId: branchA))).Items).FullName);
+        Assert.Equal("A", Assert.Single((await service.ListAsync(1, 20, new LeadListFilter(CreatedByUserId: creator))).Items).FullName);
     }
 
     [Fact]
