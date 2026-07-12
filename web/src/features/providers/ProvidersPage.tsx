@@ -1,3 +1,4 @@
+import { Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -28,18 +29,34 @@ function PaymentTermField() {
   return <SelectField name="paymentTermId" label="Điều khoản thanh toán" options={options} allowClear />;
 }
 
+const dash = (v: string | null | undefined) => (v ? v : '—');
+
+// Cột bám danh sách NCC hệ cũ (danh-sach-ncc.html): tên/địa chỉ/điện thoại/tình trạng,
+// bổ sung trường hồ sơ NCC sẵn có (người liên hệ, MST, đánh giá).
 const columns: ColumnsType<Provider> = [
-  { title: 'Mã', dataIndex: 'code', key: 'code' },
-  { title: 'Tên', dataIndex: 'name', key: 'name' },
+  { title: 'Mã', dataIndex: 'code', key: 'code', fixed: 'left', width: 110 },
+  { title: 'Tên NCC', dataIndex: 'name', key: 'name', fixed: 'left', width: 200 },
   {
     title: 'Loại',
     dataIndex: 'type',
     key: 'type',
+    width: 130,
     render: (type: number) => statusText(PROVIDER_TYPE, type),
   },
-  { title: 'Điện thoại', dataIndex: 'phone', key: 'phone' },
-  { title: 'Tỉ lệ', dataIndex: 'rate', key: 'rate' },
-  { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
+  { title: 'Người liên hệ', dataIndex: 'contactPerson', key: 'contactPerson', width: 150, render: dash },
+  { title: 'Điện thoại', dataIndex: 'phone', key: 'phone', width: 120, render: dash },
+  { title: 'Email', dataIndex: 'email', key: 'email', width: 170, render: dash },
+  { title: 'Địa chỉ', dataIndex: 'address', key: 'address', width: 200, ellipsis: true, render: dash },
+  { title: 'MST', dataIndex: 'taxCode', key: 'taxCode', width: 120, render: dash },
+  { title: 'Đánh giá', dataIndex: 'rate', key: 'rate', width: 90, align: 'center' },
+  {
+    title: 'Trạng thái',
+    dataIndex: 'status',
+    key: 'status',
+    width: 120,
+    render: (status: number) =>
+      status === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag>Ngừng</Tag>,
+  },
 ];
 
 export function ProvidersPage() {

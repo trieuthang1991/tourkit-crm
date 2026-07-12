@@ -13,7 +13,11 @@ public sealed record SeatPrices(decimal Adult, decimal Child, decimal ChildSmall
 
 public sealed record OrderDto(
     Guid Id, string Code, Guid TourDepartureId, Guid CustomerId, decimal TotalRevenue, decimal TotalCost,
-    OrderStatus Status, Guid? SalesUserId);
+    OrderStatus Status, Guid? SalesUserId,
+    // Trường làm giàu cho danh sách (tên KH/tour/ngày đi + đã thu/còn nợ). Mặc định null/0 để các
+    // đường trả đơn lẻ (tạo booking, gán sales) không phải nạp thêm dữ liệu.
+    string? CustomerName = null, string? TourTitle = null, DateTimeOffset? DepartureDate = null,
+    decimal AmountPaid = 0m, decimal Outstanding = 0m);
 
 public sealed record BookingLineDto(
     Guid Id, int Quantity, int AmountChildren, int AmountChildrenSmall, int QuantityBaby,

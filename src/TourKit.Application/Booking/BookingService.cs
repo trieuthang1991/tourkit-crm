@@ -18,6 +18,7 @@ public sealed class BookingService(
     IRepository<Customer> customerRepo,
     IRepository<TourTemplate> templateRepo,
     IRepository<CancelSeat> cancelSeatRepo,
+    IRepository<ReceiptVoucher> receiptRepo,
     IValidator<DepositDto> depositValidator) : IBookingService
 {
     public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null)
@@ -118,7 +119,31 @@ public sealed class BookingService(
     public async Task<PagedResult<OrderDto>> ListOrdersAsync(int page, int size)
     {
         var (items, total) = await orderRepo.PageAsync(page, size);
-        var dtos = items.Select(MapOrder).ToList();
+
+        // Nạp theo lô để làm giàu danh sách: tên KH, tên tour + ngày đi, số đã thu (phiếu thu đã ghi nhận).
+        var customerIds = items.Select(o => o.CustomerId).ToHashSet();
+        var departureIds = items.Select(o => o.TourDepartureId).ToHashSet();
+        var orderIds = items.Select(o => o.Id).ToHashSet();
+
+        var customerNames = (await customerRepo.ListAsync(c => customerIds.Contains(c.Id)))
+            .ToDictionary(c => c.Id, c => c.FullName);
+        var departures = (await departureRepo.ListAsync(d => departureIds.Contains(d.Id)))
+            .ToDictionary(d => d.Id, d => d);
+        var paidByOrder = (await receiptRepo.ListAsync(r => orderIds.Contains(r.OrderId) && r.IsRecognized))
+            .GroupBy(r => r.OrderId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Amount));
+
+        var dtos = items.Select(o =>
+        {
+            departures.TryGetValue(o.TourDepartureId, out var dep);
+            return MapOrder(
+                o,
+                customerNames.GetValueOrDefault(o.CustomerId),
+                dep?.Title,
+                dep?.DepartureDate,
+                paidByOrder.GetValueOrDefault(o.Id));
+        }).ToList();
+
         return new PagedResult<OrderDto>(dtos, total, page, size);
     }
 
@@ -247,8 +272,11 @@ public sealed class BookingService(
         }
     }
 
-    private static OrderDto MapOrder(Order o) => new(
-        o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, o.TotalCost, o.Status, o.SalesUserId);
+    private static OrderDto MapOrder(
+        Order o, string? customerName = null, string? tourTitle = null,
+        DateTimeOffset? departureDate = null, decimal amountPaid = 0m) => new(
+        o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, o.TotalCost, o.Status, o.SalesUserId,
+        customerName, tourTitle, departureDate, amountPaid, OrderMath.Outstanding(o.TotalRevenue, amountPaid));
 
     /// <summary>Chiếu TourCustomer (chỗ) → SeatDto. Công thức tiền &amp; suy trạng thái nằm ở BookingMath (một chỗ).</summary>
     private static SeatDto MapSeat(TourCustomer s) => new(

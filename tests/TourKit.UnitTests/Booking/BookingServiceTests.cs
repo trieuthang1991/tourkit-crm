@@ -15,7 +15,8 @@ public sealed class BookingServiceTests
         FakeRepository<Order>? orderRepo = null,
         FakeRepository<Customer>? customerRepo = null,
         FakeRepository<TourTemplate>? templateRepo = null,
-        FakeRepository<CancelSeat>? cancelSeatRepo = null)
+        FakeRepository<CancelSeat>? cancelSeatRepo = null,
+        FakeRepository<ReceiptVoucher>? receiptRepo = null)
         => new(
             departureRepo ?? new FakeRepository<TourDeparture>(),
             seatRepo ?? new FakeRepository<TourCustomer>(),
@@ -23,6 +24,7 @@ public sealed class BookingServiceTests
             customerRepo ?? new FakeRepository<Customer>(),
             templateRepo ?? new FakeRepository<TourTemplate>(),
             cancelSeatRepo ?? new FakeRepository<CancelSeat>(),
+            receiptRepo ?? new FakeRepository<ReceiptVoucher>(),
             new DepositValidator());
 
     private static async Task<(FakeRepository<TourDeparture> DepartureRepo, FakeRepository<TourTemplate> TemplateRepo,
