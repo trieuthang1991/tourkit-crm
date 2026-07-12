@@ -86,6 +86,7 @@ const GROUPS: NavGroup[] = [
     children: [
       { key: '/orders', label: 'Tất cả đơn hàng', perm: 'booking.view' },
       { key: '/departures', label: 'Tất cả Tour / LKH', perm: 'departure.view' },
+      { key: '/departures/manage', label: 'Mở / Quản lý chuyến', perm: 'departure.view' },
       { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
       { key: '/operations-calendar', label: 'Lịch điều hành', perm: 'departure.view' },
       { key: '/surcharges', label: 'Loại phụ thu', perm: 'booking.view' },

@@ -70,7 +70,7 @@ function clean(obj: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''));
 }
 
-export function OrdersPage() {
+export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
   const navigate = useNavigate();
   const [page, setPage] = useState(DEFAULT_PAGE);
   const [search, setSearch] = useState('');
@@ -251,7 +251,7 @@ export function OrdersPage() {
 
   return (
     <>
-      <PageHeader title="Đơn hàng" />
+      <PageHeader title={title} />
 
       {/* Thẻ thống kê (bám hệ cũ) */}
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>

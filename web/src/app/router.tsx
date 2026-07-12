@@ -133,7 +133,8 @@ export function AppRouter() {
         <Route path="/surcharges" element={<SurchargesPage />} />
         <Route path="/currencies" element={<CurrenciesPage />} />
         <Route path="/payment-terms" element={<PaymentTermsPage />} />
-        <Route path="/departures" element={<DeparturesPage />} />
+        <Route path="/departures" element={<OrdersPage title="Tất cả Tour / LKH" />} />
+        <Route path="/departures/manage" element={<DeparturesPage />} />
         <Route path="/departures/:id" element={<DepartureDetailPage />} />
         <Route path="/operations-calendar" element={<OperationsCalendarPage />} />
         <Route path="/orders" element={<OrdersPage />} />
