@@ -22,11 +22,16 @@ public sealed class QuotesController(IQuoteService service, IQuoteConversionServ
 
     [HttpGet]
     [Authorize(Permissions.QuoteView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] QuoteListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.QuoteView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.QuoteView)]

@@ -34,12 +34,38 @@ export function useAllProviderPrices() {
   });
 }
 
-export function useQuotes(page: number, size: number) {
+export type QuoteFilter = { q?: string; status?: number; validFrom?: string; validTo?: string; converted?: boolean };
+
+function cleanParams(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+}
+
+export function useQuotes(page: number, size: number, filter: QuoteFilter = {}) {
   return useQuery({
-    queryKey: [...KEY, 'list', page, size],
+    queryKey: [...KEY, 'list', page, size, filter],
     queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/quotes', { params: { page, size } });
+      const { data } = await httpClient.get<unknown>('/api/v1/quotes', { params: cleanParams({ page, size, ...filter }) });
       return pagedSchema(quoteSummarySchema).parse(data);
+    },
+  });
+}
+
+export const quoteStatsSchema = z.object({
+  total: z.number(),
+  draft: z.number(),
+  sent: z.number(),
+  accepted: z.number(),
+  rejected: z.number(),
+  totalAmount: z.number(),
+  totalProfit: z.number(),
+});
+
+export function useQuoteStats() {
+  return useQuery({
+    queryKey: [...KEY, 'stats'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/quotes/stats');
+      return quoteStatsSchema.parse(data);
     },
   });
 }

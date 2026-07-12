@@ -18,13 +18,41 @@ public sealed class QuoteService(
     IValidator<CreateQuoteDto> createValidator,
     IValidator<UpdateQuoteDto> updateValidator) : IQuoteService
 {
-    public async Task<PagedResult<QuoteSummaryDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<QuoteSummaryDto>> ListAsync(int page, int size, QuoteListFilter? filter = null)
     {
-        var (items, total) = await quoteRepo.PageAsync(page, size);
-        var dtos = items
-            .Select(q => new QuoteSummaryDto(q.Id, q.Code, q.CustomerName, q.Title, q.ValidUntil, q.Status, q.TotalAmount, q.ConvertedOrderId))
+        var f = filter ?? new QuoteListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        // Lọc cột thật (trạng thái, hạn hiệu lực, đã chuyển đơn) ở DB; q (mã/khách/tiêu đề) sau.
+        var all = await quoteRepo.ListAsync(q =>
+            (f.Status == null || q.Status == f.Status) &&
+            (f.ValidFrom == null || q.ValidUntil >= f.ValidFrom) &&
+            (f.ValidTo == null || q.ValidUntil <= f.ValidTo) &&
+            (f.Converted == null || (f.Converted == true ? q.ConvertedOrderId != null : q.ConvertedOrderId == null)));
+
+        bool MatchQ(Quote q) =>
+            kw == null ||
+            q.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            q.CustomerName.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            q.Title.Contains(kw, StringComparison.OrdinalIgnoreCase);
+
+        var filtered = all.Where(MatchQ).OrderByDescending(q => q.CreatedAt).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size)
+            .Select(q => new QuoteSummaryDto(
+                q.Id, q.Code, q.CustomerName, q.Title, q.ValidUntil, q.Status, q.TotalAmount, q.ConvertedOrderId,
+                q.Adults, q.Children, q.Infants, q.TotalCost, q.TotalProfit))
             .ToList();
-        return new PagedResult<QuoteSummaryDto>(dtos, total, page, size);
+        return new PagedResult<QuoteSummaryDto>(pageItems, filtered.Count, page, size);
+    }
+
+    public async Task<QuoteStatsDto> GetStatsAsync()
+    {
+        var all = await quoteRepo.ListAsync();
+        return new QuoteStatsDto(
+            all.Count,
+            all.Count(q => q.Status == 0), all.Count(q => q.Status == 1),
+            all.Count(q => q.Status == 2), all.Count(q => q.Status == 3),
+            all.Sum(q => q.TotalAmount), all.Sum(q => q.TotalProfit));
     }
 
     public async Task<QuoteDto> GetAsync(Guid id)

@@ -48,6 +48,11 @@ export const quoteSummarySchema = z.object({
   status: z.number(),
   totalAmount: z.number(),
   convertedOrderId: z.string().nullable(), // đơn đã sinh — hiện nút mở đơn để thu tiền (BillPaymentRequest = flow phiếu thu sẵn có)
+  adults: z.number().optional(),
+  children: z.number().optional(),
+  infants: z.number().optional(),
+  totalCost: z.number().optional(),
+  totalProfit: z.number().optional(),
 });
 export type QuoteSummary = z.infer<typeof quoteSummarySchema>;
 

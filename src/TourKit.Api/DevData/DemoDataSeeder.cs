@@ -287,6 +287,17 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7j) Báo giá (Quote) — varied trạng thái/số khách/lợi nhuận cho màn Báo giá + phễu dashboard.
+        if (!await db.Set<Quote>().AnyAsync())
+        {
+            db.AddRange(
+                new Quote { Code = "BG_0001", CustomerId = c1.Id, CustomerName = c1.FullName, Title = "Hạ Long 3N2Đ", ValidUntil = now.AddDays(10), Status = 2, TotalAmount = 7_000_000m, TotalCost = 4_500_000m, TotalProfit = 2_500_000m, Adults = 2, Children = 1, Infants = 0 },
+                new Quote { Code = "BG_0002", CustomerId = c2.Id, CustomerName = c2.FullName, Title = "Thái Lan 5N4Đ", ValidUntil = now.AddDays(15), Status = 1, TotalAmount = 17_800_000m, TotalCost = 11_000_000m, TotalProfit = 6_800_000m, Adults = 2, Children = 0, Infants = 0 },
+                new Quote { Code = "BG_0003", CustomerId = c3.Id, CustomerName = c3.FullName, Title = "Đà Nẵng - Hội An", ValidUntil = now.AddDays(5), Status = 0, TotalAmount = 5_400_000m, TotalCost = 3_800_000m, TotalProfit = 1_600_000m, Adults = 3, Children = 2, Infants = 1 },
+                new Quote { Code = "BG_0004", CustomerId = c4.Id, CustomerName = c4.FullName, Title = "Sapa 2N1Đ", ValidUntil = now.AddDays(-2), Status = 3, TotalAmount = 3_200_000m, TotalCost = 2_500_000m, TotalProfit = 700_000m, Adults = 1, Children = 0, Infants = 0 });
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {

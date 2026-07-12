@@ -134,4 +134,27 @@ public sealed class QuoteServiceTests
         await Assert.ThrowsAsync<NotFoundException>(() => service.GetAsync(created.Id));
         Assert.Empty(await lineRepo.ListAsync(l => l.QuoteId == created.Id));
     }
+
+    [Fact]
+    public async Task ListAsync_filters_by_status_converted_and_q_plus_stats()
+    {
+        var service = NewService(out var quoteRepo, out _, out _);
+        await quoteRepo.AddAsync(new Quote { Code = "BG-1", CustomerName = "Nguyễn An", Title = "Hạ Long", Status = 2, TotalAmount = 10m, TotalProfit = 3m, ConvertedOrderId = Guid.NewGuid() });
+        await quoteRepo.AddAsync(new Quote { Code = "BG-2", CustomerName = "Trần Bình", Title = "Sapa", Status = 1, TotalAmount = 5m, TotalProfit = 1m });
+        await quoteRepo.AddAsync(new Quote { Code = "BG-3", CustomerName = "Lê Cường", Title = "Đà Nẵng", Status = 0, TotalAmount = 7m });
+        await quoteRepo.SaveChangesAsync();
+
+        Assert.Equal("BG-1", Assert.Single((await service.ListAsync(1, 20, new QuoteListFilter(Status: 2))).Items).Code);
+        Assert.Equal("BG-1", Assert.Single((await service.ListAsync(1, 20, new QuoteListFilter(Converted: true))).Items).Code);
+        Assert.Equal(2, (await service.ListAsync(1, 20, new QuoteListFilter(Converted: false))).Total);
+        Assert.Equal("BG-2", Assert.Single((await service.ListAsync(1, 20, new QuoteListFilter(Q: "Sapa"))).Items).Code);
+
+        var s = await service.GetStatsAsync();
+        Assert.Equal(3, s.Total);
+        Assert.Equal(1, s.Accepted);
+        Assert.Equal(1, s.Sent);
+        Assert.Equal(1, s.Draft);
+        Assert.Equal(22m, s.TotalAmount);
+        Assert.Equal(4m, s.TotalProfit);
+    }
 }

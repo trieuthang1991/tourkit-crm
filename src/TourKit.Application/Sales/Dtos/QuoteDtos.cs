@@ -15,7 +15,16 @@ public sealed record QuoteDto(
 /// <summary>Dòng tóm tắt cho danh sách (không kèm chi tiết dòng).</summary>
 public sealed record QuoteSummaryDto(
     Guid Id, string Code, string CustomerName, string Title, DateTimeOffset? ValidUntil, int Status, decimal TotalAmount,
-    Guid? ConvertedOrderId);
+    Guid? ConvertedOrderId, int Adults, int Children, int Infants, decimal TotalCost, decimal TotalProfit);
+
+/// <summary>Bộ lọc danh sách báo giá (bám hệ cũ). Status: 0 nháp · 1 đã gửi · 2 chấp nhận · 3 từ chối. Converted: đã chuyển đơn.</summary>
+public sealed record QuoteListFilter(
+    string? Q = null, int? Status = null, DateTimeOffset? ValidFrom = null, DateTimeOffset? ValidTo = null,
+    bool? Converted = null);
+
+/// <summary>Thẻ thống kê đầu màn Báo giá: tổng + theo trạng thái + tổng giá trị + lợi nhuận dự kiến.</summary>
+public sealed record QuoteStatsDto(
+    int Total, int Draft, int Sent, int Accepted, int Rejected, decimal TotalAmount, decimal TotalProfit);
 
 public sealed record CreateQuoteLineDto(
     string Description, int Quantity, decimal UnitPrice,
