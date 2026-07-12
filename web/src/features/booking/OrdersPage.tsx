@@ -1,4 +1,4 @@
-import { Button, Card, Col, DatePicker, Input, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { Button, Card, Col, DatePicker, Input, Row, Segmented, Select, Space, Statistic, Table, Tag, TreeSelect, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -144,7 +144,7 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
     queryKey: ['market-types'],
     queryFn: async () => {
       const { data } = await httpClient.get<unknown>('/api/v1/market-types');
-      return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
+      return z.array(z.object({ id: z.string().uuid(), name: z.string(), parentId: z.string().uuid().nullable() })).parse(data);
     },
   });
   const tourGroups = useQuery({
@@ -159,7 +159,16 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
   const deptOpts = (departments.data ?? []).map((d) => ({ label: d.name, value: d.id }));
   const tourTypeOpts = (filterOptions.data?.tourTypes ?? []).map((t) => ({ label: t, value: t }));
   const providerOpts = (filterOptions.data?.providers ?? []).map((p) => ({ label: p.name, value: p.id }));
-  const marketOpts = (marketTypes.data ?? []).map((m) => ({ label: m.name, value: m.id }));
+  // Thị trường phân cấp: cây cho TreeSelect + chỉ cấp cha (parentId=null) cho chip lọc nhanh.
+  const marketList = marketTypes.data ?? [];
+  const marketTree = marketList
+    .filter((m) => !m.parentId)
+    .map((root) => ({
+      title: root.name,
+      value: root.id,
+      children: marketList.filter((c) => c.parentId === root.id).map((c) => ({ title: c.name, value: c.id })),
+    }));
+  const topMarkets = marketList.filter((m) => !m.parentId).map((m) => ({ label: m.name, value: m.id }));
   const groupOpts = (tourGroups.data ?? []).map((g) => ({ label: g.name, value: g.id }));
 
   const list = useQuery({
@@ -319,8 +328,9 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
               value={draft.bookingType} onChange={(v) => setD({ bookingType: v ?? undefined })} />
           </Col>
           <Col xs={12} sm={8} lg={4}>
-            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Thị trường"
-              options={marketOpts} value={draft.marketTypeId} onChange={(v) => setD({ marketTypeId: v ?? undefined })} />
+            <TreeSelect showSearch allowClear treeDefaultExpandAll style={{ width: '100%' }} placeholder="Thị trường"
+              treeData={marketTree} treeNodeFilterProp="title"
+              value={draft.marketTypeId} onChange={(v) => setD({ marketTypeId: v ?? undefined })} />
           </Col>
           <Col xs={12} sm={8} lg={4}>
             <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Nhóm"
@@ -345,15 +355,15 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
         </Row>
       </Card>
 
-      {/* Lọc nhanh theo thị trường (chip) — bám staging */}
-      {marketOpts.length > 0 && (
+      {/* Lọc nhanh theo thị trường (chip) — bám staging: chỉ cấp CHA, lọc gồm cả con cháu */}
+      {topMarkets.length > 0 && (
         <div style={{ marginBottom: 12, overflowX: 'auto' }}>
           <Space size={4} wrap>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>Lọc nhanh thị trường:</Typography.Text>
             <Tag.CheckableTag checked={adv.marketTypeId === undefined} onChange={() => pickMarket(undefined)}>
               Tất cả
             </Tag.CheckableTag>
-            {marketOpts.map((m) => (
+            {topMarkets.map((m) => (
               <Tag.CheckableTag key={m.value} checked={adv.marketTypeId === m.value} onChange={() => pickMarket(m.value)}>
                 {m.label}
               </Tag.CheckableTag>

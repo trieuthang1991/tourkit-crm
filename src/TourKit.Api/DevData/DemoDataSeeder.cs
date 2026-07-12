@@ -78,6 +78,16 @@ public static class DemoDataSeeder
         var mtOutbound = await MarketOf("Outbound", 2);
         var mtDomestic = await MarketOf("Nội địa", 3);
         await db.SaveChangesAsync();
+        // Thị trường con (cha-con) — để kiểm tra lọc theo cha bao gồm con.
+        async Task<MarketType> ChildMarketOf(string name, Guid parentId, int sort)
+        {
+            var e = await db.Set<MarketType>().FirstOrDefaultAsync(x => x.Name == name);
+            if (e is null) { e = new MarketType { Name = name, ParentId = parentId, SortOrder = sort }; db.Add(e); }
+            return e;
+        }
+        var mtMienBac = await ChildMarketOf("Nội địa - Miền Bắc", mtDomestic.Id, 1);
+        var mtMienNam = await ChildMarketOf("Nội địa - Miền Nam", mtDomestic.Id, 2);
+        await db.SaveChangesAsync();
 
         // 4) Người dùng (NV phụ trách/tạo) — get-or-create theo email --------------
         async Task<User> UserOf(string email, string fullName, Guid deptId, Guid posId)
@@ -202,6 +212,23 @@ public static class DemoDataSeeder
                 db.Update(o);
             }
             await db.SaveChangesAsync();
+        }
+
+        // 7f) Chuyển vài đơn Nội địa sang thị trường CON (để kiểm tra lọc cha bao gồm con) — idempotent.
+        if (!await db.Set<Order>().AnyAsync(o => o.MarketTypeId == mtMienBac.Id))
+        {
+            var domesticOrders = await db.Set<Order>().Where(o => o.MarketTypeId == mtDomestic.Id).OrderBy(o => o.Code).ToListAsync();
+            if (domesticOrders.Count > 0)
+            {
+                domesticOrders[0].MarketTypeId = mtMienBac.Id;
+                db.Update(domesticOrders[0]);
+                if (domesticOrders.Count > 1)
+                {
+                    domesticOrders[1].MarketTypeId = mtMienNam.Id;
+                    db.Update(domesticOrders[1]);
+                }
+                await db.SaveChangesAsync();
+            }
         }
 
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------

@@ -24,7 +24,8 @@ public sealed class BookingService(
     IRepository<User> userRepo,
     IRepository<OrderCost> orderCostRepo,
     IRepository<Provider> providerRepo,
-    IRepository<PaymentVoucher> paymentRepo) : IBookingService
+    IRepository<PaymentVoucher> paymentRepo,
+    IRepository<MarketType> marketRepo) : IBookingService
 {
     public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null)
     {
@@ -126,13 +127,16 @@ public sealed class BookingService(
         var f = filter ?? new OrderListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
+        // Thị trường phân cấp (cha-con): lọc theo 1 thị trường bao gồm cả con cháu (legacy). Rỗng nếu không lọc.
+        var marketIds = f.MarketTypeId is { } mkt ? await DescendantMarketIdsAsync(mkt) : new HashSet<Guid>();
+
         // Lọc cột thật (trạng thái, NV sales, chi nhánh, ngày tạo) ở DB; q + khoảng ngày đi lọc sau khi làm giàu.
         var all = await orderRepo.ListAsync(o =>
             (f.Status == null || (int)o.Status == f.Status) &&
             (f.SalesUserId == null || o.SalesUserId == f.SalesUserId) &&
             (f.CreatedByUserId == null || o.CreatedByUserId == f.CreatedByUserId) &&
             (f.BranchId == null || o.BranchId == f.BranchId) &&
-            (f.MarketTypeId == null || o.MarketTypeId == f.MarketTypeId) &&
+            (f.MarketTypeId == null || (o.MarketTypeId != null && marketIds.Contains(o.MarketTypeId.Value))) &&
             (f.TourGroupId == null || o.TourGroupId == f.TourGroupId) &&
             (f.BookingType == null || o.BookingType == f.BookingType) &&
             (f.CommissionSettled == null || o.IsCommissionSettled == f.CommissionSettled) &&
@@ -262,6 +266,37 @@ public sealed class BookingService(
             .ToList();
 
         return new OrderFilterOptionsDto(tourTypes, providers);
+    }
+
+    /// <summary>Tập id thị trường gồm chính nó + toàn bộ con cháu (thị trường phân cấp cha-con qua ParentId).</summary>
+    private async Task<HashSet<Guid>> DescendantMarketIdsAsync(Guid root)
+    {
+        var childrenOf = (await marketRepo.ListAsync())
+            .Where(m => m.ParentId != null)
+            .GroupBy(m => m.ParentId!.Value)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToList());
+
+        var result = new HashSet<Guid> { root };
+        var queue = new Queue<Guid>();
+        queue.Enqueue(root);
+        while (queue.Count > 0)
+        {
+            var cur = queue.Dequeue();
+            if (!childrenOf.TryGetValue(cur, out var kids))
+            {
+                continue;
+            }
+
+            foreach (var kid in kids)
+            {
+                if (result.Add(kid))
+                {
+                    queue.Enqueue(kid);
+                }
+            }
+        }
+
+        return result;
     }
 
     // Trạng thái thanh toán (bám hệ cũ): 0 chưa TT · 1 đã cọc (trả một phần) · 2 TT hết.

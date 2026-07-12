@@ -20,7 +20,8 @@ public sealed class BookingServiceTests
         FakeRepository<User>? userRepo = null,
         FakeRepository<OrderCost>? orderCostRepo = null,
         FakeRepository<Provider>? providerRepo = null,
-        FakeRepository<PaymentVoucher>? paymentRepo = null)
+        FakeRepository<PaymentVoucher>? paymentRepo = null,
+        FakeRepository<MarketType>? marketRepo = null)
         => new(
             departureRepo ?? new FakeRepository<TourDeparture>(),
             seatRepo ?? new FakeRepository<TourCustomer>(),
@@ -34,7 +35,8 @@ public sealed class BookingServiceTests
             userRepo ?? new FakeRepository<User>(),
             orderCostRepo ?? new FakeRepository<OrderCost>(),
             providerRepo ?? new FakeRepository<Provider>(),
-            paymentRepo ?? new FakeRepository<PaymentVoucher>());
+            paymentRepo ?? new FakeRepository<PaymentVoucher>(),
+            marketRepo ?? new FakeRepository<MarketType>());
 
     private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
     {
@@ -246,6 +248,27 @@ public sealed class BookingServiceTests
         var page = await service.ListOrdersAsync(1, 20, new OrderListFilter(Status: (int)OrderStatus.Confirmed));
 
         Assert.Equal("C1", Assert.Single(page.Items).Code);
+    }
+
+    [Fact]
+    public async Task ListOrdersAsync_market_filter_includes_child_markets()
+    {
+        var marketRepo = new FakeRepository<MarketType>();
+        var parent = new MarketType { Name = "Miền Tây" };
+        var child = new MarketType { Name = "Miền Tây - Cần Thơ", ParentId = parent.Id };
+        await marketRepo.AddAsync(parent);
+        await marketRepo.AddAsync(child);
+        await marketRepo.SaveChangesAsync();
+        var orderRepo = new FakeRepository<Order>();
+        await orderRepo.AddAsync(new Order { Code = "O-PARENT", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid(), MarketTypeId = parent.Id });
+        await orderRepo.AddAsync(new Order { Code = "O-CHILD", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid(), MarketTypeId = child.Id });
+        await orderRepo.AddAsync(new Order { Code = "O-OTHER", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid(), MarketTypeId = Guid.NewGuid() });
+        await orderRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo, marketRepo: marketRepo);
+
+        // Lọc theo thị trường CHA → phải gồm cả đơn thuộc thị trường CON.
+        var codes = (await service.ListOrdersAsync(1, 20, new OrderListFilter(MarketTypeId: parent.Id))).Items.Select(i => i.Code).OrderBy(c => c).ToList();
+        Assert.Equal(new[] { "O-CHILD", "O-PARENT" }, codes);
     }
 
     [Fact]
