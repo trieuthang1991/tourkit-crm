@@ -93,28 +93,53 @@ public sealed class ReceiptService(
         return receipts.OrderBy(r => r.IssuedAt).Select(Map).ToList();
     }
 
-    public async Task<PagedResult<ReceiptListItemDto>> ListAllAsync(int page, int size)
+    public async Task<PagedResult<ReceiptListItemDto>> ListAllAsync(int page, int size, ReceiptListFilter? filter = null)
     {
-        var (items, total) = await receiptRepo.PageAsync(page, size);
+        var f = filter ?? new ReceiptListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        // Lọc cột thật (trạng thái, khoảng ngày) ở DB; q (mã phiếu/mã đơn/khách/người nộp) lọc sau khi làm giàu.
+        var all = await receiptRepo.ListAsync(r =>
+            (f.Status == null || r.Status == f.Status) &&
+            (f.From == null || r.IssuedAt >= f.From) &&
+            (f.To == null || r.IssuedAt <= f.To));
 
         // Nạp theo lô: mã đơn + tên khách của các đơn liên quan (để danh sách tổng hiển thị được).
-        var orderIds = items.Select(r => r.OrderId).ToHashSet();
+        var orderIds = all.Select(r => r.OrderId).ToHashSet();
         var orders = (await orderRepo.ListAsync(o => orderIds.Contains(o.Id)))
             .ToDictionary(o => o.Id, o => o);
         var customerIds = orders.Values.Select(o => o.CustomerId).ToHashSet();
         var customerNames = (await customerRepo.ListAsync(c => customerIds.Contains(c.Id)))
             .ToDictionary(c => c.Id, c => c.FullName);
 
-        var rows = items.Select(r =>
+        var rows = all.Select(r =>
         {
             orders.TryGetValue(r.OrderId, out var order);
             var customerName = order is not null ? customerNames.GetValueOrDefault(order.CustomerId) : null;
-            return new ReceiptListItemDto(
+            var dto = new ReceiptListItemDto(
                 r.Id, r.Code, r.OrderId, order?.Code, customerName,
                 r.Amount, r.PaymentMethod, r.IssuedAt, r.Partner, r.Status, r.IsRecognized);
-        }).ToList();
+            return (r.CreatedAt, Dto: dto);
+        });
 
-        return new PagedResult<ReceiptListItemDto>(rows, total, page, size);
+        bool MatchQ(ReceiptListItemDto d) =>
+            kw == null ||
+            d.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            (d.OrderCode?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (d.CustomerName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (d.Partner?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
+
+        var filtered = rows.Where(x => MatchQ(x.Dto)).OrderByDescending(x => x.CreatedAt).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(x => x.Dto).ToList();
+        return new PagedResult<ReceiptListItemDto>(pageItems, filtered.Count, page, size);
+    }
+
+    public async Task<ReceiptStatsDto> GetStatsAsync()
+    {
+        var all = await receiptRepo.ListAsync();
+        return new ReceiptStatsDto(
+            all.Count, all.Sum(r => r.Amount),
+            all.Count(r => r.Status == 0), all.Count(r => r.Status == 1), all.Count(r => r.Status == 2));
     }
 
     public async Task<OrderBalanceDto> GetBalanceAsync(Guid orderId)

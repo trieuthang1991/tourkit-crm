@@ -9,6 +9,7 @@ public interface IReceiptService
     Task<ReceiptDto> ApproveAsync(Guid receiptId);
     Task<ReceiptDto> RejectAsync(Guid receiptId);
     Task<IReadOnlyList<ReceiptDto>> ListByOrderAsync(Guid orderId);
-    Task<PagedResult<ReceiptListItemDto>> ListAllAsync(int page, int size);
+    Task<PagedResult<ReceiptListItemDto>> ListAllAsync(int page, int size, ReceiptListFilter? filter = null);
+    Task<ReceiptStatsDto> GetStatsAsync();
     Task<OrderBalanceDto> GetBalanceAsync(Guid orderId);
 }

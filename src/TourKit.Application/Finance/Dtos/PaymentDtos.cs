@@ -16,3 +16,9 @@ public sealed record PaymentListItemDto(
     Guid Id, string Code, Guid OrderId, string? OrderCode, Guid? ProviderId, string? ProviderName,
     decimal Amount, string PaymentMethod, DateTimeOffset IssuedAt,
     string? Partner, string? ReceiverName, int Status, bool IsRecognized);
+
+/// <summary>Bộ lọc danh sách phiếu chi (bám hệ cũ). Trạng thái: 0 chờ duyệt · 1 duyệt · 2 từ chối.</summary>
+public sealed record PaymentListFilter(string? Q = null, int? Status = null, DateTimeOffset? From = null, DateTimeOffset? To = null);
+
+/// <summary>Thẻ thống kê đầu màn Phiếu chi: tổng phiếu + tổng tiền + đếm theo trạng thái.</summary>
+public sealed record PaymentStatsDto(int Total, decimal TotalAmount, int Pending, int Approved, int Rejected);

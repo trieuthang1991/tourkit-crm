@@ -148,4 +148,26 @@ public class ReceiptEndpointTests : IClassFixture<AuthTestFactory>
     private sealed record Paged<T>(List<T> Items, int Total);
 
     private sealed record CustomerRow(Guid Id, string FullName, string? Phone);
+
+    private sealed record ReceiptRow(Guid Id, string Code, int Status);
+    private sealed record ReceiptStats(int Total, decimal TotalAmount, int Pending, int Approved, int Rejected);
+
+    [Fact]
+    public async Task Receipts_filter_by_status_and_stats()
+    {
+        var client = await LoggedInClientAsync("fin-stats");
+        var orderId = await CreateOrderAsync(client);
+        (await client.PostAsJsonAsync($"/api/v1/orders/{orderId}/receipts",
+            new CreateReceiptDto(5_000_000m, "cash", null, null))).EnsureSuccessStatusCode();
+
+        var pending = await client.GetFromJsonAsync<Paged<ReceiptRow>>("/api/v1/receipts?status=0");
+        Assert.Single(pending!.Items);
+        var approved = await client.GetFromJsonAsync<Paged<ReceiptRow>>("/api/v1/receipts?status=1");
+        Assert.Empty(approved!.Items);
+
+        var stats = await client.GetFromJsonAsync<ReceiptStats>("/api/v1/receipts/stats");
+        Assert.Equal(1, stats!.Total);
+        Assert.Equal(5_000_000m, stats.TotalAmount);
+        Assert.Equal(1, stats.Pending);
+    }
 }

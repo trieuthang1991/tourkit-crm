@@ -15,3 +15,9 @@ public sealed record OrderBalanceDto(Guid OrderId, decimal Total, decimal Paid, 
 public sealed record ReceiptListItemDto(
     Guid Id, string Code, Guid OrderId, string? OrderCode, string? CustomerName,
     decimal Amount, string PaymentMethod, DateTimeOffset IssuedAt, string? Partner, int Status, bool IsRecognized);
+
+/// <summary>Bộ lọc danh sách phiếu thu (bám hệ cũ). Trạng thái: 0 chờ duyệt · 1 duyệt · 2 từ chối.</summary>
+public sealed record ReceiptListFilter(string? Q = null, int? Status = null, DateTimeOffset? From = null, DateTimeOffset? To = null);
+
+/// <summary>Thẻ thống kê đầu màn Phiếu thu: tổng phiếu + tổng tiền + đếm theo trạng thái.</summary>
+public sealed record ReceiptStatsDto(int Total, decimal TotalAmount, int Pending, int Approved, int Rejected);

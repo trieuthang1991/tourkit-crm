@@ -46,6 +46,12 @@ public sealed class PaymentsController(IPaymentService service) : ControllerBase
     // Danh sách phiếu chi TỔNG (toàn tenant) — trang "Phiếu chi" độc lập.
     [HttpGet("payments")]
     [Authorize(Permissions.PaymentView)]
-    public async Task<IActionResult> ListAll([FromQuery] int page = 1, [FromQuery] int size = 20)
-        => Ok(await service.ListAllAsync(page, size));
+    public async Task<IActionResult> ListAll(
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] PaymentListFilter? filter = null)
+        => Ok(await service.ListAllAsync(page, size, filter));
+
+    // Thẻ thống kê đầu màn Phiếu chi: tổng + tiền + đếm theo trạng thái.
+    [HttpGet("payments/stats")]
+    [Authorize(Permissions.PaymentView)]
+    public async Task<IActionResult> PaymentStats() => Ok(await service.GetStatsAsync());
 }

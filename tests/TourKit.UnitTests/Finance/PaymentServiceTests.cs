@@ -118,4 +118,22 @@ public class PaymentServiceTests
         var single = Assert.Single(payments);
         Assert.Equal(order.Id, single.OrderId);
     }
+
+    [Fact]
+    public async Task ListAllAsync_filters_by_status_and_q_plus_stats()
+    {
+        var service = NewService(out var paymentRepo, out _, out _);
+        await paymentRepo.AddAsync(new PaymentVoucher { Code = "PC1", OrderId = Guid.NewGuid(), Amount = 1_000_000m, PaymentMethod = "cash", Status = 0 });
+        await paymentRepo.AddAsync(new PaymentVoucher { Code = "PC2", OrderId = Guid.NewGuid(), Amount = 2_000_000m, PaymentMethod = "cash", Status = 1 });
+        await paymentRepo.SaveChangesAsync();
+
+        Assert.Equal("PC1", Assert.Single((await service.ListAllAsync(1, 20, new PaymentListFilter(Status: 0))).Items).Code);
+        Assert.Equal("PC2", Assert.Single((await service.ListAllAsync(1, 20, new PaymentListFilter(Q: "PC2"))).Items).Code);
+
+        var stats = await service.GetStatsAsync();
+        Assert.Equal(2, stats.Total);
+        Assert.Equal(3_000_000m, stats.TotalAmount);
+        Assert.Equal(1, stats.Pending);
+        Assert.Equal(1, stats.Approved);
+    }
 }

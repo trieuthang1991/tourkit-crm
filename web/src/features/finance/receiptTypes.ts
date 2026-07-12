@@ -29,9 +29,9 @@ export type CreateReceiptForm = {
   note: string | null;
 };
 
-// status:1 = Chờ duyệt (pending) — approve()/reject() chuyển sang 2/3.
+// Trạng thái phiếu thu ĐÚNG backend: Create=0 (chờ duyệt), Approve=1, Reject=2 (giống VOUCHER_STATUS).
 export const RECEIPT_STATUS: Record<number, string> = {
-  1: 'Chờ duyệt',
-  2: 'Đã duyệt',
-  3: 'Từ chối',
+  0: 'Chờ duyệt',
+  1: 'Đã duyệt',
+  2: 'Từ chối',
 };

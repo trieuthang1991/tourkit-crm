@@ -97,24 +97,53 @@ public sealed class PaymentService(
         return payments.OrderBy(p => p.IssuedAt).Select(Map).ToList();
     }
 
-    public async Task<PagedResult<PaymentListItemDto>> ListAllAsync(int page, int size)
+    public async Task<PagedResult<PaymentListItemDto>> ListAllAsync(int page, int size, PaymentListFilter? filter = null)
     {
-        var (items, total) = await paymentRepo.PageAsync(page, size);
+        var f = filter ?? new PaymentListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        // Lọc cột thật (trạng thái, khoảng ngày) ở DB; q (mã phiếu/mã đơn/NCC/người nhận) lọc sau khi làm giàu.
+        var all = await paymentRepo.ListAsync(p =>
+            (f.Status == null || p.Status == f.Status) &&
+            (f.From == null || p.IssuedAt >= f.From) &&
+            (f.To == null || p.IssuedAt <= f.To));
 
         // Nạp theo lô: mã đơn + tên NCC (phiếu chi trả cho NCC) để danh sách tổng hiển thị được.
-        var orderIds = items.Select(p => p.OrderId).ToHashSet();
-        var providerIds = items.Where(p => p.ProviderId != null).Select(p => p.ProviderId!.Value).ToHashSet();
+        var orderIds = all.Select(p => p.OrderId).ToHashSet();
+        var providerIds = all.Where(p => p.ProviderId != null).Select(p => p.ProviderId!.Value).ToHashSet();
         var orderCodes = (await orderRepo.ListAsync(o => orderIds.Contains(o.Id)))
             .ToDictionary(o => o.Id, o => o.Code);
         var providerNames = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id)))
             .ToDictionary(p => p.Id, p => p.Name);
 
-        var rows = items.Select(p => new PaymentListItemDto(
-            p.Id, p.Code, p.OrderId, orderCodes.GetValueOrDefault(p.OrderId),
-            p.ProviderId, p.ProviderId is { } pid ? providerNames.GetValueOrDefault(pid) : null,
-            p.Amount, p.PaymentMethod, p.IssuedAt, p.Partner, p.ReceiverName, p.Status, p.IsRecognized)).ToList();
+        var rows = all.Select(p =>
+        {
+            var dto = new PaymentListItemDto(
+                p.Id, p.Code, p.OrderId, orderCodes.GetValueOrDefault(p.OrderId),
+                p.ProviderId, p.ProviderId is { } pid ? providerNames.GetValueOrDefault(pid) : null,
+                p.Amount, p.PaymentMethod, p.IssuedAt, p.Partner, p.ReceiverName, p.Status, p.IsRecognized);
+            return (p.CreatedAt, Dto: dto);
+        });
 
-        return new PagedResult<PaymentListItemDto>(rows, total, page, size);
+        bool MatchQ(PaymentListItemDto d) =>
+            kw == null ||
+            d.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            (d.OrderCode?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (d.ProviderName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (d.Partner?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (d.ReceiverName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
+
+        var filtered = rows.Where(x => MatchQ(x.Dto)).OrderByDescending(x => x.CreatedAt).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(x => x.Dto).ToList();
+        return new PagedResult<PaymentListItemDto>(pageItems, filtered.Count, page, size);
+    }
+
+    public async Task<PaymentStatsDto> GetStatsAsync()
+    {
+        var all = await paymentRepo.ListAsync();
+        return new PaymentStatsDto(
+            all.Count, all.Sum(p => p.Amount),
+            all.Count(p => p.Status == 0), all.Count(p => p.Status == 1), all.Count(p => p.Status == 2));
     }
 
     private static async Task Validate<T>(IValidator<T> validator, T dto)

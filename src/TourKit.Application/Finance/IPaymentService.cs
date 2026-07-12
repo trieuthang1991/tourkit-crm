@@ -9,5 +9,6 @@ public interface IPaymentService
     Task<PaymentDto> ApproveAsync(Guid paymentId);
     Task<PaymentDto> RejectAsync(Guid paymentId);
     Task<IReadOnlyList<PaymentDto>> ListByOrderAsync(Guid orderId);
-    Task<PagedResult<PaymentListItemDto>> ListAllAsync(int page, int size);
+    Task<PagedResult<PaymentListItemDto>> ListAllAsync(int page, int size, PaymentListFilter? filter = null);
+    Task<PaymentStatsDto> GetStatsAsync();
 }

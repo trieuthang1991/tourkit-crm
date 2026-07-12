@@ -138,4 +138,23 @@ public class ReceiptServiceTests
         var single = Assert.Single(receipts);
         Assert.Equal(order.Id, single.OrderId);
     }
+
+    [Fact]
+    public async Task ListAllAsync_filters_by_status_and_q_plus_stats()
+    {
+        var service = NewService(out var receiptRepo, out _);
+        await receiptRepo.AddAsync(new ReceiptVoucher { Code = "PT1", OrderId = Guid.NewGuid(), Amount = 1_000_000m, PaymentMethod = "cash", Status = 0 });
+        await receiptRepo.AddAsync(new ReceiptVoucher { Code = "PT2", OrderId = Guid.NewGuid(), Amount = 2_000_000m, PaymentMethod = "cash", Status = 1 });
+        await receiptRepo.SaveChangesAsync();
+
+        Assert.Equal("PT1", Assert.Single((await service.ListAllAsync(1, 20, new ReceiptListFilter(Status: 0))).Items).Code);
+        Assert.Equal("PT2", Assert.Single((await service.ListAllAsync(1, 20, new ReceiptListFilter(Q: "PT2"))).Items).Code);
+
+        var stats = await service.GetStatsAsync();
+        Assert.Equal(2, stats.Total);
+        Assert.Equal(3_000_000m, stats.TotalAmount);
+        Assert.Equal(1, stats.Pending);
+        Assert.Equal(1, stats.Approved);
+        Assert.Equal(0, stats.Rejected);
+    }
 }

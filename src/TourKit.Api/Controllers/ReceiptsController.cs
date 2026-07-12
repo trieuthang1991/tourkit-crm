@@ -48,8 +48,14 @@ public sealed class ReceiptsController(IReceiptService service) : ControllerBase
     // Danh sách phiếu thu TỔNG (toàn tenant) — trang "Phiếu thu" độc lập.
     [HttpGet("receipts")]
     [Authorize(Permissions.ReceiptView)]
-    public async Task<IActionResult> ListAll([FromQuery] int page = 1, [FromQuery] int size = 20)
-        => Ok(await service.ListAllAsync(page, size));
+    public async Task<IActionResult> ListAll(
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] ReceiptListFilter? filter = null)
+        => Ok(await service.ListAllAsync(page, size, filter));
+
+    // Thẻ thống kê đầu màn Phiếu thu: tổng + tiền + đếm theo trạng thái.
+    [HttpGet("receipts/stats")]
+    [Authorize(Permissions.ReceiptView)]
+    public async Task<IActionResult> ReceiptStats() => Ok(await service.GetStatsAsync());
 
     [HttpGet("orders/{orderId:guid}/balance")]
     [Authorize(Permissions.ReceiptView)]

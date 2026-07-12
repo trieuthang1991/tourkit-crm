@@ -69,7 +69,7 @@ function ReceiptRowActions({ receipt, orderId }: { receipt: Receipt; orderId: st
   const [approvalOpen, setApprovalOpen] = useState(false);
   const approve = useApproveReceipt(orderId);
   const reject = useRejectReceipt(orderId);
-  const isPending = receipt.status === 1 && !receipt.isRecognized;
+  const isPending = receipt.status === 0 && !receipt.isRecognized; // 0 = chờ duyệt (backend Create=0)
   const canApproveReject = has('receipt.approve') && isPending;
 
   return (
