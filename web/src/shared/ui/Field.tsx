@@ -123,12 +123,14 @@ export function SelectField({
   options,
   required,
   allowClear,
+  showSearch,
 }: {
   name: string;
   label: string;
   options: Option[];
   required?: boolean;
   allowClear?: boolean;
+  showSearch?: boolean;
 }) {
   const { control, formState } = useFormContext();
   return (
@@ -147,6 +149,8 @@ export function SelectField({
             value={field.value ?? undefined}
             options={options}
             allowClear={allowClear}
+            showSearch={showSearch}
+            optionFilterProp={showSearch ? 'label' : undefined}
             onChange={(v) => field.onChange(v ?? null)}
           />
         </Form.Item>

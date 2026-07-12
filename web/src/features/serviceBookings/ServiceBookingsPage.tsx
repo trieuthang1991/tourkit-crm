@@ -8,6 +8,8 @@ import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { ResourcePage } from '../../shared/ui/ResourcePage';
 import { roomClassSchema } from '../roomClasses/types';
+import { providersCrud } from '../providers/providersCrud';
+import { ordersCrud } from '../booking/bookingApi';
 import { serviceBookingsCrud } from './serviceBookingsCrud';
 import { SERVICE_BOOKING_TYPE, serviceBookingFormSchema } from './types';
 import type { ServiceBooking, ServiceBookingForm } from './types';
@@ -27,6 +29,18 @@ function RoomClassField() {
   });
   const options = (list.data ?? []).map((r) => ({ label: r.name, value: r.id }));
   return <SelectField name="roomClassId" label="Hạng phòng (khi đặt KS)" options={options} allowClear />;
+}
+
+function OrderField() {
+  const list = ordersCrud.useList({ page: 1, size: 200 });
+  const options = (list.data?.items ?? []).map((o) => ({ label: o.code, value: o.id }));
+  return <SelectField name="orderId" label="Đơn hàng" options={options} allowClear showSearch />;
+}
+
+function ProviderField() {
+  const list = providersCrud.useList({ page: 1, size: 200 });
+  const options = (list.data?.items ?? []).map((p) => ({ label: `${p.name} (${p.code})`, value: p.id }));
+  return <SelectField name="providerId" label="Nhà cung cấp" options={options} allowClear showSearch />;
 }
 
 const columns: ColumnsType<ServiceBooking> = [
@@ -76,8 +90,8 @@ export function ServiceBookingsPage() {
           <TextField name="code" label="Mã" />
           <SelectField name="type" label="Loại" options={TYPE_OPTIONS} required />
           <TextField name="description" label="Mô tả" required />
-          <TextField name="orderId" label="Mã đơn (orderId)" />
-          <TextField name="providerId" label="Mã NCC (providerId)" />
+          <OrderField />
+          <ProviderField />
           <DatePickerField name="startDate" label="Ngày bắt đầu" />
           <DatePickerField name="endDate" label="Ngày kết thúc" />
           <NumberField name="quantity" label="Số lượng" required />
