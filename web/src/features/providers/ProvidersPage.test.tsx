@@ -22,6 +22,7 @@ function mockGet(url: string) {
   if (url.includes('/providers/stats')) return Promise.resolve({ data: stats });
   if (url.includes('/payment-terms')) return Promise.resolve({ data: [] });
   if (url.includes('/branches')) return Promise.resolve({ data: [] });
+  if (url.includes('/market-types')) return Promise.resolve({ data: [] });
   return Promise.resolve({ data: list });
 }
 

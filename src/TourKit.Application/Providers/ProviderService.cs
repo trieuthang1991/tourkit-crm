@@ -22,6 +22,7 @@ public sealed class ProviderService(
             (f.Type == null || (int)p.Type == f.Type) &&
             (f.Status == null || p.Status == f.Status) &&
             (f.BranchId == null || p.BranchId == f.BranchId) &&
+            (f.MarketTypeId == null || p.MarketTypeId == f.MarketTypeId) &&
             (prov == null || (p.Province != null && p.Province.Contains(prov))) &&
             (f.CreatedFrom == null || p.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || p.CreatedAt <= f.CreatedTo) &&
@@ -89,6 +90,7 @@ public sealed class ProviderService(
             PaymentTermId = dto.PaymentTermId,
             Province = dto.Province,
             BranchId = dto.BranchId,
+            MarketTypeId = dto.MarketTypeId,
             Rate = dto.Rate,
             Status = dto.Status,
         };
@@ -120,6 +122,7 @@ public sealed class ProviderService(
         entity.PaymentTermId = dto.PaymentTermId;
         entity.Province = dto.Province;
         entity.BranchId = dto.BranchId;
+        entity.MarketTypeId = dto.MarketTypeId;
         entity.Rate = dto.Rate;
         entity.Status = dto.Status;
         repo.Update(entity);
@@ -150,6 +153,6 @@ public sealed class ProviderService(
     private static ProviderDto Map(Provider p, decimal totalCost = 0m, decimal paid = 0m) => new(
         p.Id, p.Code, p.Name, p.Type, p.Phone, p.Email, p.Address,
         p.TaxCode, p.ContactPerson, p.BankAccount, p.BankName, p.PaymentTermId, p.Rate, p.Status,
-        p.Province, p.BranchId,
+        p.Province, p.BranchId, p.MarketTypeId,
         totalCost, paid, OrderMath.Outstanding(totalCost, paid));
 }

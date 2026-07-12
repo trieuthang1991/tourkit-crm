@@ -81,9 +81,11 @@ public class ProviderCrudServiceTests
     {
         var service = NewService(out var repo);
         var branchA = Guid.NewGuid();
+        var marketA = Guid.NewGuid();
         var a = P("H1", "KS ABC", ProviderType.Hotel);
         a.Province = "Hà Nội";
         a.BranchId = branchA;
+        a.MarketTypeId = marketA;
         var b = P("H2", "KS XYZ", ProviderType.Hotel);
         b.Province = "TP.HCM";
         await repo.AddAsync(a);
@@ -92,5 +94,6 @@ public class ProviderCrudServiceTests
 
         Assert.Equal("H1", Assert.Single((await service.ListAsync(1, 20, new ProviderListFilter(Province: "Hà"))).Items).Code);
         Assert.Equal("H1", Assert.Single((await service.ListAsync(1, 20, new ProviderListFilter(BranchId: branchA))).Items).Code);
+        Assert.Equal("H1", Assert.Single((await service.ListAsync(1, 20, new ProviderListFilter(MarketTypeId: marketA))).Items).Code);
     }
 }

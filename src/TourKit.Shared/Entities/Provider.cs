@@ -24,6 +24,7 @@ public sealed class Provider : BaseEntity, ITenantEntity
     public Guid? PaymentTermId { get; set; }       // điều khoản thanh toán NCC (legacy ServicePaymentTerm)
     public string? Province { get; set; }          // Tỉnh thành (lọc theo địa bàn)
     public Guid? BranchId { get; set; }            // Chi nhánh (legacy ChiNhanh)
+    public Guid? MarketTypeId { get; set; }        // Thị trường (legacy MarketType)
     public int Rate { get; set; }
     public int Status { get; set; }
 }

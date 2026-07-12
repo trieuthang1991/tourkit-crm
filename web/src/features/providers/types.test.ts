@@ -20,6 +20,7 @@ describe('provider schemas', () => {
       status: 1,
       province: null,
       branchId: null,
+      marketTypeId: null,
       totalCost: 0,
       paid: 0,
       outstanding: 0,

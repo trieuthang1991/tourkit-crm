@@ -53,6 +53,7 @@ export function ProvidersPage() {
   const [province, setProvince] = useState('');
   const [provinceApplied, setProvinceApplied] = useState('');
   const [branchId, setBranchId] = useState<string | undefined>();
+  const [marketTypeId, setMarketTypeId] = useState<string | undefined>();
   const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
   const [editing, setEditing] = useState<{ mode: 'create' | 'edit'; item: Provider | null } | null>(null);
 
@@ -74,15 +75,23 @@ export function ProvidersPage() {
       return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
     },
   });
+  const marketTypes = useQuery({
+    queryKey: ['market-types'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/market-types');
+      return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
+    },
+  });
   const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
+  const marketOpts = (marketTypes.data ?? []).map((m) => ({ label: m.name, value: m.id }));
 
   const list = useQuery({
-    queryKey: ['providers', 'list', page.page, page.size, q, typeFilter, statusFilter, provinceApplied, branchId, dateRange],
+    queryKey: ['providers', 'list', page.page, page.size, q, typeFilter, statusFilter, provinceApplied, branchId, marketTypeId, dateRange],
     queryFn: async () => {
       const { data } = await httpClient.get<unknown>('/api/v1/providers', {
         params: clean({
           page: page.page, size: page.size, q: q || undefined, type: typeFilter, status: statusFilter,
-          province: provinceApplied || undefined, branchId, createdFrom: dateRange.from, createdTo: dateRange.to,
+          province: provinceApplied || undefined, branchId, marketTypeId, createdFrom: dateRange.from, createdTo: dateRange.to,
         }),
       });
       return pagedSchema(providerSchema).parse(data);
@@ -195,6 +204,7 @@ export function ProvidersPage() {
     paymentTermId: item?.paymentTermId ?? null,
     province: item?.province ?? null,
     branchId: item?.branchId ?? null,
+    marketTypeId: item?.marketTypeId ?? null,
     rate: item?.rate ?? 0,
     status: item?.status ?? 1,
   };
@@ -262,6 +272,16 @@ export function ProvidersPage() {
           value={branchId}
           onChange={(v) => { setBranchId(v ?? undefined); setPage({ ...page, page: 1 }); }}
         />
+        <Select
+          showSearch
+          allowClear
+          optionFilterProp="label"
+          placeholder="Thị trường"
+          style={{ width: 180 }}
+          options={marketOpts}
+          value={marketTypeId}
+          onChange={(v) => { setMarketTypeId(v ?? undefined); setPage({ ...page, page: 1 }); }}
+        />
         <DatePicker.RangePicker
           placeholder={['Ngày đặt từ', 'đến']}
           value={dateRange.from && dateRange.to ? [dayjs(dateRange.from), dayjs(dateRange.to)] : null}
@@ -325,6 +345,7 @@ export function ProvidersPage() {
           <TextField name="address" label="Địa chỉ" />
           <TextField name="province" label="Tỉnh thành" />
           <SelectField name="branchId" label="Chi nhánh" options={branchOpts} allowClear />
+          <SelectField name="marketTypeId" label="Thị trường" options={marketOpts} allowClear />
           <TextField name="taxCode" label="Mã số thuế" />
           <TextField name="contactPerson" label="Người liên hệ" />
           <TextField name="bankAccount" label="Số tài khoản" />
