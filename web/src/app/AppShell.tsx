@@ -8,6 +8,8 @@ import {
   ClusterOutlined,
   DashboardOutlined,
   EnvironmentOutlined,
+  FundOutlined,
+  IdcardOutlined,
   LogoutOutlined,
   PercentageOutlined,
   ProjectOutlined,
@@ -31,72 +33,16 @@ const { Header, Sider, Content } = Layout;
 type NavLeaf = { key: string; label: string; perm: string };
 type NavGroup = { key: string; label: string; icon: ReactNode; children: NavLeaf[] };
 
-// Gom nhóm bám menu hệ cũ (KojiCRM MenuLeft.ascx): Bàn làm việc / CRM / Báo giá /
-// Sản phẩm Tour / Đơn hàng / Điều xe & HDV / NCC / Tài chính / Hoa hồng / Dự án /
-// Marketing / Báo cáo / Danh mục / Đại lý B2B / Cài đặt.
+// Gom nhóm + THỨ TỰ bám menu hệ cũ (staging.tourkit.vn / MenuLeft.ascx):
+// Bàn làm việc → Nhà cung cấp → CRM → Báo giá → Đơn hàng/LKH → Booking & Dịch vụ →
+// Hướng dẫn viên → Quản lý xe → Tài chính → KPIs → Hoa Hồng → Dự án → Marketing →
+// Báo cáo → Danh mục → Đại lý → Cài đặt. (HDV/Xe tách riêng, KPIs/Hoa Hồng tách riêng.)
 const GROUPS: NavGroup[] = [
   {
     key: 'g-workspace',
     label: 'Bàn làm việc',
     icon: <DashboardOutlined />,
-    children: [
-      { key: '/dashboard', label: 'Tổng quan', perm: 'report.dashboard.view' },
-      { key: '/reports/kpi', label: 'KPI phễu', perm: 'report.dashboard.view' },
-    ],
-  },
-  {
-    key: 'g-crm',
-    label: 'CRM',
-    icon: <TeamOutlined />,
-    children: [
-      { key: '/leads', label: 'Cơ hội bán hàng (Lead)', perm: 'lead.view' },
-      { key: '/customers', label: 'Khách hàng', perm: 'customer.view' },
-      { key: '/customer-cares', label: 'Chăm sóc KH', perm: 'care.view' },
-      { key: '/tour-ratings', label: 'Đánh giá tour', perm: 'rating.view' },
-    ],
-  },
-  {
-    key: 'g-quote',
-    label: 'Báo giá',
-    icon: <CalculatorOutlined />,
-    children: [
-      { key: '/quotes', label: 'Báo giá / Tính giá tour', perm: 'quote.view' },
-      { key: '/agent-quotes', label: 'Báo giá Đại lý (B2B)', perm: 'agentquote.view' },
-    ],
-  },
-  {
-    key: 'g-product',
-    label: 'Sản phẩm Tour',
-    icon: <EnvironmentOutlined />,
-    children: [
-      { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
-      { key: '/departures', label: 'Chuyến đi (LKH)', perm: 'departure.view' },
-      { key: '/service-bookings', label: 'Đặt dịch vụ lẻ', perm: 'servicebooking.view' },
-      { key: '/room-classes', label: 'Hạng phòng KS', perm: 'servicebooking.view' },
-    ],
-  },
-  {
-    key: 'g-order',
-    label: 'Đơn hàng / LKH',
-    icon: <ShoppingCartOutlined />,
-    children: [
-      { key: '/orders', label: 'Tất cả đơn hàng', perm: 'booking.view' },
-      { key: '/operations-calendar', label: 'Lịch điều hành', perm: 'departure.view' },
-      { key: '/surcharges', label: 'Loại phụ thu', perm: 'booking.view' },
-      { key: '/transfer-reasons', label: 'Lý do chuyển chuyến', perm: 'booking.view' },
-    ],
-  },
-  {
-    key: 'g-fleet',
-    label: 'Điều xe & HDV',
-    icon: <CarOutlined />,
-    children: [
-      { key: '/vehicles', label: 'Kho xe', perm: 'vehicle.view' },
-      { key: '/car-types', label: 'Loại xe', perm: 'vehicle.view' },
-      { key: '/vehicle-assignments', label: 'Lịch điều xe', perm: 'vehicle.view' },
-      { key: '/guide-assignments', label: 'Phân công HDV', perm: 'guide.view' },
-      { key: '/language-types', label: 'Ngôn ngữ HDV', perm: 'guide.view' },
-    ],
+    children: [{ key: '/dashboard', label: 'Tổng quan', perm: 'report.dashboard.view' }],
   },
   {
     key: 'g-provider',
@@ -111,6 +57,67 @@ const GROUPS: NavGroup[] = [
     ],
   },
   {
+    key: 'g-crm',
+    label: 'CRM',
+    icon: <TeamOutlined />,
+    children: [
+      { key: '/leads', label: 'Cơ hội bán hàng (Lead)', perm: 'lead.view' },
+      { key: '/customers', label: 'Data khách hàng', perm: 'customer.view' },
+      { key: '/customer-cares', label: 'Quản lý lịch hẹn', perm: 'care.view' },
+      { key: '/tour-ratings', label: 'Feedback / Đánh giá', perm: 'rating.view' },
+    ],
+  },
+  {
+    key: 'g-quote',
+    label: 'Báo giá',
+    icon: <CalculatorOutlined />,
+    children: [
+      { key: '/quotes', label: 'Tính giá tour', perm: 'quote.view' },
+      { key: '/agent-quotes', label: 'Báo giá Đại lý (B2B)', perm: 'agentquote.view' },
+    ],
+  },
+  {
+    key: 'g-order',
+    label: 'Đơn hàng / LKH',
+    icon: <ShoppingCartOutlined />,
+    children: [
+      { key: '/orders', label: 'Tất cả đơn hàng', perm: 'booking.view' },
+      { key: '/departures', label: 'Tất cả Tour / LKH', perm: 'departure.view' },
+      { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
+      { key: '/operations-calendar', label: 'Lịch điều hành', perm: 'departure.view' },
+      { key: '/surcharges', label: 'Loại phụ thu', perm: 'booking.view' },
+      { key: '/transfer-reasons', label: 'Lý do chuyển chuyến', perm: 'booking.view' },
+    ],
+  },
+  {
+    key: 'g-booking',
+    label: 'Booking & Dịch vụ',
+    icon: <EnvironmentOutlined />,
+    children: [
+      { key: '/service-bookings', label: 'Danh sách Booking', perm: 'servicebooking.view' },
+      { key: '/room-classes', label: 'Hạng phòng / Quỹ phòng', perm: 'servicebooking.view' },
+    ],
+  },
+  {
+    key: 'g-guide',
+    label: 'Hướng dẫn viên',
+    icon: <IdcardOutlined />,
+    children: [
+      { key: '/guide-assignments', label: 'Lịch điều HDV', perm: 'guide.view' },
+      { key: '/language-types', label: 'Ngôn ngữ HDV', perm: 'guide.view' },
+    ],
+  },
+  {
+    key: 'g-vehicle',
+    label: 'Quản lý xe',
+    icon: <CarOutlined />,
+    children: [
+      { key: '/vehicles', label: 'Kho xe', perm: 'vehicle.view' },
+      { key: '/car-types', label: 'Loại xe', perm: 'vehicle.view' },
+      { key: '/vehicle-assignments', label: 'Lịch điều xe', perm: 'vehicle.view' },
+    ],
+  },
+  {
     key: 'g-finance',
     label: 'Tài chính / Kế toán',
     icon: <BankOutlined />,
@@ -119,20 +126,26 @@ const GROUPS: NavGroup[] = [
       { key: '/payments', label: 'Phiếu chi', perm: 'payment.view' },
       { key: '/reports/order-debt', label: 'Công nợ khách', perm: 'report.debt.view' },
       { key: '/reports/provider-debt', label: 'Công nợ NCC', perm: 'report.providerdebt.view' },
-      { key: '/invoices', label: 'Hoá đơn (VAT)', perm: 'invoice.view' },
+      { key: '/invoices', label: 'Danh sách hoá đơn (VAT)', perm: 'invoice.view' },
       { key: '/reports/cash-flow', label: 'Thống kê dòng tiền', perm: 'report.cashflow.view' },
       { key: '/payment-accounts', label: 'Tài khoản nhận tiền', perm: 'paymentaccount.view' },
       { key: '/ticket-funds', label: 'Quỹ vé ứng', perm: 'ticketfund.view' },
     ],
   },
   {
+    key: 'g-kpi',
+    label: 'KPIs',
+    icon: <FundOutlined />,
+    children: [{ key: '/reports/kpi', label: 'KPI phễu', perm: 'report.dashboard.view' }],
+  },
+  {
     key: 'g-commission',
-    label: 'Hoa hồng & KPI',
+    label: 'Hoa Hồng',
     icon: <PercentageOutlined />,
     children: [
       { key: '/commission-rules', label: 'Thiết lập hoa hồng', perm: 'commission.view' },
       { key: '/customer-commission-rules', label: 'HH theo loại khách', perm: 'commission.view' },
-      { key: '/reports/commission-by-user', label: 'Hoa hồng nhân viên', perm: 'report.commission.view' },
+      { key: '/reports/commission-by-user', label: 'Báo cáo theo nhân viên', perm: 'report.commission.view' },
     ],
   },
   {
@@ -193,9 +206,9 @@ const GROUPS: NavGroup[] = [
       { key: '/users', label: 'Thành viên', perm: 'user.view' },
       { key: '/departments', label: 'Phòng ban', perm: 'user.view' },
       { key: '/positions', label: 'Chức vụ', perm: 'user.view' },
-      { key: '/company-profile', label: 'Hồ sơ công ty', perm: 'company.manage' },
+      { key: '/company-profile', label: 'Cấu hình / Hồ sơ công ty', perm: 'company.manage' },
       { key: '/billing', label: 'Gói dịch vụ', perm: 'subscription.view' },
-      { key: '/activity-logs', label: 'Nhật ký thao tác', perm: 'activitylog.view' },
+      { key: '/activity-logs', label: 'Log hệ thống', perm: 'activitylog.view' },
     ],
   },
 ];
