@@ -298,10 +298,10 @@ export function CeoAnalytics() {
         </Col>
       </Row>
 
-      {/* Điều hành khởi hành (lịch) — dùng chung component DepartureCalendar với Bàn làm việc */}
-      <SectionTitle>Điều hành khởi hành</SectionTitle>
-      <Card size="small">
-        <DepartureCalendar fullscreen={false} />
+      {/* Lịch khởi hành — dùng chung y hệt bản ở Bàn làm việc (DepartureCalendar fullscreen) */}
+      <SectionTitle>Lịch khởi hành</SectionTitle>
+      <Card>
+        <DepartureCalendar />
       </Card>
 
       {/* Trạng thái hợp đồng (donut + cards) + Phễu bán hàng */}
