@@ -12,11 +12,51 @@ public sealed class DepartureService(
     IRepository<TourItinerary> itineraryRepo,
     IValidator<CreateDepartureDto> createValidator) : IDepartureService
 {
-    public async Task<PagedResult<DepartureDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<DepartureDto>> ListAsync(int page, int size, DepartureListFilter? filter = null)
     {
-        var (items, total) = await departureRepo.PageAsync(page, size);
-        var dtos = items.Select(Map).ToList();
-        return new PagedResult<DepartureDto>(dtos, total, page, size);
+        var f = filter ?? new DepartureListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+        var tt = string.IsNullOrWhiteSpace(f.TourType) ? null : f.TourType.Trim();
+
+        // Lọc cột thật ở DB (loại tour, trạng thái, NV điều hành, đã đóng, ngày khởi hành); q lọc sau.
+        var all = await departureRepo.ListAsync(d =>
+            (tt == null || d.TourType == tt) &&
+            (f.Status == null || d.Status == f.Status) &&
+            (f.AssignedToUserId == null || d.AssignedToUserId == f.AssignedToUserId) &&
+            (f.IsClosed == null || d.IsClosed == f.IsClosed) &&
+            (f.DepartureFrom == null || d.DepartureDate >= f.DepartureFrom) &&
+            (f.DepartureTo == null || d.DepartureDate <= f.DepartureTo));
+
+        bool MatchQ(TourDeparture d) =>
+            kw == null ||
+            d.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            d.Title.Contains(kw, StringComparison.OrdinalIgnoreCase);
+
+        var filtered = all.Where(MatchQ).OrderByDescending(d => d.DepartureDate).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(Map).ToList();
+        return new PagedResult<DepartureDto>(pageItems, filtered.Count, page, size);
+    }
+
+    public async Task<DepartureStatsDto> GetStatsAsync()
+    {
+        var all = await departureRepo.ListAsync();
+        var now = DateTimeOffset.UtcNow;
+        return new DepartureStatsDto(
+            all.Count,
+            all.Count(d => !d.IsClosed && d.DepartureDate != null && d.DepartureDate >= now),
+            all.Count(d => d.IsClosed),
+            all.Sum(d => d.TotalSlots));
+    }
+
+    public async Task<DepartureFilterOptionsDto> GetFilterOptionsAsync()
+    {
+        var tourTypes = (await departureRepo.ListAsync())
+            .Where(d => !string.IsNullOrWhiteSpace(d.TourType))
+            .Select(d => d.TourType!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s, StringComparer.CurrentCulture)
+            .ToList();
+        return new DepartureFilterOptionsDto(tourTypes);
     }
 
     public async Task<DepartureDto> GetAsync(Guid id)
@@ -143,5 +183,6 @@ public sealed class DepartureService(
     }
 
     private static DepartureDto Map(TourDeparture d) => new(
-        d.Id, d.Code, d.Title, d.ParentTourId, d.DepartureDate, d.EndDate, d.TotalSlots, d.Status);
+        d.Id, d.Code, d.Title, d.ParentTourId, d.DepartureDate, d.EndDate, d.TotalSlots, d.Status,
+        d.TourType, d.AssignedToUserId, d.IsClosed);
 }

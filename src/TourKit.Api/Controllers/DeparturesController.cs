@@ -13,11 +13,20 @@ public sealed class DeparturesController(IDepartureService service) : Controller
 {
     [HttpGet]
     [Authorize(Permissions.DepartureView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] DepartureListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.DepartureView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
+
+    [HttpGet("filter-options")]
+    [Authorize(Permissions.DepartureView)]
+    public async Task<IActionResult> FilterOptions() => Ok(await service.GetFilterOptionsAsync());
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.DepartureView)]

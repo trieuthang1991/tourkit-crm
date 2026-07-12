@@ -133,4 +133,62 @@ public sealed class DepartureServiceTests
         Assert.Equal(2, page.Total);
         Assert.Equal(2, page.Items.Count);
     }
+
+    [Fact]
+    public async Task ListAsync_filters_by_tourType_and_q()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        await repo.AddAsync(new TourDeparture { Code = "DEP-IN", Title = "Inbound HN", TourType = "inbound" });
+        await repo.AddAsync(new TourDeparture { Code = "DEP-OUT", Title = "Outbound TL", TourType = "outbound" });
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        Assert.Equal("DEP-IN", Assert.Single((await service.ListAsync(1, 20, new DepartureListFilter(TourType: "inbound"))).Items).Code);
+        Assert.Equal("DEP-OUT", Assert.Single((await service.ListAsync(1, 20, new DepartureListFilter(Q: "Outbound"))).Items).Code);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_isClosed()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        await repo.AddAsync(new TourDeparture { Code = "OPEN", Title = "Đang mở", IsClosed = false });
+        await repo.AddAsync(new TourDeparture { Code = "SHUT", Title = "Đã đóng", IsClosed = true });
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        Assert.Equal("SHUT", Assert.Single((await service.ListAsync(1, 20, new DepartureListFilter(IsClosed: true))).Items).Code);
+    }
+
+    [Fact]
+    public async Task GetStatsAsync_counts_upcoming_closed_and_slots()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var now = DateTimeOffset.UtcNow;
+        await repo.AddAsync(new TourDeparture { Code = "U", Title = "Sắp đi", DepartureDate = now.AddDays(5), TotalSlots = 30, IsClosed = false });
+        await repo.AddAsync(new TourDeparture { Code = "C", Title = "Đã đóng", DepartureDate = now.AddDays(5), TotalSlots = 20, IsClosed = true });
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        var stats = await service.GetStatsAsync();
+
+        Assert.Equal(2, stats.Total);
+        Assert.Equal(1, stats.Upcoming);
+        Assert.Equal(1, stats.Closed);
+        Assert.Equal(50, stats.TotalSlots);
+    }
+
+    [Fact]
+    public async Task GetFilterOptionsAsync_returns_distinct_tourTypes()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        await repo.AddAsync(new TourDeparture { Code = "A", Title = "A", TourType = "inbound" });
+        await repo.AddAsync(new TourDeparture { Code = "B", Title = "B", TourType = "outbound" });
+        await repo.AddAsync(new TourDeparture { Code = "C", Title = "C", TourType = "inbound" });
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        var opts = await service.GetFilterOptionsAsync();
+
+        Assert.Equal(new[] { "inbound", "outbound" }, opts.TourTypes);
+    }
 }

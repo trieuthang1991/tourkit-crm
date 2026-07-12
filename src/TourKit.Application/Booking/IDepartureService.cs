@@ -5,7 +5,9 @@ namespace TourKit.Application.Booking;
 
 public interface IDepartureService
 {
-    Task<PagedResult<DepartureDto>> ListAsync(int page, int size);
+    Task<PagedResult<DepartureDto>> ListAsync(int page, int size, DepartureListFilter? filter = null);
+    Task<DepartureStatsDto> GetStatsAsync();
+    Task<DepartureFilterOptionsDto> GetFilterOptionsAsync();
     Task<DepartureDto> GetAsync(Guid id);
     Task<DepartureDto> CreateAsync(CreateDepartureDto dto);
     Task<BatchCreateResultDto> BatchCreateAsync(BatchCreateDeparturesDto dto);

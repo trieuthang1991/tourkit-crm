@@ -9,6 +9,9 @@ export const departureSchema = z.object({
   endDate: z.string().nullable(),
   totalSlots: z.number(),
   status: z.number(),
+  tourType: z.string().nullable().optional(),
+  assignedToUserId: z.string().uuid().nullable().optional(),
+  isClosed: z.boolean().optional(),
 });
 export type Departure = z.infer<typeof departureSchema>;
 
