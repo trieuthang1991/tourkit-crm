@@ -16,11 +16,32 @@ public sealed class LeadService(
     IValidator<CreateLeadDto> createValidator,
     IValidator<UpdateLeadDto> updateValidator) : ILeadService
 {
-    public async Task<PagedResult<LeadDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<LeadDto>> ListAsync(int page, int size, LeadListFilter? filter = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
+        var f = filter ?? new LeadListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+        var (items, total) = await repo.PageAsync(page, size, l =>
+            (f.Status == null || (int)l.Status == f.Status) &&
+            (kw == null ||
+                l.FullName.Contains(kw) ||
+                (l.Phone != null && l.Phone.Contains(kw)) ||
+                (l.Email != null && l.Email.Contains(kw)) ||
+                (l.Source != null && l.Source.Contains(kw))));
         var dtos = items.Select(Map).ToList();
         return new PagedResult<LeadDto>(dtos, total, page, size);
+    }
+
+    public async Task<LeadStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new LeadStatsDto(
+            all.Count,
+            all.Count(l => l.Status == LeadStatus.New),
+            all.Count(l => l.Status == LeadStatus.Contacted),
+            all.Count(l => l.Status == LeadStatus.Qualified),
+            all.Count(l => l.Status == LeadStatus.Won),
+            all.Count(l => l.Status == LeadStatus.Lost),
+            all.Count(l => l.ConvertedCustomerId != null));
     }
 
     public async Task<LeadDto> GetAsync(Guid id)

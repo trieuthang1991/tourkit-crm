@@ -88,4 +88,35 @@ public class LeadServiceTests
 
         await Assert.ThrowsAsync<ConflictException>(() => service.ConvertAsync(created.Id));
     }
+
+    [Fact]
+    public async Task ListAsync_filters_by_status_and_q()
+    {
+        var service = NewService(out var repo, out _);
+        await repo.AddAsync(new Lead { FullName = "Nguyễn Tiềm Năng", Source = "facebook", Status = LeadStatus.Qualified });
+        await repo.AddAsync(new Lead { FullName = "Trần Mất", Source = "zalo", Status = LeadStatus.Lost });
+        await repo.SaveChangesAsync();
+
+        Assert.Equal("Nguyễn Tiềm Năng", Assert.Single((await service.ListAsync(1, 20, new LeadListFilter(Status: (int)LeadStatus.Qualified))).Items).FullName);
+        Assert.Equal("Trần Mất", Assert.Single((await service.ListAsync(1, 20, new LeadListFilter(Q: "zalo"))).Items).FullName);
+    }
+
+    [Fact]
+    public async Task GetStatsAsync_counts_by_status_and_converted()
+    {
+        var service = NewService(out var repo, out _);
+        await repo.AddAsync(new Lead { FullName = "A", Status = LeadStatus.New });
+        await repo.AddAsync(new Lead { FullName = "B", Status = LeadStatus.Qualified });
+        await repo.AddAsync(new Lead { FullName = "C", Status = LeadStatus.Won, ConvertedCustomerId = Guid.NewGuid() });
+        await repo.SaveChangesAsync();
+
+        var stats = await service.GetStatsAsync();
+
+        Assert.Equal(3, stats.Total);
+        Assert.Equal(1, stats.New);
+        Assert.Equal(1, stats.Qualified);
+        Assert.Equal(1, stats.Won);
+        Assert.Equal(1, stats.Converted);
+        Assert.Equal(0, stats.Lost);
+    }
 }

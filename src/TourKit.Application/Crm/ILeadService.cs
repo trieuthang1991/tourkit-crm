@@ -5,7 +5,8 @@ namespace TourKit.Application.Crm;
 
 public interface ILeadService
 {
-    Task<PagedResult<LeadDto>> ListAsync(int page, int size);
+    Task<PagedResult<LeadDto>> ListAsync(int page, int size, LeadListFilter? filter = null);
+    Task<LeadStatsDto> GetStatsAsync();
     Task<LeadDto> GetAsync(Guid id);
     Task<LeadDto> CreateAsync(CreateLeadDto dto);
     Task UpdateAsync(Guid id, UpdateLeadDto dto);

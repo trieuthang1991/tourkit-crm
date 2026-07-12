@@ -12,11 +12,17 @@ public sealed class LeadsController(ILeadService service) : ControllerBase
 {
     [HttpGet]
     [Authorize(Permissions.LeadView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] LeadListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    // Thẻ thống kê đầu màn Lead: tổng + đếm theo trạng thái + đã chuyển KH.
+    [HttpGet("stats")]
+    [Authorize(Permissions.LeadView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.LeadView)]

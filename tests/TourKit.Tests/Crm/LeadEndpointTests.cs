@@ -66,5 +66,23 @@ public class LeadEndpointTests : IClassFixture<AuthTestFactory>
         Assert.Empty(listB!.Items);
     }
 
+    private sealed record LeadStats(int Total, int New, int Contacted, int Qualified, int Won, int Lost, int Converted);
+
+    [Fact]
+    public async Task Leads_filter_by_q_and_stats()
+    {
+        var client = await LoggedInClientAsync("lead-stats");
+        await client.PostAsJsonAsync("/api/v1/leads", Sample("Nguyen Van A"));
+        await client.PostAsJsonAsync("/api/v1/leads", Sample("Tran Thi B"));
+
+        var byName = await client.GetFromJsonAsync<PagedResult<LeadDto>>(
+            "/api/v1/leads?q=" + Uri.EscapeDataString("Tran Thi B"));
+        Assert.Single(byName!.Items);
+
+        var stats = await client.GetFromJsonAsync<LeadStats>("/api/v1/leads/stats");
+        Assert.Equal(2, stats!.Total);
+        Assert.Equal(2, stats.New); // lead mới tạo = New
+    }
+
     private sealed record CustomerRow(Guid Id, string FullName, string? Phone);
 }
