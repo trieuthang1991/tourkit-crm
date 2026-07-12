@@ -18,6 +18,10 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(x => x.PassportNumber).HasMaxLength(50);
         builder.Property(x => x.Nationality).HasMaxLength(100);
 
+        // CRM profile (segment/tag/assignedTo/chiến dịch...) lưu jsonb trên Postgres →
+        // query bên trong + đếm cho phễu khách hàng. Provider khác (InMemory test) bỏ qua HasColumnType.
+        builder.Property(x => x.CrmProfileJson).HasColumnType("jsonb");
+
         // Index bắt đầu bằng TenantId (conventions §5): tăng tốc mọi truy vấn đã bị lọc theo tenant.
         builder.HasIndex(x => new { x.TenantId, x.FullName });
     }

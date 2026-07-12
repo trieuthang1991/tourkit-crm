@@ -52,6 +52,11 @@ builder.Services.AddDbContext<AppDbContext>((sp, opt) =>
     {
         opt.UseSqlServer(connectionString);
     }
+    else if (string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(provider, "PostgreSQL", StringComparison.OrdinalIgnoreCase))
+    {
+        opt.UseNpgsql(connectionString);
+    }
     else
     {
         opt.UseSqlite(connectionString);

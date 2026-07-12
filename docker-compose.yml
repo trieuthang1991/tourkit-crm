@@ -1,0 +1,27 @@
+# Postgres cho DEV — hỗ trợ jsonb (query bên trong CrmProfileJson + đếm phễu khách hàng).
+# Bật:  docker compose up -d
+# Tắt:  docker compose down        (giữ dữ liệu — volume pg_data)
+# Xoá sạch: docker compose down -v (xoá luôn dữ liệu)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tourkit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tourkit_dev
+      POSTGRES_USER: tourkit
+      POSTGRES_PASSWORD: tourkit_dev_pw
+      # Cố định locale để so chuỗi tiếng Việt ổn định
+      LANG: C.UTF-8
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tourkit -d tourkit_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pg_data:

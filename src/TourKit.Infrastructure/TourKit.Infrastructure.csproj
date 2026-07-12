@@ -13,6 +13,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.*" />
     <!-- Provider production tương lai: SQL Server. Đổi bằng cấu hình "Database:Provider". -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.*" />
+    <!-- Provider dev/prod: PostgreSQL (jsonb cho CrmProfileJson + phễu khách hàng). -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.*" />
   </ItemGroup>
 
 </Project>
