@@ -219,4 +219,60 @@ public sealed class BookingServiceTests
 
         Assert.Single(page.Items);
     }
+
+    [Fact]
+    public async Task ListOrdersAsync_filters_by_status()
+    {
+        var orderRepo = new FakeRepository<Order>();
+        await orderRepo.AddAsync(new Order { Code = "D1", Status = OrderStatus.Draft, CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() });
+        await orderRepo.AddAsync(new Order { Code = "C1", Status = OrderStatus.Confirmed, CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() });
+        await orderRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo);
+
+        var page = await service.ListOrdersAsync(1, 20, new OrderListFilter(Status: (int)OrderStatus.Confirmed));
+
+        Assert.Equal("C1", Assert.Single(page.Items).Code);
+    }
+
+    [Fact]
+    public async Task ListOrdersAsync_filters_q_by_code_and_customerName()
+    {
+        var customerRepo = new FakeRepository<Customer>();
+        var cust = new Customer { FullName = "Nguyễn Bình" };
+        await customerRepo.AddAsync(cust);
+        await customerRepo.SaveChangesAsync();
+        var orderRepo = new FakeRepository<Order>();
+        await orderRepo.AddAsync(new Order { Code = "OD_777", CustomerId = cust.Id, TourDepartureId = Guid.NewGuid() });
+        await orderRepo.AddAsync(new Order { Code = "OD_999", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() });
+        await orderRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo, customerRepo: customerRepo);
+
+        Assert.Equal("OD_777", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(Q: "Bình"))).Items).Code);
+        Assert.Equal("OD_777", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(Q: "OD_777"))).Items).Code);
+    }
+
+    [Fact]
+    public async Task GetOrderStatsAsync_sums_revenue_paid_and_counts_status()
+    {
+        var orderRepo = new FakeRepository<Order>();
+        var o1 = new Order { Code = "A", Status = OrderStatus.Confirmed, TotalRevenue = 5_000_000m, CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        var o2 = new Order { Code = "B", Status = OrderStatus.Cancelled, TotalRevenue = 3_000_000m, CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        await orderRepo.AddAsync(o1);
+        await orderRepo.AddAsync(o2);
+        await orderRepo.SaveChangesAsync();
+        var receiptRepo = new FakeRepository<ReceiptVoucher>();
+        await receiptRepo.AddAsync(new ReceiptVoucher { OrderId = o1.Id, Amount = 2_000_000m, IsRecognized = true });
+        await receiptRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo, receiptRepo: receiptRepo);
+
+        var stats = await service.GetOrderStatsAsync();
+
+        Assert.Equal(2, stats.Total);
+        Assert.Equal(8_000_000m, stats.TotalRevenue);
+        Assert.Equal(2_000_000m, stats.TotalPaid);
+        Assert.Equal(6_000_000m, stats.TotalOutstanding); // (5M-2M) + (3M-0)
+        Assert.Equal(1, stats.Confirmed);
+        Assert.Equal(1, stats.Cancelled);
+        Assert.Equal(0, stats.Draft);
+    }
 }

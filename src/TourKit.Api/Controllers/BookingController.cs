@@ -70,11 +70,17 @@ public sealed class BookingController(IBookingService service) : ControllerBase
 
     [HttpGet("orders")]
     [Authorize(Permissions.BookingView)]
-    public async Task<IActionResult> ListOrders([FromQuery] int page = 1, [FromQuery] int size = 20)
+    public async Task<IActionResult> ListOrders(
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] OrderListFilter? filter = null)
     {
-        var orders = await service.ListOrdersAsync(page, size);
+        var orders = await service.ListOrdersAsync(page, size, filter);
         return Ok(orders);
     }
+
+    // Thẻ thống kê đầu màn Đơn hàng: tổng đơn + doanh thu/đã thu/còn nợ + đếm theo trạng thái.
+    [HttpGet("orders/stats")]
+    [Authorize(Permissions.BookingView)]
+    public async Task<IActionResult> OrderStats() => Ok(await service.GetOrderStatsAsync());
 
     [HttpGet("orders/{orderId:guid}/lines")]
     [Authorize(Permissions.BookingView)]

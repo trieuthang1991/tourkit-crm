@@ -62,6 +62,39 @@ public class BookingEndpointTests : IClassFixture<AuthTestFactory>
         Assert.Single(orders!.Items);
     }
 
+    private sealed record OrderStats(
+        int Total, decimal TotalRevenue, decimal TotalPaid, decimal TotalOutstanding, int Draft, int Confirmed, int Cancelled);
+
+    [Fact]
+    public async Task Orders_stats_and_q_filter()
+    {
+        var client = await LoggedInClientAsync("book-stats");
+        var template = await (await client.PostAsJsonAsync("/api/v1/tour-templates", new
+        {
+            Code = "TPL-S", Title = "Nha Trang", TourType = (string?)null, TotalSlots = 30, ReservationHours = 24,
+            PriceAdult = 5_000_000m, PriceChild = 3_000_000m, PriceChildSmall = 0m, PriceBaby = 0m, TermsNote = (string?)null,
+        })).Content.ReadFromJsonAsync<TourTemplateDto>();
+        var customer = await (await client.PostAsJsonAsync("/api/v1/customers", new { FullName = "Nguyen Van A", Phone = (string?)null }))
+            .Content.ReadFromJsonAsync<CustomerRow>();
+        var departure = await (await client.PostAsJsonAsync("/api/v1/tour-departures", new
+        {
+            TemplateId = template!.Id, Code = "DEP-S", Title = "Nha Trang 20/07",
+            DepartureDate = DateTimeOffset.UtcNow.AddDays(30), EndDate = (DateTimeOffset?)null, TotalSlots = 30,
+        })).Content.ReadFromJsonAsync<DepartureDto>();
+        (await client.PostAsJsonAsync($"/api/v1/tour-departures/{departure!.Id}/bookings",
+            new CreateBookingDto(customer!.Id, 2, 1, 0, 0))).EnsureSuccessStatusCode();
+
+        var stats = await client.GetFromJsonAsync<OrderStats>("/api/v1/orders/stats");
+        Assert.Equal(1, stats!.Total);
+        Assert.Equal(13_000_000m, stats.TotalRevenue);
+
+        var byName = await client.GetFromJsonAsync<PagedResult<OrderDto>>(
+            "/api/v1/orders?q=" + Uri.EscapeDataString("Nguyen Van A"));
+        Assert.Single(byName!.Items);
+        var none = await client.GetFromJsonAsync<PagedResult<OrderDto>>("/api/v1/orders?q=zzzz");
+        Assert.Empty(none!.Items);
+    }
+
     [Fact]
     public async Task Booking_on_departure_without_template_is_400()
     {

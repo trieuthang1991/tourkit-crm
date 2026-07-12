@@ -23,7 +23,8 @@ public interface IBookingService
 
     Task<SeatDto> GetSeatAsync(Guid seatId);
 
-    Task<PagedResult<OrderDto>> ListOrdersAsync(int page, int size);
+    Task<PagedResult<OrderDto>> ListOrdersAsync(int page, int size, OrderListFilter? filter = null);
+    Task<OrderStatsDto> GetOrderStatsAsync();
 
     Task<IReadOnlyList<BookingLineDto>> ListOrderLinesAsync(Guid orderId);
 

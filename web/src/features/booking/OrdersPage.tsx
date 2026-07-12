@@ -1,26 +1,99 @@
-import { Button, Tag } from 'antd';
+import { Button, Card, Col, DatePicker, Input, Row, Segmented, Space, Statistic, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import dayjs from 'dayjs';
+import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
+import { httpClient } from '../../shared/api/httpClient';
+import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { money, statusText } from '../../shared/format';
-import { ResourcePage } from '../../shared/ui/ResourcePage';
-import { ordersCrud } from './bookingApi';
-import { ORDER_STATUS } from './seatTypes';
+import { PageHeader } from '../../shared/ui/PageHeader';
+import { ORDER_STATUS, orderSchema } from './seatTypes';
 import type { Order } from './seatTypes';
 
-// GET /api/v1/orders không có POST/PUT/DELETE ở màn danh sách này — chỉ dùng useList + getId,
-// ResourcePage tự ẩn nút Thêm mới/Sửa/Xoá khi thiếu useCreate/useUpdate/useRemove.
-const listOnlyCrud = { useList: ordersCrud.useList, getId: ordersCrud.getId };
+const dateVi = (v?: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—');
+const dash = (v?: string | null) => v ?? '—';
+
+const statsSchema = z.object({
+  total: z.number(),
+  totalRevenue: z.number(),
+  totalPaid: z.number(),
+  totalOutstanding: z.number(),
+  draft: z.number(),
+  confirmed: z.number(),
+  cancelled: z.number(),
+});
+
+// Bỏ field rỗng để không gửi param thừa.
+function clean(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+}
 
 export function OrdersPage() {
   const navigate = useNavigate();
+  const [page, setPage] = useState(DEFAULT_PAGE);
+  const [search, setSearch] = useState('');
+  const [q, setQ] = useState('');
+  const [status, setStatus] = useState<number | undefined>();
+  const [depFrom, setDepFrom] = useState<string | undefined>();
+  const [depTo, setDepTo] = useState<string | undefined>();
+  const [dep, setDep] = useState<string | undefined>();
+  const [depApplied, setDepApplied] = useState<{ from?: string; to?: string }>({});
 
-  const dateVi = (v?: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—');
+  const applyFilters = () => {
+    setQ(search);
+    setDepApplied({ from: depFrom, to: depTo });
+    setPage({ ...page, page: 1 });
+  };
+  const resetFilters = () => {
+    setSearch('');
+    setQ('');
+    setStatus(undefined);
+    setDepFrom(undefined);
+    setDepTo(undefined);
+    setDep(undefined);
+    setDepApplied({});
+    setPage({ ...page, page: 1 });
+  };
 
-  // Cột bám danh sách đơn hệ cũ: mã/khách/tour/ngày đi + doanh thu/đã thu/còn nợ/trạng thái.
+  const stats = useQuery({
+    queryKey: ['orders', 'stats'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/orders/stats');
+      return statsSchema.parse(data);
+    },
+  });
+
+  const list = useQuery({
+    queryKey: ['orders', 'list', page.page, page.size, q, status, depApplied],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/orders', {
+        params: clean({
+          page: page.page,
+          size: page.size,
+          q: q || undefined,
+          status,
+          departureFrom: depApplied.from,
+          departureTo: depApplied.to,
+        }),
+      });
+      return pagedSchema(orderSchema).parse(data);
+    },
+  });
+
   const columns: ColumnsType<Order> = [
+    {
+      title: 'STT',
+      key: '__stt',
+      width: 60,
+      fixed: 'left',
+      align: 'center',
+      render: (_: unknown, __: Order, index: number) => (page.page - 1) * page.size + index + 1,
+    },
     { title: 'Mã đơn', dataIndex: 'code', key: 'code', fixed: 'left', width: 130 },
-    { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName', width: 170, render: (v?: string | null) => v ?? '—' },
-    { title: 'Tour', dataIndex: 'tourTitle', key: 'tourTitle', width: 200, ellipsis: true, render: (v?: string | null) => v ?? '—' },
+    { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName', width: 170, render: dash },
+    { title: 'Tour', dataIndex: 'tourTitle', key: 'tourTitle', width: 200, ellipsis: true, render: dash },
     { title: 'Ngày đi', dataIndex: 'departureDate', key: 'departureDate', width: 110, render: dateVi },
     { title: 'Doanh thu', dataIndex: 'totalRevenue', key: 'totalRevenue', width: 130, align: 'right', render: (v: number) => money(v) },
     { title: 'Đã thu', dataIndex: 'amountPaid', key: 'amountPaid', width: 130, align: 'right', render: (v?: number) => money(v ?? 0) },
@@ -37,10 +110,7 @@ export function OrdersPage() {
       dataIndex: 'status',
       key: 'status',
       width: 110,
-      render: (status: number) => {
-        const color = status === 2 ? 'green' : status === 3 ? 'red' : 'default';
-        return <Tag color={color}>{statusText(ORDER_STATUS, status)}</Tag>;
-      },
+      render: (s: number) => <Tag color={s === 2 ? 'green' : s === 3 ? 'red' : 'default'}>{statusText(ORDER_STATUS, s)}</Tag>,
     },
     {
       title: '',
@@ -55,15 +125,119 @@ export function OrdersPage() {
     },
   ];
 
+  const s = stats.data;
+  const statCards = [
+    { title: 'Tổng số đơn', value: s?.total ?? 0, money: false },
+    { title: 'Doanh thu', value: s?.totalRevenue ?? 0, money: true },
+    { title: 'Đã thu', value: s?.totalPaid ?? 0, money: true },
+    { title: 'Còn nợ', value: s?.totalOutstanding ?? 0, money: true },
+    { title: 'Đã chốt', value: s?.confirmed ?? 0, money: false },
+    { title: 'Đã huỷ', value: s?.cancelled ?? 0, money: false },
+  ];
+
   return (
-    <ResourcePage<Order, object>
-      title="Đơn hàng"
-      columns={columns}
-      crud={listOnlyCrud}
-      perms={{}}
-      toForm={() => ({})}
-      renderForm={() => null}
-      formModal={() => null}
-    />
+    <>
+      <PageHeader title="Đơn hàng" />
+
+      {/* Thẻ thống kê (bám hệ cũ) */}
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        {statCards.map((c) => (
+          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
+            <Card styles={{ body: { padding: 16 } }}>
+              <Statistic
+                title={c.title}
+                value={c.value}
+                loading={stats.isLoading}
+                formatter={c.money ? (v) => money(Number(v)) : undefined}
+              />
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      {/* Thanh tìm kiếm + lọc */}
+      <Card size="small" style={{ marginBottom: 12 }}>
+        <Row gutter={[12, 12]}>
+          <Col xs={24} sm={12} lg={8}>
+            <Input.Search
+              allowClear
+              placeholder="Tìm theo mã đơn / khách / tour"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onSearch={applyFilters}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={8}>
+            <DatePicker.RangePicker
+              style={{ width: '100%' }}
+              placeholder={['Ngày đi từ', 'đến']}
+              value={dep && depTo ? [dayjs(dep), dayjs(depTo)] : null}
+              onChange={(d) => {
+                setDep(d?.[0]?.startOf('day').toISOString());
+                setDepFrom(d?.[0]?.startOf('day').toISOString());
+                setDepTo(d?.[1]?.endOf('day').toISOString());
+              }}
+            />
+          </Col>
+          <Col span={24}>
+            <Space>
+              <Button type="primary" onClick={applyFilters}>
+                Tìm kiếm
+              </Button>
+              <Button onClick={resetFilters}>Đặt lại</Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Tabs trạng thái (Tất cả · Nháp · Chốt · Huỷ) */}
+      <div style={{ marginBottom: 12, overflowX: 'auto' }}>
+        <Segmented
+          value={status === undefined ? 'all' : String(status)}
+          onChange={(val) => {
+            setStatus(val === 'all' ? undefined : Number(val));
+            setPage({ ...page, page: 1 });
+          }}
+          options={[
+            { label: 'Tất cả', value: 'all' },
+            ...Object.entries(ORDER_STATUS).map(([value, label]) => ({ label, value })),
+          ]}
+        />
+      </div>
+
+      <Table
+        rowKey="id"
+        columns={columns}
+        dataSource={list.data?.items ?? []}
+        loading={list.isLoading}
+        scroll={{ x: 'max-content' }}
+        pagination={{
+          current: page.page,
+          pageSize: page.size,
+          total: list.data?.total ?? 0,
+          showSizeChanger: true,
+          onChange: (p, sz) => setPage({ page: p, size: sz }),
+        }}
+        summary={(pageData) => {
+          const rev = pageData.reduce((a, o) => a + (o.totalRevenue ?? 0), 0);
+          const paid = pageData.reduce((a, o) => a + (o.amountPaid ?? 0), 0);
+          const owe = pageData.reduce((a, o) => a + (o.outstanding ?? 0), 0);
+          return (
+            <Table.Summary fixed>
+              <Table.Summary.Row>
+                <Table.Summary.Cell index={0} colSpan={columns.length}>
+                  <Space size="large">
+                    <strong>Tổng cộng (trang này)</strong>
+                    <span>Doanh thu: <strong>{money(rev)}</strong></span>
+                    <span>Đã thu: <strong>{money(paid)}</strong></span>
+                    <span>Còn nợ: <strong>{money(owe)}</strong></span>
+                  </Space>
+                </Table.Summary.Cell>
+              </Table.Summary.Row>
+            </Table.Summary>
+          );
+        }}
+      />
+    </>
   );
 }

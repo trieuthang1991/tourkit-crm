@@ -116,14 +116,18 @@ public sealed class BookingService(
         return MapSeat(seat);
     }
 
-    public async Task<PagedResult<OrderDto>> ListOrdersAsync(int page, int size)
+    public async Task<PagedResult<OrderDto>> ListOrdersAsync(int page, int size, OrderListFilter? filter = null)
     {
-        var (items, total) = await orderRepo.PageAsync(page, size);
+        var f = filter ?? new OrderListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        // Lọc cột thật (trạng thái) ở DB; q (mã/tên KH/tên tour) + khoảng ngày đi lọc sau khi làm giàu.
+        var all = await orderRepo.ListAsync(o => f.Status == null || (int)o.Status == f.Status);
 
         // Nạp theo lô để làm giàu danh sách: tên KH, tên tour + ngày đi, số đã thu (phiếu thu đã ghi nhận).
-        var customerIds = items.Select(o => o.CustomerId).ToHashSet();
-        var departureIds = items.Select(o => o.TourDepartureId).ToHashSet();
-        var orderIds = items.Select(o => o.Id).ToHashSet();
+        var customerIds = all.Select(o => o.CustomerId).ToHashSet();
+        var departureIds = all.Select(o => o.TourDepartureId).ToHashSet();
+        var orderIds = all.Select(o => o.Id).ToHashSet();
 
         var customerNames = (await customerRepo.ListAsync(c => customerIds.Contains(c.Id)))
             .ToDictionary(c => c.Id, c => c.FullName);
@@ -133,18 +137,57 @@ public sealed class BookingService(
             .GroupBy(r => r.OrderId)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Amount));
 
-        var dtos = items.Select(o =>
+        var enriched = all.Select(o =>
         {
             departures.TryGetValue(o.TourDepartureId, out var dep);
-            return MapOrder(
-                o,
-                customerNames.GetValueOrDefault(o.CustomerId),
-                dep?.Title,
-                dep?.DepartureDate,
+            var dto = MapOrder(o, customerNames.GetValueOrDefault(o.CustomerId), dep?.Title, dep?.DepartureDate,
                 paidByOrder.GetValueOrDefault(o.Id));
-        }).ToList();
+            return (o.CreatedAt, Dto: dto);
+        });
 
-        return new PagedResult<OrderDto>(dtos, total, page, size);
+        bool MatchQ(OrderDto d) =>
+            kw == null ||
+            d.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            (d.CustomerName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (d.TourTitle?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
+
+        var filtered = enriched
+            .Where(x => MatchQ(x.Dto)
+                && (f.DepartureFrom == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate >= f.DepartureFrom))
+                && (f.DepartureTo == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate <= f.DepartureTo)))
+            .OrderByDescending(x => x.CreatedAt)
+            .ToList();
+
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(x => x.Dto).ToList();
+        return new PagedResult<OrderDto>(pageItems, filtered.Count, page, size);
+    }
+
+    public async Task<OrderStatsDto> GetOrderStatsAsync()
+    {
+        var orders = await orderRepo.ListAsync();
+        var orderIds = orders.Select(o => o.Id).ToHashSet();
+        var paidByOrder = (await receiptRepo.ListAsync(r => orderIds.Contains(r.OrderId) && r.IsRecognized))
+            .GroupBy(r => r.OrderId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Amount));
+
+        decimal revenue = 0m, paid = 0m, outstanding = 0m;
+        int draft = 0, confirmed = 0, cancelled = 0;
+        foreach (var o in orders)
+        {
+            var p = paidByOrder.GetValueOrDefault(o.Id);
+            revenue += o.TotalRevenue;
+            paid += p;
+            outstanding += OrderMath.Outstanding(o.TotalRevenue, p);
+            switch (o.Status)
+            {
+                case OrderStatus.Draft: draft++; break;
+                case OrderStatus.Confirmed: confirmed++; break;
+                case OrderStatus.Cancelled: cancelled++; break;
+                default: break;
+            }
+        }
+
+        return new OrderStatsDto(orders.Count, revenue, paid, outstanding, draft, confirmed, cancelled);
     }
 
     public async Task<IReadOnlyList<BookingLineDto>> ListOrderLinesAsync(Guid orderId)
