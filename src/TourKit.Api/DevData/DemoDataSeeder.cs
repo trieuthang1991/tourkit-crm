@@ -156,6 +156,25 @@ public static class DemoDataSeeder
         var depInbound = await DepOf("DEP_IN_01", "Hanoi City Tour (Inbound)", "inbound", 15, 20, null);
         await db.SaveChangesAsync();
 
+        // 7b) Tỉ lệ hoa hồng theo NV (để dashboard "Tiền hoa hồng" có số) — idempotent riêng.
+        if (!await db.Set<CommissionRule>().AnyAsync())
+        {
+            db.AddRange(
+                new CommissionRule { UserId = uSalesHn.Id, Percentage = 5m, Status = 1 },
+                new CommissionRule { UserId = uSalesHcm.Id, Percentage = 8m, Status = 1 });
+            await db.SaveChangesAsync();
+        }
+
+        // 7c) Lịch chăm sóc/hẹn (để dashboard "Quản lý lịch hẹn" có số) — idempotent riêng.
+        if (!await db.Set<CustomerCare>().AnyAsync())
+        {
+            db.AddRange(
+                new CustomerCare { CustomerId = c1.Id, Title = "Gọi xác nhận tour Hạ Long", Detail = "Chốt số lượng khách", RemindAt = now.AddDays(1), AssignedToUserId = uSalesHn.Id, Status = 0 },
+                new CustomerCare { CustomerId = c2.Id, Title = "Nhắc thanh toán còn lại", Detail = "Nhắc chuyển khoản đợt 2", RemindAt = now.AddDays(2), AssignedToUserId = uSalesHcm.Id, Status = 1 },
+                new CustomerCare { CustomerId = c3.Id, Title = "Chăm sóc sau tour", Detail = "Xin feedback + ưu đãi lần sau", RemindAt = now.AddDays(-1), AssignedToUserId = uOps.Id, Status = 2 });
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {

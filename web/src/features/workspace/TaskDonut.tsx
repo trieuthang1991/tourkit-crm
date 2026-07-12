@@ -1,7 +1,17 @@
 // Donut tỉ lệ công việc thuần SVG (không cần thư viện chart) — bám widget "Tỉ lệ công việc" hệ cũ.
 export type DonutSegment = { label: string; value: number; color: string };
 
-export function TaskDonut({ segments, size = 132, stroke = 16 }: { segments: DonutSegment[]; size?: number; stroke?: number }) {
+export function TaskDonut({
+  segments,
+  size = 132,
+  stroke = 16,
+  centerLabel = 'công việc',
+}: {
+  segments: DonutSegment[];
+  size?: number;
+  stroke?: number;
+  centerLabel?: string;
+}) {
   const total = segments.reduce((s, x) => s + x.value, 0);
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -41,7 +51,7 @@ export function TaskDonut({ segments, size = 132, stroke = 16 }: { segments: Don
         {total}
       </text>
       <text x={cx} y={cx + 16} textAnchor="middle" fontSize="11" fill="#999">
-        công việc
+        {centerLabel}
       </text>
     </svg>
   );
