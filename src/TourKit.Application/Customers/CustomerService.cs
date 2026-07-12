@@ -15,9 +15,16 @@ public sealed class CustomerService(
     IValidator<CreateCustomerDto> createValidator,
     IValidator<UpdateCustomerDto> updateValidator) : ICustomerService
 {
-    public async Task<PagedResult<CustomerDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<CustomerDto>> ListAsync(int page, int size, string? q = null, int? customerType = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
+        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+        var (items, total) = await repo.PageAsync(page, size, c =>
+            (customerType == null || c.CustomerType == customerType) &&
+            (kw == null ||
+                c.FullName.Contains(kw) ||
+                (c.Code != null && c.Code.Contains(kw)) ||
+                (c.Phone != null && c.Phone.Contains(kw)) ||
+                (c.Email != null && c.Email.Contains(kw))));
         var ids = items.Select(c => c.Id).ToHashSet();
 
         // Map id(string) → tên NV để hiển thị người tạo / NV phụ trách. ID legacy không khớp sẽ giữ nguyên chuỗi.
@@ -42,6 +49,25 @@ public sealed class CustomerService(
         }).ToList();
 
         return new PagedResult<CustomerDto>(dtos, total, page, size);
+    }
+
+    public async Task<CustomerStatsDto> GetStatsAsync()
+    {
+        var customers = await repo.ListAsync();
+        var now = DateTimeOffset.UtcNow;
+        var todayStart = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, TimeSpan.Zero);
+        var monthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+
+        // Số lần mua theo KH (đơn hàng) → mua lần đầu (đúng 1 đơn) / mua lại (>1 đơn).
+        var orders = await orderRepo.ListAsync();
+        var orderCountByCustomer = orders.GroupBy(o => o.CustomerId).ToDictionary(g => g.Key, g => g.Count());
+
+        return new CustomerStatsDto(
+            Total: customers.Count,
+            NewToday: customers.Count(c => c.CreatedAt >= todayStart),
+            NewThisMonth: customers.Count(c => c.CreatedAt >= monthStart),
+            FirstTimeBuyers: orderCountByCustomer.Count(kv => kv.Value == 1),
+            RepeatBuyers: orderCountByCustomer.Count(kv => kv.Value > 1));
     }
 
     public async Task<CustomerDto> GetAsync(Guid id)

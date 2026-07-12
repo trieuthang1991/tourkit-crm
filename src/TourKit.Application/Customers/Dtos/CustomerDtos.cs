@@ -1,5 +1,9 @@
 namespace TourKit.Application.Customers.Dtos;
 
+/// <summary>Thẻ thống kê đầu màn Data khách hàng (bám hệ cũ).</summary>
+public sealed record CustomerStatsDto(
+    int Total, int NewToday, int NewThisMonth, int FirstTimeBuyers, int RepeatBuyers);
+
 public sealed record CustomerDto(
     Guid Id, string? Code, string FullName, string? Phone, int CustomerType, string? Source, string? Tag, decimal TempBalance,
     string? Email, string? Address, DateTimeOffset? DateOfBirth,

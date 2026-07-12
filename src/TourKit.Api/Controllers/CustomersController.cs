@@ -12,11 +12,18 @@ public sealed class CustomersController(ICustomerService service) : ControllerBa
 {
     [HttpGet]
     [Authorize(Permissions.CustomerView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1, [FromQuery] int size = 20,
+        [FromQuery] string? q = null, [FromQuery] int? customerType = null)
     {
-        var result = await service.ListAsync(page, size);
+        var result = await service.ListAsync(page, size, q, customerType);
         return Ok(result);
     }
+
+    // Thẻ thống kê đầu màn (bám hệ cũ): tổng KH / tạo hôm nay / tháng này / mua lần đầu / mua lại.
+    [HttpGet("stats")]
+    [Authorize(Permissions.CustomerView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.CustomerView)]
