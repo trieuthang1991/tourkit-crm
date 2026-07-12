@@ -32,7 +32,6 @@ import { workTaskSchema, priorityLabel, statusLabel } from '../workTasks/types';
 import type { WorkTask } from '../workTasks/types';
 import { TaskDonut } from './TaskDonut';
 import type { DonutSegment } from './TaskDonut';
-import { CeoAnalytics } from './CeoAnalytics';
 
 const TASK_STATUS_META: { status: number; label: string; color: string }[] = [
   { status: 0, label: 'Cần làm', color: '#8c8c8c' },
@@ -164,9 +163,6 @@ export function WorkspacePage() {
           ))}
         </Space>
       </Card>
-
-      {/* CEO Analytics (bám staging "Bàn làm việc") — KPI + hiệu suất chi nhánh + top sales/KH */}
-      <CeoAnalytics />
 
       {/* Hàng 1: hồ sơ+donut / thông báo / công nợ */}
       <Row gutter={[16, 16]}>

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { money } from '../../shared/format';
-import { useDashboard } from '../reports/dashboardApi';
+import { useDashboard } from './dashboardApi';
 
 // --- Schemas cho các endpoint report tái dùng ---
 const commissionRowSchema = z.object({
