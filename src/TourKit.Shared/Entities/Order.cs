@@ -22,7 +22,9 @@ public sealed class Order : BaseEntity, ITenantEntity
     public Guid? TourGroupId { get; set; }     // Nhóm tour (legacy Nhóm) — gom tour theo nhóm
     public int BookingType { get; set; }       // Loại tour: 0 FIT,1 GIT,2 LandTour/Combo,3 Booking phòng,4 Dịch vụ lẻ,5 Visa,6 Xe
     public bool IsCommissionSettled { get; set; } // TT hoa hồng: đã chốt hoa hồng chưa (legacy)
+    public Guid? CollaboratorId { get; set; }     // CTV phụ trách (Customer type CTV) — legacy id_ctv
     public OrderStatus Status { get; set; } = OrderStatus.Draft;
+    public OrderOperationalStatus OperationalStatus { get; set; } = OrderOperationalStatus.Upcoming; // Tình trạng vận hành (legacy StatusTour)
 
     // Tổng tiền denormalized (legacy Total_Thu_Money / Total_Chi_Money / TotalRefund / ApprovedRevenue).
     public decimal TotalRevenue { get; set; }

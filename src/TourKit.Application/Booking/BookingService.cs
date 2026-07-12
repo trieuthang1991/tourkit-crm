@@ -25,7 +25,8 @@ public sealed class BookingService(
     IRepository<OrderCost> orderCostRepo,
     IRepository<Provider> providerRepo,
     IRepository<PaymentVoucher> paymentRepo,
-    IRepository<MarketType> marketRepo) : IBookingService
+    IRepository<MarketType> marketRepo,
+    IRepository<Invoice> invoiceRepo) : IBookingService
 {
     public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null)
     {
@@ -140,6 +141,8 @@ public sealed class BookingService(
             (f.TourGroupId == null || o.TourGroupId == f.TourGroupId) &&
             (f.BookingType == null || o.BookingType == f.BookingType) &&
             (f.CommissionSettled == null || o.IsCommissionSettled == f.CommissionSettled) &&
+            (f.OperationalStatus == null || (int)o.OperationalStatus == f.OperationalStatus) &&
+            (f.CollaboratorId == null || o.CollaboratorId == f.CollaboratorId) &&
             (f.CreatedFrom == null || o.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || o.CreatedAt <= f.CreatedTo));
 
@@ -189,9 +192,34 @@ public sealed class BookingService(
             ? (await orderCostRepo.ListAsync(c => c.ProviderId == prov)).Select(c => c.OrderId).ToHashSet()
             : null;
 
+        // TT hóa đơn (Invoice.OrderId/Status: 0 nháp,1 phát hành,2 huỷ): 0 chưa xuất · 1 đã xuất · 2 đã duyệt.
+        var invoiceStatusByOrder = f.InvoiceStatus == null
+            ? new Dictionary<Guid, List<int>>()
+            : (await invoiceRepo.ListAsync(iv => iv.OrderId != null))
+                .Where(iv => orderIds.Contains(iv.OrderId!.Value))
+                .GroupBy(iv => iv.OrderId!.Value)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.Status).ToList());
+        bool MatchInvoice(Guid orderId)
+        {
+            if (f.InvoiceStatus == null)
+            {
+                return true;
+            }
+
+            var active = (invoiceStatusByOrder.GetValueOrDefault(orderId) ?? new List<int>()).Where(s => s != 2).ToList();
+            return f.InvoiceStatus switch
+            {
+                0 => active.Count == 0,       // chưa xuất hóa đơn
+                1 => active.Count > 0,        // đã xuất (có hóa đơn chưa huỷ)
+                2 => active.Contains(1),      // đã duyệt (đã phát hành)
+                _ => true,
+            };
+        }
+
         var filtered = enriched
             .Where(x => MatchQ(x.Dto)
                 && (providerOrderIds == null || providerOrderIds.Contains(x.Dto.Id))
+                && MatchInvoice(x.Dto.Id)
                 && (f.DepartureFrom == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate >= f.DepartureFrom))
                 && (f.DepartureTo == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate <= f.DepartureTo))
                 && (f.PaymentStatus == null || PaymentBucketOf(x.Dto.AmountPaid, x.Dto.TotalRevenue) == f.PaymentStatus)
@@ -217,6 +245,7 @@ public sealed class BookingService(
         decimal revenue = 0m, paid = 0m, outstanding = 0m;
         int draft = 0, confirmed = 0, cancelled = 0;
         int unpaid = 0, deposit = 0, fullyPaid = 0;
+        int opUpcoming = 0, opRunning = 0, opDone = 0, opCancelled = 0;
         foreach (var o in orders)
         {
             var p = paidByOrder.GetValueOrDefault(o.Id);
@@ -238,10 +267,23 @@ public sealed class BookingService(
                 case 2: fullyPaid++; break;
                 default: break;
             }
+
+            // Thẻ vận hành: đang chạy · sắp chạy · hoàn thành (Xong/Đã QT) · huỷ (Hủy/Hủy không đi).
+            switch (o.OperationalStatus)
+            {
+                case OrderOperationalStatus.Upcoming: opUpcoming++; break;
+                case OrderOperationalStatus.Running: opRunning++; break;
+                case OrderOperationalStatus.Settled:
+                case OrderOperationalStatus.Done: opDone++; break;
+                case OrderOperationalStatus.Cancelled:
+                case OrderOperationalStatus.CancelledNoShow: opCancelled++; break;
+                default: break;
+            }
         }
 
         return new OrderStatsDto(
-            orders.Count, revenue, paid, outstanding, draft, confirmed, cancelled, unpaid, deposit, fullyPaid);
+            orders.Count, revenue, paid, outstanding, draft, confirmed, cancelled, unpaid, deposit, fullyPaid,
+            opUpcoming, opRunning, opDone, opCancelled);
     }
 
     public async Task<OrderFilterOptionsDto> GetOrderFilterOptionsAsync()
@@ -265,7 +307,13 @@ public sealed class BookingService(
             .OrderBy(p => p.Name, StringComparer.CurrentCulture)
             .ToList();
 
-        return new OrderFilterOptionsDto(tourTypes, providers);
+        // CTV = khách hàng loại CTV (CustomerType == 3) — dùng cho filter CTV.
+        var collaborators = (await customerRepo.ListAsync(c => c.CustomerType == 3))
+            .Select(c => new OrderFilterProviderDto(c.Id, c.FullName))
+            .OrderBy(c => c.Name, StringComparer.CurrentCulture)
+            .ToList();
+
+        return new OrderFilterOptionsDto(tourTypes, providers, collaborators);
     }
 
     /// <summary>Tập id thị trường gồm chính nó + toàn bộ con cháu (thị trường phân cấp cha-con qua ParentId).</summary>

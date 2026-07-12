@@ -21,7 +21,8 @@ public sealed class BookingServiceTests
         FakeRepository<OrderCost>? orderCostRepo = null,
         FakeRepository<Provider>? providerRepo = null,
         FakeRepository<PaymentVoucher>? paymentRepo = null,
-        FakeRepository<MarketType>? marketRepo = null)
+        FakeRepository<MarketType>? marketRepo = null,
+        FakeRepository<Invoice>? invoiceRepo = null)
         => new(
             departureRepo ?? new FakeRepository<TourDeparture>(),
             seatRepo ?? new FakeRepository<TourCustomer>(),
@@ -36,7 +37,8 @@ public sealed class BookingServiceTests
             orderCostRepo ?? new FakeRepository<OrderCost>(),
             providerRepo ?? new FakeRepository<Provider>(),
             paymentRepo ?? new FakeRepository<PaymentVoucher>(),
-            marketRepo ?? new FakeRepository<MarketType>());
+            marketRepo ?? new FakeRepository<MarketType>(),
+            invoiceRepo ?? new FakeRepository<Invoice>());
 
     private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
     {
@@ -248,6 +250,27 @@ public sealed class BookingServiceTests
         var page = await service.ListOrdersAsync(1, 20, new OrderListFilter(Status: (int)OrderStatus.Confirmed));
 
         Assert.Equal("C1", Assert.Single(page.Items).Code);
+    }
+
+    [Fact]
+    public async Task ListOrdersAsync_filters_by_operationalStatus_collaborator_invoiceStatus()
+    {
+        var ctv = Guid.NewGuid();
+        var orderRepo = new FakeRepository<Order>();
+        var oRun = new Order { Code = "O-RUN", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid(), OperationalStatus = OrderOperationalStatus.Running, CollaboratorId = ctv };
+        var oUp = new Order { Code = "O-UP", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid(), OperationalStatus = OrderOperationalStatus.Upcoming };
+        await orderRepo.AddAsync(oRun);
+        await orderRepo.AddAsync(oUp);
+        await orderRepo.SaveChangesAsync();
+        var invoiceRepo = new FakeRepository<Invoice>();
+        await invoiceRepo.AddAsync(new Invoice { OrderId = oRun.Id, Series = "S", Number = "1", BuyerName = "A", Status = 1 }); // đã phát hành
+        await invoiceRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo, invoiceRepo: invoiceRepo);
+
+        Assert.Equal("O-RUN", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(OperationalStatus: (int)OrderOperationalStatus.Running))).Items).Code);
+        Assert.Equal("O-RUN", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(CollaboratorId: ctv))).Items).Code);
+        Assert.Equal("O-RUN", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(InvoiceStatus: 2))).Items).Code); // đã duyệt
+        Assert.Equal("O-UP", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(InvoiceStatus: 0))).Items).Code); // chưa xuất
     }
 
     [Fact]

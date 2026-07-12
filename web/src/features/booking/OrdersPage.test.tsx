@@ -11,12 +11,13 @@ vi.mock('../../shared/api/httpClient', () => ({ httpClient: { get: vi.fn() } }))
 const stats = {
   total: 3, totalRevenue: 13000000, totalPaid: 5000000, totalOutstanding: 8000000,
   draft: 1, confirmed: 1, cancelled: 1, unpaid: 1, deposit: 1, paid: 1,
+  opUpcoming: 1, opRunning: 1, opDone: 1, opCancelled: 0,
 };
 const list = { items: [], total: 0, page: 1, size: 20 };
 
 function mockGet(url: string) {
   if (url.includes('/orders/stats')) return Promise.resolve({ data: stats });
-  if (url.includes('/orders/filter-options')) return Promise.resolve({ data: { tourTypes: [], providers: [] } });
+  if (url.includes('/orders/filter-options')) return Promise.resolve({ data: { tourTypes: [], providers: [], collaborators: [] } });
   if (url.includes('/market-types')) return Promise.resolve({ data: [] });
   if (url.includes('/tour-groups')) return Promise.resolve({ data: [] });
   if (url.includes('/branches')) return Promise.resolve({ data: [] });

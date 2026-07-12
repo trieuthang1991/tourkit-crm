@@ -26,19 +26,25 @@ public sealed record OrderListFilter(
     DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null,
     Guid? SalesUserId = null, Guid? BranchId = null, Guid? CreatedByUserId = null, Guid? DepartmentId = null,
     string? TourType = null, Guid? ProviderId = null,
-    Guid? MarketTypeId = null, Guid? TourGroupId = null, int? BookingType = null, bool? CommissionSettled = null);
+    Guid? MarketTypeId = null, Guid? TourGroupId = null, int? BookingType = null, bool? CommissionSettled = null,
+    int? OperationalStatus = null, Guid? CollaboratorId = null, int? InvoiceStatus = null);
 
 /// <summary>NCC xuất hiện trong đơn (dùng cho Select lọc theo nhà cung cấp).</summary>
 public sealed record OrderFilterProviderDto(Guid Id, string Name);
 
-/// <summary>Tuỳ chọn lọc động cho màn Đơn hàng (lấy từ dữ liệu thật, không hardcode).</summary>
-public sealed record OrderFilterOptionsDto(IReadOnlyList<string> TourTypes, IReadOnlyList<OrderFilterProviderDto> Providers);
+/// <summary>Tuỳ chọn lọc động cho màn Đơn hàng (lấy từ dữ liệu thật, không hardcode). Collaborators = CTV (Customer type 3).</summary>
+public sealed record OrderFilterOptionsDto(
+    IReadOnlyList<string> TourTypes,
+    IReadOnlyList<OrderFilterProviderDto> Providers,
+    IReadOnlyList<OrderFilterProviderDto> Collaborators);
 
 /// <summary>Thẻ thống kê đầu màn Đơn hàng: tổng đơn + tiền + đếm theo trạng thái + trạng thái thanh toán.</summary>
 public sealed record OrderStatsDto(
     int Total, decimal TotalRevenue, decimal TotalPaid, decimal TotalOutstanding,
     int Draft, int Confirmed, int Cancelled,
-    int Unpaid, int Deposit, int Paid);
+    int Unpaid, int Deposit, int Paid,
+    // Thẻ thống kê vận hành (bám staging): sắp chạy · đang chạy · hoàn thành · huỷ.
+    int OpUpcoming, int OpRunning, int OpDone, int OpCancelled);
 
 public sealed record BookingLineDto(
     Guid Id, int Quantity, int AmountChildren, int AmountChildrenSmall, int QuantityBaby,

@@ -26,6 +26,10 @@ const statsSchema = z.object({
   unpaid: z.number(),
   deposit: z.number(),
   paid: z.number(),
+  opUpcoming: z.number(),
+  opRunning: z.number(),
+  opDone: z.number(),
+  opCancelled: z.number(),
 });
 
 const branchSchema = z.object({ id: z.string().uuid(), name: z.string() });
@@ -48,7 +52,26 @@ type OrderAdv = {
   tourGroupId?: string;
   bookingType?: number;
   commissionSettled?: boolean;
+  operationalStatus?: number;
+  collaboratorId?: string;
+  invoiceStatus?: number;
 };
+
+// Tình trạng vận hành (legacy StatusTour).
+const OPERATIONAL_STATUS_OPTIONS = [
+  { value: 1, label: 'Sắp chạy' },
+  { value: 2, label: 'Đang chạy' },
+  { value: 3, label: 'Chưa quyết toán' },
+  { value: 4, label: 'Đã quyết toán' },
+  { value: 5, label: 'Xong' },
+  { value: 6, label: 'Hủy' },
+  { value: 7, label: 'Hủy không đi' },
+];
+const INVOICE_STATUS_OPTIONS = [
+  { value: 0, label: 'Chưa xuất hóa đơn' },
+  { value: 1, label: 'Đã xuất hóa đơn' },
+  { value: 2, label: 'Đã duyệt hóa đơn' },
+];
 
 // Loại tour (legacy BookingType): FIT/GIT/LandTour/Booking/Dịch vụ/Visa/Xe.
 const BOOKING_TYPE_OPTIONS = [
@@ -136,6 +159,7 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
         .object({
           tourTypes: z.array(z.string()),
           providers: z.array(z.object({ id: z.string().uuid(), name: z.string() })),
+          collaborators: z.array(z.object({ id: z.string().uuid(), name: z.string() })),
         })
         .parse(data);
     },
@@ -159,6 +183,7 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
   const deptOpts = (departments.data ?? []).map((d) => ({ label: d.name, value: d.id }));
   const tourTypeOpts = (filterOptions.data?.tourTypes ?? []).map((t) => ({ label: t, value: t }));
   const providerOpts = (filterOptions.data?.providers ?? []).map((p) => ({ label: p.name, value: p.id }));
+  const collaboratorOpts = (filterOptions.data?.collaborators ?? []).map((c) => ({ label: c.name, value: c.id }));
   // Thị trường phân cấp: cây cho TreeSelect + chỉ cấp cha (parentId=null) cho chip lọc nhanh.
   const marketList = marketTypes.data ?? [];
   const marketTree = marketList
@@ -341,15 +366,24 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
               value={draft.commissionSettled === undefined ? undefined : String(draft.commissionSettled)}
               onChange={(v) => setD({ commissionSettled: v === undefined ? undefined : v === 'true' })} />
           </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select allowClear style={{ width: '100%' }} placeholder="Tình trạng" options={OPERATIONAL_STATUS_OPTIONS}
+              value={draft.operationalStatus} onChange={(v) => setD({ operationalStatus: v ?? undefined })} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="CTV"
+              options={collaboratorOpts} value={draft.collaboratorId} onChange={(v) => setD({ collaboratorId: v ?? undefined })} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select allowClear style={{ width: '100%' }} placeholder="TT hóa đơn" options={INVOICE_STATUS_OPTIONS}
+              value={draft.invoiceStatus} onChange={(v) => setD({ invoiceStatus: v ?? undefined })} />
+          </Col>
           <Col span={24}>
             <Space>
               <Button type="primary" onClick={applyFilters}>
                 Tìm kiếm
               </Button>
               <Button onClick={resetFilters}>Đặt lại</Button>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                (CTV / TT hóa đơn / Tình trạng vận hành: đang bổ sung ở phase sau)
-              </Typography.Text>
             </Space>
           </Col>
         </Row>
@@ -428,6 +462,23 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
           );
         }}
       />
+
+      {/* Thẻ thống kê vận hành (bám staging: Tổng tour · Đang chạy · Sắp chạy · Hoàn thành · Hủy) */}
+      <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
+        {[
+          { title: 'Tổng số tour', value: s?.total ?? 0, color: undefined },
+          { title: 'Đang chạy', value: s?.opRunning ?? 0, color: '#1677ff' },
+          { title: 'Sắp chạy', value: s?.opUpcoming ?? 0, color: '#faad14' },
+          { title: 'Hoàn thành', value: s?.opDone ?? 0, color: '#3f8600' },
+          { title: 'Hủy', value: s?.opCancelled ?? 0, color: '#cf1322' },
+        ].map((c) => (
+          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
+            <Card styles={{ body: { padding: 16 } }}>
+              <Statistic title={c.title} value={c.value} valueStyle={c.color ? { color: c.color } : undefined} loading={stats.isLoading} />
+            </Card>
+          </Col>
+        ))}
+      </Row>
     </>
   );
 }

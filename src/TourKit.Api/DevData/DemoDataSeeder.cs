@@ -231,6 +231,40 @@ public static class DemoDataSeeder
             }
         }
 
+        // 7g) Tình trạng vận hành + CTV lên đơn demo — idempotent (mặc định tất cả Upcoming).
+        var opsOrders = await db.Set<Order>().Where(o => o.Code.StartsWith("OD_")).OrderBy(o => o.Code).ToListAsync();
+        // (int)0 = giá trị mặc định DB cho cột mới trên row cũ; <=1 nghĩa là chưa gán tình trạng thật.
+        if (opsOrders.Count > 0 && opsOrders.All(o => (int)o.OperationalStatus <= 1))
+        {
+            var vals = new[]
+            {
+                OrderOperationalStatus.Running, OrderOperationalStatus.Upcoming, OrderOperationalStatus.PendingSettlement,
+                OrderOperationalStatus.Done, OrderOperationalStatus.Cancelled,
+            };
+            for (var i = 0; i < opsOrders.Count; i++)
+            {
+                opsOrders[i].OperationalStatus = vals[i % vals.Length];
+                opsOrders[i].CollaboratorId = i % 2 == 0 ? c4.Id : null; // c4 = KH loại CTV (CustomerType 3)
+                db.Update(opsOrders[i]);
+            }
+            await db.SaveChangesAsync();
+        }
+
+        // 7h) 1 hóa đơn đã phát hành cho đơn đầu (để filter TT hóa đơn có dữ liệu) — idempotent.
+        if (!await db.Set<Invoice>().AnyAsync())
+        {
+            var firstOrder = opsOrders.FirstOrDefault();
+            if (firstOrder is not null)
+            {
+                db.Add(new Invoice
+                {
+                    OrderId = firstOrder.Id, Series = "1C26TK", Number = "0000001", InvoiceDate = now,
+                    BuyerName = "Nguyễn Văn An", Subtotal = 6_363_636m, VatAmount = 636_364m, TotalAmount = 7_000_000m, Status = 1,
+                });
+                await db.SaveChangesAsync();
+            }
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {
