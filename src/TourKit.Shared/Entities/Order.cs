@@ -18,7 +18,10 @@ public sealed class Order : BaseEntity, ITenantEntity
     public Guid? SalesUserId { get; set; }
     public Guid? CreatedByUserId { get; set; } // Người tạo đơn (legacy id_sales_root_create)
     public Guid? BranchId { get; set; }        // Chi nhánh (legacy ChiNhanh) — lọc/báo cáo theo chi nhánh
-    public int BookingType { get; set; }
+    public Guid? MarketTypeId { get; set; }    // Thị trường (legacy MarketType) — lọc nhanh theo thị trường
+    public Guid? TourGroupId { get; set; }     // Nhóm tour (legacy Nhóm) — gom tour theo nhóm
+    public int BookingType { get; set; }       // Loại tour: 0 FIT,1 GIT,2 LandTour/Combo,3 Booking phòng,4 Dịch vụ lẻ,5 Visa,6 Xe
+    public bool IsCommissionSettled { get; set; } // TT hoa hồng: đã chốt hoa hồng chưa (legacy)
     public OrderStatus Status { get; set; } = OrderStatus.Draft;
 
     // Tổng tiền denormalized (legacy Total_Thu_Money / Total_Chi_Money / TotalRefund / ApprovedRevenue).

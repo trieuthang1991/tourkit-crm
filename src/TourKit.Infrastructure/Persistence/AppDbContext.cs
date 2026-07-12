@@ -62,6 +62,7 @@ public class AppDbContext : DbContext
     public DbSet<LanguageType> LanguageTypes => Set<LanguageType>();
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<Branch> Branches => Set<Branch>();
+    public DbSet<TourGroup> TourGroups => Set<TourGroup>();
     public DbSet<Position> Positions => Set<Position>();
     public DbSet<Surcharge> Surcharges => Set<Surcharge>();
     public DbSet<OrderSurcharge> OrderSurcharges => Set<OrderSurcharge>();
