@@ -20,7 +20,8 @@ public sealed class BookingService(
     IRepository<CancelSeat> cancelSeatRepo,
     IRepository<ReceiptVoucher> receiptRepo,
     IValidator<DepositDto> depositValidator,
-    TourKit.Shared.Security.ICurrentUserContext currentUser) : IBookingService
+    TourKit.Shared.Security.ICurrentUserContext currentUser,
+    IRepository<User> userRepo) : IBookingService
 {
     public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null)
     {
@@ -158,11 +159,18 @@ public sealed class BookingService(
             (d.CustomerName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
             (d.TourTitle?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
 
+        // Phòng ban = phòng ban của NV sales phụ trách đơn (Order → User.DepartmentId).
+        var userDept = f.DepartmentId == null
+            ? new Dictionary<Guid, Guid?>()
+            : (await userRepo.ListAsync()).ToDictionary(u => u.Id, u => u.DepartmentId);
+
         var filtered = enriched
             .Where(x => MatchQ(x.Dto)
                 && (f.DepartureFrom == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate >= f.DepartureFrom))
                 && (f.DepartureTo == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate <= f.DepartureTo))
-                && (f.PaymentStatus == null || PaymentBucketOf(x.Dto.AmountPaid, x.Dto.TotalRevenue) == f.PaymentStatus))
+                && (f.PaymentStatus == null || PaymentBucketOf(x.Dto.AmountPaid, x.Dto.TotalRevenue) == f.PaymentStatus)
+                && (f.DepartmentId == null
+                    || (x.Dto.SalesUserId != null && userDept.GetValueOrDefault(x.Dto.SalesUserId.Value) == f.DepartmentId)))
             .OrderByDescending(x => x.CreatedAt)
             .ToList();
 

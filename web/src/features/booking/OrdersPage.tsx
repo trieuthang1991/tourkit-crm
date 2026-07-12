@@ -37,6 +37,7 @@ type OrderAdv = {
   salesUserId?: string;
   createdByUserId?: string;
   branchId?: string;
+  departmentId?: string;
   createdFrom?: string;
   createdTo?: string;
   departureFrom?: string;
@@ -93,8 +94,16 @@ export function OrdersPage() {
       return z.array(userRowSchema).parse(data);
     },
   });
+  const departments = useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/departments');
+      return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
+    },
+  });
   const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
   const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
+  const deptOpts = (departments.data ?? []).map((d) => ({ label: d.name, value: d.id }));
 
   const list = useQuery({
     queryKey: ['orders', 'list', page.page, page.size, q, payStatus, adv],
@@ -213,7 +222,8 @@ export function OrdersPage() {
               options={userOpts} value={draft.createdByUserId} onChange={(v) => setD({ createdByUserId: v ?? undefined })} />
           </Col>
           <Col xs={12} sm={8} lg={4}>
-            <Select allowClear style={{ width: '100%' }} placeholder="Phòng ban" options={[]} disabled />
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Phòng ban"
+              options={deptOpts} value={draft.departmentId} onChange={(v) => setD({ departmentId: v ?? undefined })} />
           </Col>
           <Col xs={12} sm={8} lg={4}>
             <Select allowClear style={{ width: '100%' }} placeholder="Loại tour / Thị trường" options={[]} disabled />
@@ -225,7 +235,7 @@ export function OrdersPage() {
               </Button>
               <Button onClick={resetFilters}>Đặt lại</Button>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                (Phòng ban / Loại tour / Thị trường / NCC / CTV: đang bổ sung quan hệ model)
+                (Loại tour / Thị trường / NCC / CTV: đang bổ sung quan hệ model)
               </Typography.Text>
             </Space>
           </Col>

@@ -16,7 +16,8 @@ public sealed class BookingServiceTests
         FakeRepository<Customer>? customerRepo = null,
         FakeRepository<TourTemplate>? templateRepo = null,
         FakeRepository<CancelSeat>? cancelSeatRepo = null,
-        FakeRepository<ReceiptVoucher>? receiptRepo = null)
+        FakeRepository<ReceiptVoucher>? receiptRepo = null,
+        FakeRepository<User>? userRepo = null)
         => new(
             departureRepo ?? new FakeRepository<TourDeparture>(),
             seatRepo ?? new FakeRepository<TourCustomer>(),
@@ -26,7 +27,8 @@ public sealed class BookingServiceTests
             cancelSeatRepo ?? new FakeRepository<CancelSeat>(),
             receiptRepo ?? new FakeRepository<ReceiptVoucher>(),
             new DepositValidator(),
-            new FakeCurrentUser());
+            new FakeCurrentUser(),
+            userRepo ?? new FakeRepository<User>());
 
     private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
     {
@@ -327,5 +329,22 @@ public sealed class BookingServiceTests
         Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(SalesUserId: sales))).Items).Code);
         Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(CreatedByUserId: creator))).Items).Code);
         Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(CreatedFrom: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero)))).Items).Code);
+    }
+
+    [Fact]
+    public async Task ListOrdersAsync_filters_by_department_via_sales_user()
+    {
+        var orderRepo = new FakeRepository<Order>();
+        var userRepo = new FakeRepository<User>();
+        var deptA = Guid.NewGuid();
+        var salesUser = new User { FullName = "Sales A", DepartmentId = deptA };
+        await userRepo.AddAsync(salesUser);
+        await userRepo.SaveChangesAsync();
+        await orderRepo.AddAsync(new Order { Code = "M", SalesUserId = salesUser.Id, CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() });
+        await orderRepo.AddAsync(new Order { Code = "O", SalesUserId = Guid.NewGuid(), CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() });
+        await orderRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo, userRepo: userRepo);
+
+        Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(DepartmentId: deptA))).Items).Code);
     }
 }
