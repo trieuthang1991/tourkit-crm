@@ -82,4 +82,29 @@ public class ProviderEndpointTests : IClassFixture<AuthTestFactory>
         var listB = await clientB.GetFromJsonAsync<PagedResult<ProviderDto>>("/api/v1/providers");
         Assert.Empty(listB!.Items);
     }
+
+    private sealed record ProviderStats(int Total, int Active, int Inactive);
+
+    [Fact]
+    public async Task Providers_filter_by_type_and_stats()
+    {
+        var client = await LoggedInClientAsync("prov-filter");
+        await client.PostAsJsonAsync("/api/v1/providers", new CreateProviderDto(
+            "H1", "Khách sạn ABC", ProviderType.Hotel, null, null, null, null, null, null, null, null, 0, 1));
+        await client.PostAsJsonAsync("/api/v1/providers", new CreateProviderDto(
+            "V1", "Vận tải XYZ", ProviderType.Vehicle, null, null, null, null, null, null, null, null, 0, 0));
+
+        var hotels = await client.GetFromJsonAsync<PagedResult<ProviderDto>>(
+            $"/api/v1/providers?type={(int)ProviderType.Hotel}");
+        Assert.Equal("H1", Assert.Single(hotels!.Items).Code);
+
+        var byName = await client.GetFromJsonAsync<PagedResult<ProviderDto>>(
+            "/api/v1/providers?q=" + Uri.EscapeDataString("XYZ"));
+        Assert.Equal("V1", Assert.Single(byName!.Items).Code);
+
+        var stats = await client.GetFromJsonAsync<ProviderStats>("/api/v1/providers/stats");
+        Assert.Equal(2, stats!.Total);
+        Assert.Equal(1, stats.Active);
+        Assert.Equal(1, stats.Inactive);
+    }
 }

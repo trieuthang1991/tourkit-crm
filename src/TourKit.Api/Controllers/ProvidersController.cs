@@ -12,11 +12,17 @@ public sealed class ProvidersController(IProviderService service) : ControllerBa
 {
     [HttpGet]
     [Authorize(Permissions.ProviderView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] ProviderListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    // Thẻ thống kê đầu màn NCC: tổng + đang hoạt động + ngừng.
+    [HttpGet("stats")]
+    [Authorize(Permissions.ProviderView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.ProviderView)]

@@ -10,11 +10,27 @@ public sealed class ProviderService(
     IValidator<CreateProviderDto> createValidator,
     IValidator<UpdateProviderDto> updateValidator) : IProviderService
 {
-    public async Task<PagedResult<ProviderDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<ProviderDto>> ListAsync(int page, int size, ProviderListFilter? filter = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
+        var f = filter ?? new ProviderListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+        var (items, total) = await repo.PageAsync(page, size, p =>
+            (f.Type == null || (int)p.Type == f.Type) &&
+            (f.Status == null || p.Status == f.Status) &&
+            (kw == null ||
+                p.Code.Contains(kw) ||
+                p.Name.Contains(kw) ||
+                (p.Phone != null && p.Phone.Contains(kw)) ||
+                (p.Email != null && p.Email.Contains(kw)) ||
+                (p.ContactPerson != null && p.ContactPerson.Contains(kw))));
         var dtos = items.Select(Map).ToList();
         return new PagedResult<ProviderDto>(dtos, total, page, size);
+    }
+
+    public async Task<ProviderStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new ProviderStatsDto(all.Count, all.Count(p => p.Status == 1), all.Count(p => p.Status != 1));
     }
 
     public async Task<ProviderDto> GetAsync(Guid id)
