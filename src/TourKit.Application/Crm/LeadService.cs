@@ -20,8 +20,13 @@ public sealed class LeadService(
     {
         var f = filter ?? new LeadListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+        var src = string.IsNullOrWhiteSpace(f.Source) ? null : f.Source.Trim();
         var (items, total) = await repo.PageAsync(page, size, l =>
             (f.Status == null || (int)l.Status == f.Status) &&
+            (f.AssignedToUserId == null || l.AssignedToUserId == f.AssignedToUserId) &&
+            (src == null || (l.Source != null && l.Source.Contains(src))) &&
+            (f.CreatedFrom == null || l.CreatedAt >= f.CreatedFrom) &&
+            (f.CreatedTo == null || l.CreatedAt <= f.CreatedTo) &&
             (kw == null ||
                 l.FullName.Contains(kw) ||
                 (l.Phone != null && l.Phone.Contains(kw)) ||
@@ -29,6 +34,18 @@ public sealed class LeadService(
                 (l.Source != null && l.Source.Contains(kw))));
         var dtos = items.Select(Map).ToList();
         return new PagedResult<LeadDto>(dtos, total, page, size);
+    }
+
+    public async Task<LeadFilterOptionsDto> GetFilterOptionsAsync()
+    {
+        var all = await repo.ListAsync();
+        var sources = all
+            .Where(l => !string.IsNullOrWhiteSpace(l.Source))
+            .Select(l => l.Source!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s, StringComparer.CurrentCulture)
+            .ToList();
+        return new LeadFilterOptionsDto(sources);
     }
 
     public async Task<LeadStatsDto> GetStatsAsync()

@@ -5,7 +5,7 @@ import { App } from 'antd';
 import { LeadsPage } from './LeadsPage';
 import { httpClient } from '../../shared/api/httpClient';
 
-vi.mock('../../shared/api/httpClient', () => ({ httpClient: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('../../shared/api/httpClient', () => ({ httpClient: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
 vi.mock('../auth/AuthContext', () => ({ useAuth: () => ({ has: () => true }) }));
 vi.mock('./leadsCrud', () => ({
   leadsCrud: {
@@ -20,6 +20,8 @@ const list = { items: [], total: 0, page: 1, size: 20 };
 
 function mockGet(url: string) {
   if (url.includes('/leads/stats')) return Promise.resolve({ data: stats });
+  if (url.includes('/leads/filter-options')) return Promise.resolve({ data: { sources: [] } });
+  if (url.includes('/users')) return Promise.resolve({ data: [] });
   return Promise.resolve({ data: list });
 }
 
@@ -40,21 +42,24 @@ describe('LeadsPage', () => {
     (httpClient.get as ReturnType<typeof vi.fn>).mockImplementation(mockGet);
   });
 
-  it('gọi stats + list', async () => {
+  it('gọi stats + facets + users + board khi mount', async () => {
     renderPage();
     await waitFor(() => {
       const urls = (httpClient.get as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0] as string);
       expect(urls).toContain('/api/v1/leads/stats');
+      expect(urls).toContain('/api/v1/leads/filter-options');
+      expect(urls).toContain('/api/v1/users');
       expect(urls).toContain('/api/v1/leads');
     });
   });
 
-  it('hiện thẻ thống kê + tabs trạng thái', async () => {
+  it('hiện thẻ pipeline + toggle Kanban/List', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('Tổng số lead')).toBeInTheDocument();
+      expect(screen.getByText('Tổng cơ hội')).toBeInTheDocument();
       expect(screen.getByText('Đã chuyển KH')).toBeInTheDocument();
-      expect(screen.getByText('Đã liên hệ')).toBeInTheDocument(); // tab trạng thái
+      expect(screen.getByText('Kanban')).toBeInTheDocument(); // view toggle
+      expect(screen.getByText('List')).toBeInTheDocument();
     });
   });
 });

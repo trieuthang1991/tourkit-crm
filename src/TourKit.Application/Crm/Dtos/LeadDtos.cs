@@ -14,9 +14,14 @@ public sealed record UpdateLeadDto(
 
 public sealed record ConvertLeadResultDto(Guid CustomerId);
 
-/// <summary>Bộ lọc danh sách Lead (bám hệ cũ). Tất cả optional.</summary>
-public sealed record LeadListFilter(string? Q = null, int? Status = null);
+/// <summary>Bộ lọc danh sách Lead (bám thanh lọc hệ cũ). Tất cả optional.</summary>
+public sealed record LeadListFilter(
+    string? Q = null, int? Status = null, string? Source = null, Guid? AssignedToUserId = null,
+    DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null);
 
 /// <summary>Thẻ thống kê đầu màn Lead: tổng + đếm theo trạng thái + đã chuyển KH.</summary>
 public sealed record LeadStatsDto(
     int Total, int New, int Contacted, int Qualified, int Won, int Lost, int Converted);
+
+/// <summary>Giá trị có sẵn cho dropdown lọc Lead (nguồn khách).</summary>
+public sealed record LeadFilterOptionsDto(IReadOnlyList<string> Sources);

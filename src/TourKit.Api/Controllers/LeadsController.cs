@@ -24,6 +24,11 @@ public sealed class LeadsController(ILeadService service) : ControllerBase
     [Authorize(Permissions.LeadView)]
     public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
+    // Giá trị dropdown lọc (nguồn khách).
+    [HttpGet("filter-options")]
+    [Authorize(Permissions.LeadView)]
+    public async Task<IActionResult> FilterOptions() => Ok(await service.GetFilterOptionsAsync());
+
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.LeadView)]
     public async Task<IActionResult> Get(Guid id)
