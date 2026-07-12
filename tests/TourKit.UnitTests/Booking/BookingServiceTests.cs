@@ -275,4 +275,31 @@ public sealed class BookingServiceTests
         Assert.Equal(1, stats.Cancelled);
         Assert.Equal(0, stats.Draft);
     }
+
+    [Fact]
+    public async Task ListOrdersAsync_filters_by_paymentStatus_and_stats_buckets()
+    {
+        var orderRepo = new FakeRepository<Order>();
+        var receiptRepo = new FakeRepository<ReceiptVoucher>();
+        var unpaid = new Order { Code = "U", TotalRevenue = 10_000_000m, CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        var deposit = new Order { Code = "D", TotalRevenue = 10_000_000m, CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        var paid = new Order { Code = "P", TotalRevenue = 10_000_000m, CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        await orderRepo.AddAsync(unpaid);
+        await orderRepo.AddAsync(deposit);
+        await orderRepo.AddAsync(paid);
+        await orderRepo.SaveChangesAsync();
+        await receiptRepo.AddAsync(new ReceiptVoucher { OrderId = deposit.Id, Amount = 3_000_000m, IsRecognized = true });
+        await receiptRepo.AddAsync(new ReceiptVoucher { OrderId = paid.Id, Amount = 10_000_000m, IsRecognized = true });
+        await receiptRepo.SaveChangesAsync();
+        var service = NewService(orderRepo: orderRepo, receiptRepo: receiptRepo);
+
+        Assert.Equal("U", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(PaymentStatus: 0))).Items).Code);
+        Assert.Equal("D", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(PaymentStatus: 1))).Items).Code);
+        Assert.Equal("P", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(PaymentStatus: 2))).Items).Code);
+
+        var stats = await service.GetOrderStatsAsync();
+        Assert.Equal(1, stats.Unpaid);
+        Assert.Equal(1, stats.Deposit);
+        Assert.Equal(1, stats.Paid);
+    }
 }

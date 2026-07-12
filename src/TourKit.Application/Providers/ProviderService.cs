@@ -1,12 +1,15 @@
 using FluentValidation;
 using TourKit.Application.Common;
 using TourKit.Application.Providers.Dtos;
+using TourKit.Shared.Domain;
 using TourKit.Shared.Entities;
 
 namespace TourKit.Application.Providers;
 
 public sealed class ProviderService(
     IRepository<Provider> repo,
+    IRepository<OrderCost> orderCostRepo,
+    IRepository<PaymentVoucher> paymentRepo,
     IValidator<CreateProviderDto> createValidator,
     IValidator<UpdateProviderDto> updateValidator) : IProviderService
 {
@@ -23,7 +26,19 @@ public sealed class ProviderService(
                 (p.Phone != null && p.Phone.Contains(kw)) ||
                 (p.Email != null && p.Email.Contains(kw)) ||
                 (p.ContactPerson != null && p.ContactPerson.Contains(kw))));
-        var dtos = items.Select(Map).ToList();
+
+        // Làm giàu công nợ NCC cho các dòng trong trang: tổng mua (OrderCost) + đã trả (phiếu chi đã duyệt).
+        var ids = items.Select(p => p.Id).ToHashSet();
+        var costByProvider = (await orderCostRepo.ListAsync(c => ids.Contains(c.ProviderId)))
+            .GroupBy(c => c.ProviderId)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.ActualAmount));
+        var paidByProvider = (await paymentRepo.ListAsync(p => p.IsRecognized && p.ProviderId != null && ids.Contains(p.ProviderId.Value)))
+            .GroupBy(p => p.ProviderId!.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Amount));
+
+        var dtos = items
+            .Select(p => Map(p, costByProvider.GetValueOrDefault(p.Id), paidByProvider.GetValueOrDefault(p.Id)))
+            .ToList();
         return new PagedResult<ProviderDto>(dtos, total, page, size);
     }
 
@@ -123,7 +138,8 @@ public sealed class ProviderService(
         }
     }
 
-    private static ProviderDto Map(Provider p) => new(
+    private static ProviderDto Map(Provider p, decimal totalCost = 0m, decimal paid = 0m) => new(
         p.Id, p.Code, p.Name, p.Type, p.Phone, p.Email, p.Address,
-        p.TaxCode, p.ContactPerson, p.BankAccount, p.BankName, p.PaymentTermId, p.Rate, p.Status);
+        p.TaxCode, p.ContactPerson, p.BankAccount, p.BankName, p.PaymentTermId, p.Rate, p.Status,
+        totalCost, paid, OrderMath.Outstanding(totalCost, paid));
 }

@@ -154,7 +154,8 @@ public sealed class BookingService(
         var filtered = enriched
             .Where(x => MatchQ(x.Dto)
                 && (f.DepartureFrom == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate >= f.DepartureFrom))
-                && (f.DepartureTo == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate <= f.DepartureTo)))
+                && (f.DepartureTo == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate <= f.DepartureTo))
+                && (f.PaymentStatus == null || PaymentBucketOf(x.Dto.AmountPaid, x.Dto.TotalRevenue) == f.PaymentStatus))
             .OrderByDescending(x => x.CreatedAt)
             .ToList();
 
@@ -172,6 +173,7 @@ public sealed class BookingService(
 
         decimal revenue = 0m, paid = 0m, outstanding = 0m;
         int draft = 0, confirmed = 0, cancelled = 0;
+        int unpaid = 0, deposit = 0, fullyPaid = 0;
         foreach (var o in orders)
         {
             var p = paidByOrder.GetValueOrDefault(o.Id);
@@ -185,10 +187,23 @@ public sealed class BookingService(
                 case OrderStatus.Cancelled: cancelled++; break;
                 default: break;
             }
+
+            switch (PaymentBucketOf(p, o.TotalRevenue))
+            {
+                case 0: unpaid++; break;
+                case 1: deposit++; break;
+                case 2: fullyPaid++; break;
+                default: break;
+            }
         }
 
-        return new OrderStatsDto(orders.Count, revenue, paid, outstanding, draft, confirmed, cancelled);
+        return new OrderStatsDto(
+            orders.Count, revenue, paid, outstanding, draft, confirmed, cancelled, unpaid, deposit, fullyPaid);
     }
+
+    // Trạng thái thanh toán (bám hệ cũ): 0 chưa TT · 1 đã cọc (trả một phần) · 2 TT hết.
+    private static int PaymentBucketOf(decimal paid, decimal revenue) =>
+        paid <= 0m ? 0 : paid >= revenue ? 2 : 1;
 
     public async Task<IReadOnlyList<BookingLineDto>> ListOrderLinesAsync(Guid orderId)
     {

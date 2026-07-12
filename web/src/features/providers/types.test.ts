@@ -18,6 +18,9 @@ describe('provider schemas', () => {
       paymentTermId: null,
       rate: 0,
       status: 1,
+      totalCost: 0,
+      paid: 0,
+      outstanding: 0,
     });
     expect(p.code).toBe('NCC001');
   });

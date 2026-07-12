@@ -10,7 +10,7 @@ vi.mock('../../shared/api/httpClient', () => ({ httpClient: { get: vi.fn() } }))
 
 const stats = {
   total: 3, totalRevenue: 13000000, totalPaid: 5000000, totalOutstanding: 8000000,
-  draft: 1, confirmed: 1, cancelled: 1,
+  draft: 1, confirmed: 1, cancelled: 1, unpaid: 1, deposit: 1, paid: 1,
 };
 const list = { items: [], total: 0, page: 1, size: 20 };
 
@@ -52,7 +52,7 @@ describe('OrdersPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Tổng số đơn')).toBeInTheDocument();
       expect(screen.getByText('Đã chốt')).toBeInTheDocument();
-      expect(screen.getByText('Nháp')).toBeInTheDocument(); // tab trạng thái
+      expect(screen.getByText('Chưa thanh toán (1)')).toBeInTheDocument(); // tab trạng thái thanh toán
     });
   });
 });

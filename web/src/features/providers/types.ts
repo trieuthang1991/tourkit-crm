@@ -15,6 +15,10 @@ export const providerSchema = z.object({
   paymentTermId: z.string().nullable(),
   rate: z.number(),
   status: z.number(),
+  // Công nợ NCC (danh sách): tổng mua · đã trả · còn nợ
+  totalCost: z.number(),
+  paid: z.number(),
+  outstanding: z.number(),
 });
 export type Provider = z.infer<typeof providerSchema>;
 

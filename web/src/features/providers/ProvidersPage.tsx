@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
-import { statusText } from '../../shared/format';
+import { money, statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, SelectField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
@@ -108,6 +108,16 @@ export function ProvidersPage() {
     { title: 'Email', dataIndex: 'email', key: 'email', width: 170, render: dash },
     { title: 'Địa chỉ', dataIndex: 'address', key: 'address', width: 200, ellipsis: true, render: dash },
     { title: 'MST', dataIndex: 'taxCode', key: 'taxCode', width: 120, render: dash },
+    { title: 'Tổng mua', dataIndex: 'totalCost', key: 'totalCost', width: 130, align: 'right', render: (v: number) => money(v ?? 0) },
+    { title: 'Đã trả', dataIndex: 'paid', key: 'paid', width: 130, align: 'right', render: (v: number) => money(v ?? 0) },
+    {
+      title: 'Còn nợ',
+      dataIndex: 'outstanding',
+      key: 'outstanding',
+      width: 130,
+      align: 'right',
+      render: (v: number) => <span style={{ color: (v ?? 0) > 0 ? '#cf1322' : undefined }}>{money(v ?? 0)}</span>,
+    },
     { title: 'Đánh giá', dataIndex: 'rate', key: 'rate', width: 90, align: 'center' },
     {
       title: 'Trạng thái',

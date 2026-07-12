@@ -19,15 +19,16 @@ public sealed record OrderDto(
     string? CustomerName = null, string? TourTitle = null, DateTimeOffset? DepartureDate = null,
     decimal AmountPaid = 0m, decimal Outstanding = 0m);
 
-/// <summary>Bộ lọc danh sách đơn hàng (bám thanh lọc hệ cũ). Tất cả optional.</summary>
+/// <summary>Bộ lọc danh sách đơn hàng (bám thanh lọc hệ cũ). PaymentStatus: 0 chưa TT · 1 đã cọc · 2 TT hết.</summary>
 public sealed record OrderListFilter(
-    string? Q = null, int? Status = null,
+    string? Q = null, int? Status = null, int? PaymentStatus = null,
     DateTimeOffset? DepartureFrom = null, DateTimeOffset? DepartureTo = null);
 
-/// <summary>Thẻ thống kê đầu màn Đơn hàng: tổng đơn + tiền + đếm theo trạng thái.</summary>
+/// <summary>Thẻ thống kê đầu màn Đơn hàng: tổng đơn + tiền + đếm theo trạng thái + trạng thái thanh toán.</summary>
 public sealed record OrderStatsDto(
     int Total, decimal TotalRevenue, decimal TotalPaid, decimal TotalOutstanding,
-    int Draft, int Confirmed, int Cancelled);
+    int Draft, int Confirmed, int Cancelled,
+    int Unpaid, int Deposit, int Paid);
 
 public sealed record BookingLineDto(
     Guid Id, int Quantity, int AmountChildren, int AmountChildrenSmall, int QuantityBaby,

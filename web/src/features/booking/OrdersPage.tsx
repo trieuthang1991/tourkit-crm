@@ -23,6 +23,9 @@ const statsSchema = z.object({
   draft: z.number(),
   confirmed: z.number(),
   cancelled: z.number(),
+  unpaid: z.number(),
+  deposit: z.number(),
+  paid: z.number(),
 });
 
 // Bỏ field rỗng để không gửi param thừa.
@@ -35,7 +38,7 @@ export function OrdersPage() {
   const [page, setPage] = useState(DEFAULT_PAGE);
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState<number | undefined>();
+  const [payStatus, setPayStatus] = useState<number | undefined>();
   const [depFrom, setDepFrom] = useState<string | undefined>();
   const [depTo, setDepTo] = useState<string | undefined>();
   const [dep, setDep] = useState<string | undefined>();
@@ -49,7 +52,7 @@ export function OrdersPage() {
   const resetFilters = () => {
     setSearch('');
     setQ('');
-    setStatus(undefined);
+    setPayStatus(undefined);
     setDepFrom(undefined);
     setDepTo(undefined);
     setDep(undefined);
@@ -66,14 +69,14 @@ export function OrdersPage() {
   });
 
   const list = useQuery({
-    queryKey: ['orders', 'list', page.page, page.size, q, status, depApplied],
+    queryKey: ['orders', 'list', page.page, page.size, q, payStatus, depApplied],
     queryFn: async () => {
       const { data } = await httpClient.get<unknown>('/api/v1/orders', {
         params: clean({
           page: page.page,
           size: page.size,
           q: q || undefined,
-          status,
+          paymentStatus: payStatus,
           departureFrom: depApplied.from,
           departureTo: depApplied.to,
         }),
@@ -190,17 +193,19 @@ export function OrdersPage() {
         </Row>
       </Card>
 
-      {/* Tabs trạng thái (Tất cả · Nháp · Chốt · Huỷ) */}
+      {/* Tabs trạng thái thanh toán (bám staging: Chưa TT · Đã cọc · TT hết) */}
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
         <Segmented
-          value={status === undefined ? 'all' : String(status)}
+          value={payStatus === undefined ? 'all' : String(payStatus)}
           onChange={(val) => {
-            setStatus(val === 'all' ? undefined : Number(val));
+            setPayStatus(val === 'all' ? undefined : Number(val));
             setPage({ ...page, page: 1 });
           }}
           options={[
-            { label: 'Tất cả', value: 'all' },
-            ...Object.entries(ORDER_STATUS).map(([value, label]) => ({ label, value })),
+            { label: `Tất cả (${s?.total ?? 0})`, value: 'all' },
+            { label: `Chưa thanh toán (${s?.unpaid ?? 0})`, value: '0' },
+            { label: `Đã cọc (${s?.deposit ?? 0})`, value: '1' },
+            { label: `Thanh toán hết (${s?.paid ?? 0})`, value: '2' },
           ]}
         />
       </div>

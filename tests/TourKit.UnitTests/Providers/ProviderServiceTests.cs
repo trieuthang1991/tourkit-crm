@@ -18,7 +18,8 @@ public class ProviderServiceTests
     private static ProviderCrudService NewService(out FakeRepository<Provider> repo)
     {
         repo = new FakeRepository<Provider>();
-        return new ProviderCrudService(repo, new CreateProviderValidator(), new UpdateProviderValidator());
+        return new ProviderCrudService(repo, new FakeRepository<OrderCost>(), new FakeRepository<PaymentVoucher>(),
+            new CreateProviderValidator(), new UpdateProviderValidator());
     }
 
     private static CreateProviderDto NewCreateDto(string code = "NCC-1") => new(

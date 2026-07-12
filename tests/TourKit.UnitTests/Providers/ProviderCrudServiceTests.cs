@@ -12,7 +12,17 @@ public class ProviderCrudServiceTests
     private static ProviderCrudService NewService(out FakeRepository<Provider> repo)
     {
         repo = new FakeRepository<Provider>();
-        return new ProviderCrudService(repo, new CreateProviderValidator(), new UpdateProviderValidator());
+        return new ProviderCrudService(repo, new FakeRepository<OrderCost>(), new FakeRepository<PaymentVoucher>(),
+            new CreateProviderValidator(), new UpdateProviderValidator());
+    }
+
+    private static ProviderCrudService NewServiceFull(
+        out FakeRepository<Provider> repo, out FakeRepository<OrderCost> costRepo, out FakeRepository<PaymentVoucher> payRepo)
+    {
+        repo = new FakeRepository<Provider>();
+        costRepo = new FakeRepository<OrderCost>();
+        payRepo = new FakeRepository<PaymentVoucher>();
+        return new ProviderCrudService(repo, costRepo, payRepo, new CreateProviderValidator(), new UpdateProviderValidator());
     }
 
     private static Provider P(string code, string name, ProviderType type, int status = 1, string? phone = null, string? contact = null)
@@ -46,5 +56,23 @@ public class ProviderCrudServiceTests
         Assert.Equal(3, stats.Total);
         Assert.Equal(2, stats.Active);
         Assert.Equal(1, stats.Inactive);
+    }
+
+    [Fact]
+    public async Task ListAsync_enriches_provider_debt()
+    {
+        var service = NewServiceFull(out var repo, out var costRepo, out var payRepo);
+        var prov = P("H1", "KS ABC", ProviderType.Hotel);
+        await repo.AddAsync(prov);
+        await repo.SaveChangesAsync();
+        await costRepo.AddAsync(new OrderCost { ProviderId = prov.Id, ActualAmount = 5_000_000m, OrderId = Guid.NewGuid() });
+        await costRepo.SaveChangesAsync();
+        await payRepo.AddAsync(new PaymentVoucher { ProviderId = prov.Id, Amount = 2_000_000m, IsRecognized = true, OrderId = Guid.NewGuid() });
+        await payRepo.SaveChangesAsync();
+
+        var row = Assert.Single((await service.ListAsync(1, 20)).Items);
+        Assert.Equal(5_000_000m, row.TotalCost);
+        Assert.Equal(2_000_000m, row.Paid);
+        Assert.Equal(3_000_000m, row.Outstanding);
     }
 }
