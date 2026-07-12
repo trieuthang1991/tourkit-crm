@@ -175,6 +175,35 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7d) Nhóm tour (Nhóm) — idempotent; dùng cho filter lưới vận hành.
+        async Task<TourGroup> GroupOf(string code, string name, int sort)
+        {
+            var e = await db.Set<TourGroup>().FirstOrDefaultAsync(x => x.Code == code);
+            if (e is null) { e = new TourGroup { Code = code, Name = name, SortOrder = sort }; db.Add(e); }
+            return e;
+        }
+        var gInbound = await GroupOf("NHOM-IN", "Nhóm Inbound", 1);
+        var gDomestic = await GroupOf("NHOM-ND", "Nhóm Nội địa", 2);
+        await db.SaveChangesAsync();
+
+        // 7e) Backfill Thị trường/Nhóm/Loại tour lên đơn demo (đơn đã tạo từ trước) nếu chưa có.
+        var demoOrders = await db.Set<Order>().Where(o => o.Code.StartsWith("OD_")).ToListAsync();
+        if (demoOrders.Count > 0 && demoOrders.All(o => o.MarketTypeId == null))
+        {
+            // Gán xen kẽ để mỗi filter có ≥1 kết quả: loại tour FIT/GIT, thị trường inbound/domestic, nhóm tương ứng.
+            for (var i = 0; i < demoOrders.Count; i++)
+            {
+                var o = demoOrders[i];
+                var inbound = i % 2 == 0;
+                o.MarketTypeId = inbound ? mtInbound.Id : mtDomestic.Id;
+                o.TourGroupId = inbound ? gInbound.Id : gDomestic.Id;
+                o.BookingType = i % 3;   // 0 FIT · 1 GIT · 2 LandTour/Combo
+                o.IsCommissionSettled = i % 2 == 1;
+                db.Update(o);
+            }
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {
