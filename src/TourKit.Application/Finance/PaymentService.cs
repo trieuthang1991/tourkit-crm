@@ -118,6 +118,7 @@ public sealed class PaymentService(
         var relatedOrders = await orderRepo.ListAsync(o => orderIds.Contains(o.Id));
         var orderCodes = relatedOrders.ToDictionary(o => o.Id, o => o.Code);
         var orderBranch = relatedOrders.ToDictionary(o => o.Id, o => o.BranchId);
+        var orderSales = relatedOrders.ToDictionary(o => o.Id, o => o.SalesUserId);
         var providerNames = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id)))
             .ToDictionary(p => p.Id, p => p.Name);
 
@@ -140,7 +141,8 @@ public sealed class PaymentService(
 
         var filtered = rows
             .Where(x => MatchQ(x.Dto)
-                && (f.BranchId == null || orderBranch.GetValueOrDefault(x.Dto.OrderId) == f.BranchId))
+                && (f.BranchId == null || orderBranch.GetValueOrDefault(x.Dto.OrderId) == f.BranchId)
+                && (f.SalesUserId == null || orderSales.GetValueOrDefault(x.Dto.OrderId) == f.SalesUserId))
             .OrderByDescending(x => x.CreatedAt)
             .ToList();
         var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(x => x.Dto).ToList();

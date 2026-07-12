@@ -20,7 +20,8 @@ public sealed record PaymentListItemDto(
 /// <summary>Bộ lọc danh sách phiếu chi (bám hệ cũ). Trạng thái: 0 chờ duyệt · 1 duyệt · 2 từ chối.</summary>
 public sealed record PaymentListFilter(
     string? Q = null, int? Status = null, DateTimeOffset? From = null, DateTimeOffset? To = null,
-    string? PaymentMethod = null, decimal? AmountFrom = null, decimal? AmountTo = null, Guid? BranchId = null);
+    string? PaymentMethod = null, decimal? AmountFrom = null, decimal? AmountTo = null, Guid? BranchId = null,
+    Guid? SalesUserId = null);
 
 /// <summary>Thẻ thống kê đầu màn Phiếu chi: tổng phiếu + tổng tiền + đếm theo trạng thái.</summary>
 public sealed record PaymentStatsDto(int Total, decimal TotalAmount, int Pending, int Approved, int Rejected);

@@ -135,7 +135,8 @@ public sealed class ReceiptService(
 
         var filtered = rows
             .Where(x => MatchQ(x.Dto)
-                && (f.BranchId == null || (orders.TryGetValue(x.Dto.OrderId, out var ord) && ord.BranchId == f.BranchId)))
+                && (f.BranchId == null || (orders.TryGetValue(x.Dto.OrderId, out var ord) && ord.BranchId == f.BranchId))
+                && (f.SalesUserId == null || (orders.TryGetValue(x.Dto.OrderId, out var os) && os.SalesUserId == f.SalesUserId)))
             .OrderByDescending(x => x.CreatedAt)
             .ToList();
         var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(x => x.Dto).ToList();

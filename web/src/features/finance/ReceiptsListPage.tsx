@@ -41,12 +41,13 @@ export function ReceiptsListPage() {
   const [amtFrom, setAmtFrom] = useState<number | undefined>();
   const [amtTo, setAmtTo] = useState<number | undefined>();
   const [brId, setBrId] = useState<string | undefined>();
-  const [adv, setAdv] = useState<{ paymentMethod?: string; amountFrom?: number; amountTo?: number; branchId?: string }>({});
+  const [suId, setSuId] = useState<string | undefined>();
+  const [adv, setAdv] = useState<{ paymentMethod?: string; amountFrom?: number; amountTo?: number; branchId?: string; salesUserId?: string }>({});
 
   const applyFilters = () => {
     setQ(search);
     setRangeApplied(range);
-    setAdv({ paymentMethod: pm || undefined, amountFrom: amtFrom, amountTo: amtTo, branchId: brId });
+    setAdv({ paymentMethod: pm || undefined, amountFrom: amtFrom, amountTo: amtTo, branchId: brId, salesUserId: suId });
     setPage({ ...page, page: 1 });
   };
   const resetFilters = () => {
@@ -59,6 +60,7 @@ export function ReceiptsListPage() {
     setAmtFrom(undefined);
     setAmtTo(undefined);
     setBrId(undefined);
+    setSuId(undefined);
     setAdv({});
     setPage({ ...page, page: 1 });
   };
@@ -70,7 +72,15 @@ export function ReceiptsListPage() {
       return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
     },
   });
+  const users = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/users');
+      return z.array(z.object({ id: z.string().uuid(), fullName: z.string() })).parse(data);
+    },
+  });
   const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
+  const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
 
   const stats = useQuery({
     queryKey: ['receipts', 'stats'],
@@ -215,6 +225,10 @@ export function ReceiptsListPage() {
           <Col xs={12} sm={8} lg={4}>
             <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Chi nhánh"
               options={branchOpts} value={brId} onChange={(v) => setBrId(v ?? undefined)} />
+          </Col>
+          <Col xs={12} sm={8} lg={4}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="NV phụ trách"
+              options={userOpts} value={suId} onChange={(v) => setSuId(v ?? undefined)} />
           </Col>
           <Col span={24}>
             <Space>

@@ -174,4 +174,19 @@ public class ReceiptServiceTests
 
         Assert.Equal("PT-B", Assert.Single((await service.ListAllAsync(1, 20, new ReceiptListFilter(BranchId: branchA))).Items).Code);
     }
+
+    [Fact]
+    public async Task ListAllAsync_filters_by_salesUser_via_order()
+    {
+        var service = NewService(out var receiptRepo, out var orderRepo);
+        var salesA = Guid.NewGuid();
+        var order = new Order { Code = "ORD-S", SalesUserId = salesA, CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid() };
+        await orderRepo.AddAsync(order);
+        await orderRepo.SaveChangesAsync();
+        await receiptRepo.AddAsync(new ReceiptVoucher { Code = "PT-S", OrderId = order.Id, Amount = 1m, PaymentMethod = "cash" });
+        await receiptRepo.AddAsync(new ReceiptVoucher { Code = "PT-Y", OrderId = Guid.NewGuid(), Amount = 1m, PaymentMethod = "cash" });
+        await receiptRepo.SaveChangesAsync();
+
+        Assert.Equal("PT-S", Assert.Single((await service.ListAllAsync(1, 20, new ReceiptListFilter(SalesUserId: salesA))).Items).Code);
+    }
 }
