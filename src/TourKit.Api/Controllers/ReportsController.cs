@@ -66,6 +66,22 @@ public sealed class ReportsController(IReportService service) : ControllerBase
         return Ok(rows);
     }
 
+    [HttpGet("turnover-by-branch")]
+    [Authorize(Permissions.ReportTurnoverView)]
+    public async Task<IActionResult> TurnoverByBranch()
+    {
+        var rows = await service.GetTurnoverByBranchAsync();
+        return Ok(rows);
+    }
+
+    [HttpGet("top-customers")]
+    [Authorize(Permissions.ReportDashboardView)]
+    public async Task<IActionResult> TopCustomers([FromQuery] int top = 10)
+    {
+        var rows = await service.GetTopCustomersAsync(top);
+        return Ok(rows);
+    }
+
     [HttpGet("kpi")]
     [Authorize(Permissions.ReportDashboardView)]
     public async Task<IActionResult> Kpi()

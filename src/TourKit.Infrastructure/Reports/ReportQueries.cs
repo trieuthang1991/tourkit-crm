@@ -243,6 +243,84 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
     }
 
     /// <summary>
+    /// Hiệu suất theo CHI NHÁNH (legacy dashboard "Hiệu suất theo chi nhánh"): gom đơn theo Order.BranchId.
+    /// Thực thu = Σ phiếu thu đã ghi nhận của đơn; Còn thiếu = phải thu; Cost từ OrderCost. Đơn chưa gán chi nhánh → "Chưa phân bổ".
+    /// </summary>
+    public async Task<IReadOnlyList<TurnoverByBranchRowDto>> GetTurnoverByBranchAsync()
+    {
+        var orders = await db.Orders.AsNoTracking()
+            .Select(o => new { o.Id, o.TotalRevenue, o.BranchId })
+            .ToListAsync();
+
+        var branchName = (await db.Branches.AsNoTracking()
+                .Select(b => new { b.Id, b.Name })
+                .ToListAsync())
+            .ToDictionary(b => b.Id, b => b.Name);
+
+        var costByOrder = (await db.OrderCosts.AsNoTracking()
+                .GroupBy(c => c.OrderId)
+                .Select(g => new { OrderId = g.Key, Cost = g.Sum(x => x.ActualAmount) })
+                .ToListAsync())
+            .ToDictionary(x => x.OrderId, x => x.Cost);
+
+        var receivedByOrder = (await db.ReceiptVouchers.Recognized()
+                .GroupBy(r => r.OrderId)
+                .Select(g => new { OrderId = g.Key, Received = g.Sum(x => x.Amount) })
+                .ToListAsync())
+            .ToDictionary(x => x.OrderId, x => x.Received);
+
+        IReadOnlyList<TurnoverByBranchRowDto> rows = orders
+            .GroupBy(o => o.BranchId)
+            .Select(g =>
+            {
+                var turnover = g.Sum(x => x.TotalRevenue);
+                var received = g.Sum(x => receivedByOrder.GetValueOrDefault(x.Id, 0m));
+                var cost = g.Sum(x => costByOrder.GetValueOrDefault(x.Id, 0m));
+                var name = g.Key is { } bid ? branchName.GetValueOrDefault(bid, "(chi nhánh đã xoá)") : "Chưa phân bổ";
+                return new TurnoverByBranchRowDto(
+                    g.Key, name, g.Count(), turnover, received,
+                    OrderMath.Outstanding(turnover, received), cost, OrderMath.Profit(turnover, cost));
+            })
+            .OrderByDescending(r => r.Turnover)
+            .ToList();
+
+        return rows;
+    }
+
+    /// <summary>Top khách hàng theo doanh thu (legacy dashboard "Top khách hàng trung thành"): gom đơn theo Customer.</summary>
+    public async Task<IReadOnlyList<TopCustomerRowDto>> GetTopCustomersAsync(int top = 10)
+    {
+        var orders = await db.Orders.AsNoTracking()
+            .Select(o => new { o.Id, o.CustomerId, o.TotalRevenue })
+            .ToListAsync();
+
+        var customerName = (await db.Customers.AsNoTracking()
+                .Select(c => new { c.Id, c.FullName })
+                .ToListAsync())
+            .ToDictionary(c => c.Id, c => c.FullName);
+
+        var receivedByOrder = (await db.ReceiptVouchers.Recognized()
+                .GroupBy(r => r.OrderId)
+                .Select(g => new { OrderId = g.Key, Received = g.Sum(x => x.Amount) })
+                .ToListAsync())
+            .ToDictionary(x => x.OrderId, x => x.Received);
+
+        IReadOnlyList<TopCustomerRowDto> rows = orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g =>
+            {
+                var revenue = g.Sum(x => x.TotalRevenue);
+                var received = g.Sum(x => receivedByOrder.GetValueOrDefault(x.Id, 0m));
+                return new TopCustomerRowDto(g.Key, customerName.GetValueOrDefault(g.Key, "(khách đã xoá)"), revenue, received);
+            })
+            .OrderByDescending(r => r.Revenue)
+            .Take(top)
+            .ToList();
+
+        return rows;
+    }
+
+    /// <summary>
     /// KPI phễu kinh doanh (legacy KeyPerformanceIndicator): báo giá → chấp nhận (Status=2) → chuyển đơn
     /// (ConvertedOrderId != null) → thu tiền. Các tỉ lệ 0..1 (FE hiển thị %). Từ dữ liệu sẵn có.
     /// </summary>

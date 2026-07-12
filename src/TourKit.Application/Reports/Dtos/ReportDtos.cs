@@ -29,6 +29,15 @@ public sealed record CommissionByUserRowDto(
 public sealed record TurnoverByDepartmentRowDto(
     Guid? DepartmentId, string DepartmentName, int OrderCount, decimal Turnover, decimal Cost, decimal Profit);
 
+/// <summary>Hiệu suất theo CHI NHÁNH (gom đơn theo Order.BranchId): số đơn · doanh thu · thực thu · còn thiếu · lợi nhuận.</summary>
+public sealed record TurnoverByBranchRowDto(
+    Guid? BranchId, string BranchName, int OrderCount,
+    decimal Turnover, decimal Received, decimal Outstanding, decimal Cost, decimal Profit);
+
+/// <summary>Top khách hàng theo doanh thu (gom đơn theo Customer): tổng doanh thu + đã thu.</summary>
+public sealed record TopCustomerRowDto(
+    Guid CustomerId, string CustomerName, decimal Revenue, decimal Received);
+
 /// <summary>
 /// KPI phễu kinh doanh (legacy KeyPerformanceIndicator): báo giá → chấp nhận → chuyển đơn → thu tiền.
 /// Các tỉ lệ là phân số 0..1 (FE hiển thị %). Tính từ dữ liệu sẵn có, không phụ thuộc ngoài.

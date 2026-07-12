@@ -11,5 +11,7 @@ public interface IReportService
     Task<IReadOnlyList<TurnoverRowDto>> GetTurnoverAsync();
     Task<IReadOnlyList<CommissionByUserRowDto>> GetCommissionByUserAsync();
     Task<IReadOnlyList<TurnoverByDepartmentRowDto>> GetTurnoverByDepartmentAsync();
+    Task<IReadOnlyList<TurnoverByBranchRowDto>> GetTurnoverByBranchAsync();
+    Task<IReadOnlyList<TopCustomerRowDto>> GetTopCustomersAsync(int top = 10);
     Task<KpiSummaryDto> GetKpiSummaryAsync();
 }
