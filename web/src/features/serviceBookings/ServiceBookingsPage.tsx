@@ -1,3 +1,4 @@
+import { Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -29,13 +30,15 @@ function RoomClassField() {
 }
 
 const columns: ColumnsType<ServiceBooking> = [
-  { title: 'Mã', dataIndex: 'code', key: 'code' },
-  { title: 'Loại', dataIndex: 'type', key: 'type', render: (v: number) => statusText(SERVICE_BOOKING_TYPE, v) },
-  { title: 'Mô tả', dataIndex: 'description', key: 'description' },
-  { title: 'Từ', dataIndex: 'startDate', key: 'startDate', render: (v: string | null) => dateText(v) },
-  { title: 'SL', dataIndex: 'quantity', key: 'quantity' },
-  { title: 'Thành tiền', dataIndex: 'totalAmount', key: 'totalAmount', render: (v: number) => money(v) },
-  { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
+  { title: 'Mã', dataIndex: 'code', key: 'code', fixed: 'left', width: 120 },
+  { title: 'Loại', dataIndex: 'type', key: 'type', width: 120, render: (v: number) => statusText(SERVICE_BOOKING_TYPE, v) },
+  { title: 'Mô tả', dataIndex: 'description', key: 'description', width: 220, ellipsis: true },
+  { title: 'Từ ngày', dataIndex: 'startDate', key: 'startDate', width: 110, render: (v: string | null) => dateText(v) },
+  { title: 'Đến ngày', dataIndex: 'endDate', key: 'endDate', width: 110, render: (v: string | null) => dateText(v) },
+  { title: 'SL', dataIndex: 'quantity', key: 'quantity', width: 70, align: 'center' },
+  { title: 'Đơn giá', dataIndex: 'unitPrice', key: 'unitPrice', width: 130, align: 'right', render: (v: number) => money(v) },
+  { title: 'Thành tiền', dataIndex: 'totalAmount', key: 'totalAmount', width: 140, align: 'right', render: (v: number) => money(v) },
+  { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 100, align: 'center', render: (v: number) => <Tag>{v}</Tag> },
 ];
 
 export function ServiceBookingsPage() {
