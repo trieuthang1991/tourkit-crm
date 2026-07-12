@@ -9,6 +9,7 @@ import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
 import { useDashboard } from './dashboardApi';
 import { useCashFlow } from './cashFlowApi';
+import { DepartureCalendar } from '../booking/DepartureCalendar';
 import { customerCareSchema } from '../care/customerCareTypes';
 import { TaskDonut } from '../workspace/TaskDonut';
 
@@ -296,6 +297,12 @@ export function CeoAnalytics() {
           </Card>
         </Col>
       </Row>
+
+      {/* Điều hành khởi hành (lịch) — dùng chung component DepartureCalendar với Bàn làm việc */}
+      <SectionTitle>Điều hành khởi hành</SectionTitle>
+      <Card size="small">
+        <DepartureCalendar fullscreen={false} />
+      </Card>
 
       {/* Trạng thái hợp đồng (donut + cards) + Phễu bán hàng */}
       <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
