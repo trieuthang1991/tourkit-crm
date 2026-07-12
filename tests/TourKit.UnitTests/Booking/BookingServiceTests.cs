@@ -19,7 +19,8 @@ public sealed class BookingServiceTests
         FakeRepository<ReceiptVoucher>? receiptRepo = null,
         FakeRepository<User>? userRepo = null,
         FakeRepository<OrderCost>? orderCostRepo = null,
-        FakeRepository<Provider>? providerRepo = null)
+        FakeRepository<Provider>? providerRepo = null,
+        FakeRepository<PaymentVoucher>? paymentRepo = null)
         => new(
             departureRepo ?? new FakeRepository<TourDeparture>(),
             seatRepo ?? new FakeRepository<TourCustomer>(),
@@ -32,7 +33,8 @@ public sealed class BookingServiceTests
             new FakeCurrentUser(),
             userRepo ?? new FakeRepository<User>(),
             orderCostRepo ?? new FakeRepository<OrderCost>(),
-            providerRepo ?? new FakeRepository<Provider>());
+            providerRepo ?? new FakeRepository<Provider>(),
+            paymentRepo ?? new FakeRepository<PaymentVoucher>());
 
     private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
     {

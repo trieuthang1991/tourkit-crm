@@ -14,6 +14,7 @@ export const orderSchema = z.object({
   departureDate: z.string().nullable().optional(),
   amountPaid: z.number().optional(),
   outstanding: z.number().optional(),
+  actualCost: z.number().optional(),
 });
 export type Order = z.infer<typeof orderSchema>;
 

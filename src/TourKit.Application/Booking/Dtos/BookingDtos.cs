@@ -17,7 +17,7 @@ public sealed record OrderDto(
     // Trường làm giàu cho danh sách (tên KH/tour/ngày đi + đã thu/còn nợ). Mặc định null/0 để các
     // đường trả đơn lẻ (tạo booking, gán sales) không phải nạp thêm dữ liệu.
     string? CustomerName = null, string? TourTitle = null, DateTimeOffset? DepartureDate = null,
-    decimal AmountPaid = 0m, decimal Outstanding = 0m);
+    decimal AmountPaid = 0m, decimal Outstanding = 0m, decimal ActualCost = 0m);
 
 /// <summary>Bộ lọc danh sách đơn hàng (bám thanh lọc hệ cũ). PaymentStatus: 0 chưa TT · 1 đã cọc · 2 TT hết.</summary>
 public sealed record OrderListFilter(

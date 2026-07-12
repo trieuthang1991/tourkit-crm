@@ -93,6 +93,12 @@ export function OrdersPage() {
     setAdv({});
     setPage({ ...page, page: 1 });
   };
+  // Chip lọc nhanh thị trường — áp dụng ngay (không cần bấm Tìm kiếm).
+  const pickMarket = (marketTypeId?: string) => {
+    setDraft((d) => ({ ...d, marketTypeId }));
+    setAdv((a) => ({ ...a, marketTypeId }));
+    setPage({ ...page, page: 1 });
+  };
 
   const stats = useQuery({
     queryKey: ['orders', 'stats'],
@@ -179,15 +185,39 @@ export function OrdersPage() {
     { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName', width: 170, render: dash },
     { title: 'Tour', dataIndex: 'tourTitle', key: 'tourTitle', width: 200, ellipsis: true, render: dash },
     { title: 'Ngày đi', dataIndex: 'departureDate', key: 'departureDate', width: 110, render: dateVi },
-    { title: 'Doanh thu', dataIndex: 'totalRevenue', key: 'totalRevenue', width: 130, align: 'right', render: (v: number) => money(v) },
-    { title: 'Đã thu', dataIndex: 'amountPaid', key: 'amountPaid', width: 130, align: 'right', render: (v?: number) => money(v ?? 0) },
     {
-      title: 'Còn nợ',
-      dataIndex: 'outstanding',
-      key: 'outstanding',
+      title: 'Thu tiền',
+      key: '__thu',
+      width: 150,
+      align: 'right',
+      render: (_: unknown, o: Order) => (
+        <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+          <div>Tổng thu: <strong>{money(o.totalRevenue)}</strong></div>
+          <div style={{ color: '#3f8600' }}>Thực thu: {money(o.amountPaid ?? 0)}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Chi tiền',
+      key: '__chi',
+      width: 150,
+      align: 'right',
+      render: (_: unknown, o: Order) => (
+        <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+          <div>Tổng chi: <strong>{money(o.totalCost)}</strong></div>
+          <div style={{ color: '#cf1322' }}>Thực chi: {money(o.actualCost ?? 0)}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Lợi nhuận',
+      key: '__loi',
       width: 130,
       align: 'right',
-      render: (v?: number) => <span style={{ color: (v ?? 0) > 0 ? '#cf1322' : undefined }}>{money(v ?? 0)}</span>,
+      render: (_: unknown, o: Order) => {
+        const profit = o.totalRevenue - o.totalCost;
+        return <span style={{ color: profit < 0 ? '#cf1322' : '#3f8600', fontWeight: 600 }}>{money(profit)}</span>;
+      },
     },
     {
       title: 'Trạng thái',
@@ -315,6 +345,23 @@ export function OrdersPage() {
         </Row>
       </Card>
 
+      {/* Lọc nhanh theo thị trường (chip) — bám staging */}
+      {marketOpts.length > 0 && (
+        <div style={{ marginBottom: 12, overflowX: 'auto' }}>
+          <Space size={4} wrap>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>Lọc nhanh thị trường:</Typography.Text>
+            <Tag.CheckableTag checked={adv.marketTypeId === undefined} onChange={() => pickMarket(undefined)}>
+              Tất cả
+            </Tag.CheckableTag>
+            {marketOpts.map((m) => (
+              <Tag.CheckableTag key={m.value} checked={adv.marketTypeId === m.value} onChange={() => pickMarket(m.value)}>
+                {m.label}
+              </Tag.CheckableTag>
+            ))}
+          </Space>
+        </div>
+      )}
+
       {/* Tabs trạng thái thanh toán (bám staging: Chưa TT · Đã cọc · TT hết) */}
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
         <Segmented
@@ -348,16 +395,22 @@ export function OrdersPage() {
         summary={(pageData) => {
           const rev = pageData.reduce((a, o) => a + (o.totalRevenue ?? 0), 0);
           const paid = pageData.reduce((a, o) => a + (o.amountPaid ?? 0), 0);
+          const cost = pageData.reduce((a, o) => a + (o.totalCost ?? 0), 0);
+          const actualCost = pageData.reduce((a, o) => a + (o.actualCost ?? 0), 0);
           const owe = pageData.reduce((a, o) => a + (o.outstanding ?? 0), 0);
+          const profit = rev - cost;
           return (
             <Table.Summary fixed>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={columns.length}>
-                  <Space size="large">
+                  <Space size="large" wrap>
                     <strong>Tổng cộng (trang này)</strong>
-                    <span>Doanh thu: <strong>{money(rev)}</strong></span>
-                    <span>Đã thu: <strong>{money(paid)}</strong></span>
-                    <span>Còn nợ: <strong>{money(owe)}</strong></span>
+                    <span>Tổng thu: <strong>{money(rev)}</strong></span>
+                    <span>Thực thu: <strong style={{ color: '#3f8600' }}>{money(paid)}</strong></span>
+                    <span>Tổng chi: <strong>{money(cost)}</strong></span>
+                    <span>Thực chi: <strong style={{ color: '#cf1322' }}>{money(actualCost)}</strong></span>
+                    <span>Lợi nhuận: <strong style={{ color: profit < 0 ? '#cf1322' : '#3f8600' }}>{money(profit)}</strong></span>
+                    <span>Phải thu: <strong>{money(owe)}</strong></span>
                   </Space>
                 </Table.Summary.Cell>
               </Table.Summary.Row>
