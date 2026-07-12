@@ -24,7 +24,11 @@ public sealed record OrderListFilter(
     string? Q = null, int? Status = null, int? PaymentStatus = null,
     DateTimeOffset? DepartureFrom = null, DateTimeOffset? DepartureTo = null,
     DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null,
-    Guid? SalesUserId = null, Guid? BranchId = null, Guid? CreatedByUserId = null, Guid? DepartmentId = null);
+    Guid? SalesUserId = null, Guid? BranchId = null, Guid? CreatedByUserId = null, Guid? DepartmentId = null,
+    string? TourType = null);
+
+/// <summary>Tuỳ chọn lọc động cho màn Đơn hàng (lấy từ dữ liệu thật, không hardcode).</summary>
+public sealed record OrderFilterOptionsDto(IReadOnlyList<string> TourTypes);
 
 /// <summary>Thẻ thống kê đầu màn Đơn hàng: tổng đơn + tiền + đếm theo trạng thái + trạng thái thanh toán.</summary>
 public sealed record OrderStatsDto(

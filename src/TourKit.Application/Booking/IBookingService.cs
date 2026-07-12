@@ -25,6 +25,7 @@ public interface IBookingService
 
     Task<PagedResult<OrderDto>> ListOrdersAsync(int page, int size, OrderListFilter? filter = null);
     Task<OrderStatsDto> GetOrderStatsAsync();
+    Task<OrderFilterOptionsDto> GetOrderFilterOptionsAsync();
 
     Task<IReadOnlyList<BookingLineDto>> ListOrderLinesAsync(Guid orderId);
 

@@ -150,7 +150,7 @@ public sealed class BookingService(
             departures.TryGetValue(o.TourDepartureId, out var dep);
             var dto = MapOrder(o, customerNames.GetValueOrDefault(o.CustomerId), dep?.Title, dep?.DepartureDate,
                 paidByOrder.GetValueOrDefault(o.Id));
-            return (o.CreatedAt, Dto: dto);
+            return (o.CreatedAt, Dto: dto, TourType: dep?.TourType);
         });
 
         bool MatchQ(OrderDto d) =>
@@ -169,6 +169,8 @@ public sealed class BookingService(
                 && (f.DepartureFrom == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate >= f.DepartureFrom))
                 && (f.DepartureTo == null || (x.Dto.DepartureDate != null && x.Dto.DepartureDate <= f.DepartureTo))
                 && (f.PaymentStatus == null || PaymentBucketOf(x.Dto.AmountPaid, x.Dto.TotalRevenue) == f.PaymentStatus)
+                && (string.IsNullOrWhiteSpace(f.TourType)
+                    || string.Equals(x.TourType, f.TourType, StringComparison.OrdinalIgnoreCase))
                 && (f.DepartmentId == null
                     || (x.Dto.SalesUserId != null && userDept.GetValueOrDefault(x.Dto.SalesUserId.Value) == f.DepartmentId)))
             .OrderByDescending(x => x.CreatedAt)
@@ -214,6 +216,20 @@ public sealed class BookingService(
 
         return new OrderStatsDto(
             orders.Count, revenue, paid, outstanding, draft, confirmed, cancelled, unpaid, deposit, fullyPaid);
+    }
+
+    public async Task<OrderFilterOptionsDto> GetOrderFilterOptionsAsync()
+    {
+        // Loại tour lấy từ các chuyến ĐANG có đơn (bám dữ liệu thật, không hardcode inbound/outbound/domestic).
+        var orders = await orderRepo.ListAsync();
+        var departureIds = orders.Select(o => o.TourDepartureId).ToHashSet();
+        var tourTypes = (await departureRepo.ListAsync(d => departureIds.Contains(d.Id)))
+            .Where(d => !string.IsNullOrWhiteSpace(d.TourType))
+            .Select(d => d.TourType!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s, StringComparer.CurrentCulture)
+            .ToList();
+        return new OrderFilterOptionsDto(tourTypes);
     }
 
     // Trạng thái thanh toán (bám hệ cũ): 0 chưa TT · 1 đã cọc (trả một phần) · 2 TT hết.

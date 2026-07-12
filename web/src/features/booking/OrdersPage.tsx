@@ -42,6 +42,7 @@ type OrderAdv = {
   createdTo?: string;
   departureFrom?: string;
   departureTo?: string;
+  tourType?: string;
 };
 
 // Bỏ field rỗng để không gửi param thừa.
@@ -101,9 +102,17 @@ export function OrdersPage() {
       return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
     },
   });
+  const filterOptions = useQuery({
+    queryKey: ['orders', 'filter-options'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/orders/filter-options');
+      return z.object({ tourTypes: z.array(z.string()) }).parse(data);
+    },
+  });
   const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
   const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
   const deptOpts = (departments.data ?? []).map((d) => ({ label: d.name, value: d.id }));
+  const tourTypeOpts = (filterOptions.data?.tourTypes ?? []).map((t) => ({ label: t, value: t }));
 
   const list = useQuery({
     queryKey: ['orders', 'list', page.page, page.size, q, payStatus, adv],
@@ -226,7 +235,8 @@ export function OrdersPage() {
               options={deptOpts} value={draft.departmentId} onChange={(v) => setD({ departmentId: v ?? undefined })} />
           </Col>
           <Col xs={12} sm={8} lg={4}>
-            <Select allowClear style={{ width: '100%' }} placeholder="Loại tour / Thị trường" options={[]} disabled />
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Loại tour"
+              options={tourTypeOpts} value={draft.tourType} onChange={(v) => setD({ tourType: v ?? undefined })} />
           </Col>
           <Col span={24}>
             <Space>
@@ -235,7 +245,7 @@ export function OrdersPage() {
               </Button>
               <Button onClick={resetFilters}>Đặt lại</Button>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                (Loại tour / Thị trường / NCC / CTV: đang bổ sung quan hệ model)
+                (Thị trường / NCC / CTV: chưa có quan hệ trong model — bổ sung sau)
               </Typography.Text>
             </Space>
           </Col>

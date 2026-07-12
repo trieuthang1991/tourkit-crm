@@ -82,6 +82,11 @@ public sealed class BookingController(IBookingService service) : ControllerBase
     [Authorize(Permissions.BookingView)]
     public async Task<IActionResult> OrderStats() => Ok(await service.GetOrderStatsAsync());
 
+    // Tuỳ chọn lọc động (Loại tour) lấy từ dữ liệu thật.
+    [HttpGet("orders/filter-options")]
+    [Authorize(Permissions.BookingView)]
+    public async Task<IActionResult> OrderFilterOptions() => Ok(await service.GetOrderFilterOptionsAsync());
+
     [HttpGet("orders/{orderId:guid}/lines")]
     [Authorize(Permissions.BookingView)]
     public async Task<IActionResult> ListOrderLines(Guid orderId)

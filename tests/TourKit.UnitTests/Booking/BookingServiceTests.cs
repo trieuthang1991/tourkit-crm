@@ -243,6 +243,47 @@ public sealed class BookingServiceTests
     }
 
     [Fact]
+    public async Task ListOrdersAsync_filters_by_tourType_via_departure()
+    {
+        var departureRepo = new FakeRepository<TourDeparture>();
+        var depIn = new TourDeparture { Code = "DEP-IN", Title = "Chuyến inbound", TourType = "inbound" };
+        var depOut = new TourDeparture { Code = "DEP-OUT", Title = "Chuyến outbound", TourType = "outbound" };
+        await departureRepo.AddAsync(depIn);
+        await departureRepo.AddAsync(depOut);
+        await departureRepo.SaveChangesAsync();
+        var orderRepo = new FakeRepository<Order>();
+        await orderRepo.AddAsync(new Order { Code = "O-IN", CustomerId = Guid.NewGuid(), TourDepartureId = depIn.Id });
+        await orderRepo.AddAsync(new Order { Code = "O-OUT", CustomerId = Guid.NewGuid(), TourDepartureId = depOut.Id });
+        await orderRepo.SaveChangesAsync();
+        var service = NewService(departureRepo: departureRepo, orderRepo: orderRepo);
+
+        Assert.Equal("O-IN", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(TourType: "inbound"))).Items).Code);
+    }
+
+    [Fact]
+    public async Task GetOrderFilterOptionsAsync_returns_distinct_tourTypes_from_orders()
+    {
+        var departureRepo = new FakeRepository<TourDeparture>();
+        var depIn = new TourDeparture { Code = "DEP-IN", Title = "IN", TourType = "inbound" };
+        var depOut = new TourDeparture { Code = "DEP-OUT", Title = "OUT", TourType = "outbound" };
+        var depOrphan = new TourDeparture { Code = "DEP-NONE", Title = "NONE", TourType = "domestic" };
+        await departureRepo.AddAsync(depIn);
+        await departureRepo.AddAsync(depOut);
+        await departureRepo.AddAsync(depOrphan);
+        await departureRepo.SaveChangesAsync();
+        var orderRepo = new FakeRepository<Order>();
+        await orderRepo.AddAsync(new Order { Code = "O1", CustomerId = Guid.NewGuid(), TourDepartureId = depIn.Id });
+        await orderRepo.AddAsync(new Order { Code = "O2", CustomerId = Guid.NewGuid(), TourDepartureId = depOut.Id });
+        await orderRepo.SaveChangesAsync();
+        var service = NewService(departureRepo: departureRepo, orderRepo: orderRepo);
+
+        var opts = await service.GetOrderFilterOptionsAsync();
+
+        // Chỉ loại tour của chuyến ĐANG có đơn (domestic không có đơn → không xuất hiện).
+        Assert.Equal(new[] { "inbound", "outbound" }, opts.TourTypes);
+    }
+
+    [Fact]
     public async Task ListOrdersAsync_filters_q_by_code_and_customerName()
     {
         var customerRepo = new FakeRepository<Customer>();

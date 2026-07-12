@@ -16,6 +16,7 @@ const list = { items: [], total: 0, page: 1, size: 20 };
 
 function mockGet(url: string) {
   if (url.includes('/orders/stats')) return Promise.resolve({ data: stats });
+  if (url.includes('/orders/filter-options')) return Promise.resolve({ data: { tourTypes: [] } });
   if (url.includes('/branches')) return Promise.resolve({ data: [] });
   if (url.includes('/departments')) return Promise.resolve({ data: [] });
   if (url.includes('/users')) return Promise.resolve({ data: [] });
