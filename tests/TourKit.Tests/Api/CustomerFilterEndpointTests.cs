@@ -30,6 +30,11 @@ public class CustomerFilterEndpointTests : IClassFixture<AuthTestFactory>
         List<string> Collaborators, List<string> Branches, List<string> Groups, List<string> Departments,
         List<string> Tags, List<string> Segments);
 
+    private sealed record FunnelSegment(string Name, int Count);
+    private sealed record CareBuckets(
+        int FirstTime, int Repeat, int NotContacted7, int NotContacted15, int NotContacted30, int NotContacted90);
+    private sealed record Funnel(int Total, List<FunnelSegment> Segments, CareBuckets Care);
+
     private static async Task SeedAsync(HttpClient client)
     {
         (await client.PostAsJsonAsync("/api/v1/customers", new
@@ -80,5 +85,24 @@ public class CustomerFilterEndpointTests : IClassFixture<AuthTestFactory>
         Assert.Contains("Hà Nội", opts.Cities);
         Assert.Contains("VIP", opts.Tags);
         Assert.Contains("B2B", opts.Tags);
+    }
+
+    [Fact]
+    public async Task Funnel_counts_segments_and_returns_care_buckets()
+    {
+        var client = await LoggedInClientAsync("funnel-a");
+        (await client.PostAsJsonAsync("/api/v1/customers", new
+        {
+            FullName = "A", Segments = new[] { "VIP", "Tiềm năng" },
+        })).EnsureSuccessStatusCode();
+        (await client.PostAsJsonAsync("/api/v1/customers", new { FullName = "B", Segments = new[] { "VIP" } }))
+            .EnsureSuccessStatusCode();
+
+        var funnel = await client.GetFromJsonAsync<Funnel>("/api/v1/customers/funnel");
+
+        Assert.Equal(2, funnel!.Total);
+        Assert.Contains(funnel.Segments, s => s.Name == "VIP" && s.Count == 2);
+        Assert.Contains(funnel.Segments, s => s.Name == "Tiềm năng" && s.Count == 1);
+        Assert.NotNull(funnel.Care);
     }
 }

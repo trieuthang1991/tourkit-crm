@@ -46,7 +46,17 @@ public sealed record CustomerListFilter(
     DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null,
     DateTimeOffset? CareFrom = null, DateTimeOffset? CareTo = null,
     decimal? RevenueFrom = null, decimal? RevenueTo = null,
-    int? BirthdayMonth = null);
+    int? BirthdayMonth = null,
+    // Chip "Chăm sóc khách hàng": mua (first=1 đơn, repeat=>1 đơn) + chưa liên hệ (nc7/nc15/nc30/nc90).
+    string? PurchaseBucket = null, string? NotContactedBucket = null);
+
+/// <summary>Phễu khách hàng + chăm sóc (chip lọc nhanh đầu màn, bám hệ cũ).</summary>
+public sealed record FunnelSegmentDto(string Name, int Count);
+
+public sealed record CustomerCareBucketsDto(
+    int FirstTime, int Repeat, int NotContacted7, int NotContacted15, int NotContacted30, int NotContacted90);
+
+public sealed record CustomerFunnelDto(int Total, IReadOnlyList<FunnelSegmentDto> Segments, CustomerCareBucketsDto Care);
 
 public sealed record UpdateCustomerDto(
     string FullName, string? Phone,

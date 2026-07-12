@@ -51,6 +51,7 @@ public sealed class CustomerService(
             .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.CreatedAt).First());
 
         // B3: lọc field mềm (jsonb) + aggregate ở bộ nhớ; sắp theo ngày tạo giảm dần (bám hệ cũ) rồi phân trang.
+        var now = DateTimeOffset.UtcNow;
         var matched = new List<(Customer Cust, int Count, decimal Sum, DateTimeOffset? CareAt, string? CareTitle)>();
         foreach (var c in candidates)
         {
@@ -75,6 +76,9 @@ public sealed class CustomerService(
             if (f.CareFrom is { } caf && (lastCare == null || lastCare.CreatedAt < caf)) { continue; }
             if (f.CareTo is { } cat && (lastCare == null || lastCare.CreatedAt > cat)) { continue; }
             if (f.BirthdayMonth is { } bm && (c.DateOfBirth == null || c.DateOfBirth.Value.Month != bm)) { continue; }
+            if (Norm(f.PurchaseBucket) is { } pb && PurchaseBucketOf(agg.Count) != pb) { continue; }
+            if (Norm(f.NotContactedBucket) is { } ncb &&
+                ContactBucketOf(DaysSinceContact(now, lastCare?.CreatedAt, c.CreatedAt)) != ncb) { continue; }
 
             matched.Add((c, agg.Count, agg.Sum, lastCare?.CreatedAt, lastCare?.Title));
         }
@@ -95,6 +99,69 @@ public sealed class CustomerService(
     {
         var n = Norm(needle);
         return n == null || (value != null && value.Contains(n, StringComparison.OrdinalIgnoreCase));
+    }
+
+    // Nhóm "mua": first = đúng 1 đơn, repeat = >1 đơn.
+    private static string? PurchaseBucketOf(int orderCount) =>
+        orderCount == 1 ? "first" : orderCount > 1 ? "repeat" : null;
+
+    // Nhóm "chưa liên hệ" phân tầng loại trừ theo số ngày kể từ lần chăm sóc gần nhất
+    // (hoặc ngày tạo nếu chưa từng liên hệ): 7=[7,15) · 15=[15,30) · 30=[30,90) · 90=≥90. <7 ngày → không thuộc nhóm nào.
+    private static int DaysSinceContact(DateTimeOffset now, DateTimeOffset? lastCareAt, DateTimeOffset createdAt) =>
+        (int)(now - (lastCareAt ?? createdAt)).TotalDays;
+
+    private static string? ContactBucketOf(int days) =>
+        days >= 90 ? "nc90" : days >= 30 ? "nc30" : days >= 15 ? "nc15" : days >= 7 ? "nc7" : null;
+
+    public async Task<CustomerFunnelDto> GetFunnelAsync()
+    {
+        var customers = await repo.ListAsync();
+        var now = DateTimeOffset.UtcNow;
+
+        var orders = await orderRepo.ListAsync();
+        var orderCountByCustomer = orders.GroupBy(o => o.CustomerId).ToDictionary(g => g.Key, g => g.Count());
+
+        var cares = await careRepo.ListAsync();
+        var lastCareByCustomer = cares.GroupBy(c => c.CustomerId).ToDictionary(g => g.Key, g => g.Max(x => x.CreatedAt));
+
+        var segCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        int firstTime = 0, repeat = 0, nc7 = 0, nc15 = 0, nc30 = 0, nc90 = 0;
+
+        foreach (var c in customers)
+        {
+            var p = CustomerCrmProfile.Parse(c.CrmProfileJson);
+            foreach (var s in p.Segments.Where(s => !string.IsNullOrWhiteSpace(s)))
+            {
+                segCounts[s.Trim()] = segCounts.GetValueOrDefault(s.Trim()) + 1;
+            }
+
+            switch (PurchaseBucketOf(orderCountByCustomer.GetValueOrDefault(c.Id)))
+            {
+                case "first": firstTime++; break;
+                case "repeat": repeat++; break;
+                default: break;
+            }
+
+            DateTimeOffset? lastCare = lastCareByCustomer.TryGetValue(c.Id, out var lc) ? lc : null;
+            switch (ContactBucketOf(DaysSinceContact(now, lastCare, c.CreatedAt)))
+            {
+                case "nc7": nc7++; break;
+                case "nc15": nc15++; break;
+                case "nc30": nc30++; break;
+                case "nc90": nc90++; break;
+                default: break;
+            }
+        }
+
+        var segments = segCounts
+            .Select(kv => new FunnelSegmentDto(kv.Key, kv.Value))
+            .OrderByDescending(s => s.Count)
+            .ThenBy(s => s.Name, StringComparer.CurrentCulture)
+            .ToList();
+
+        return new CustomerFunnelDto(
+            customers.Count, segments,
+            new CustomerCareBucketsDto(firstTime, repeat, nc7, nc15, nc30, nc90));
     }
 
     public async Task<CustomerStatsDto> GetStatsAsync()

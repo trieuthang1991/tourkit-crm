@@ -52,6 +52,18 @@ const filterOptionsSchema = z.object({
   tags: strList,
   segments: strList,
 });
+const funnelSchema = z.object({
+  total: z.number(),
+  segments: z.array(z.object({ name: z.string(), count: z.number() })),
+  care: z.object({
+    firstTime: z.number(),
+    repeat: z.number(),
+    notContacted7: z.number(),
+    notContacted15: z.number(),
+    notContacted30: z.number(),
+    notContacted90: z.number(),
+  }),
+});
 const statsSchema = z.object({
   total: z.number(),
   newToday: z.number(),
@@ -87,6 +99,9 @@ type AdvFilters = {
   assignedTo?: string;
   createdBy?: string;
   birthdayMonth?: number;
+  segment?: string;
+  purchaseBucket?: 'first' | 'repeat';
+  notContactedBucket?: 'nc7' | 'nc15' | 'nc30' | 'nc90';
 };
 
 // Bỏ field rỗng để không gửi param thừa.
@@ -178,9 +193,26 @@ export function CustomersPage() {
       return z.array(userRowSchema).parse(data);
     },
   });
+  const funnel = useQuery({
+    queryKey: ['customers', 'funnel'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/customers/funnel');
+      return funnelSchema.parse(data);
+    },
+  });
+  const fn = funnel.data;
   const fo = filterOptions.data;
   const strOpts = (xs?: string[]) => (xs ?? []).map((v) => ({ label: v, value: v }));
   const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
+
+  // Chip phễu/chăm sóc: merge vào draft + áp dụng ngay (giữ đồng bộ với thanh lọc).
+  const pickChip = (patch: Partial<AdvFilters>) => {
+    const next = { ...draft, ...patch };
+    setDraft(next);
+    setAdv(next);
+    setQ(search);
+    setPage({ ...page, page: 1 });
+  };
 
   const create = customersCrud.useCreate();
   const update = customersCrud.useUpdate();
@@ -324,6 +356,22 @@ export function CustomersPage() {
     { title: 'Tạo trong tháng', value: stats.data?.newThisMonth ?? 0 },
     { title: 'Mua lần đầu', value: stats.data?.firstTimeBuyers ?? 0 },
     { title: 'Mua lại nhiều lần', value: stats.data?.repeatBuyers ?? 0 },
+  ];
+
+  // Chip "Chăm sóc khách hàng" (bám hệ cũ): mua lần đầu/mua lại + N ngày chưa liên hệ (phân tầng loại trừ).
+  const careChips = [
+    { key: 'first', label: 'Mua lần đầu', count: fn?.care.firstTime, active: adv.purchaseBucket === 'first',
+      patch: { purchaseBucket: adv.purchaseBucket === 'first' ? undefined : ('first' as const), notContactedBucket: undefined } },
+    { key: 'repeat', label: 'Khách mua lại', count: fn?.care.repeat, active: adv.purchaseBucket === 'repeat',
+      patch: { purchaseBucket: adv.purchaseBucket === 'repeat' ? undefined : ('repeat' as const), notContactedBucket: undefined } },
+    { key: 'nc7', label: '7 ngày chưa liên hệ', count: fn?.care.notContacted7, active: adv.notContactedBucket === 'nc7',
+      patch: { notContactedBucket: adv.notContactedBucket === 'nc7' ? undefined : ('nc7' as const), purchaseBucket: undefined } },
+    { key: 'nc15', label: '15 ngày chưa liên hệ', count: fn?.care.notContacted15, active: adv.notContactedBucket === 'nc15',
+      patch: { notContactedBucket: adv.notContactedBucket === 'nc15' ? undefined : ('nc15' as const), purchaseBucket: undefined } },
+    { key: 'nc30', label: '30 ngày chưa liên hệ', count: fn?.care.notContacted30, active: adv.notContactedBucket === 'nc30',
+      patch: { notContactedBucket: adv.notContactedBucket === 'nc30' ? undefined : ('nc30' as const), purchaseBucket: undefined } },
+    { key: 'nc90', label: '90 ngày chưa liên hệ', count: fn?.care.notContacted90, active: adv.notContactedBucket === 'nc90',
+      patch: { notContactedBucket: adv.notContactedBucket === 'nc90' ? undefined : ('nc90' as const), purchaseBucket: undefined } },
   ];
 
   return (
@@ -509,6 +557,37 @@ export function CustomersPage() {
           ]}
         />
       </div>
+
+      {/* Phễu khách hàng + Chăm sóc khách hàng (chip lọc nhanh, bám hệ cũ) */}
+      <Card size="small" style={{ marginBottom: 12 }} loading={funnel.isLoading}>
+        <div style={{ marginBottom: 8 }}>
+          <strong style={{ marginRight: 8 }}>Phễu khách hàng</strong>
+          <Space size={[4, 8]} wrap>
+            <Tag.CheckableTag checked={adv.segment === undefined} onChange={() => pickChip({ segment: undefined })}>
+              Tất cả ({fn?.total ?? 0})
+            </Tag.CheckableTag>
+            {(fn?.segments ?? []).map((s) => (
+              <Tag.CheckableTag
+                key={s.name}
+                checked={adv.segment === s.name}
+                onChange={() => pickChip({ segment: adv.segment === s.name ? undefined : s.name })}
+              >
+                {s.name} ({s.count})
+              </Tag.CheckableTag>
+            ))}
+          </Space>
+        </div>
+        <div>
+          <strong style={{ marginRight: 8 }}>Chăm sóc khách hàng</strong>
+          <Space size={[4, 8]} wrap>
+            {careChips.map((c) => (
+              <Tag.CheckableTag key={c.key} checked={c.active} onChange={() => pickChip(c.patch)}>
+                {c.label} ({c.count ?? 0})
+              </Tag.CheckableTag>
+            ))}
+          </Space>
+        </div>
+      </Card>
 
       <Table
         rowKey="id"

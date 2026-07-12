@@ -30,6 +30,11 @@ public sealed class CustomersController(ICustomerService service) : ControllerBa
     [Authorize(Permissions.CustomerView)]
     public async Task<IActionResult> FilterOptions() => Ok(await service.GetFilterOptionsAsync());
 
+    // Phễu khách hàng (đếm theo phân nhóm) + chăm sóc (mua lần đầu/mua lại + N ngày chưa liên hệ).
+    [HttpGet("funnel")]
+    [Authorize(Permissions.CustomerView)]
+    public async Task<IActionResult> Funnel() => Ok(await service.GetFunnelAsync());
+
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.CustomerView)]
     public async Task<IActionResult> Get(Guid id)

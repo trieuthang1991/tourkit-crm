@@ -316,6 +316,68 @@ public class CustomerServiceTests
         Assert.Equal("Middle", page1.Items[1].FullName);
     }
 
+    // ---- Phễu khách hàng + Chăm sóc (chip lọc nhanh) ----
+
+    [Fact]
+    public async Task GetFunnelAsync_counts_segments_and_care_buckets()
+    {
+        var service = NewServiceFull(out var customers, out var orders, out var cares);
+        var now = DateTimeOffset.UtcNow;
+        var a = NewCustomer("A", createdAt: now.AddDays(-10), profile: new CustomerCrmProfile { Segments = ["VIP", "Tiềm năng"] }); // nc7, 0 đơn
+        var b = NewCustomer("B", createdAt: now.AddDays(-100), profile: new CustomerCrmProfile { Segments = ["VIP"] });          // nc90, 1 đơn
+        var c = NewCustomer("C", createdAt: now.AddDays(-2));                                                                    // <7 ngày, 2 đơn
+        await SeedAsync(customers, a, b, c);
+        await orders.AddAsync(new Order { CustomerId = b.Id, TotalRevenue = 1_000m });
+        await orders.AddAsync(new Order { CustomerId = c.Id, TotalRevenue = 1_000m });
+        await orders.AddAsync(new Order { CustomerId = c.Id, TotalRevenue = 2_000m });
+        await orders.SaveChangesAsync();
+        _ = cares;
+
+        var funnel = await service.GetFunnelAsync();
+
+        Assert.Equal(3, funnel.Total);
+        Assert.Equal("VIP", funnel.Segments[0].Name);         // sắp theo count giảm dần
+        Assert.Equal(2, funnel.Segments[0].Count);
+        Assert.Contains(funnel.Segments, s => s.Name == "Tiềm năng" && s.Count == 1);
+        Assert.Equal(1, funnel.Care.FirstTime);               // B (1 đơn)
+        Assert.Equal(1, funnel.Care.Repeat);                  // C (2 đơn)
+        Assert.Equal(1, funnel.Care.NotContacted7);           // A
+        Assert.Equal(1, funnel.Care.NotContacted90);          // B
+        Assert.Equal(0, funnel.Care.NotContacted15);
+        Assert.Equal(0, funnel.Care.NotContacted30);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_purchaseBucket()
+    {
+        var service = NewServiceFull(out var customers, out var orders, out _);
+        var first = NewCustomer("First");
+        var repeat = NewCustomer("Repeat");
+        await SeedAsync(customers, first, repeat, NewCustomer("None"));
+        await orders.AddAsync(new Order { CustomerId = first.Id, TotalRevenue = 1_000m });
+        await orders.AddAsync(new Order { CustomerId = repeat.Id, TotalRevenue = 1_000m });
+        await orders.AddAsync(new Order { CustomerId = repeat.Id, TotalRevenue = 2_000m });
+        await orders.SaveChangesAsync();
+
+        Assert.Equal("First", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(PurchaseBucket: "first"))).Items).FullName);
+        Assert.Equal("Repeat", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(PurchaseBucket: "repeat"))).Items).FullName);
+    }
+
+    [Fact]
+    public async Task ListAsync_filters_by_notContactedBucket_exclusiveTiers()
+    {
+        var service = NewServiceFull(out var customers, out _, out _);
+        var now = DateTimeOffset.UtcNow;
+        await SeedAsync(customers,
+            NewCustomer("Recent", createdAt: now.AddDays(-3)),   // <7 → không thuộc nhóm nào
+            NewCustomer("Week", createdAt: now.AddDays(-10)),    // nc7  [7,15)
+            NewCustomer("Month", createdAt: now.AddDays(-50)));  // nc30 [30,90)
+
+        Assert.Equal("Week", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(NotContactedBucket: "nc7"))).Items).FullName);
+        Assert.Equal("Month", Assert.Single((await service.ListAsync(1, 20, new CustomerListFilter(NotContactedBucket: "nc30"))).Items).FullName);
+        Assert.Empty((await service.ListAsync(1, 20, new CustomerListFilter(NotContactedBucket: "nc90"))).Items);
+    }
+
     [Fact]
     public async Task GetFilterOptionsAsync_returns_distinct_sorted_nonEmpty()
     {
