@@ -15,6 +15,8 @@ export const providerSchema = z.object({
   paymentTermId: z.string().nullable(),
   rate: z.number(),
   status: z.number(),
+  province: z.string().nullable(),
+  branchId: z.string().nullable(),
   // Công nợ NCC (danh sách): tổng mua · đã trả · còn nợ
   totalCost: z.number(),
   paid: z.number(),
@@ -33,6 +35,8 @@ const providerCommonFields = {
   bankAccount: z.string().nullable().transform((v) => (v ? v : null)),
   bankName: z.string().nullable().transform((v) => (v ? v : null)),
   paymentTermId: z.string().nullable().transform((v) => (v ? v : null)),
+  province: z.string().nullable().transform((v) => (v ? v : null)),
+  branchId: z.string().nullable().transform((v) => (v ? v : null)),
   rate: z.number(),
   status: z.number(),
 };

@@ -17,9 +17,14 @@ public sealed class ProviderService(
     {
         var f = filter ?? new ProviderListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+        var prov = string.IsNullOrWhiteSpace(f.Province) ? null : f.Province.Trim();
         var (items, total) = await repo.PageAsync(page, size, p =>
             (f.Type == null || (int)p.Type == f.Type) &&
             (f.Status == null || p.Status == f.Status) &&
+            (f.BranchId == null || p.BranchId == f.BranchId) &&
+            (prov == null || (p.Province != null && p.Province.Contains(prov))) &&
+            (f.CreatedFrom == null || p.CreatedAt >= f.CreatedFrom) &&
+            (f.CreatedTo == null || p.CreatedAt <= f.CreatedTo) &&
             (kw == null ||
                 p.Code.Contains(kw) ||
                 p.Name.Contains(kw) ||
@@ -82,6 +87,8 @@ public sealed class ProviderService(
             BankAccount = dto.BankAccount,
             BankName = dto.BankName,
             PaymentTermId = dto.PaymentTermId,
+            Province = dto.Province,
+            BranchId = dto.BranchId,
             Rate = dto.Rate,
             Status = dto.Status,
         };
@@ -111,6 +118,8 @@ public sealed class ProviderService(
         entity.BankAccount = dto.BankAccount;
         entity.BankName = dto.BankName;
         entity.PaymentTermId = dto.PaymentTermId;
+        entity.Province = dto.Province;
+        entity.BranchId = dto.BranchId;
         entity.Rate = dto.Rate;
         entity.Status = dto.Status;
         repo.Update(entity);
@@ -141,5 +150,6 @@ public sealed class ProviderService(
     private static ProviderDto Map(Provider p, decimal totalCost = 0m, decimal paid = 0m) => new(
         p.Id, p.Code, p.Name, p.Type, p.Phone, p.Email, p.Address,
         p.TaxCode, p.ContactPerson, p.BankAccount, p.BankName, p.PaymentTermId, p.Rate, p.Status,
+        p.Province, p.BranchId,
         totalCost, paid, OrderMath.Outstanding(totalCost, paid));
 }

@@ -18,6 +18,8 @@ describe('provider schemas', () => {
       paymentTermId: null,
       rate: 0,
       status: 1,
+      province: null,
+      branchId: null,
       totalCost: 0,
       paid: 0,
       outstanding: 0,

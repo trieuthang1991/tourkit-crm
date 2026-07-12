@@ -1,7 +1,8 @@
-import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import dayjs from 'dayjs';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
@@ -49,6 +50,10 @@ export function ProvidersPage() {
   const [q, setQ] = useState('');
   const [typeFilter, setTypeFilter] = useState<number | undefined>();
   const [statusFilter, setStatusFilter] = useState<number | undefined>();
+  const [province, setProvince] = useState('');
+  const [provinceApplied, setProvinceApplied] = useState('');
+  const [branchId, setBranchId] = useState<string | undefined>();
+  const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
   const [editing, setEditing] = useState<{ mode: 'create' | 'edit'; item: Provider | null } | null>(null);
 
   const canCreate = has('provider.create');
@@ -62,12 +67,23 @@ export function ProvidersPage() {
       return statsSchema.parse(data);
     },
   });
+  const branches = useQuery({
+    queryKey: ['branches'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/branches');
+      return z.array(z.object({ id: z.string().uuid(), name: z.string() })).parse(data);
+    },
+  });
+  const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
 
   const list = useQuery({
-    queryKey: ['providers', 'list', page.page, page.size, q, typeFilter, statusFilter],
+    queryKey: ['providers', 'list', page.page, page.size, q, typeFilter, statusFilter, provinceApplied, branchId, dateRange],
     queryFn: async () => {
       const { data } = await httpClient.get<unknown>('/api/v1/providers', {
-        params: clean({ page: page.page, size: page.size, q: q || undefined, type: typeFilter, status: statusFilter }),
+        params: clean({
+          page: page.page, size: page.size, q: q || undefined, type: typeFilter, status: statusFilter,
+          province: provinceApplied || undefined, branchId, createdFrom: dateRange.from, createdTo: dateRange.to,
+        }),
       });
       return pagedSchema(providerSchema).parse(data);
     },
@@ -177,6 +193,8 @@ export function ProvidersPage() {
     bankAccount: item?.bankAccount ?? null,
     bankName: item?.bankName ?? null,
     paymentTermId: item?.paymentTermId ?? null,
+    province: item?.province ?? null,
+    branchId: item?.branchId ?? null,
     rate: item?.rate ?? 0,
     status: item?.status ?? 1,
   };
@@ -224,6 +242,30 @@ export function ProvidersPage() {
             setQ(v);
             setPage({ ...page, page: 1 });
           }}
+        />
+        <Input
+          allowClear
+          placeholder="Tỉnh thành"
+          style={{ width: 160 }}
+          value={province}
+          onChange={(e) => setProvince(e.target.value)}
+          onPressEnter={() => { setProvinceApplied(province); setPage({ ...page, page: 1 }); }}
+          onBlur={() => { setProvinceApplied(province); setPage({ ...page, page: 1 }); }}
+        />
+        <Select
+          showSearch
+          allowClear
+          optionFilterProp="label"
+          placeholder="Chi nhánh"
+          style={{ width: 180 }}
+          options={branchOpts}
+          value={branchId}
+          onChange={(v) => { setBranchId(v ?? undefined); setPage({ ...page, page: 1 }); }}
+        />
+        <DatePicker.RangePicker
+          placeholder={['Ngày đặt từ', 'đến']}
+          value={dateRange.from && dateRange.to ? [dayjs(dateRange.from), dayjs(dateRange.to)] : null}
+          onChange={(d) => { setDateRange({ from: d?.[0]?.startOf('day').toISOString(), to: d?.[1]?.endOf('day').toISOString() }); setPage({ ...page, page: 1 }); }}
         />
         <Select
           allowClear
@@ -281,6 +323,8 @@ export function ProvidersPage() {
           <TextField name="phone" label="Điện thoại" />
           <TextField name="email" label="Email" />
           <TextField name="address" label="Địa chỉ" />
+          <TextField name="province" label="Tỉnh thành" />
+          <SelectField name="branchId" label="Chi nhánh" options={branchOpts} allowClear />
           <TextField name="taxCode" label="Mã số thuế" />
           <TextField name="contactPerson" label="Người liên hệ" />
           <TextField name="bankAccount" label="Số tài khoản" />

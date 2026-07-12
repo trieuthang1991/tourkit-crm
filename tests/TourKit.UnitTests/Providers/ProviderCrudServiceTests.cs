@@ -75,4 +75,22 @@ public class ProviderCrudServiceTests
         Assert.Equal(2_000_000m, row.Paid);
         Assert.Equal(3_000_000m, row.Outstanding);
     }
+
+    [Fact]
+    public async Task ListAsync_filters_by_province_and_branch()
+    {
+        var service = NewService(out var repo);
+        var branchA = Guid.NewGuid();
+        var a = P("H1", "KS ABC", ProviderType.Hotel);
+        a.Province = "Hà Nội";
+        a.BranchId = branchA;
+        var b = P("H2", "KS XYZ", ProviderType.Hotel);
+        b.Province = "TP.HCM";
+        await repo.AddAsync(a);
+        await repo.AddAsync(b);
+        await repo.SaveChangesAsync();
+
+        Assert.Equal("H1", Assert.Single((await service.ListAsync(1, 20, new ProviderListFilter(Province: "Hà"))).Items).Code);
+        Assert.Equal("H1", Assert.Single((await service.ListAsync(1, 20, new ProviderListFilter(BranchId: branchA))).Items).Code);
+    }
 }
