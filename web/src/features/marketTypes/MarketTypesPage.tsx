@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
-import { CatalogStatusTag } from '../../shared/ui/CatalogStatusTag';
 import { NumberField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { useAuth } from '../auth/AuthContext';
@@ -60,7 +59,6 @@ function useDeleteMarketType() {
 const columns: ColumnsType<MarketType> = [
   { title: 'Tên', dataIndex: 'name', key: 'name' },
   { title: 'Thứ tự', dataIndex: 'sortOrder', key: 'sortOrder' },
-  { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (v: number) => <CatalogStatusTag status={v} /> },
 ];
 
 export function MarketTypesPage() {

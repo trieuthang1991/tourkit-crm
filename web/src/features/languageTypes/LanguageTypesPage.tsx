@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
-import { CatalogStatusTag } from '../../shared/ui/CatalogStatusTag';
 import { NumberField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { useAuth } from '../auth/AuthContext';
@@ -61,7 +60,6 @@ const columns: ColumnsType<LanguageType> = [
   { title: 'Ngôn ngữ', dataIndex: 'name', key: 'name' },
   { title: 'Mã', dataIndex: 'code', key: 'code', width: 100 },
   { title: 'Thứ tự', dataIndex: 'sortOrder', key: 'sortOrder' },
-  { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (v: number) => <CatalogStatusTag status={v} /> },
 ];
 
 export function LanguageTypesPage() {

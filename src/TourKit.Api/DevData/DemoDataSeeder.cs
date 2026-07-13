@@ -210,11 +210,13 @@ public static class DemoDataSeeder
         }
         if (!await db.Set<LanguageType>().AnyAsync())
         {
+            // Bám hệ cũ "Ngôn ngữ HDV": Anh/Việt/Hàn/Nhật/Trung.
             db.AddRange(
                 new LanguageType { Name = "Tiếng Anh", Code = "en", SortOrder = 1, Status = 1 },
-                new LanguageType { Name = "Tiếng Trung", Code = "zh", SortOrder = 2, Status = 1 },
+                new LanguageType { Name = "Tiếng Việt", Code = "vi", SortOrder = 2, Status = 1 },
                 new LanguageType { Name = "Tiếng Hàn", Code = "ko", SortOrder = 3, Status = 1 },
-                new LanguageType { Name = "Tiếng Nhật", Code = "ja", SortOrder = 4, Status = 1 });
+                new LanguageType { Name = "Tiếng Nhật", Code = "ja", SortOrder = 4, Status = 1 },
+                new LanguageType { Name = "Tiếng Trung", Code = "zh", SortOrder = 5, Status = 1 });
         }
         if (!await db.Set<RoomClass>().AnyAsync())
         {
