@@ -1,4 +1,5 @@
-import { App, Button, Popconfirm, Space, Table } from 'antd';
+import { App, Popconfirm, Space, Table } from 'antd';
+import { Button, DataCard } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -121,11 +122,11 @@ export function SurchargesPage() {
           width: 160,
           render: (_: unknown, item: Surcharge) => (
             <Space>
-              <Button size="small" onClick={() => setEditing(item)}>
+              <Button variant="ghost" size="small" onClick={() => setEditing(item)}>
                 Sửa
               </Button>
               <Popconfirm title="Xoá loại phụ thu này?" onConfirm={() => handleDelete(item.id)}>
-                <Button size="small" danger loading={remove.isPending}>
+                <Button variant="danger" size="small" loading={remove.isPending}>
                   Xoá
                 </Button>
               </Popconfirm>
@@ -141,13 +142,15 @@ export function SurchargesPage() {
         title="Loại phụ thu"
         extra={
           canManage ? (
-            <Button type="primary" onClick={() => setOpen(true)}>
+            <Button variant="primary" onClick={() => setOpen(true)}>
               Thêm
             </Button>
           ) : null
         }
       />
-      <Table rowKey="id" columns={tableColumns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      <DataCard title="Danh sách loại phụ thu">
+        <Table rowKey="id" columns={tableColumns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      </DataCard>
       {open ? (
         <CrudFormModal
           open={open}
