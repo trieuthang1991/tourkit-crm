@@ -1,4 +1,5 @@
-import { App, Button, Card, Col, DatePicker, Input, Row, Segmented, Select, Space, Statistic, Table, Tag } from 'antd';
+import { App, Card, Col, DatePicker, Input, Row, Select, Space, Statistic, Table, Tag } from 'antd';
+import { Button, DataCard, SegmentTabs } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -140,7 +141,7 @@ export function DeparturesPage() {
       width: 120,
       fixed: 'right',
       render: (_: unknown, item: Departure) => (
-        <Button size="small" onClick={() => navigate(`/departures/${item.id}`)}>
+        <Button variant="ghost" size="small" onClick={() => navigate(`/departures/${item.id}`)}>
           Mở chuyến
         </Button>
       ),
@@ -163,7 +164,7 @@ export function DeparturesPage() {
           <Space>
             <BatchDepartureButton />
             {canCreate && (
-              <Button type="primary" onClick={() => setCreating(true)}>
+              <Button variant="primary" onClick={() => setCreating(true)}>
                 Thêm chuyến
               </Button>
             )}
@@ -202,15 +203,15 @@ export function DeparturesPage() {
           </Col>
           <Col span={24}>
             <Space>
-              <Button type="primary" onClick={applyFilters}>Tìm kiếm</Button>
-              <Button onClick={resetFilters}>Đặt lại</Button>
+              <Button variant="primary" onClick={applyFilters}>Tìm kiếm</Button>
+              <Button variant="ghost" onClick={resetFilters}>Đặt lại</Button>
             </Space>
           </Col>
         </Row>
       </Card>
 
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
-        <Segmented
+        <SegmentTabs
           value={closed === undefined ? 'all' : closed ? 'closed' : 'open'}
           onChange={(val) => {
             setClosed(val === 'all' ? undefined : val === 'closed');
@@ -224,6 +225,7 @@ export function DeparturesPage() {
         />
       </div>
 
+      <DataCard title="Danh sách chuyến khởi hành">
       <Table
         rowKey="id"
         columns={columns}
@@ -238,6 +240,7 @@ export function DeparturesPage() {
           onChange: (p, sz) => setPage({ page: p, size: sz }),
         }}
       />
+      </DataCard>
 
       {creating && (
         <CrudFormModal

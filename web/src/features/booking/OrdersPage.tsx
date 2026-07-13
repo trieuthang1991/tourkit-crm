@@ -1,4 +1,5 @@
-import { Button, Card, Col, DatePicker, Input, Row, Segmented, Select, Space, Statistic, Table, Tag, TreeSelect, Typography } from 'antd';
+import { Card, Col, DatePicker, Input, Row, Select, Space, Statistic, Table, Tag, TreeSelect, Typography } from 'antd';
+import { Button, DataCard, SegmentTabs } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -279,7 +280,7 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
       width: 100,
       fixed: 'right',
       render: (_: unknown, item: Order) => (
-        <Button size="small" onClick={() => navigate(`/orders/${item.id}`, { state: { order: item } })}>
+        <Button variant="ghost" size="small" onClick={() => navigate(`/orders/${item.id}`, { state: { order: item } })}>
           Chi tiết
         </Button>
       ),
@@ -393,10 +394,10 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
           </Col>
           <Col span={24}>
             <Space>
-              <Button type="primary" onClick={applyFilters}>
+              <Button variant="primary" onClick={applyFilters}>
                 Tìm kiếm
               </Button>
-              <Button onClick={resetFilters}>Đặt lại</Button>
+              <Button variant="ghost" onClick={resetFilters}>Đặt lại</Button>
             </Space>
           </Col>
         </Row>
@@ -421,7 +422,7 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
 
       {/* Tabs trạng thái thanh toán (bám staging: Chưa TT · Đã cọc · TT hết) */}
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
-        <Segmented
+        <SegmentTabs
           value={payStatus === undefined ? 'all' : String(payStatus)}
           onChange={(val) => {
             setPayStatus(val === 'all' ? undefined : Number(val));
@@ -446,6 +447,7 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
         </Space>
       </div>
 
+      <DataCard title="Danh sách đơn hàng / Tour">
       <Table
         rowKey="id"
         columns={columns}
@@ -485,6 +487,7 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
           );
         }}
       />
+      </DataCard>
 
       {/* Thẻ thống kê vận hành (bám staging: Tổng tour · Đang chạy · Sắp chạy · Hoàn thành · Hủy) */}
       <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
