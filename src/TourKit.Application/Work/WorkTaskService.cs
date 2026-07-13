@@ -17,19 +17,35 @@ public sealed class WorkTaskService(
     IValidator<CreateWorkTaskDto> createValidator,
     IValidator<UpdateWorkTaskDto> updateValidator) : IWorkTaskService
 {
-    public async Task<IReadOnlyList<WorkTaskDto>> ListAsync(Guid? assigneeUserId, int? status)
+    public async Task<IReadOnlyList<WorkTaskDto>> ListAsync(Guid? assigneeUserId, int? status, string? q = null, int? priority = null)
     {
+        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
         var items = await repo.ListAsync(x =>
             (assigneeUserId == null || x.AssigneeUserId == assigneeUserId) &&
-            (status == null || x.Status == status));
+            (status == null || x.Status == status) &&
+            (priority == null || x.Priority == priority));
 
         var names = await LoadUserNamesAsync();
         return items
+            .Where(x => kw == null || x.Title.Contains(kw, StringComparison.OrdinalIgnoreCase))
             .OrderBy(x => x.Status)
             .ThenByDescending(x => x.Priority)
             .ThenBy(x => x.DueDate ?? DateTimeOffset.MaxValue)
             .Select(x => Map(x, names))
             .ToList();
+    }
+
+    public async Task<WorkTaskStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        var now = DateTimeOffset.UtcNow;
+        return new WorkTaskStatsDto(
+            all.Count,
+            all.Count(x => x.Status == 0),
+            all.Count(x => x.Status == 1),
+            all.Count(x => x.Status == 2),
+            all.Count(x => x.Status == 3),
+            all.Count(x => x.DueDate is { } d && d < now && x.Status != 2 && x.Status != 3));
     }
 
     public async Task<WorkTaskDto> CreateAsync(CreateWorkTaskDto dto)

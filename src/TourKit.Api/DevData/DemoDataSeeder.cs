@@ -206,6 +206,18 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7c') Công việc nội bộ (Tasking) — idempotent riêng; đủ trạng thái/ưu tiên + 1 quá hạn.
+        if (!await db.Set<WorkTask>().AnyAsync())
+        {
+            db.AddRange(
+                new WorkTask { Title = "Chuẩn bị hồ sơ đoàn Hạ Long", Description = "Danh sách khách + hợp đồng", AssigneeUserId = uSalesHn.Id, DueDate = now.AddDays(3), Priority = 2, Status = 0 },
+                new WorkTask { Title = "Đặt vé máy bay Thái Lan", Description = "Liên hệ Vietnam Airlines", AssigneeUserId = uOps.Id, DueDate = now.AddDays(5), Priority = 1, Status = 1 },
+                new WorkTask { Title = "Xác nhận khách sạn Đà Nẵng", Description = "Mường Thanh 3N2Đ", AssigneeUserId = uSalesHcm.Id, DueDate = now.AddDays(-2), Priority = 2, Status = 1 },
+                new WorkTask { Title = "Tổng kết doanh thu tháng", Description = "Báo cáo cho CEO", AssigneeUserId = uOps.Id, DueDate = now.AddDays(-5), Priority = 1, Status = 2 },
+                new WorkTask { Title = "Huỷ đặt xe dư", Description = "Đoàn giảm khách", AssigneeUserId = uSalesHn.Id, DueDate = now.AddDays(1), Priority = 0, Status = 3 });
+            await db.SaveChangesAsync();
+        }
+
         // 7d) Nhóm tour (Nhóm) — idempotent; dùng cho filter lưới vận hành.
         async Task<TourGroup> GroupOf(string code, string name, int sort)
         {
