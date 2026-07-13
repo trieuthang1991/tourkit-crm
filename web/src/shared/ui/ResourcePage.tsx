@@ -1,9 +1,11 @@
-import { App, Button, Popconfirm, Space, Table } from 'antd';
+import { App, Popconfirm, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { DEFAULT_PAGE } from '../api/paged';
 import { errorMessage } from '../api/problem';
+import { Button } from './Button';
+import { DataCard } from './DataCard';
 import { PageHeader } from './PageHeader';
 import { useAuth } from '../../features/auth/AuthContext';
 
@@ -54,7 +56,7 @@ export function ResourcePage<TItem, TForm>(props: ResourcePageProps<TItem, TForm
       render: (_: unknown, item: TItem) => (
         <Space>
           {canUpdate ? (
-            <Button size="small" onClick={() => setEditing({ mode: 'edit', item })}>
+            <Button variant="ghost" size="small" onClick={() => setEditing({ mode: 'edit', item })}>
               Sửa
             </Button>
           ) : null}
@@ -70,7 +72,7 @@ export function ResourcePage<TItem, TForm>(props: ResourcePageProps<TItem, TForm
                 }
               }}
             >
-              <Button size="small" danger>
+              <Button variant="danger" size="small">
                 Xoá
               </Button>
             </Popconfirm>
@@ -100,12 +102,13 @@ export function ResourcePage<TItem, TForm>(props: ResourcePageProps<TItem, TForm
         title={props.title}
         extra={
           canCreate ? (
-            <Button type="primary" onClick={() => setEditing({ mode: 'create', item: null })}>
+            <Button variant="primary" onClick={() => setEditing({ mode: 'create', item: null })}>
               Thêm mới
             </Button>
           ) : null
         }
       />
+      <DataCard>
       <Table
         rowKey={(i) => props.crud.getId(i)}
         columns={columns}
@@ -119,6 +122,7 @@ export function ResourcePage<TItem, TForm>(props: ResourcePageProps<TItem, TForm
           onChange: (p, s) => setPage({ page: p, size: s }),
         }}
       />
+      </DataCard>
       {editing
         ? props.formModal({
             open: true,

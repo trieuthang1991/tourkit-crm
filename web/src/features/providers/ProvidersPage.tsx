@@ -1,4 +1,5 @@
-import { App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag } from 'antd';
+import { App, Card, Col, DatePicker, Input, Popconfirm, Row, Select, Space, Statistic, Table, Tag } from 'antd';
+import { Button, DataCard, SegmentTabs } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -161,7 +162,7 @@ export function ProvidersPage() {
             render: (_: unknown, p: Provider) => (
               <Space>
                 {canUpdate ? (
-                  <Button size="small" onClick={() => setEditing({ mode: 'edit', item: p })}>
+                  <Button variant="ghost" size="small" onClick={() => setEditing({ mode: 'edit', item: p })}>
                     Sửa
                   </Button>
                 ) : null}
@@ -177,7 +178,7 @@ export function ProvidersPage() {
                       }
                     }}
                   >
-                    <Button size="small" danger>
+                    <Button variant="danger" size="small">
                       Xoá
                     </Button>
                   </Popconfirm>
@@ -222,7 +223,7 @@ export function ProvidersPage() {
         title="Nhà cung cấp"
         extra={
           canCreate ? (
-            <Button type="primary" onClick={() => setEditing({ mode: 'create', item: null })}>
+            <Button variant="primary" onClick={() => setEditing({ mode: 'create', item: null })}>
               Thêm mới
             </Button>
           ) : null
@@ -302,7 +303,7 @@ export function ProvidersPage() {
 
       {/* Tabs loại NCC */}
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
-        <Segmented
+        <SegmentTabs
           value={typeFilter === undefined ? 'all' : String(typeFilter)}
           onChange={(val) => {
             setTypeFilter(val === 'all' ? undefined : Number(val));
@@ -312,6 +313,7 @@ export function ProvidersPage() {
         />
       </div>
 
+      <DataCard title="Danh sách nhà cung cấp">
       <Table
         rowKey="id"
         columns={columns}
@@ -326,6 +328,7 @@ export function ProvidersPage() {
           onChange: (p, sz) => setPage({ page: p, size: sz }),
         }}
       />
+      </DataCard>
 
       {editing ? (
         <CrudFormModal
