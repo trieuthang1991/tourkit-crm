@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { agentQuoteSchema } from './types';
@@ -6,12 +7,37 @@ import type { CreateAgentQuoteForm, QuoteActionForm } from './types';
 
 const KEY = ['agentQuotes'];
 
-export function useAgentQuotes(page: number, size: number) {
+export type AgentQuoteFilter = { q?: string; agentId?: string; status?: number };
+
+function cleanParams(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+}
+
+export function useAgentQuotes(page: number, size: number, filter: AgentQuoteFilter = {}) {
   return useQuery({
-    queryKey: [...KEY, 'list', page, size],
+    queryKey: [...KEY, 'list', page, size, filter],
     queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/agent-quotes', { params: { page, size } });
+      const { data } = await httpClient.get<unknown>('/api/v1/agent-quotes', { params: cleanParams({ page, size, ...filter }) });
       return pagedSchema(agentQuoteSchema).parse(data);
+    },
+  });
+}
+
+export const agentQuoteStatsSchema = z.object({
+  total: z.number(),
+  requested: z.number(),
+  quoted: z.number(),
+  confirmed: z.number(),
+  rejected: z.number(),
+  totalQuoted: z.number(),
+});
+
+export function useAgentQuoteStats() {
+  return useQuery({
+    queryKey: [...KEY, 'stats'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/agent-quotes/stats');
+      return agentQuoteStatsSchema.parse(data);
     },
   });
 }

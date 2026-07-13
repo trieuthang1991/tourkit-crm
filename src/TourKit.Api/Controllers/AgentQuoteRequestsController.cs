@@ -16,8 +16,12 @@ public sealed class AgentQuoteRequestsController(IAgentQuoteRequestService servi
 {
     [HttpGet]
     [Authorize(Permissions.AgentQuoteView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] Guid? agentId = null)
-        => Ok(await service.ListAsync(page, size, agentId));
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] AgentQuoteRequestListFilter? filter = null)
+        => Ok(await service.ListAsync(page, size, filter));
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.AgentQuoteView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.AgentQuoteView)]

@@ -18,6 +18,7 @@ export const agentQuoteSchema = z.object({
   status: z.number(),
   quotedAmount: z.number().nullable(),
   quotedNote: z.string().nullable(),
+  agentName: z.string().nullable().optional(),
 });
 export type AgentQuote = z.infer<typeof agentQuoteSchema>;
 

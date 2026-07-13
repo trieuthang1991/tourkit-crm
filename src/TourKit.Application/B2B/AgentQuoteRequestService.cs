@@ -16,12 +16,37 @@ public sealed class AgentQuoteRequestService(
     IRepository<Agent> agentRepo,
     IValidator<CreateAgentQuoteRequestDto> createValidator) : IAgentQuoteRequestService
 {
-    public async Task<PagedResult<AgentQuoteRequestDto>> ListAsync(int page, int size, Guid? agentId)
+    public async Task<PagedResult<AgentQuoteRequestDto>> ListAsync(int page, int size, AgentQuoteRequestListFilter? filter = null)
     {
-        var (items, total) = agentId is { } aid
-            ? await repo.PageAsync(page, size, r => r.AgentId == aid)
-            : await repo.PageAsync(page, size);
-        return new PagedResult<AgentQuoteRequestDto>(items.Select(Map).ToList(), total, page, size);
+        var f = filter ?? new AgentQuoteRequestListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        var all = await repo.ListAsync(r =>
+            (f.AgentId == null || r.AgentId == f.AgentId) &&
+            (f.Status == null || (int)r.Status == f.Status));
+
+        var filtered = all
+            .Where(r => kw == null || r.ProductName.Contains(kw, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(r => r.CreatedAt).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
+
+        var agentIds = pageItems.Select(r => r.AgentId).ToHashSet();
+        var agentNames = (await agentRepo.ListAsync(a => agentIds.Contains(a.Id))).ToDictionary(a => a.Id, a => a.Name);
+
+        var dtos = pageItems.Select(r => Map(r) with { AgentName = agentNames.GetValueOrDefault(r.AgentId) }).ToList();
+        return new PagedResult<AgentQuoteRequestDto>(dtos, filtered.Count, page, size);
+    }
+
+    public async Task<AgentQuoteStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new AgentQuoteStatsDto(
+            all.Count,
+            all.Count(r => r.Status == AgentQuoteStatus.Requested),
+            all.Count(r => r.Status == AgentQuoteStatus.Quoted),
+            all.Count(r => r.Status == AgentQuoteStatus.Confirmed),
+            all.Count(r => r.Status == AgentQuoteStatus.Rejected),
+            all.Sum(r => r.QuotedAmount ?? 0m));
     }
 
     public async Task<AgentQuoteRequestDto> GetAsync(Guid id)

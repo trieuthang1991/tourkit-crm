@@ -85,10 +85,10 @@ public sealed class AgentQuoteRequestServiceTests
         var (svc, agentId) = await NewServiceAsync();
         await svc.CreateAsync(Req(agentId));
 
-        var byAgent = await svc.ListAsync(1, 20, agentId);
+        var byAgent = await svc.ListAsync(1, 20, new AgentQuoteRequestListFilter(AgentId: agentId));
         Assert.Single(byAgent.Items);
 
-        var other = await svc.ListAsync(1, 20, Guid.NewGuid());
+        var other = await svc.ListAsync(1, 20, new AgentQuoteRequestListFilter(AgentId: Guid.NewGuid()));
         Assert.Empty(other.Items);
     }
 }
