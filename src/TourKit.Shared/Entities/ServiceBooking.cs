@@ -20,6 +20,7 @@ public sealed class ServiceBooking : BaseEntity, ITenantEntity
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal TotalAmount { get; set; }                 // = Quantity × UnitPrice (tính khi ghi)
+    public decimal PaidAmount { get; set; }                  // đã thanh toán NCC (phiếu điều hành dịch vụ) — còn thiếu = TotalAmount − PaidAmount
     public int Status { get; set; }
     public string? Note { get; set; }
 }

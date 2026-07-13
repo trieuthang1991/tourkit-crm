@@ -131,6 +131,7 @@ const GROUPS: NavGroup[] = [
     label: 'Điều hành Tour',
     icon: <EnvironmentOutlined />,
     children: [
+      { key: '/service-operations', label: 'Phiếu điều hành dịch vụ', perm: 'servicebooking.view' },
       { key: '/operations-calendar', label: 'Lịch điều hành', perm: 'departure.view' },
     ],
   },
