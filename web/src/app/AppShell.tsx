@@ -103,7 +103,7 @@ const MENU: NavNode[] = [
     key: 'g-flight', label: 'Vé Máy Bay', icon: <SendOutlined />, children: [
       { key: 'f-provider', label: 'Nhà cung cấp vé', to: '/providers', perm: 'provider.view' },
       { key: 'f-group', label: 'Vé máy bay đoàn', to: '/flight-tickets', perm: 'ticketfund.view' },
-      { key: 'f-individual', label: 'Vé máy bay lẻ', to: '/flight-tickets', perm: 'ticketfund.view' },
+      { key: 'f-individual', label: 'Vé máy bay lẻ', to: '/flight-tickets-individual', perm: 'ticketfund.view' },
     ],
   },
   {

@@ -63,6 +63,7 @@ import { ActivityLogsPage } from '../features/activityLogs/ActivityLogsPage';
 import { OperationsCalendarPage } from '../features/operations/OperationsCalendarPage';
 import { ServiceBookingsPage } from '../features/serviceBookings/ServiceBookingsPage';
 import { FlightTicketsPage } from '../features/flights/FlightTicketsPage';
+import { FlightTicketsIndividualPage } from '../features/flights/FlightTicketsIndividualPage';
 import { ServiceOperationsPage } from '../features/serviceOperations/ServiceOperationsPage';
 import { RoomClassesPage } from '../features/roomClasses/RoomClassesPage';
 import { AgentsPage } from '../features/agents/AgentsPage';
@@ -147,6 +148,7 @@ export function AppRouter() {
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/service-bookings" element={<ServiceBookingsPage />} />
         <Route path="/flight-tickets" element={<FlightTicketsPage />} />
+        <Route path="/flight-tickets-individual" element={<FlightTicketsIndividualPage />} />
         <Route path="/service-operations" element={<ServiceOperationsPage />} />
         <Route path="/room-classes" element={<RoomClassesPage />} />
         <Route path="/agents" element={<AgentsPage />} />

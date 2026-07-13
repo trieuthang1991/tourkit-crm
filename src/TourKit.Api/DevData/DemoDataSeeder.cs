@@ -536,6 +536,46 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7n'') Vé máy bay lẻ (FlightTicketIndividual) — P&L từng vé, phủ đủ sub-tab (chờ chi/đến hạn/quá hạn/thành công/chưa thu hết/không duyệt).
+        if (!await db.Set<FlightTicketIndividual>().AnyAsync())
+        {
+            var fOrder2 = opsOrders.FirstOrDefault();
+            db.AddRange(
+                // Thành công: đã duyệt, thu đủ + chi đủ.
+                new FlightTicketIndividual
+                {
+                    Code = "VMB_0001", TicketCode = "738-1234567", Pnr = "PNRL01", CustomerName = c1.FullName,
+                    ProviderRef = p5.Id.ToString(), TripType = 1, Route = "SGN-HAN-SGN", DepartDate = now.AddDays(8), ReturnDate = now.AddDays(11),
+                    SellAmount = 3_200_000m, ReceivedAmount = 3_200_000m, TotalCost = 2_600_000m, PaidAmount = 2_600_000m,
+                    Status = 1, AssigneeRef = uSalesHn.Id.ToString(), OrderRef = fOrder2?.Id.ToString(),
+                },
+                // Tạo mới + chờ chi + đến hạn chi 24h + chưa thu hết.
+                new FlightTicketIndividual
+                {
+                    Code = "VMB_0002", TicketCode = "738-2234567", Pnr = "PNRL02", CustomerName = c2.FullName,
+                    ProviderRef = p5.Id.ToString(), TripType = 0, Route = "HAN-DAD", DepartDate = now.AddDays(3),
+                    SellAmount = 1_800_000m, ReceivedAmount = 0m, TotalCost = 1_500_000m, PaidAmount = 0m,
+                    PaymentDueDate = now.AddHours(12), Status = 0, AssigneeRef = uSalesHn.Id.ToString(),
+                },
+                // Đã duyệt + chưa chi hết + quá hạn chi + chưa thu hết.
+                new FlightTicketIndividual
+                {
+                    Code = "VMB_0003", TicketCode = "738-3234567", Pnr = "PNRL03", CustomerName = c3.FullName,
+                    ProviderRef = p5.Id.ToString(), TripType = 1, Route = "SGN-BKK-SGN", DepartDate = now.AddDays(20), ReturnDate = now.AddDays(24),
+                    SellAmount = 4_500_000m, ReceivedAmount = 2_000_000m, TotalCost = 3_800_000m, PaidAmount = 1_000_000m,
+                    PaymentDueDate = now.AddDays(-2), Status = 1, AssigneeRef = uSalesHn.Id.ToString(),
+                },
+                // Không duyệt.
+                new FlightTicketIndividual
+                {
+                    Code = "VMB_0004", TicketCode = "738-4234567", Pnr = "PNRL04", CustomerName = c4.FullName,
+                    ProviderRef = p5.Id.ToString(), TripType = 0, Route = "DAD-SGN", DepartDate = now.AddDays(6),
+                    SellAmount = 1_600_000m, ReceivedAmount = 0m, TotalCost = 1_350_000m, PaidAmount = 0m,
+                    Status = 2, AssigneeRef = uSalesHn.Id.ToString(),
+                });
+            await db.SaveChangesAsync();
+        }
+
         // 7o) Đại lý B2B (Agent) — varied trạng thái/hạn mức cho màn Đại lý.
         if (!await db.Set<Agent>().AnyAsync())
         {
