@@ -11,10 +11,28 @@ public sealed class AgentService(
     IValidator<CreateAgentDto> createValidator,
     IValidator<UpdateAgentDto> updateValidator) : IAgentService
 {
-    public async Task<PagedResult<AgentDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<AgentDto>> ListAsync(int page, int size, AgentListFilter? filter = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
-        return new PagedResult<AgentDto>(items.Select(Map).ToList(), total, page, size);
+        var f = filter ?? new AgentListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        var all = await repo.ListAsync(a => f.Status == null || a.Status == f.Status);
+        var filtered = all
+            .Where(a => kw == null || a.Code.Contains(kw, StringComparison.OrdinalIgnoreCase)
+                || a.Name.Contains(kw, StringComparison.OrdinalIgnoreCase)
+                || (a.ContactPerson?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (a.Phone?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false))
+            .OrderBy(a => a.Name)
+            .ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(Map).ToList();
+        return new PagedResult<AgentDto>(pageItems, filtered.Count, page, size);
+    }
+
+    public async Task<AgentStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new AgentStatsDto(
+            all.Count, all.Count(a => a.Status == 1), all.Count(a => a.Status == 0), all.Sum(a => a.CreditLimit));
     }
 
     public async Task<AgentDto> CreateAsync(CreateAgentDto dto)

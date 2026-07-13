@@ -13,8 +13,12 @@ public sealed class AgentsController(IAgentService service) : ControllerBase
 {
     [HttpGet]
     [Authorize(Permissions.AgentView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20)
-        => Ok(await service.ListAsync(page, size));
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] AgentListFilter? filter = null)
+        => Ok(await service.ListAsync(page, size, filter));
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.AgentView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpPost]
     [Authorize(Permissions.AgentManage)]

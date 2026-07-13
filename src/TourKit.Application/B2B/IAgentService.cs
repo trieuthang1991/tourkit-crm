@@ -5,7 +5,8 @@ namespace TourKit.Application.B2B;
 
 public interface IAgentService
 {
-    Task<PagedResult<AgentDto>> ListAsync(int page, int size);
+    Task<PagedResult<AgentDto>> ListAsync(int page, int size, AgentListFilter? filter = null);
+    Task<AgentStatsDto> GetStatsAsync();
     Task<AgentDto> CreateAsync(CreateAgentDto dto);
     Task UpdateAsync(Guid id, UpdateAgentDto dto);
     Task DeleteAsync(Guid id);

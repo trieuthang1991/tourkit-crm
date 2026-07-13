@@ -361,6 +361,16 @@ public static class DemoDataSeeder
             }
         }
 
+        // 7o) Đại lý B2B (Agent) — varied trạng thái/hạn mức cho màn Đại lý.
+        if (!await db.Set<Agent>().AnyAsync())
+        {
+            db.AddRange(
+                new Agent { Code = "DL001", Name = "Đại lý Miền Bắc", ContactPerson = "Nguyễn Văn Bắc", Phone = "0901234001", Email = "mienbac@dl.vn", TaxCode = "0301111111", Address = "Hà Nội", CreditLimit = 100_000_000m, Status = 1 },
+                new Agent { Code = "DL002", Name = "Đại lý Miền Nam", ContactPerson = "Trần Thị Nam", Phone = "0901234002", Email = "miennam@dl.vn", TaxCode = "0302222222", Address = "Hồ Chí Minh", CreditLimit = 150_000_000m, Status = 1 },
+                new Agent { Code = "DL003", Name = "Đại lý Miền Trung", ContactPerson = "Lê Văn Trung", Phone = "0901234003", Address = "Đà Nẵng", CreditLimit = 50_000_000m, Status = 0 });
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {
