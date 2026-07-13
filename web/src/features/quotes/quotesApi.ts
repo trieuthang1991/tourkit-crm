@@ -34,7 +34,7 @@ export function useAllProviderPrices() {
   });
 }
 
-export type QuoteFilter = { q?: string; status?: number; validFrom?: string; validTo?: string; converted?: boolean };
+export type QuoteFilter = { q?: string; status?: number; validFrom?: string; validTo?: string; converted?: boolean; quoteType?: number };
 
 function cleanParams(obj: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''));
@@ -60,11 +60,13 @@ export const quoteStatsSchema = z.object({
   totalProfit: z.number(),
 });
 
-export function useQuoteStats() {
+export function useQuoteStats(quoteType?: number) {
   return useQuery({
-    queryKey: [...KEY, 'stats'],
+    queryKey: [...KEY, 'stats', quoteType ?? 'all'],
     queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/quotes/stats');
+      const { data } = await httpClient.get<unknown>('/api/v1/quotes/stats', {
+        params: cleanParams({ quoteType }),
+      });
       return quoteStatsSchema.parse(data);
     },
   });

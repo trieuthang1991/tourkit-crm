@@ -422,11 +422,16 @@ public static class DemoDataSeeder
         // 7j) Báo giá (Quote) — varied trạng thái/số khách/lợi nhuận cho màn Báo giá + phễu dashboard.
         if (!await db.Set<Quote>().AnyAsync())
         {
+            // QuoteType: 0 Tour · 1 Combo · 2 GIT · 3 Landtour · 4 Booking phòng · 5 Dịch vụ lẻ · 6 Visa — phủ đủ 7 view menu Báo giá.
             db.AddRange(
-                new Quote { Code = "BG_0001", CustomerId = c1.Id, CustomerName = c1.FullName, Title = "Hạ Long 3N2Đ", ValidUntil = now.AddDays(10), Status = 2, TotalAmount = 7_000_000m, TotalCost = 4_500_000m, TotalProfit = 2_500_000m, Adults = 2, Children = 1, Infants = 0 },
-                new Quote { Code = "BG_0002", CustomerId = c2.Id, CustomerName = c2.FullName, Title = "Thái Lan 5N4Đ", ValidUntil = now.AddDays(15), Status = 1, TotalAmount = 17_800_000m, TotalCost = 11_000_000m, TotalProfit = 6_800_000m, Adults = 2, Children = 0, Infants = 0 },
-                new Quote { Code = "BG_0003", CustomerId = c3.Id, CustomerName = c3.FullName, Title = "Đà Nẵng - Hội An", ValidUntil = now.AddDays(5), Status = 0, TotalAmount = 5_400_000m, TotalCost = 3_800_000m, TotalProfit = 1_600_000m, Adults = 3, Children = 2, Infants = 1 },
-                new Quote { Code = "BG_0004", CustomerId = c4.Id, CustomerName = c4.FullName, Title = "Sapa 2N1Đ", ValidUntil = now.AddDays(-2), Status = 3, TotalAmount = 3_200_000m, TotalCost = 2_500_000m, TotalProfit = 700_000m, Adults = 1, Children = 0, Infants = 0 });
+                new Quote { Code = "BG_0001", QuoteType = 0, CustomerId = c1.Id, CustomerName = c1.FullName, Title = "Hạ Long 3N2Đ", ValidUntil = now.AddDays(10), Status = 2, TotalAmount = 7_000_000m, TotalCost = 4_500_000m, TotalProfit = 2_500_000m, Adults = 2, Children = 1, Infants = 0 },
+                new Quote { Code = "BG_0002", QuoteType = 0, CustomerId = c2.Id, CustomerName = c2.FullName, Title = "Thái Lan 5N4Đ", ValidUntil = now.AddDays(15), Status = 1, TotalAmount = 17_800_000m, TotalCost = 11_000_000m, TotalProfit = 6_800_000m, Adults = 2, Children = 0, Infants = 0 },
+                new Quote { Code = "BG_0003", QuoteType = 1, CustomerId = c3.Id, CustomerName = c3.FullName, Title = "Combo Đà Nẵng - Hội An", ValidUntil = now.AddDays(5), Status = 0, TotalAmount = 5_400_000m, TotalCost = 3_800_000m, TotalProfit = 1_600_000m, Adults = 3, Children = 2, Infants = 1 },
+                new Quote { Code = "BG_0004", QuoteType = 3, CustomerId = c4.Id, CustomerName = c4.FullName, Title = "Landtour Sapa 2N1Đ", ValidUntil = now.AddDays(-2), Status = 3, TotalAmount = 3_200_000m, TotalCost = 2_500_000m, TotalProfit = 700_000m, Adults = 1, Children = 0, Infants = 0 },
+                new Quote { Code = "BG_0005", QuoteType = 6, CustomerId = c1.Id, CustomerName = c1.FullName, Title = "Visa Hàn Quốc", ValidUntil = now.AddDays(20), Status = 1, TotalAmount = 2_400_000m, TotalCost = 1_500_000m, TotalProfit = 900_000m, Adults = 2, Children = 0, Infants = 0 },
+                new Quote { Code = "BG_0006", QuoteType = 5, CustomerId = c2.Id, CustomerName = c2.FullName, Title = "Vé tham quan Bà Nà (lẻ)", ValidUntil = now.AddDays(7), Status = 2, TotalAmount = 1_650_000m, TotalCost = 1_200_000m, TotalProfit = 450_000m, Adults = 3, Children = 0, Infants = 0 },
+                new Quote { Code = "BG_0007", QuoteType = 4, CustomerId = c3.Id, CustomerName = c3.FullName, Title = "Booking phòng Vinpearl Nha Trang", ValidUntil = now.AddDays(12), Status = 0, TotalAmount = 8_800_000m, TotalCost = 6_500_000m, TotalProfit = 2_300_000m, Adults = 4, Children = 2, Infants = 0 },
+                new Quote { Code = "BG_0008", QuoteType = 2, CustomerId = c4.Id, CustomerName = c4.FullName, Title = "Tour GIT Phú Quốc (đoàn 20)", ValidUntil = now.AddDays(25), Status = 1, TotalAmount = 62_000_000m, TotalCost = 47_000_000m, TotalProfit = 15_000_000m, Adults = 20, Children = 4, Infants = 1 });
             await db.SaveChangesAsync();
         }
 

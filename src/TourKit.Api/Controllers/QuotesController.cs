@@ -31,7 +31,7 @@ public sealed class QuotesController(IQuoteService service, IQuoteConversionServ
 
     [HttpGet("stats")]
     [Authorize(Permissions.QuoteView)]
-    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
+    public async Task<IActionResult> Stats([FromQuery] int? quoteType = null) => Ok(await service.GetStatsAsync(quoteType));
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.QuoteView)]

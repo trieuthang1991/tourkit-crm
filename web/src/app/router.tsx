@@ -168,7 +168,14 @@ export function AppRouter() {
         <Route path="/guide-assignments" element={<GuideAssignmentsPage />} />
         <Route path="/vehicle-assignments" element={<VehicleAssignmentsPage />} />
         <Route path="/activity-logs" element={<ActivityLogsPage />} />
-        <Route path="/quotes" element={<QuotesPage />} />
+        {/* 7 view Báo giá — cùng khung QuotesPage, khác quoteType + tiêu đề (bám menu hệ cũ). */}
+        <Route path="/quotes" element={<QuotesPage quoteType={0} title="Tính giá Tour" />} />
+        <Route path="/quotes/combo" element={<QuotesPage quoteType={1} title="Tính giá Combo" />} />
+        <Route path="/quotes/git" element={<QuotesPage quoteType={2} title="Tour GIT/Combo" />} />
+        <Route path="/quotes/landtour" element={<QuotesPage quoteType={3} title="Landtour" />} />
+        <Route path="/quotes/room-booking" element={<QuotesPage quoteType={4} title="Booking Phòng" />} />
+        <Route path="/quotes/service" element={<QuotesPage quoteType={5} title="Dịch vụ lẻ" />} />
+        <Route path="/quotes/visa" element={<QuotesPage quoteType={6} title="Visa" />} />
         <Route path="/invoices" element={<InvoicesPage />} />
         <Route path="/agent-quotes" element={<AgentQuotesPage />} />
         <Route path="/ticket-funds" element={<TicketFundsPage />} />

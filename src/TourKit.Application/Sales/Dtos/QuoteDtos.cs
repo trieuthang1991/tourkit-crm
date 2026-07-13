@@ -10,17 +10,19 @@ public sealed record QuoteDto(
     int Adults, int Children, int Infants, decimal ChildPercent, decimal InfantPercent,
     decimal TotalCost, decimal TotalProfit,
     decimal AdultPrice, decimal ChildPrice, decimal InfantPrice,  // 3 giá hạng khách — derived, không lưu
-    Guid? ConvertedOrderId);                                       // đơn đã sinh (null = chưa chuyển)
+    Guid? ConvertedOrderId,                                        // đơn đã sinh (null = chưa chuyển)
+    int QuoteType = 0);                                            // loại báo giá (Tour/Combo/GIT/...)
 
 /// <summary>Dòng tóm tắt cho danh sách (không kèm chi tiết dòng).</summary>
 public sealed record QuoteSummaryDto(
     Guid Id, string Code, string CustomerName, string Title, DateTimeOffset? ValidUntil, int Status, decimal TotalAmount,
-    Guid? ConvertedOrderId, int Adults, int Children, int Infants, decimal TotalCost, decimal TotalProfit);
+    Guid? ConvertedOrderId, int Adults, int Children, int Infants, decimal TotalCost, decimal TotalProfit,
+    int QuoteType = 0);
 
-/// <summary>Bộ lọc danh sách báo giá (bám hệ cũ). Status: 0 nháp · 1 đã gửi · 2 chấp nhận · 3 từ chối. Converted: đã chuyển đơn.</summary>
+/// <summary>Bộ lọc danh sách báo giá (bám hệ cũ). Status: 0 nháp · 1 đã gửi · 2 chấp nhận · 3 từ chối. Converted: đã chuyển đơn. QuoteType: lọc theo loại (Tour/Combo/…).</summary>
 public sealed record QuoteListFilter(
     string? Q = null, int? Status = null, DateTimeOffset? ValidFrom = null, DateTimeOffset? ValidTo = null,
-    bool? Converted = null);
+    bool? Converted = null, int? QuoteType = null);
 
 /// <summary>Thẻ thống kê đầu màn Báo giá: tổng + theo trạng thái + tổng giá trị + lợi nhuận dự kiến.</summary>
 public sealed record QuoteStatsDto(
@@ -35,7 +37,7 @@ public sealed record CreateQuoteDto(
     string Code, Guid? CustomerId, string CustomerName, string Title,
     DateTimeOffset? ValidUntil, int Status, string? Note, CreateQuoteLineDto[] Lines,
     int Adults = 0, int Children = 0, int Infants = 0,
-    decimal ChildPercent = 75, decimal InfantPercent = 50);
+    decimal ChildPercent = 75, decimal InfantPercent = 50, int QuoteType = 0);
 
 /// <summary>
 /// Chuyển báo giá chấp nhận → đơn. Hai chế độ:
@@ -51,4 +53,4 @@ public sealed record UpdateQuoteDto(
     string Code, Guid? CustomerId, string CustomerName, string Title,
     DateTimeOffset? ValidUntil, int Status, string? Note, CreateQuoteLineDto[] Lines,
     int Adults = 0, int Children = 0, int Infants = 0,
-    decimal ChildPercent = 75, decimal InfantPercent = 50);
+    decimal ChildPercent = 75, decimal InfantPercent = 50, int QuoteType = 0);

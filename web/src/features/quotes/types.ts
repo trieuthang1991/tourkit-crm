@@ -16,6 +16,7 @@ export const quoteLineSchema = z.object({
 export const quoteSchema = z.object({
   id: z.string().uuid(),
   code: z.string(),
+  quoteType: z.number().default(0),
   customerId: z.string().nullable(),
   customerName: z.string(),
   title: z.string(),
@@ -42,6 +43,7 @@ export type Quote = z.infer<typeof quoteSchema>;
 export const quoteSummarySchema = z.object({
   id: z.string().uuid(),
   code: z.string(),
+  quoteType: z.number().default(0),
   customerName: z.string(),
   title: z.string(),
   validUntil: z.string().nullable(),
@@ -58,6 +60,7 @@ export type QuoteSummary = z.infer<typeof quoteSummarySchema>;
 
 export const quoteFormSchema = z.object({
   code: z.string().min(1, 'Bắt buộc'),
+  quoteType: z.number(),
   customerName: z.string(),
   title: z.string().min(1, 'Bắt buộc'),
   validUntil: z.string().nullable(),
@@ -104,3 +107,19 @@ export const SCOPE_OPTIONS = [
   { value: 0, label: 'Cả đoàn' },
   { value: 1, label: 'Theo khách' },
 ];
+
+// 7 loại báo giá — bám menu "Báo Giá" hệ cũ. Dùng cho route/tiêu đề từng view + cột/nhãn.
+export const QUOTE_TYPE_LABEL: Record<number, string> = {
+  0: 'Tính giá Tour',
+  1: 'Tính giá Combo',
+  2: 'Tour GIT/Combo',
+  3: 'Landtour',
+  4: 'Booking Phòng',
+  5: 'Dịch vụ lẻ',
+  6: 'Visa',
+};
+
+export const QUOTE_TYPE_OPTIONS = Object.entries(QUOTE_TYPE_LABEL).map(([value, label]) => ({
+  value: Number(value),
+  label,
+}));

@@ -25,6 +25,7 @@ public sealed class QuoteService(
 
         // Lọc cột thật (trạng thái, hạn hiệu lực, đã chuyển đơn) ở DB; q (mã/khách/tiêu đề) sau.
         var all = await quoteRepo.ListAsync(q =>
+            (f.QuoteType == null || q.QuoteType == f.QuoteType) &&
             (f.Status == null || q.Status == f.Status) &&
             (f.ValidFrom == null || q.ValidUntil >= f.ValidFrom) &&
             (f.ValidTo == null || q.ValidUntil <= f.ValidTo) &&
@@ -40,14 +41,14 @@ public sealed class QuoteService(
         var pageItems = filtered.Skip((page - 1) * size).Take(size)
             .Select(q => new QuoteSummaryDto(
                 q.Id, q.Code, q.CustomerName, q.Title, q.ValidUntil, q.Status, q.TotalAmount, q.ConvertedOrderId,
-                q.Adults, q.Children, q.Infants, q.TotalCost, q.TotalProfit))
+                q.Adults, q.Children, q.Infants, q.TotalCost, q.TotalProfit, q.QuoteType))
             .ToList();
         return new PagedResult<QuoteSummaryDto>(pageItems, filtered.Count, page, size);
     }
 
-    public async Task<QuoteStatsDto> GetStatsAsync()
+    public async Task<QuoteStatsDto> GetStatsAsync(int? quoteType = null)
     {
-        var all = await quoteRepo.ListAsync();
+        var all = await quoteRepo.ListAsync(q => quoteType == null || q.QuoteType == quoteType);
         return new QuoteStatsDto(
             all.Count,
             all.Count(q => q.Status == 0), all.Count(q => q.Status == 1),
@@ -69,6 +70,7 @@ public sealed class QuoteService(
         var quote = new Quote
         {
             Code = dto.Code.Trim(),
+            QuoteType = dto.QuoteType,
             CustomerId = dto.CustomerId,
             CustomerName = dto.CustomerName,
             Title = dto.Title.Trim(),
@@ -105,6 +107,7 @@ public sealed class QuoteService(
         var quote = await quoteRepo.GetByIdAsync(id) ?? throw new NotFoundException();
 
         quote.Code = dto.Code.Trim();
+        quote.QuoteType = dto.QuoteType;
         quote.CustomerId = dto.CustomerId;
         quote.CustomerName = dto.CustomerName;
         quote.Title = dto.Title.Trim();
@@ -217,6 +220,6 @@ public sealed class QuoteService(
             quote.Adults, quote.Children, quote.Infants, quote.ChildPercent, quote.InfantPercent,
             quote.TotalCost, quote.TotalProfit,
             pricing.AdultPrice, pricing.ChildPrice, pricing.InfantPrice,
-            quote.ConvertedOrderId);
+            quote.ConvertedOrderId, quote.QuoteType);
     }
 }

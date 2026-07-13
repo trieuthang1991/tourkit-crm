@@ -8,6 +8,7 @@ public sealed class Quote : BaseEntity, ITenantEntity
 {
     public Guid TenantId { get; set; }
     public string Code { get; set; } = string.Empty;
+    public int QuoteType { get; set; }                    // QuoteType enum: 0 Tour · 1 Combo · 2 GIT · 3 Landtour · 4 Booking phòng · 5 Dịch vụ lẻ · 6 Visa
     public Guid? CustomerId { get; set; }                 // KH đã có (tuỳ chọn)
     public string CustomerName { get; set; } = string.Empty; // tên KH (free text nếu chưa là customer)
     public string Title { get; set; } = string.Empty;

@@ -36,6 +36,7 @@ const EMPTY_LINE = {
 
 const EMPTY_FORM: QuoteForm = {
   code: '',
+  quoteType: 0,
   customerName: '',
   title: '',
   validUntil: null,
@@ -49,7 +50,9 @@ const EMPTY_FORM: QuoteForm = {
   lines: [{ ...EMPTY_LINE }],
 };
 
-export function QuotesPage() {
+// Màn Báo giá dùng chung cho 7 loại (Tour/Combo/GIT/Landtour/Booking Phòng/Dịch vụ lẻ/Visa).
+// Route truyền quoteType + title → mỗi mục menu là 1 view lọc riêng, cùng khung calculator.
+export function QuotesPage({ quoteType = 0, title = 'Báo giá' }: { quoteType?: number; title?: string } = {}) {
   const { message } = App.useApp();
   const { has } = useAuth();
   const canManage = has('quote.manage');
@@ -69,8 +72,8 @@ export function QuotesPage() {
     setFilter({});
     setPage(1);
   };
-  const list = useQuotes(page, size, { ...filter, status });
-  const stats = useQuoteStats();
+  const list = useQuotes(page, size, { ...filter, status, quoteType });
+  const stats = useQuoteStats(quoteType);
 
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const isEdit = editingId !== null && editingId !== 'new';
@@ -113,6 +116,7 @@ export function QuotesPage() {
     isEdit && detail.data
       ? {
           code: detail.data.code,
+          quoteType: detail.data.quoteType,
           customerName: detail.data.customerName,
           title: detail.data.title,
           validUntil: detail.data.validUntil,
@@ -134,7 +138,7 @@ export function QuotesPage() {
             marginPercent: l.marginPercent,
           })),
         }
-      : EMPTY_FORM;
+      : { ...EMPTY_FORM, quoteType };
 
   async function onSubmit(values: QuoteForm) {
     try {
@@ -236,7 +240,7 @@ export function QuotesPage() {
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Typography.Title level={3} style={{ margin: 0 }}>
-          Báo giá
+          {title}
         </Typography.Title>
         {canManage ? (
           <Button type="primary" onClick={() => setEditingId('new')}>

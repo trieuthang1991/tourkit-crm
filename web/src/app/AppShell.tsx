@@ -73,12 +73,12 @@ const MENU: NavNode[] = [
   {
     key: 'g-quote', label: 'Báo Giá', icon: <CalculatorOutlined />, children: [
       { key: 'q-tour', label: 'Tính giá Tour', to: '/quotes', perm: 'quote.view' },
-      { key: 'q-combo', label: 'Tính giá Combo', to: '/quotes', perm: 'quote.view' },
-      { key: 'q-git', label: 'Tour GIT/Combo', to: '/quotes', perm: 'quote.view' },
-      { key: 'q-landtour', label: 'Landtour', to: '/quotes', perm: 'quote.view' },
-      { key: 'q-booking', label: 'Booking Phòng', to: '/quotes', perm: 'quote.view' },
-      { key: 'q-service', label: 'Dịch vụ lẻ', to: '/quotes', perm: 'quote.view' },
-      { key: 'q-visa', label: 'Visa', to: '/quotes', perm: 'quote.view' },
+      { key: 'q-combo', label: 'Tính giá Combo', to: '/quotes/combo', perm: 'quote.view' },
+      { key: 'q-git', label: 'Tour GIT/Combo', to: '/quotes/git', perm: 'quote.view' },
+      { key: 'q-landtour', label: 'Landtour', to: '/quotes/landtour', perm: 'quote.view' },
+      { key: 'q-booking', label: 'Booking Phòng', to: '/quotes/room-booking', perm: 'quote.view' },
+      { key: 'q-service', label: 'Dịch vụ lẻ', to: '/quotes/service', perm: 'quote.view' },
+      { key: 'q-visa', label: 'Visa', to: '/quotes/visa', perm: 'quote.view' },
       { key: 'q-agent', label: 'Báo giá Đại lý (B2B)', to: '/agent-quotes', perm: 'agentquote.view' },
     ],
   },
