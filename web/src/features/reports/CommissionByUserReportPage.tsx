@@ -1,4 +1,5 @@
 import { Table, Typography } from 'antd';
+import { DataCard } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { money } from '../../shared/format';
 import { useCommissionByUser } from './commissionByUserApi';
@@ -29,6 +30,7 @@ export function CommissionByUserReportPage() {
   return (
     <>
       <Typography.Title level={3}>Báo cáo hoa hồng theo nhân viên</Typography.Title>
+      <DataCard>
       <Table
         rowKey="userId"
         columns={columns}
@@ -36,6 +38,7 @@ export function CommissionByUserReportPage() {
         loading={report.isLoading}
         pagination={false}
       />
+      </DataCard>
     </>
   );
 }

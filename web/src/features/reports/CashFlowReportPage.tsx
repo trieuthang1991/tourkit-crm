@@ -1,4 +1,5 @@
 import { Table, Typography } from 'antd';
+import { DataCard } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { money } from '../../shared/format';
 import { useCashFlow } from './cashFlowApi';
@@ -17,6 +18,7 @@ export function CashFlowReportPage() {
   return (
     <>
       <Typography.Title level={3}>Báo cáo dòng tiền</Typography.Title>
+      <DataCard>
       <Table
         rowKey="paymentMethod"
         columns={columns}
@@ -24,6 +26,7 @@ export function CashFlowReportPage() {
         loading={report.isLoading}
         pagination={false}
       />
+      </DataCard>
     </>
   );
 }

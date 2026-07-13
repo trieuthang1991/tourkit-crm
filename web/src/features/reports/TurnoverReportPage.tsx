@@ -1,4 +1,5 @@
-import { Button, Table, Typography } from 'antd';
+import { Table, Typography } from 'antd';
+import { Button, DataCard } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { money } from '../../shared/format';
@@ -15,7 +16,7 @@ export function TurnoverReportPage() {
       dataIndex: 'orderCode',
       key: 'orderCode',
       render: (v: string, row) => (
-        <Button type="link" style={{ padding: 0 }} onClick={() => navigate(`/orders/${row.orderId}`)}>
+        <Button variant="text" style={{ padding: 0 }} onClick={() => navigate(`/orders/${row.orderId}`)}>
           {v}
         </Button>
       ),
@@ -28,6 +29,7 @@ export function TurnoverReportPage() {
   return (
     <>
       <Typography.Title level={3}>Báo cáo doanh thu – lợi nhuận</Typography.Title>
+      <DataCard>
       <Table
         rowKey="orderId"
         columns={columns}
@@ -35,6 +37,7 @@ export function TurnoverReportPage() {
         loading={report.isLoading}
         pagination={false}
       />
+      </DataCard>
     </>
   );
 }

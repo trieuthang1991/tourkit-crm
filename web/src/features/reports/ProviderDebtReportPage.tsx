@@ -1,4 +1,5 @@
 import { Table, Typography } from 'antd';
+import { DataCard } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { money } from '../../shared/format';
 import { useProviderDebt } from './providerDebtApi';
@@ -17,6 +18,7 @@ export function ProviderDebtReportPage() {
   return (
     <>
       <Typography.Title level={3}>Báo cáo công nợ phải trả NCC</Typography.Title>
+      <DataCard>
       <Table
         rowKey="providerId"
         columns={columns}
@@ -24,6 +26,7 @@ export function ProviderDebtReportPage() {
         loading={report.isLoading}
         pagination={false}
       />
+      </DataCard>
     </>
   );
 }

@@ -1,4 +1,5 @@
 import { Table, Typography } from 'antd';
+import { DataCard } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { money } from '../../shared/format';
 import { useTurnoverByDepartment } from './turnoverByDepartmentApi';
@@ -18,6 +19,7 @@ export function TurnoverByDepartmentReportPage() {
   return (
     <>
       <Typography.Title level={3}>Báo cáo doanh thu theo phòng ban</Typography.Title>
+      <DataCard>
       <Table
         rowKey={(r) => r.departmentId ?? 'unassigned'}
         columns={columns}
@@ -25,6 +27,7 @@ export function TurnoverByDepartmentReportPage() {
         loading={report.isLoading}
         pagination={false}
       />
+      </DataCard>
     </>
   );
 }
