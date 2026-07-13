@@ -196,6 +196,74 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7b''') Danh mục dùng chung (Thiết lập hệ thống) — mỗi catalog idempotent riêng, Status=1 Hoạt động.
+        if (!await db.Set<CarType>().AnyAsync())
+        {
+            db.AddRange(
+                new CarType { Code = 4, Name = "4 chỗ", SortOrder = 1, Status = 1 },
+                new CarType { Code = 7, Name = "7 chỗ", SortOrder = 2, Status = 1 },
+                new CarType { Code = 16, Name = "16 chỗ", SortOrder = 3, Status = 1 },
+                new CarType { Code = 29, Name = "29 chỗ", SortOrder = 4, Status = 1 },
+                new CarType { Code = 35, Name = "35 chỗ", SortOrder = 5, Status = 1 },
+                new CarType { Code = 45, Name = "45 chỗ", SortOrder = 6, Status = 1 },
+                new CarType { Code = 47, Name = "47 chỗ", SortOrder = 7, Status = 1 });
+        }
+        if (!await db.Set<LanguageType>().AnyAsync())
+        {
+            db.AddRange(
+                new LanguageType { Name = "Tiếng Anh", Code = "en", SortOrder = 1, Status = 1 },
+                new LanguageType { Name = "Tiếng Trung", Code = "zh", SortOrder = 2, Status = 1 },
+                new LanguageType { Name = "Tiếng Hàn", Code = "ko", SortOrder = 3, Status = 1 },
+                new LanguageType { Name = "Tiếng Nhật", Code = "ja", SortOrder = 4, Status = 1 });
+        }
+        if (!await db.Set<RoomClass>().AnyAsync())
+        {
+            db.AddRange(
+                new RoomClass { Name = "3 sao", SortOrder = 1, Status = 1 },
+                new RoomClass { Name = "4 sao", SortOrder = 2, Status = 1 },
+                new RoomClass { Name = "5 sao", SortOrder = 3, Status = 1 });
+        }
+        if (!await db.Set<CustomerSource>().AnyAsync())
+        {
+            db.AddRange(
+                new CustomerSource { Name = "Facebook", SortOrder = 1, Status = 1 },
+                new CustomerSource { Name = "Website", SortOrder = 2, Status = 1 },
+                new CustomerSource { Name = "Giới thiệu", SortOrder = 3, Status = 1 },
+                new CustomerSource { Name = "Zalo", SortOrder = 4, Status = 1 });
+        }
+        if (!await db.Set<CustomerTag>().AnyAsync())
+        {
+            db.AddRange(
+                new CustomerTag { Name = "VIP", Color = "red", SortOrder = 1, Status = 1 },
+                new CustomerTag { Name = "Thân thiết", Color = "green", SortOrder = 2, Status = 1 },
+                new CustomerTag { Name = "Tiềm năng", Color = "blue", SortOrder = 3, Status = 1 });
+        }
+        if (!await db.Set<Currency>().AnyAsync())
+        {
+            db.AddRange(
+                new Currency { Code = "VND", Name = "Việt Nam Đồng", RateToVnd = 1m, SortOrder = 1, Status = 1 },
+                new Currency { Code = "USD", Name = "Đô la Mỹ", RateToVnd = 25_000m, SortOrder = 2, Status = 1 },
+                new Currency { Code = "EUR", Name = "Euro", RateToVnd = 27_000m, SortOrder = 3, Status = 1 });
+        }
+        if (!await db.Set<Surcharge>().AnyAsync())
+        {
+            db.AddRange(
+                new Surcharge { Name = "Phụ thu phòng đơn", CalcType = 0, DefaultValue = 500_000m, SortOrder = 1, Status = 1 },
+                new Surcharge { Name = "Phụ thu cao điểm", CalcType = 1, DefaultValue = 10m, SortOrder = 2, Status = 1 });
+        }
+        if (!await db.Set<PaymentTerm>().AnyAsync())
+        {
+            db.AddRange(
+                new PaymentTerm { Name = "Thanh toán ngay", Description = "Thanh toán 100% khi đặt", SortOrder = 1, Status = 1 },
+                new PaymentTerm { Name = "Cọc 50%", Description = "Cọc 50%, còn lại trước khởi hành", SortOrder = 2, Status = 1 },
+                new PaymentTerm { Name = "Công nợ 30 ngày", Description = "Thanh toán trong 30 ngày", SortOrder = 3, Status = 1 });
+        }
+        if (!await db.Set<PaymentAccount>().AnyAsync())
+        {
+            db.Add(new PaymentAccount { Name = "VCB - Công ty Demo Tour", BankName = "Vietcombank", AccountNumber = "0011000123456", AccountHolder = "CONG TY DEMO TOUR", Branch = "Hà Nội", TransferNote = "Thanh toan tour", IsDefault = true, SortOrder = 1, Status = 1 });
+        }
+        await db.SaveChangesAsync();
+
         // 7c) Lịch chăm sóc/hẹn (để dashboard "Quản lý lịch hẹn" có số) — idempotent riêng.
         if (!await db.Set<CustomerCare>().AnyAsync())
         {
