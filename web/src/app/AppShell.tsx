@@ -13,6 +13,7 @@ import {
   LogoutOutlined,
   PercentageOutlined,
   ProjectOutlined,
+  SendOutlined,
   SettingOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
@@ -34,7 +35,7 @@ type NavGroup = { key: string; label: string; icon: ReactNode; children: NavLeaf
 
 // THỨ TỰ + GOM NHÓM bám CHÍNH XÁC menu hệ cũ (staging.tourkit.vn — đã soi 2026-07-13):
 // Workspace → Nhà cung cấp → CRM → Báo Giá → Đơn hàng/LKH → Booking Phòng/Khách sạn →
-// [Vé Máy Bay — THIẾU] → Hướng dẫn viên → Quản lý xe → Điều hành Tour → Tài chính/Kế toán →
+// Vé Máy Bay (vé đoàn) → Hướng dẫn viên → Quản lý xe → Điều hành Tour → Tài chính/Kế toán →
 // KPIs → Hoa Hồng → Dự án & Công việc → [HRM — THIẾU] → Marketing → Báo cáo →
 // [Đại lý B2B — MỚI, ngoài hệ cũ] → Cài đặt hệ thống (gồm toàn bộ Danh mục như /config hệ cũ).
 // Hệ cũ gom mọi catalog vào 1 hub "Thiết lập hệ thống" (/config) → local đưa hết vào nhóm Cài đặt.
@@ -98,6 +99,14 @@ const GROUPS: NavGroup[] = [
     children: [
       { key: '/service-bookings', label: 'Danh sách Booking', perm: 'servicebooking.view' },
       { key: '/room-classes', label: 'Hạng phòng / Quỹ phòng', perm: 'servicebooking.view' },
+    ],
+  },
+  {
+    key: 'g-flight',
+    label: 'Vé Máy Bay',
+    icon: <SendOutlined />,
+    children: [
+      { key: '/flight-tickets', label: 'Vé máy bay đoàn', perm: 'ticketfund.view' },
     ],
   },
   {

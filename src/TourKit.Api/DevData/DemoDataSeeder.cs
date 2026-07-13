@@ -483,6 +483,38 @@ public static class DemoDataSeeder
             }
         }
 
+        // 7n') Vé máy bay đoàn (FlightTicket) — quỹ vé theo PNR, 1 vé đã gán tour, có hành trình.
+        if (!await db.Set<FlightTicket>().AnyAsync())
+        {
+            static string Itin(params (string d, string f, string fr, string to, string t)[] legs)
+                => System.Text.Json.JsonSerializer.Serialize(new { segments = legs.Select(l => new { date = l.d, flightNo = l.f, from = l.fr, to = l.to, depTime = l.t }) });
+            var fOrder = opsOrders.FirstOrDefault();
+            db.AddRange(
+                new FlightTicket
+                {
+                    Pnr = "PNR0001", MarketRef = mtOutbound.Id.ToString(), ProviderRef = p5.Id.ToString(),
+                    TourType = "outbound", Days = 5, DepartureDate = now.AddDays(20), Quantity = 30, UsedQuantity = 10,
+                    TotalCost = 180_000_000m, PaidAmount = 100_000_000m, ReservedAmount = 20_000_000m, Status = 1,
+                    OrderRef = fOrder?.Id.ToString(),
+                    ItineraryJson = Itin(("12/12/2026", "VJ811", "SGN", "SIN", "09:00"), ("17/12/2026", "VJ826", "SIN", "SGN", "13:10")),
+                },
+                new FlightTicket
+                {
+                    Pnr = "PNR0002", MarketRef = mtOutbound.Id.ToString(), ProviderRef = p5.Id.ToString(),
+                    TourType = "outbound", Days = 4, DepartureDate = now.AddDays(35), Quantity = 20, UsedQuantity = 0,
+                    TotalCost = 120_000_000m, PaidAmount = 0m, ReservedAmount = 0m, Status = 1,
+                    ItineraryJson = Itin(("05/01/2027", "VN601", "HAN", "BKK", "08:30"), ("09/01/2027", "VN602", "BKK", "HAN", "12:00")),
+                },
+                new FlightTicket
+                {
+                    Pnr = "PNR0003", MarketRef = mtInbound.Id.ToString(), ProviderRef = p5.Id.ToString(),
+                    TourType = "inbound", Days = 3, DepartureDate = now.AddDays(15), Quantity = 15, UsedQuantity = 15,
+                    TotalCost = 45_000_000m, PaidAmount = 45_000_000m, ReservedAmount = 0m, Status = 1,
+                    ItineraryJson = Itin(("20/12/2026", "QH201", "HAN", "DAD", "07:00")),
+                });
+            await db.SaveChangesAsync();
+        }
+
         // 7o) Đại lý B2B (Agent) — varied trạng thái/hạn mức cho màn Đại lý.
         if (!await db.Set<Agent>().AnyAsync())
         {

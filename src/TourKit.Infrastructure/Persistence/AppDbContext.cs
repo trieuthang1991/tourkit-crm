@@ -90,6 +90,7 @@ public class AppDbContext : DbContext
     public DbSet<FileUpload> FileUploads => Set<FileUpload>();
     public DbSet<CustomerCommissionRule> CustomerCommissionRules => Set<CustomerCommissionRule>();
     public DbSet<TicketFund> TicketFunds => Set<TicketFund>();
+    public DbSet<FlightTicket> FlightTickets => Set<FlightTicket>();
     public DbSet<Quote> Quotes => Set<Quote>();
     public DbSet<QuoteLine> QuoteLines => Set<QuoteLine>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
