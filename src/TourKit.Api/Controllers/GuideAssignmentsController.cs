@@ -14,13 +14,15 @@ public sealed class GuideAssignmentsController(IGuideAssignmentService service) 
     [HttpGet]
     [Authorize(Permissions.GuideView)]
     public async Task<IActionResult> List(
-        [FromQuery] int page = 1,
-        [FromQuery] int size = 20,
-        [FromQuery] Guid? departureId = null)
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] GuideAssignmentListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size, departureId);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.GuideView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpPost]
     [Authorize(Permissions.GuideManage)]

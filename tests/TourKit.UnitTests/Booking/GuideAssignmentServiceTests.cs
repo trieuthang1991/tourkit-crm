@@ -70,16 +70,16 @@ public sealed class GuideAssignmentServiceTests
         await svc.UpdateAsync(created.Id,
             new UpdateGuideAssignmentDto(provId, null, null, null, "Đổi ghi chú", 2));
 
-        var byDeparture = await svc.ListAsync(1, 20, depId);
+        var byDeparture = await svc.ListAsync(1, 20, new GuideAssignmentListFilter(DepartureId: depId));
         var one = Assert.Single(byDeparture.Items);
         Assert.Equal("Đổi ghi chú", one.Note);
         Assert.Equal(2, one.Status);
 
-        var otherDeparture = await svc.ListAsync(1, 20, Guid.NewGuid());
+        var otherDeparture = await svc.ListAsync(1, 20, new GuideAssignmentListFilter(DepartureId: Guid.NewGuid()));
         Assert.Empty(otherDeparture.Items);
 
         await svc.DeleteAsync(created.Id);
-        var afterDelete = await svc.ListAsync(1, 20, null);
+        var afterDelete = await svc.ListAsync(1, 20);
         Assert.Empty(afterDelete.Items);
     }
 

@@ -16,12 +16,48 @@ public sealed class GuideAssignmentService(
     IValidator<CreateGuideAssignmentDto> createValidator,
     IValidator<UpdateGuideAssignmentDto> updateValidator) : IGuideAssignmentService
 {
-    public async Task<PagedResult<GuideAssignmentDto>> ListAsync(int page, int size, Guid? departureId)
+    public async Task<PagedResult<GuideAssignmentDto>> ListAsync(int page, int size, GuideAssignmentListFilter? filter = null)
     {
-        var (items, total) = departureId is { } depId
-            ? await repo.PageAsync(page, size, a => a.TourDepartureId == depId)
-            : await repo.PageAsync(page, size);
-        return new PagedResult<GuideAssignmentDto>(items.Select(Map).ToList(), total, page, size);
+        var f = filter ?? new GuideAssignmentListFilter();
+        var all = await repo.ListAsync(a =>
+            (f.ProviderId == null || a.ProviderId == f.ProviderId) &&
+            (f.DepartureId == null || a.TourDepartureId == f.DepartureId) &&
+            (f.Status == null || a.Status == f.Status) &&
+            (f.DateFrom == null || a.TimeGo >= f.DateFrom) &&
+            (f.DateTo == null || a.TimeGo <= f.DateTo));
+
+        var ordered = all.OrderByDescending(a => a.TimeGo ?? a.CreatedAt).ToList();
+        var pageItems = ordered.Skip((page - 1) * size).Take(size).ToList();
+
+        // Làm giàu tên HDV + tên/mã chuyến theo lô.
+        var providerIds = pageItems.Select(a => a.ProviderId).ToHashSet();
+        var departureIds = pageItems.Select(a => a.TourDepartureId).ToHashSet();
+        var providerNames = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id)))
+            .ToDictionary(p => p.Id, p => p.Name);
+        var departures = (await departureRepo.ListAsync(d => departureIds.Contains(d.Id)))
+            .ToDictionary(d => d.Id, d => d);
+
+        var dtos = pageItems.Select(a =>
+        {
+            departures.TryGetValue(a.TourDepartureId, out var dep);
+            return Map(a) with
+            {
+                ProviderName = providerNames.GetValueOrDefault(a.ProviderId),
+                DepartureTitle = dep?.Title,
+                DepartureCode = dep?.Code,
+            };
+        }).ToList();
+        return new PagedResult<GuideAssignmentDto>(dtos, ordered.Count, page, size);
+    }
+
+    public async Task<GuideAssignmentStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new GuideAssignmentStatsDto(
+            all.Count,
+            all.Count(a => a.Status == 1),
+            all.Count(a => a.Status == 2),
+            all.Select(a => a.ProviderId).Distinct().Count());
     }
 
     public async Task<GuideAssignmentDto> CreateAsync(CreateGuideAssignmentDto dto)

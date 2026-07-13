@@ -316,6 +316,15 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7l) Phân công HDV (TourGuideAssignment) — p4 là HDV (Provider type Guide).
+        if (!await db.Set<TourGuideAssignment>().AnyAsync())
+        {
+            db.AddRange(
+                new TourGuideAssignment { TourDepartureId = depHalong.Id, ProviderId = p4.Id, TimeGo = now.AddDays(20), TimeCome = now.AddDays(22), Status = 2 },
+                new TourGuideAssignment { TourDepartureId = depThai.Id, ProviderId = p4.Id, TimeGo = now.AddDays(35), TimeCome = now.AddDays(39), Status = 1 });
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {

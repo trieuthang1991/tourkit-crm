@@ -5,7 +5,8 @@ namespace TourKit.Application.Booking;
 
 public interface IGuideAssignmentService
 {
-    Task<PagedResult<GuideAssignmentDto>> ListAsync(int page, int size, Guid? departureId);
+    Task<PagedResult<GuideAssignmentDto>> ListAsync(int page, int size, GuideAssignmentListFilter? filter = null);
+    Task<GuideAssignmentStatsDto> GetStatsAsync();
     Task<GuideAssignmentDto> CreateAsync(CreateGuideAssignmentDto dto);
     Task UpdateAsync(Guid id, UpdateGuideAssignmentDto dto);
     Task<GuideAssignmentDto> HandoverAsync(Guid id, HandoverDto dto);

@@ -11,6 +11,9 @@ export const guideAssignmentSchema = z.object({
   status: z.number(),
   handoverContent: z.string().nullable(),
   handedOverAt: z.string().nullable(),
+  providerName: z.string().nullable().optional(),
+  departureTitle: z.string().nullable().optional(),
+  departureCode: z.string().nullable().optional(),
 });
 export type GuideAssignment = z.infer<typeof guideAssignmentSchema>;
 
