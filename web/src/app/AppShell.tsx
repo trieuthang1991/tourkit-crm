@@ -9,6 +9,7 @@ import {
   DashboardOutlined,
   EnvironmentOutlined,
   FundOutlined,
+  HistoryOutlined,
   IdcardOutlined,
   LogoutOutlined,
   PercentageOutlined,
@@ -37,8 +38,9 @@ type NavGroup = { key: string; label: string; icon: ReactNode; children: NavLeaf
 // Workspace → Nhà cung cấp → CRM → Báo Giá → Đơn hàng/LKH → Booking Phòng/Khách sạn →
 // Vé Máy Bay (vé đoàn) → Hướng dẫn viên → Quản lý xe → Điều hành Tour → Tài chính/Kế toán →
 // KPIs → Hoa Hồng → Dự án & Công việc → [HRM — THIẾU] → Marketing → Báo cáo →
-// [Đại lý B2B — MỚI, ngoài hệ cũ] → Cài đặt hệ thống (gồm toàn bộ Danh mục như /config hệ cũ).
-// Hệ cũ gom mọi catalog vào 1 hub "Thiết lập hệ thống" (/config) → local đưa hết vào nhóm Cài đặt.
+// [Đại lý B2B — MỚI, ngoài hệ cũ] → Cài đặt hệ thống (Thành viên + Cấu hình) → Log hệ thống.
+// Hệ cũ gom mọi catalog vào 1 hub "Thiết lập hệ thống" (/config) → local mirror bằng /config-hub;
+// catalog KHÔNG nằm trên menu (giống hệ cũ), truy cập qua Cài đặt → Cấu hình.
 const GROUPS: NavGroup[] = [
   {
     key: 'g-workspace',
@@ -197,33 +199,30 @@ const GROUPS: NavGroup[] = [
   },
   {
     key: 'g-agent',
-    label: 'Đại lý (B2B) · mới',
+    label: 'Đại lý (B2B)',
     icon: <ClusterOutlined />,
     children: [
       { key: '/agents', label: 'Danh sách đại lý', perm: 'agent.view' },
       { key: '/agent-bookings', label: 'Đặt chỗ đại lý', perm: 'agentquote.view' },
     ],
   },
+  // Cài đặt hệ thống: bám hệ cũ CHỈ có Thành viên + Cấu hình. Toàn bộ catalog nằm trong hub
+  // "Thiết lập hệ thống" (/config-hub) — mirror trang /config hệ cũ (dạng lưới thẻ theo nhóm).
   {
     key: 'g-system',
     label: 'Cài đặt hệ thống',
     icon: <SettingOutlined />,
     children: [
       { key: '/users', label: 'Thành viên', perm: 'user.view' },
-      { key: '/departments', label: 'Nhóm / Phòng ban', perm: 'user.view' },
-      { key: '/positions', label: 'Chức vụ', perm: 'user.view' },
-      { key: '/market-types', label: 'Thị trường', perm: 'market.view' },
-      { key: '/customer-types', label: 'Phân loại khách hàng', perm: 'customertype.view' },
-      { key: '/customer-sources', label: 'Nguồn khách hàng', perm: 'customertype.view' },
-      { key: '/customer-tags', label: 'Thẻ khách hàng', perm: 'customertype.view' },
-      { key: '/room-classes', label: 'Class Hotel (Hạng phòng)', perm: 'servicebooking.view' },
-      { key: '/car-types', label: 'Loại xe', perm: 'vehicle.view' },
-      { key: '/language-types', label: 'Ngôn ngữ HDV', perm: 'guide.view' },
-      { key: '/currencies', label: 'Tỷ giá', perm: 'service.view' },
-      { key: '/surcharges', label: 'Quản lý Phụ thu', perm: 'booking.view' },
-      { key: '/transfer-reasons', label: 'Lý do hủy / chuyển', perm: 'booking.view' },
-      { key: '/company-profile', label: 'Cấu hình / Hồ sơ công ty', perm: 'company.manage' },
+      { key: '/config-hub', label: 'Cấu hình', perm: 'user.view' },
       { key: '/billing', label: 'Gói dịch vụ', perm: 'subscription.view' },
+    ],
+  },
+  {
+    key: 'g-log',
+    label: 'Log hệ thống',
+    icon: <HistoryOutlined />,
+    children: [
       { key: '/activity-logs', label: 'Log hệ thống', perm: 'activitylog.view' },
     ],
   },
