@@ -9,7 +9,7 @@ namespace TourKit.UnitTests.Finance;
 public sealed class TicketFundServiceTests
 {
     private static TicketFundService NewService(FakeRepository<TicketFund>? repo = null)
-        => new(repo ?? new FakeRepository<TicketFund>(), new CreateTicketFundValidator());
+        => new(repo ?? new FakeRepository<TicketFund>(), new FakeRepository<Order>(), new FakeRepository<Provider>(), new CreateTicketFundValidator());
 
     [Fact]
     public async Task CreateAsync_rejects_empty_order()
@@ -33,16 +33,16 @@ public sealed class TicketFundServiceTests
 
         await service.UpdateAsync(created.Id, new UpdateTicketFundDto(null, null, "VE-002", 2, true));
 
-        var byOrder = await service.ListAsync(1, 20, orderId);
+        var byOrder = await service.ListAsync(1, 20, new TicketFundListFilter(OrderId: orderId));
         var one = Assert.Single(byOrder.Items);
         Assert.Equal("VE-002", one.TicketCode);
         Assert.True(one.IsClosed);
 
-        var otherOrder = await service.ListAsync(1, 20, Guid.NewGuid());
+        var otherOrder = await service.ListAsync(1, 20, new TicketFundListFilter(OrderId: Guid.NewGuid()));
         Assert.Empty(otherOrder.Items);
 
         await service.DeleteAsync(created.Id);
-        Assert.Empty((await service.ListAsync(1, 20, null)).Items);
+        Assert.Empty((await service.ListAsync(1, 20)).Items);
     }
 
     [Fact]
