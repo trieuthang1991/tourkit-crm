@@ -1,6 +1,5 @@
 import {
   App,
-  Button,
   Card,
   Col,
   DatePicker,
@@ -8,12 +7,12 @@ import {
   InputNumber,
   Popconfirm,
   Row,
-  Segmented,
   Select,
   Space,
   Table,
   Tag,
 } from 'antd';
+import { Button, DataCard, SegmentTabs } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -294,7 +293,7 @@ export function CustomersPage() {
             render: (_: unknown, c: Customer) => (
               <Space>
                 {canUpdate ? (
-                  <Button size="small" onClick={() => setEditing({ mode: 'edit', item: c })}>
+                  <Button variant="ghost" size="small" onClick={() => setEditing({ mode: 'edit', item: c })}>
                     Sửa
                   </Button>
                 ) : null}
@@ -310,7 +309,7 @@ export function CustomersPage() {
                       }
                     }}
                   >
-                    <Button size="small" danger>
+                    <Button variant="danger" size="small">
                       Xoá
                     </Button>
                   </Popconfirm>
@@ -383,7 +382,7 @@ export function CustomersPage() {
         desc="Quản lý toàn bộ hồ sơ khách hàng, phân nhóm và lịch chăm sóc."
         extra={
           canCreate ? (
-            <Button type="primary" onClick={() => setEditing({ mode: 'create', item: null })}>
+            <Button variant="primary" onClick={() => setEditing({ mode: 'create', item: null })}>
               Thêm khách hàng
             </Button>
           ) : null
@@ -530,11 +529,11 @@ export function CustomersPage() {
 
           <Col span={24}>
             <Space>
-              <Button type="primary" onClick={applyFilters}>
+              <Button variant="primary" onClick={applyFilters}>
                 Tìm kiếm
               </Button>
-              <Button onClick={resetFilters}>Đặt lại</Button>
-              <Button type="link" onClick={() => setMoreOpen((o) => !o)}>
+              <Button variant="ghost" onClick={resetFilters}>Đặt lại</Button>
+              <Button variant="text" onClick={() => setMoreOpen((o) => !o)}>
                 {moreOpen ? 'Thu gọn bộ lọc' : 'Xem thêm bộ lọc'}
               </Button>
             </Space>
@@ -544,7 +543,7 @@ export function CustomersPage() {
 
       {/* Tabs loại khách hàng (bám staging: Tất cả · Cá nhân · Doanh nghiệp · Đối tác · CTV) */}
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
-        <Segmented
+        <SegmentTabs
           value={typeFilter === undefined ? 'all' : String(typeFilter)}
           onChange={(val) => {
             setTypeFilter(val === 'all' ? undefined : Number(val));
@@ -588,6 +587,7 @@ export function CustomersPage() {
         </div>
       </Card>
 
+      <DataCard title="Danh sách khách hàng">
       <Table
         rowKey="id"
         columns={columns}
@@ -623,6 +623,7 @@ export function CustomersPage() {
           );
         }}
       />
+      </DataCard>
 
       {editing ? (
         <CrudFormModal
