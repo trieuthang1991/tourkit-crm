@@ -9,8 +9,13 @@ export const customerCareSchema = z.object({
   feedback: z.string().nullable(),
   assignedToUserId: z.string().uuid().nullable(),
   status: z.number(),
+  customerName: z.string().nullable().optional(),
+  assigneeName: z.string().nullable().optional(),
 });
 export type CustomerCare = z.infer<typeof customerCareSchema>;
+
+/// Trạng thái chăm sóc (legacy): 0 mới, 1 đang xử lý, 2 hoàn thành.
+export const CARE_STATUS: Record<number, string> = { 0: 'Mới', 1: 'Đang xử lý', 2: 'Hoàn thành' };
 
 const customerCareCommonFields = {
   title: z.string().min(1, 'Bắt buộc'),

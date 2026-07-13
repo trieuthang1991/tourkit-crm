@@ -16,7 +16,7 @@ public class CustomerCareServiceTests
     {
         repo = new FakeRepository<CustomerCare>();
         customerRepo = new FakeRepository<Customer>();
-        return new CustomerCareService(repo, customerRepo, new CreateCustomerCareValidator(), new UpdateCustomerCareValidator());
+        return new CustomerCareService(repo, customerRepo, new FakeRepository<User>(), new CreateCustomerCareValidator(), new UpdateCustomerCareValidator());
     }
 
     private static async Task<Customer> SeedCustomerAsync(FakeRepository<Customer> customerRepo)
