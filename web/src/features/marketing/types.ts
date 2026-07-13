@@ -36,6 +36,12 @@ export const CHANNEL: Record<number, string> = {
   3: 'Zalo',
 };
 
+/// Trạng thái chiến dịch: 0 nháp, 1 đã gửi.
+export const CAMPAIGN_STATUS: Record<number, string> = {
+  0: 'Nháp',
+  1: 'Đã gửi',
+};
+
 export const campaignLogSchema = z.object({
   id: z.string().uuid(),
   recipient: z.string(),

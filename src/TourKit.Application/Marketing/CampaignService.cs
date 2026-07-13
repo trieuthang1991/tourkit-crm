@@ -23,11 +23,33 @@ public sealed class CampaignService(
     private const int StatusSent = 1;
     private const int StatusFailed = 2;
 
-    public async Task<PagedResult<CampaignDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<CampaignDto>> ListAsync(int page, int size, CampaignListFilter? filter = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
-        var dtos = items.Select(Map).ToList();
-        return new PagedResult<CampaignDto>(dtos, total, page, size);
+        var f = filter ?? new CampaignListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        var all = await repo.ListAsync(c =>
+            (f.Channel == null || (int)c.Channel == f.Channel) &&
+            (f.Status == null || c.Status == f.Status));
+
+        var filtered = all
+            .Where(c => kw == null || c.Name.Contains(kw, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(c => c.CreatedAt)
+            .ToList();
+
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(Map).ToList();
+        return new PagedResult<CampaignDto>(pageItems, filtered.Count, page, size);
+    }
+
+    public async Task<CampaignStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        var messages = (await logRepo.ListAsync()).Count(l => l.Status == StatusSent);
+        return new CampaignStatsDto(
+            all.Count,
+            all.Count(c => c.Status == 0),
+            all.Count(c => c.Status == 1),
+            messages);
     }
 
     public async Task<CampaignDto> GetAsync(Guid id)

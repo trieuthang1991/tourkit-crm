@@ -5,7 +5,8 @@ namespace TourKit.Application.Marketing;
 
 public interface ICampaignService
 {
-    Task<PagedResult<CampaignDto>> ListAsync(int page, int size);
+    Task<PagedResult<CampaignDto>> ListAsync(int page, int size, CampaignListFilter? filter = null);
+    Task<CampaignStatsDto> GetStatsAsync();
     Task<CampaignDto> GetAsync(Guid id);
     Task<CampaignDto> CreateAsync(CreateCampaignDto dto);
     Task UpdateAsync(Guid id, UpdateCampaignDto dto);

@@ -218,6 +218,22 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7c'') Chiến dịch marketing + log gửi — idempotent riêng (1 nháp, 2 đã gửi).
+        if (!await db.Set<MarketingCampaign>().AnyAsync())
+        {
+            var cmpHe = new MarketingCampaign { Name = "Ưu đãi Hè 2026", Channel = MarketingChannel.Email, Subject = "Giảm 20% tour hè", Body = "Đặt tour hè giảm ngay 20%.", Status = 1 };
+            var cmpZalo = new MarketingCampaign { Name = "Chăm sóc khách VIP", Channel = MarketingChannel.Zalo, Subject = null, Body = "Cảm ơn quý khách đã đồng hành.", Status = 1 };
+            var cmpSms = new MarketingCampaign { Name = "Nhắc lịch khởi hành", Channel = MarketingChannel.Sms, Subject = null, Body = "Tour của bạn khởi hành trong 3 ngày.", Status = 0 };
+            db.AddRange(cmpHe, cmpZalo, cmpSms);
+            await db.SaveChangesAsync();
+
+            db.AddRange(
+                new MarketingSendLog { CampaignId = cmpHe.Id, Recipient = "an.nguyen@gmail.com", Status = 1, SentAt = now.AddDays(-3) },
+                new MarketingSendLog { CampaignId = cmpHe.Id, Recipient = "binh.tran@gmail.com", Status = 1, SentAt = now.AddDays(-3) },
+                new MarketingSendLog { CampaignId = cmpZalo.Id, Recipient = "0901000004", Status = 1, SentAt = now.AddDays(-1) });
+            await db.SaveChangesAsync();
+        }
+
         // 7d) Nhóm tour (Nhóm) — idempotent; dùng cho filter lưới vận hành.
         async Task<TourGroup> GroupOf(string code, string name, int sort)
         {

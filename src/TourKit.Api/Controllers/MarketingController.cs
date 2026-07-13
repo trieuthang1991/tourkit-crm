@@ -12,11 +12,15 @@ public sealed class MarketingController(ICampaignService service) : ControllerBa
 {
     [HttpGet]
     [Authorize(Permissions.MarketingView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20)
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] CampaignListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.MarketingView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.MarketingView)]
