@@ -557,6 +557,24 @@ public static class DemoDataSeeder
             }
         }
 
+        // 7q) Chiến dịch chia số Sale (Chia số Sale) — idempotent; gán lead ĐANG CÓ vào chiến dịch.
+        if (!await db.Set<LeadCampaign>().AnyAsync())
+        {
+            var lc1 = new LeadCampaign { Name = "Chiến dịch Facebook Hè 2026", CreatedByUserId = uSalesHn.Id, Status = 0 };
+            var lc2 = new LeadCampaign { Name = "Data Website tái kích hoạt", CreatedByUserId = uSalesHcm.Id, Status = 0 };
+            var lc3 = new LeadCampaign { Name = "Chiến dịch Giới thiệu (đã đóng)", CreatedByUserId = uOps.Id, Status = 1 };
+            db.AddRange(lc1, lc2, lc3);
+            await db.SaveChangesAsync();
+
+            var camps = new[] { lc1, lc2, lc3 };
+            var unassigned = await db.Set<Lead>().Where(l => l.CampaignId == null).OrderBy(l => l.CreatedAt).ToListAsync();
+            for (var i = 0; i < unassigned.Count; i++)
+            {
+                unassigned[i].CampaignId = camps[i % camps.Length].Id;
+            }
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {
@@ -605,12 +623,24 @@ public static class DemoDataSeeder
         // 12) Cơ hội bán hàng (Lead) — varied trạng thái/nguồn/chi nhánh/phụ trách --
         Lead MkLead(string name, string phone, string source, LeadStatus status, Guid branchId, Guid assignedTo, Guid createdBy)
             => new() { FullName = name, Phone = phone, Source = source, Status = status, BranchId = branchId, AssignedToUserId = assignedTo, CreatedByUserId = createdBy };
-        db.AddRange(
+        var seededLeads = new[]
+        {
             MkLead("Vũ Minh Khôi", "0912000001", "Facebook", LeadStatus.New, brHn.Id, uSalesHn.Id, uSalesHn.Id),
             MkLead("Đỗ Thanh Hà", "0912000002", "Website", LeadStatus.Contacted, brHcm.Id, uSalesHcm.Id, uSalesHcm.Id),
             MkLead("Bùi Anh Tú", "0912000003", "Giới thiệu", LeadStatus.Qualified, brHn.Id, uSalesHn.Id, uOps.Id),
             MkLead("Ngô Bảo Ngọc", "0912000004", "Facebook", LeadStatus.Won, brHcm.Id, uSalesHcm.Id, uSalesHcm.Id),
-            MkLead("Cao Đức Duy", "0912000005", "Website", LeadStatus.Lost, brHn.Id, uSalesHn.Id, uSalesHn.Id));
+            MkLead("Cao Đức Duy", "0912000005", "Website", LeadStatus.Lost, brHn.Id, uSalesHn.Id, uSalesHn.Id),
+        };
+        // Gán lead mới vào chiến dịch chia số (fresh seed — chiến dịch đã tạo ở 7q).
+        var leadCampaigns = await db.Set<LeadCampaign>().OrderBy(c => c.CreatedAt).ToListAsync();
+        if (leadCampaigns.Count > 0)
+        {
+            for (var i = 0; i < seededLeads.Length; i++)
+            {
+                seededLeads[i].CampaignId = leadCampaigns[i % leadCampaigns.Count].Id;
+            }
+        }
+        db.AddRange(seededLeads);
 
         await db.SaveChangesAsync();
     }

@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<PriceScenario> PriceScenarios => Set<PriceScenario>();
     public DbSet<TourAssignee> TourAssignees => Set<TourAssignee>();
     public DbSet<Lead> Leads => Set<Lead>();
+    public DbSet<LeadCampaign> LeadCampaigns => Set<LeadCampaign>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<TourCustomer> TourCustomers => Set<TourCustomer>();
     public DbSet<CancelSeat> CancelSeats => Set<CancelSeat>();

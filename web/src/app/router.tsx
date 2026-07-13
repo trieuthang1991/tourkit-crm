@@ -6,6 +6,7 @@ import { TourTemplateListPage } from '../features/tourTemplates/TourTemplateList
 import { TourTemplateDetailPage } from '../features/tourTemplates/TourTemplateDetailPage';
 import { CustomersPage } from '../features/customers/CustomersPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
+import { LeadCampaignsPage } from '../features/leadCampaigns/LeadCampaignsPage';
 import { ProvidersPage } from '../features/providers/ProvidersPage';
 import { ServiceItemsPage } from '../features/services/ServiceItemsPage';
 import { ProviderServicesPage } from '../features/services/ProviderServicesPage';
@@ -107,6 +108,7 @@ export function AppRouter() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/leads" element={<LeadsPage />} />
+        <Route path="/lead-campaigns" element={<LeadCampaignsPage />} />
         <Route path="/providers" element={<ProvidersPage />} />
         <Route path="/service-items" element={<ServiceItemsPage />} />
         <Route path="/provider-services" element={<ProviderServicesPage />} />

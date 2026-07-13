@@ -15,5 +15,6 @@ public sealed class Lead : BaseEntity, ITenantEntity
     public Guid? AssignedToUserId { get; set; }
     public Guid? CreatedByUserId { get; set; }      // Người tạo lead
     public Guid? BranchId { get; set; }             // Chi nhánh (legacy ChiNhanh)
+    public Guid? CampaignId { get; set; }           // Chiến dịch chia số (Chia số Sale) — lead thuộc chiến dịch nào
     public Guid? ConvertedCustomerId { get; set; }
 }

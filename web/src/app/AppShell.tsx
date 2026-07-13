@@ -56,7 +56,7 @@ const MENU: NavNode[] = [
   },
   {
     key: 'g-crm', label: 'CRM', icon: <TeamOutlined />, children: [
-      { key: 'crm-share', label: 'Chia số Sale', to: '/leads', perm: 'lead.view' },
+      { key: 'crm-share', label: 'Chia số Sale', to: '/lead-campaigns', perm: 'lead.view' },
       { key: 'crm-opp', label: 'Cơ hội bán hàng', to: '/leads', perm: 'lead.view' },
       { key: 'crm-data', label: 'Data khách hàng', to: '/customers', perm: 'customer.view' },
       { key: 'crm-care', label: 'Quản lý lịch hẹn', to: '/customer-cares', perm: 'care.view' },
