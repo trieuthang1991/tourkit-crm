@@ -17,7 +17,6 @@ import {
   ShopOutlined,
   ShoppingCartOutlined,
   SoundOutlined,
-  TagsOutlined,
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
@@ -33,18 +32,21 @@ const { Header, Sider, Content } = Layout;
 type NavLeaf = { key: string; label: string; perm: string };
 type NavGroup = { key: string; label: string; icon: ReactNode; children: NavLeaf[] };
 
-// Gom nhóm + THỨ TỰ bám menu hệ cũ (staging.tourkit.vn / MenuLeft.ascx):
-// Bàn làm việc → Nhà cung cấp → CRM → Báo giá → Đơn hàng/LKH → Booking & Dịch vụ →
-// Hướng dẫn viên → Quản lý xe → Tài chính → KPIs → Hoa Hồng → Dự án → Marketing →
-// Báo cáo → Danh mục → Đại lý → Cài đặt. (HDV/Xe tách riêng, KPIs/Hoa Hồng tách riêng.)
+// THỨ TỰ + GOM NHÓM bám CHÍNH XÁC menu hệ cũ (staging.tourkit.vn — đã soi 2026-07-13):
+// Workspace → Nhà cung cấp → CRM → Báo Giá → Đơn hàng/LKH → Booking Phòng/Khách sạn →
+// [Vé Máy Bay — THIẾU] → Hướng dẫn viên → Quản lý xe → Điều hành Tour → Tài chính/Kế toán →
+// KPIs → Hoa Hồng → Dự án & Công việc → [HRM — THIẾU] → Marketing → Báo cáo →
+// [Đại lý B2B — MỚI, ngoài hệ cũ] → Cài đặt hệ thống (gồm toàn bộ Danh mục như /config hệ cũ).
+// Hệ cũ gom mọi catalog vào 1 hub "Thiết lập hệ thống" (/config) → local đưa hết vào nhóm Cài đặt.
 const GROUPS: NavGroup[] = [
   {
     key: 'g-workspace',
-    label: 'Bàn làm việc',
+    label: 'Workspace',
     icon: <DashboardOutlined />,
     children: [
       { key: '/workspace', label: 'Bàn làm việc', perm: 'report.dashboard.view' },
       { key: '/dashboard', label: 'Tổng quan', perm: 'report.dashboard.view' },
+      { key: '/notifications', label: 'Thông báo', perm: 'report.dashboard.view' },
     ],
   },
   {
@@ -52,11 +54,10 @@ const GROUPS: NavGroup[] = [
     label: 'Nhà cung cấp',
     icon: <ShopOutlined />,
     children: [
-      { key: '/providers', label: 'Tất cả NCC', perm: 'provider.view' },
+      { key: '/providers', label: 'Tất cả Nhà cung cấp', perm: 'provider.view' },
       { key: '/service-items', label: 'Danh mục dịch vụ', perm: 'service.view' },
       { key: '/provider-services', label: 'Bảng giá NCC', perm: 'service.view' },
       { key: '/payment-terms', label: 'Điều khoản TT NCC', perm: 'provider.view' },
-      { key: '/currencies', label: 'Tỷ giá tiền tệ', perm: 'service.view' },
     ],
   },
   {
@@ -72,7 +73,7 @@ const GROUPS: NavGroup[] = [
   },
   {
     key: 'g-quote',
-    label: 'Báo giá',
+    label: 'Báo Giá',
     icon: <CalculatorOutlined />,
     children: [
       { key: '/quotes', label: 'Tính giá tour', perm: 'quote.view' },
@@ -81,21 +82,18 @@ const GROUPS: NavGroup[] = [
   },
   {
     key: 'g-order',
-    label: 'Đơn hàng / LKH',
+    label: 'Đơn hàng/LKH',
     icon: <ShoppingCartOutlined />,
     children: [
       { key: '/orders', label: 'Tất cả đơn hàng', perm: 'booking.view' },
-      { key: '/departures', label: 'Tất cả Tour / LKH', perm: 'departure.view' },
+      { key: '/departures', label: 'Tất cả Tour/LKH', perm: 'departure.view' },
       { key: '/departures/manage', label: 'Mở / Quản lý chuyến', perm: 'departure.view' },
       { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
-      { key: '/operations-calendar', label: 'Lịch điều hành', perm: 'departure.view' },
-      { key: '/surcharges', label: 'Loại phụ thu', perm: 'booking.view' },
-      { key: '/transfer-reasons', label: 'Lý do chuyển chuyến', perm: 'booking.view' },
     ],
   },
   {
     key: 'g-booking',
-    label: 'Booking & Dịch vụ',
+    label: 'Booking Phòng/Khách sạn',
     icon: <EnvironmentOutlined />,
     children: [
       { key: '/service-bookings', label: 'Danh sách Booking', perm: 'servicebooking.view' },
@@ -108,7 +106,6 @@ const GROUPS: NavGroup[] = [
     icon: <IdcardOutlined />,
     children: [
       { key: '/guide-assignments', label: 'Lịch điều HDV', perm: 'guide.view' },
-      { key: '/language-types', label: 'Ngôn ngữ HDV', perm: 'guide.view' },
     ],
   },
   {
@@ -117,30 +114,36 @@ const GROUPS: NavGroup[] = [
     icon: <CarOutlined />,
     children: [
       { key: '/vehicles', label: 'Kho xe', perm: 'vehicle.view' },
-      { key: '/car-types', label: 'Loại xe', perm: 'vehicle.view' },
       { key: '/vehicle-assignments', label: 'Lịch điều xe', perm: 'vehicle.view' },
     ],
   },
   {
+    key: 'g-operation',
+    label: 'Điều hành Tour',
+    icon: <EnvironmentOutlined />,
+    children: [
+      { key: '/operations-calendar', label: 'Lịch điều hành', perm: 'departure.view' },
+    ],
+  },
+  {
     key: 'g-finance',
-    label: 'Tài chính / Kế toán',
+    label: 'Tài chính/Kế toán',
     icon: <BankOutlined />,
     children: [
       { key: '/receipts', label: 'Phiếu thu', perm: 'receipt.view' },
       { key: '/payments', label: 'Phiếu chi', perm: 'payment.view' },
-      { key: '/reports/order-debt', label: 'Công nợ khách', perm: 'report.debt.view' },
-      { key: '/reports/provider-debt', label: 'Công nợ NCC', perm: 'report.providerdebt.view' },
       { key: '/invoices', label: 'Danh sách hoá đơn (VAT)', perm: 'invoice.view' },
       { key: '/reports/cash-flow', label: 'Thống kê dòng tiền', perm: 'report.cashflow.view' },
-      { key: '/payment-accounts', label: 'Tài khoản nhận tiền', perm: 'paymentaccount.view' },
-      { key: '/ticket-funds', label: 'Quỹ vé ứng', perm: 'ticketfund.view' },
+      { key: '/reports/order-debt', label: 'Công nợ khách', perm: 'report.debt.view' },
+      { key: '/reports/provider-debt', label: 'Công nợ NCC', perm: 'report.providerdebt.view' },
+      { key: '/ticket-funds', label: 'Series Vé / Quỹ vé ứng', perm: 'ticketfund.view' },
     ],
   },
   {
     key: 'g-kpi',
     label: 'KPIs',
     icon: <FundOutlined />,
-    children: [{ key: '/reports/kpi', label: 'KPI phễu', perm: 'report.dashboard.view' }],
+    children: [{ key: '/reports/kpi', label: 'Thiết lập KPIs', perm: 'report.dashboard.view' }],
   },
   {
     key: 'g-commission',
@@ -157,8 +160,8 @@ const GROUPS: NavGroup[] = [
     label: 'Dự án & Công việc',
     icon: <ProjectOutlined />,
     children: [
-      { key: '/work-tasks', label: 'Danh sách công việc', perm: 'task.view' },
-      { key: '/workflows', label: 'Board Kanban', perm: 'workflow.view' },
+      { key: '/workflows', label: 'Dự án (Kanban)', perm: 'workflow.view' },
+      { key: '/work-tasks', label: 'Danh sách Công việc', perm: 'task.view' },
       { key: '/approval-processes', label: 'Quy trình duyệt', perm: 'approvalprocess.view' },
     ],
   },
@@ -178,24 +181,13 @@ const GROUPS: NavGroup[] = [
     label: 'Báo cáo',
     icon: <BarChartOutlined />,
     children: [
-      { key: '/reports/turnover', label: 'Doanh thu', perm: 'report.turnover.view' },
+      { key: '/reports/turnover', label: 'Doanh thu (Nhân viên)', perm: 'report.turnover.view' },
       { key: '/reports/turnover-by-department', label: 'Doanh thu theo phòng ban', perm: 'report.turnover.view' },
     ],
   },
   {
-    key: 'g-catalog',
-    label: 'Danh mục',
-    icon: <TagsOutlined />,
-    children: [
-      { key: '/customer-types', label: 'Loại khách hàng', perm: 'customertype.view' },
-      { key: '/customer-sources', label: 'Nguồn khách hàng', perm: 'customertype.view' },
-      { key: '/customer-tags', label: 'Nhãn khách hàng', perm: 'customertype.view' },
-      { key: '/market-types', label: 'Loại thị trường', perm: 'market.view' },
-    ],
-  },
-  {
     key: 'g-agent',
-    label: 'Đại lý (B2B)',
+    label: 'Đại lý (B2B) · mới',
     icon: <ClusterOutlined />,
     children: [
       { key: '/agents', label: 'Danh sách đại lý', perm: 'agent.view' },
@@ -208,8 +200,18 @@ const GROUPS: NavGroup[] = [
     icon: <SettingOutlined />,
     children: [
       { key: '/users', label: 'Thành viên', perm: 'user.view' },
-      { key: '/departments', label: 'Phòng ban', perm: 'user.view' },
+      { key: '/departments', label: 'Nhóm / Phòng ban', perm: 'user.view' },
       { key: '/positions', label: 'Chức vụ', perm: 'user.view' },
+      { key: '/market-types', label: 'Thị trường', perm: 'market.view' },
+      { key: '/customer-types', label: 'Phân loại khách hàng', perm: 'customertype.view' },
+      { key: '/customer-sources', label: 'Nguồn khách hàng', perm: 'customertype.view' },
+      { key: '/customer-tags', label: 'Thẻ khách hàng', perm: 'customertype.view' },
+      { key: '/room-classes', label: 'Class Hotel (Hạng phòng)', perm: 'servicebooking.view' },
+      { key: '/car-types', label: 'Loại xe', perm: 'vehicle.view' },
+      { key: '/language-types', label: 'Ngôn ngữ HDV', perm: 'guide.view' },
+      { key: '/currencies', label: 'Tỷ giá', perm: 'service.view' },
+      { key: '/surcharges', label: 'Quản lý Phụ thu', perm: 'booking.view' },
+      { key: '/transfer-reasons', label: 'Lý do hủy / chuyển', perm: 'booking.view' },
       { key: '/company-profile', label: 'Cấu hình / Hồ sơ công ty', perm: 'company.manage' },
       { key: '/billing', label: 'Gói dịch vụ', perm: 'subscription.view' },
       { key: '/activity-logs', label: 'Log hệ thống', perm: 'activitylog.view' },
