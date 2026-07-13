@@ -13,6 +13,8 @@ export const ticketFundSchema = z.object({
   ticketCode: z.string(),
   status: z.number(),
   isClosed: z.boolean(),
+  orderCode: z.string().nullable().optional(),
+  providerName: z.string().nullable().optional(),
 });
 export type TicketFund = z.infer<typeof ticketFundSchema>;
 

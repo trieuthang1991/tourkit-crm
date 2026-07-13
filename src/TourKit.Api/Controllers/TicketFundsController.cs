@@ -13,11 +13,15 @@ public sealed class TicketFundsController(ITicketFundService service) : Controll
 {
     [HttpGet]
     [Authorize(Permissions.TicketFundView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] Guid? orderId = null)
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] TicketFundListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size, orderId);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.TicketFundView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpPost]
     [Authorize(Permissions.TicketFundManage)]

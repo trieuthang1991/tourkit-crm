@@ -8,14 +8,43 @@ namespace TourKit.Application.Finance;
 /// <summary>Quỹ vé ứng (legacy TicketFund) — CRUD phân trang, lọc theo đơn. Cô lập tenant do AppDbContext lo.</summary>
 public sealed class TicketFundService(
     IRepository<TicketFund> repo,
+    IRepository<Order> orderRepo,
+    IRepository<Provider> providerRepo,
     IValidator<CreateTicketFundDto> createValidator) : ITicketFundService
 {
-    public async Task<PagedResult<TicketFundDto>> ListAsync(int page, int size, Guid? orderId)
+    public async Task<PagedResult<TicketFundDto>> ListAsync(int page, int size, TicketFundListFilter? filter = null)
     {
-        var (items, total) = orderId is { } oid
-            ? await repo.PageAsync(page, size, t => t.OrderId == oid)
-            : await repo.PageAsync(page, size);
-        return new PagedResult<TicketFundDto>(items.Select(Map).ToList(), total, page, size);
+        var f = filter ?? new TicketFundListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        var all = await repo.ListAsync(t =>
+            (f.ProviderId == null || t.ProviderId == f.ProviderId) &&
+            (f.OrderId == null || t.OrderId == f.OrderId) &&
+            (f.Status == null || t.Status == f.Status) &&
+            (f.IsClosed == null || t.IsClosed == f.IsClosed));
+
+        var filtered = all
+            .Where(t => kw == null || t.TicketCode.Contains(kw, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(t => t.CreatedAt).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
+
+        var orderIds = pageItems.Select(t => t.OrderId).ToHashSet();
+        var providerIds = pageItems.Where(t => t.ProviderId != null).Select(t => t.ProviderId!.Value).ToHashSet();
+        var orderCodes = (await orderRepo.ListAsync(o => orderIds.Contains(o.Id))).ToDictionary(o => o.Id, o => o.Code);
+        var providerNames = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id))).ToDictionary(p => p.Id, p => p.Name);
+
+        var dtos = pageItems.Select(t => Map(t) with
+        {
+            OrderCode = orderCodes.GetValueOrDefault(t.OrderId),
+            ProviderName = t.ProviderId is { } pid ? providerNames.GetValueOrDefault(pid) : null,
+        }).ToList();
+        return new PagedResult<TicketFundDto>(dtos, filtered.Count, page, size);
+    }
+
+    public async Task<TicketFundStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new TicketFundStatsDto(all.Count, all.Count(t => t.IsClosed), all.Count(t => !t.IsClosed));
     }
 
     public async Task<TicketFundDto> CreateAsync(CreateTicketFundDto dto)

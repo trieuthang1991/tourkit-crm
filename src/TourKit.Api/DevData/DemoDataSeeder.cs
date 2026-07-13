@@ -348,6 +348,19 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7n) Quỹ vé ứng (TicketFund) — vé máy bay do p5 (airline) cấp cho đơn demo.
+        if (!await db.Set<TicketFund>().AnyAsync())
+        {
+            var tfOrder = opsOrders.FirstOrDefault();
+            if (tfOrder is not null)
+            {
+                db.AddRange(
+                    new TicketFund { OrderId = tfOrder.Id, ProviderId = p5.Id, TicketCode = "VMB-000001", Status = 1, IsClosed = false },
+                    new TicketFund { OrderId = tfOrder.Id, ProviderId = p5.Id, TicketCode = "VMB-000002", Status = 1, IsClosed = true });
+                await db.SaveChangesAsync();
+            }
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {
