@@ -218,10 +218,13 @@ public static class DemoDataSeeder
         }
         if (!await db.Set<RoomClass>().AnyAsync())
         {
+            // Bám hệ cũ "Class Hotel" (legacy class_hotel): hạng/loại cơ sở lưu trú, KHÔNG phải sao.
             db.AddRange(
-                new RoomClass { Name = "3 sao", SortOrder = 1, Status = 1 },
-                new RoomClass { Name = "4 sao", SortOrder = 2, Status = 1 },
-                new RoomClass { Name = "5 sao", SortOrder = 3, Status = 1 });
+                new RoomClass { Name = "Khu nghỉ dưỡng - Resort", SortOrder = 1, Status = 1 },
+                new RoomClass { Name = "Khách sạn - Hotel", SortOrder = 2, Status = 1 },
+                new RoomClass { Name = "Căn hộ - Apartment", SortOrder = 3, Status = 1 },
+                new RoomClass { Name = "Villa", SortOrder = 4, Status = 1 },
+                new RoomClass { Name = "Nhà nghỉ - Motel", SortOrder = 5, Status = 1 });
         }
         if (!await db.Set<CustomerSource>().AnyAsync())
         {
