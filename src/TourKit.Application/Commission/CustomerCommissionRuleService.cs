@@ -8,13 +8,37 @@ namespace TourKit.Application.Commission;
 /// <summary>Hoa hồng theo loại khách — CRUD phân trang (mirror CommissionRuleService, keyed CustomerType).</summary>
 public sealed class CustomerCommissionRuleService(
     IRepository<CustomerCommissionRule> repo,
+    IRepository<CustomerType> customerTypeRepo,
     IValidator<CreateCustomerCommissionRuleDto> createValidator,
     IValidator<UpdateCustomerCommissionRuleDto> updateValidator) : ICustomerCommissionRuleService
 {
-    public async Task<PagedResult<CustomerCommissionRuleDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<CustomerCommissionRuleDto>> ListAsync(int page, int size, CustomerCommissionRuleListFilter? filter = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
-        return new PagedResult<CustomerCommissionRuleDto>(items.Select(Map).ToList(), total, page, size);
+        var f = filter ?? new CustomerCommissionRuleListFilter();
+
+        var all = await repo.ListAsync(r =>
+            (f.CustomerType == null || r.CustomerType == f.CustomerType) &&
+            (f.Status == null || r.Status == f.Status));
+
+        var names = (await customerTypeRepo.ListAsync()).ToDictionary(t => t.Code, t => t.Name);
+
+        var ordered = all
+            .Select(r => Map(r) with { CustomerTypeName = names.GetValueOrDefault(r.CustomerType) })
+            .OrderByDescending(d => d.Percentage)
+            .ToList();
+
+        var pageItems = ordered.Skip((page - 1) * size).Take(size).ToList();
+        return new PagedResult<CustomerCommissionRuleDto>(pageItems, ordered.Count, page, size);
+    }
+
+    public async Task<CustomerCommissionRuleStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new CustomerCommissionRuleStatsDto(
+            all.Count,
+            all.Count(r => r.Status == 1),
+            all.Count(r => r.Status != 1),
+            all.Count == 0 ? 0m : Math.Round(all.Average(r => r.Percentage), 2));
     }
 
     public async Task<CustomerCommissionRuleDto> CreateAsync(CreateCustomerCommissionRuleDto dto)

@@ -175,6 +175,27 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7b') Danh mục loại khách (Code khớp Customer.CustomerType) — cho màn Danh mục + HH theo loại khách.
+        if (!await db.Set<CustomerType>().AnyAsync())
+        {
+            db.AddRange(
+                new CustomerType { Code = 0, Name = "Khách lẻ", SortOrder = 1, Status = 1 },
+                new CustomerType { Code = 1, Name = "Doanh nghiệp", SortOrder = 2, Status = 1 },
+                new CustomerType { Code = 2, Name = "Đại lý", SortOrder = 3, Status = 1 },
+                new CustomerType { Code = 3, Name = "Cộng tác viên", SortOrder = 4, Status = 1 });
+            await db.SaveChangesAsync();
+        }
+
+        // 7b'') Hoa hồng theo loại khách — idempotent riêng.
+        if (!await db.Set<CustomerCommissionRule>().AnyAsync())
+        {
+            db.AddRange(
+                new CustomerCommissionRule { CustomerType = 1, Percentage = 3m, Status = 1 },
+                new CustomerCommissionRule { CustomerType = 2, Percentage = 7m, Status = 1 },
+                new CustomerCommissionRule { CustomerType = 3, Percentage = 10m, Status = 1 });
+            await db.SaveChangesAsync();
+        }
+
         // 7c) Lịch chăm sóc/hẹn (để dashboard "Quản lý lịch hẹn" có số) — idempotent riêng.
         if (!await db.Set<CustomerCare>().AnyAsync())
         {

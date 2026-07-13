@@ -11,6 +11,7 @@ public sealed class CustomerCommissionRuleServiceTests
     private static CustomerCommissionRuleService NewService(FakeRepository<CustomerCommissionRule>? repo = null)
         => new(
             repo ?? new FakeRepository<CustomerCommissionRule>(),
+            new FakeRepository<CustomerType>(),
             new CreateCustomerCommissionRuleValidator(),
             new UpdateCustomerCommissionRuleValidator());
 
