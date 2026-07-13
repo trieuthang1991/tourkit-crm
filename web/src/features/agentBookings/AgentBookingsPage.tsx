@@ -1,4 +1,4 @@
-import { App, Button, Modal, Popconfirm, Table, Typography } from 'antd';
+import { App, Button, Card, Col, Input, Modal, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -6,15 +6,20 @@ import { errorMessage } from '../../shared/api/problem';
 import { money, statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { TextAreaField, TextField } from '../../shared/ui/Field';
+import { agentsCrud } from '../agents/agentsCrud';
 import {
   useAddPassenger,
   useAgentBooking,
   useAgentBookings,
+  useAgentBookingStats,
   useCreateAgentBooking,
   useRemovePassenger,
 } from './agentBookingsApi';
+import type { AgentBookingFilter } from './agentBookingsApi';
 import { AGENT_BOOKING_STATUS, addPassengerFormSchema, createAgentBookingFormSchema } from './types';
 import type { AddPassengerForm, AgentBookingSummary, AgentPassenger, CreateAgentBookingForm } from './types';
+
+const AB_STATUS_COLOR: Record<number, string> = { 0: 'orange', 1: 'blue', 2: 'red', 3: 'green' };
 
 export function AgentBookingsPage() {
   const { message } = App.useApp();
@@ -23,7 +28,22 @@ export function AgentBookingsPage() {
 
   const [page, setPage] = useState(1);
   const size = 20;
-  const list = useAgentBookings(page, size);
+  const [search, setSearch] = useState('');
+  const [agentId, setAgentId] = useState<string | undefined>();
+  const [status, setStatus] = useState<number | undefined>();
+  const [filter, setFilter] = useState<AgentBookingFilter>({});
+  const applyFilters = () => setFilter({ q: search || undefined, agentId });
+  const resetFilters = () => {
+    setSearch('');
+    setAgentId(undefined);
+    setStatus(undefined);
+    setFilter({});
+    setPage(1);
+  };
+  const list = useAgentBookings(page, size, { ...filter, status });
+  const stats = useAgentBookingStats();
+  const agents = agentsCrud.useList({ page: 1, size: 500 });
+  const agentOpts = (agents.data?.items ?? []).map((a) => ({ label: a.name, value: a.id }));
 
   const [creating, setCreating] = useState(false);
   const [paxBookingId, setPaxBookingId] = useState<string | null>(null);
@@ -59,10 +79,10 @@ export function AgentBookingsPage() {
   }
 
   const columns: ColumnsType<AgentBookingSummary> = [
-    { title: 'Mã', dataIndex: 'code', key: 'code' },
-    { title: 'Đại lý', dataIndex: 'agentId', key: 'agentId' },
-    { title: 'Tổng tiền', dataIndex: 'totalAmount', key: 'totalAmount', render: (v: number) => money(v) },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (v: number) => statusText(AGENT_BOOKING_STATUS, v) },
+    { title: 'Mã', dataIndex: 'code', key: 'code', width: 150 },
+    { title: 'Đại lý', dataIndex: 'agentName', key: 'agentName', width: 200, render: (v: string | null) => v ?? '—' },
+    { title: 'Tổng tiền', dataIndex: 'totalAmount', key: 'totalAmount', width: 150, align: 'right', render: (v: number) => money(v) },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 130, render: (v: number) => <Tag color={AB_STATUS_COLOR[v]}>{statusText(AGENT_BOOKING_STATUS, v)}</Tag> },
     {
       title: '',
       key: '__actions',
@@ -110,11 +130,58 @@ export function AgentBookingsPage() {
         ) : null}
       </div>
 
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        {[
+          { title: 'Tổng đặt chỗ', value: stats.data?.total ?? 0, money: false },
+          { title: 'Tổng tiền', value: stats.data?.totalAmount ?? 0, money: true },
+          { title: 'Chờ', value: stats.data?.pending ?? 0, money: false },
+          { title: 'Xác nhận', value: stats.data?.confirmed ?? 0, money: false },
+          { title: 'Hoàn tất', value: stats.data?.done ?? 0, money: false },
+          { title: 'Huỷ', value: stats.data?.cancelled ?? 0, money: false },
+        ].map((c) => (
+          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
+            <Card styles={{ body: { padding: 16 } }}>
+              <Statistic title={c.title} value={c.value} loading={stats.isLoading} formatter={c.money ? (v) => money(Number(v)) : undefined} />
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      <Card size="small" style={{ marginBottom: 12 }}>
+        <Row gutter={[12, 12]}>
+          <Col xs={24} sm={12} lg={6}>
+            <Input.Search allowClear placeholder="Mã booking" value={search} onChange={(e) => setSearch(e.target.value)} onSearch={applyFilters} />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Đại lý"
+              options={agentOpts} value={agentId} onChange={(v) => setAgentId(v ?? undefined)} />
+          </Col>
+          <Col span={24}>
+            <Space>
+              <Button type="primary" onClick={applyFilters}>Tìm kiếm</Button>
+              <Button onClick={resetFilters}>Đặt lại</Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      <div style={{ marginBottom: 12, overflowX: 'auto' }}>
+        <Segmented
+          value={status === undefined ? 'all' : String(status)}
+          onChange={(val) => {
+            setStatus(val === 'all' ? undefined : Number(val));
+            setPage(1);
+          }}
+          options={[{ label: `Tất cả (${stats.data?.total ?? 0})`, value: 'all' }, ...Object.entries(AGENT_BOOKING_STATUS).map(([v, label]) => ({ label, value: v }))]}
+        />
+      </div>
+
       <Table
         rowKey="id"
         columns={columns}
         dataSource={list.data?.items ?? []}
         loading={list.isLoading}
+        scroll={{ x: 'max-content' }}
         pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
       />
 

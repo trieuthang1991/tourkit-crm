@@ -13,7 +13,7 @@ public sealed class AgentBookingServiceTests
     {
         var quotes = new FakeRepository<AgentQuoteRequest>();
         var svc = new AgentBookingService(
-            new FakeRepository<AgentBooking>(), quotes, new FakeRepository<AgentPassenger>());
+            new FakeRepository<AgentBooking>(), quotes, new FakeRepository<AgentPassenger>(), new FakeRepository<Agent>());
         return (svc, quotes);
     }
 

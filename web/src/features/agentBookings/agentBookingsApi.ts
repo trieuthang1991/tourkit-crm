@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { agentBookingSchema, agentBookingSummarySchema } from './types';
@@ -6,12 +7,37 @@ import type { AddPassengerForm, CreateAgentBookingForm } from './types';
 
 const KEY = ['agentBookings'];
 
-export function useAgentBookings(page: number, size: number) {
+export type AgentBookingFilter = { q?: string; agentId?: string; status?: number };
+
+function cleanParams(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+}
+
+export function useAgentBookings(page: number, size: number, filter: AgentBookingFilter = {}) {
   return useQuery({
-    queryKey: [...KEY, 'list', page, size],
+    queryKey: [...KEY, 'list', page, size, filter],
     queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/agent-bookings', { params: { page, size } });
+      const { data } = await httpClient.get<unknown>('/api/v1/agent-bookings', { params: cleanParams({ page, size, ...filter }) });
       return pagedSchema(agentBookingSummarySchema).parse(data);
+    },
+  });
+}
+
+export const agentBookingStatsSchema = z.object({
+  total: z.number(),
+  pending: z.number(),
+  confirmed: z.number(),
+  cancelled: z.number(),
+  done: z.number(),
+  totalAmount: z.number(),
+});
+
+export function useAgentBookingStats() {
+  return useQuery({
+    queryKey: [...KEY, 'stats'],
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>('/api/v1/agent-bookings/stats');
+      return agentBookingStatsSchema.parse(data);
     },
   });
 }

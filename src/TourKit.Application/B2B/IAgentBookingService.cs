@@ -5,7 +5,8 @@ namespace TourKit.Application.B2B;
 
 public interface IAgentBookingService
 {
-    Task<PagedResult<AgentBookingSummaryDto>> ListAsync(int page, int size, Guid? agentId);
+    Task<PagedResult<AgentBookingSummaryDto>> ListAsync(int page, int size, AgentBookingListFilter? filter = null);
+    Task<AgentBookingStatsDto> GetStatsAsync();
     Task<AgentBookingDto> GetAsync(Guid id);
     Task<AgentBookingDto> CreateFromQuoteAsync(CreateAgentBookingDto dto);
     Task UpdateStatusAsync(Guid id, int status);

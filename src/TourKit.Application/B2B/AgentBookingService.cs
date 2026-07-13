@@ -12,17 +12,38 @@ namespace TourKit.Application.B2B;
 public sealed class AgentBookingService(
     IRepository<AgentBooking> repo,
     IRepository<AgentQuoteRequest> quoteRepo,
-    IRepository<AgentPassenger> passengerRepo) : IAgentBookingService
+    IRepository<AgentPassenger> passengerRepo,
+    IRepository<Agent> agentRepo) : IAgentBookingService
 {
-    public async Task<PagedResult<AgentBookingSummaryDto>> ListAsync(int page, int size, Guid? agentId)
+    public async Task<PagedResult<AgentBookingSummaryDto>> ListAsync(int page, int size, AgentBookingListFilter? filter = null)
     {
-        var (items, total) = agentId is { } aid
-            ? await repo.PageAsync(page, size, b => b.AgentId == aid)
-            : await repo.PageAsync(page, size);
-        var dtos = items
-            .Select(b => new AgentBookingSummaryDto(b.Id, b.AgentId, b.QuoteRequestId, b.Code, b.TotalAmount, b.Status))
+        var f = filter ?? new AgentBookingListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        var all = await repo.ListAsync(b =>
+            (f.AgentId == null || b.AgentId == f.AgentId) &&
+            (f.Status == null || b.Status == f.Status));
+
+        var filtered = all
+            .Where(b => kw == null || b.Code.Contains(kw, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(b => b.CreatedAt).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
+
+        var agentIds = pageItems.Select(b => b.AgentId).ToHashSet();
+        var agentNames = (await agentRepo.ListAsync(a => agentIds.Contains(a.Id))).ToDictionary(a => a.Id, a => a.Name);
+
+        var dtos = pageItems
+            .Select(b => new AgentBookingSummaryDto(b.Id, b.AgentId, b.QuoteRequestId, b.Code, b.TotalAmount, b.Status, agentNames.GetValueOrDefault(b.AgentId)))
             .ToList();
-        return new PagedResult<AgentBookingSummaryDto>(dtos, total, page, size);
+        return new PagedResult<AgentBookingSummaryDto>(dtos, filtered.Count, page, size);
+    }
+
+    public async Task<AgentBookingStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new AgentBookingStatsDto(
+            all.Count, all.Count(b => b.Status == 0), all.Count(b => b.Status == 1),
+            all.Count(b => b.Status == 2), all.Count(b => b.Status == 3), all.Sum(b => b.TotalAmount));
     }
 
     public async Task<AgentBookingDto> GetAsync(Guid id)

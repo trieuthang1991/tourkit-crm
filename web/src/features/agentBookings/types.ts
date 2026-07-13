@@ -36,6 +36,7 @@ export const agentBookingSummarySchema = z.object({
   code: z.string(),
   totalAmount: z.number(),
   status: z.number(),
+  agentName: z.string().nullable().optional(),
 });
 export type AgentBookingSummary = z.infer<typeof agentBookingSummarySchema>;
 

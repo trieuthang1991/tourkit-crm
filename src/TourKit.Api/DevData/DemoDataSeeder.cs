@@ -371,6 +371,22 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7p) Đặt chỗ đại lý (AgentBooking) — từ 1 yêu cầu báo giá đã xác nhận.
+        if (!await db.Set<AgentBooking>().AnyAsync())
+        {
+            var agent = await db.Set<Agent>().FirstOrDefaultAsync(a => a.Code == "DL001");
+            if (agent is not null)
+            {
+                var qr = new AgentQuoteRequest { AgentId = agent.Id, ProductName = "Tour Đà Nẵng 3N2Đ (B2B)", PaxCount = 10, Status = AgentQuoteStatus.Confirmed, QuotedAmount = 25_000_000m };
+                db.Add(qr);
+                await db.SaveChangesAsync();
+                db.AddRange(
+                    new AgentBooking { AgentId = agent.Id, QuoteRequestId = qr.Id, Code = "ABK-0001", TotalAmount = 25_000_000m, Status = 1 },
+                    new AgentBooking { AgentId = agent.Id, QuoteRequestId = qr.Id, Code = "ABK-0002", TotalAmount = 12_000_000m, Status = 0 });
+                await db.SaveChangesAsync();
+            }
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {
