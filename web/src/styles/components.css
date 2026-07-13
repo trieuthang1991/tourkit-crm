@@ -100,3 +100,61 @@
 .tk-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
 .tk-form-grid label { display: block; font-size: 12.5px; font-weight: 500; color: var(--tk-heading); margin-bottom: 6px; }
 .tk-form-section { font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--tk-muted); font-weight: 600; margin-bottom: 14px; }
+
+/* =========================================================================
+   Override cho Ant Design SẴN CÓ — đổi look toàn app mà KHÔNG sửa markup.
+   (những thứ token không phủ được: uppercase header bảng, viền/bóng card…)
+   ========================================================================= */
+
+/* Bảng: header IN HOA + giãn chữ (bám DESIGN.md §3). Hover/nền header đã lo bằng token. */
+.ant-table-wrapper .ant-table-thead > tr > th {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+/* Số/tiền canh phải mono: thêm class "tk-num" vào column (className) */
+.ant-table-wrapper td.tk-num, .ant-table-wrapper th.tk-num { font-family: var(--tk-font-mono); font-variant-numeric: tabular-nums; }
+/* Cột đóng băng (fixed) nền trắng liền mạch */
+.ant-table-wrapper .ant-table-cell-fix-left,
+.ant-table-wrapper .ant-table-cell-fix-right { background: var(--tk-surface); }
+.ant-table-wrapper .ant-table-thead .ant-table-cell-fix-left,
+.ant-table-wrapper .ant-table-thead .ant-table-cell-fix-right { background: var(--tk-line); }
+
+/* Card: bóng khuếch tán, không viền cứng, header kẻ dưới mảnh */
+.ant-card { box-shadow: var(--tk-shadow-card); border: none; }
+.ant-card > .ant-card-head { border-bottom: 1px solid var(--tk-line); min-height: auto; color: var(--tk-heading); }
+
+/* Nút primary: lún nhẹ khi nhấn (bám DESIGN.md §4) */
+.ant-btn-primary:active { transform: translateY(1px); }
+
+/* Modal bo mềm + tiêu đề đậm */
+.ant-modal .ant-modal-content { border-radius: var(--tk-radius-xl); }
+.ant-modal .ant-modal-title { color: var(--tk-heading); font-weight: 700; }
+
+/* ---- Nút ghost trên navbar / thứ cấp ---- */
+.tk-btn-ghost {
+  display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px;
+  border-radius: 7px; border: 1px solid var(--tk-border); background: var(--tk-surface);
+  color: var(--tk-body); font: 500 13px var(--tk-font); cursor: pointer;
+}
+.tk-btn-ghost:hover { border-color: #d3cfe0; color: var(--tk-heading); }
+
+/* ---- Segment tabs (tab loại / trạng thái) ---- */
+.tk-segtabs {
+  display: inline-flex; gap: 6px; padding: 6px; background: var(--tk-surface);
+  border-radius: 10px; box-shadow: var(--tk-shadow-card); max-width: 100%; overflow-x: auto;
+}
+.tk-segtab {
+  border: none; cursor: pointer; white-space: nowrap; background: transparent;
+  color: var(--tk-body); font: 500 13px var(--tk-font); padding: 8px 16px; border-radius: 7px;
+}
+.tk-segtab:hover { background: var(--tk-fill); }
+.tk-segtab--active { background: var(--tk-accent); color: #fff; box-shadow: 0 2px 8px rgba(235, 83, 36, 0.35); }
+.tk-segtab__count { margin-left: 6px; font-family: var(--tk-font-mono); font-size: 11.5px; opacity: 0.7; }
+
+/* ---- Field (label trên, lỗi dưới) ---- */
+.tk-field { margin-bottom: 4px; }
+.tk-field__label { display: block; font-size: 12.5px; font-weight: 500; color: var(--tk-heading); margin-bottom: 6px; }
+.tk-field__req { color: var(--tk-danger); }
+.tk-field__error { font-size: 12px; color: var(--tk-danger); margin-top: 5px; }
