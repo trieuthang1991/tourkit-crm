@@ -298,7 +298,11 @@ export function AppShell() {
             </Typography.Text>
           )}
         </div>
-        {!collapsed && <div className="vx-sider-label">Điều hành</div>}
+        {!collapsed && (
+          <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: 11, fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', padding: '16px 20px 6px' }}>
+            Điều hành
+          </div>
+        )}
         <Menu
           theme="dark"
           mode="inline"

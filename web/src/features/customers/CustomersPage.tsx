@@ -11,7 +11,6 @@ import {
   Segmented,
   Select,
   Space,
-  Statistic,
   Table,
   Tag,
 } from 'antd';
@@ -27,6 +26,8 @@ import { money } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { CalendarOutlined, ReloadOutlined, StarOutlined, TeamOutlined, UserAddOutlined } from '@ant-design/icons';
+import { StatCard, StatRow } from '../../shared/ui/StatCard';
 import { useAuth } from '../auth/AuthContext';
 import { customersCrud } from './customersCrud';
 import {
@@ -351,11 +352,11 @@ export function CustomersPage() {
   };
 
   const statCards = [
-    { title: 'Tổng số khách hàng', value: stats.data?.total ?? 0 },
-    { title: 'Tạo hôm nay', value: stats.data?.newToday ?? 0 },
-    { title: 'Tạo trong tháng', value: stats.data?.newThisMonth ?? 0 },
-    { title: 'Mua lần đầu', value: stats.data?.firstTimeBuyers ?? 0 },
-    { title: 'Mua lại nhiều lần', value: stats.data?.repeatBuyers ?? 0 },
+    { label: 'Tổng số khách hàng', value: (stats.data?.total ?? 0).toLocaleString('vi-VN'), icon: <TeamOutlined />, tone: 'accent' as const },
+    { label: 'Tạo hôm nay', value: stats.data?.newToday ?? 0, icon: <UserAddOutlined />, tone: 'info' as const },
+    { label: 'Tạo trong tháng', value: (stats.data?.newThisMonth ?? 0).toLocaleString('vi-VN'), icon: <CalendarOutlined />, tone: 'warning' as const },
+    { label: 'Mua lần đầu', value: (stats.data?.firstTimeBuyers ?? 0).toLocaleString('vi-VN'), icon: <StarOutlined />, tone: 'success' as const },
+    { label: 'Mua lại nhiều lần', value: (stats.data?.repeatBuyers ?? 0).toLocaleString('vi-VN'), icon: <ReloadOutlined />, tone: 'danger' as const },
   ];
 
   // Chip "Chăm sóc khách hàng" (bám hệ cũ): mua lần đầu/mua lại + N ngày chưa liên hệ (phân tầng loại trừ).
@@ -387,16 +388,12 @@ export function CustomersPage() {
         }
       />
 
-      {/* Thẻ thống kê (bám hệ cũ) */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+      {/* Thẻ thống kê (icon-chip + số) — bộ handoff */}
+      <StatRow cols={5}>
         {statCards.map((s) => (
-          <Col key={s.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={s.title} value={s.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
+          <StatCard key={s.label} icon={s.icon} tone={s.tone} value={s.value} label={s.label} />
         ))}
-      </Row>
+      </StatRow>
 
       {/* Thanh lọc đầy đủ (bám "Xem thêm bộ lọc" hệ cũ) */}
       <Card size="small" style={{ marginBottom: 12 }}>

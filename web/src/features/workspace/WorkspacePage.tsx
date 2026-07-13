@@ -154,6 +154,13 @@ export function WorkspacePage() {
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      {/* Lời chào (bám bộ design) */}
+      <div>
+        <Typography.Title level={3} style={{ margin: 0, color: '#5e5873' }}>
+          Chào mừng, {email ?? 'bạn'} 👋
+        </Typography.Title>
+        <Typography.Text type="secondary">Tổng quan công việc và hoạt động của bạn hôm nay.</Typography.Text>
+      </div>
       <Card styles={{ body: { padding: 12 } }}>
         <Space wrap size={12}>
           {quickActions.map((a) => (

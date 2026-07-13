@@ -1,0 +1,70 @@
+/* =========================================================================
+   TourKit CRM — Design tokens & global theme (KHÔNG dùng inline style)
+   Import 1 lần ở entry: `import './styles/theme.css'` (main.tsx).
+   Nguồn giá trị: docs/DESIGN.md. Chỉ đổi lớp trình bày — không đụng nghiệp vụ.
+   ========================================================================= */
+
+:root {
+  /* Brand / accent (cố định) */
+  --tk-accent: #eb5324;
+  --tk-accent-hover: #d94a1e;
+  --tk-accent-press: #c73e17;
+  --tk-accent-soft: rgba(235, 83, 36, 0.12);
+  --tk-accent-grad: linear-gradient(118deg, #eb5324, rgba(235, 83, 36, 0.7));
+  --tk-accent-glow: 0 0 10px 1px rgba(235, 83, 36, 0.5);
+
+  /* Nền / bề mặt */
+  --tk-canvas: #f8f7fa;      /* nền vùng nội dung */
+  --tk-surface: #ffffff;     /* card, navbar, modal */
+  --tk-sidebar: #2f2f34;     /* menu dọc (KHÔNG dùng #000) */
+  --tk-hover: #faf9fc;       /* hover hàng bảng */
+  --tk-fill: #f6f5f9;        /* ô search, chip nền */
+
+  /* Chữ */
+  --tk-heading: #5e5873;     /* tiêu đề, số nổi bật */
+  --tk-body: #6e6b7b;        /* chữ thường */
+  --tk-muted: #a8a5b5;       /* metadata, placeholder */
+  --tk-line: #f3f2f7;        /* viền card, kẻ hàng, header bảng */
+  --tk-border: #e6e3ee;      /* viền input / nút ghost */
+
+  /* Semantic */
+  --tk-success: #28c76f;
+  --tk-warning: #ff9f43;
+  --tk-info: #00cfe8;
+  --tk-danger: #ea5455;
+  --tk-success-soft: rgba(40, 199, 111, 0.14);
+  --tk-warning-soft: rgba(255, 159, 67, 0.16);
+  --tk-info-soft: rgba(0, 207, 232, 0.14);
+  --tk-danger-soft: rgba(234, 84, 85, 0.14);
+
+  /* Hình khối */
+  --tk-radius: 6px;
+  --tk-radius-lg: 8px;
+  --tk-radius-xl: 12px;
+  --tk-shadow-card: 0 4px 24px rgba(34, 41, 47, 0.06);
+  --tk-shadow-pop: 0 12px 32px rgba(34, 41, 47, 0.13);
+  --tk-shadow-accent: 0 4px 12px rgba(235, 83, 36, 0.35);
+
+  /* Font (brand cố định) */
+  --tk-font: "Roboto", -apple-system, "Segoe UI", Arial, sans-serif;
+  --tk-font-mono: "Roboto Mono", "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Reset nhẹ + nền app */
+body {
+  margin: 0;
+  font-family: var(--tk-font);
+  color: var(--tk-body);
+  background: var(--tk-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Số & tiền canh phải, dễ so cột */
+.tk-mono { font-family: var(--tk-font-mono); }
+.tk-num { font-family: var(--tk-font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Scrollbar mảnh */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #d9d7e0; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #bcb9c9; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }

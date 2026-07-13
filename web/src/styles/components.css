@@ -1,0 +1,102 @@
+/* =========================================================================
+   TourKit CRM — Class components (thay cho inline style trong mockup)
+   Import sau theme.css. Dùng kèm token AntD ở app/theme.ts.
+   ========================================================================= */
+
+/* ---- App shell ---- */
+.tk-sider { background: var(--tk-sidebar) !important; }
+.tk-sider__brand {
+  height: 60px; display: flex; align-items: center; gap: 11px; padding: 0 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tk-sider__logo {
+  width: 32px; height: 32px; border-radius: 9px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, var(--tk-accent), var(--tk-accent-press));
+  box-shadow: 0 4px 10px rgba(235, 83, 36, 0.4);
+}
+.tk-sider__title { color: #fff; font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
+
+/* item menu active: gradient đỏ + glow (bám DESIGN.md §4) */
+.tk-sider .ant-menu-item-selected {
+  background: var(--tk-accent-grad) !important;
+  box-shadow: var(--tk-accent-glow);
+}
+
+.tk-navbar {
+  height: 60px; background: var(--tk-surface); display: flex; align-items: center;
+  gap: 14px; padding: 0 22px; border-bottom: 1px solid #f0eef4;
+  position: sticky; top: 0; z-index: 10;
+}
+.tk-search {
+  display: flex; align-items: center; gap: 10px; background: var(--tk-fill);
+  border-radius: var(--tk-radius-lg); padding: 0 12px; height: 38px;
+}
+.tk-search input { border: none; background: transparent; outline: none; font: inherit; color: var(--tk-body); width: 100%; }
+
+.tk-content { padding: 24px 26px 40px; background: var(--tk-canvas); min-height: 100%; }
+
+/* ---- Page header ---- */
+.tk-page__crumb { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--tk-muted); margin-bottom: 6px; }
+.tk-page__title { margin: 0; font-size: 22px; font-weight: 700; color: var(--tk-heading); letter-spacing: -0.2px; }
+.tk-page__desc { font-size: 13.5px; color: var(--tk-body); margin-top: 4px; }
+.tk-page__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+
+/* ---- Card ---- */
+.tk-card { background: var(--tk-surface); border-radius: var(--tk-radius-xl); box-shadow: var(--tk-shadow-card); overflow: hidden; }
+.tk-card__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--tk-line); }
+.tk-card__title { font-size: 15px; font-weight: 700; color: var(--tk-heading); }
+
+/* ---- Stat card ---- */
+.tk-stats { display: grid; grid-template-columns: repeat(var(--tk-stat-cols, 5), 1fr); gap: 16px; margin-bottom: 18px; }
+.tk-stat { background: var(--tk-surface); border-radius: var(--tk-radius-xl); padding: 18px; box-shadow: var(--tk-shadow-card); }
+.tk-stat__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.tk-stat__chip { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.tk-stat__value { font-family: var(--tk-font-mono); font-size: 25px; font-weight: 600; color: var(--tk-heading); letter-spacing: -0.5px; line-height: 1; }
+.tk-stat__label { font-size: 12.5px; color: var(--tk-body); margin-top: 7px; }
+.tk-trend { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+.tk-trend--up { color: var(--tk-success); background: var(--tk-success-soft); }
+.tk-trend--down { color: var(--tk-danger); background: var(--tk-danger-soft); }
+@media (max-width: 1200px) { .tk-stats { grid-template-columns: repeat(2, 1fr); } }
+
+/* Icon chip nền theo semantic (tint 12–16%) */
+.tk-chip--accent { background: var(--tk-accent-soft); color: var(--tk-accent); }
+.tk-chip--success { background: var(--tk-success-soft); color: #1f9d57; }
+.tk-chip--warning { background: var(--tk-warning-soft); color: #d9821f; }
+.tk-chip--info { background: var(--tk-info-soft); color: #00b8d4; }
+.tk-chip--danger { background: var(--tk-danger-soft); color: #d1494a; }
+
+/* ---- Table (bám DESIGN.md: header IN HOA, cột đóng băng, hover) ---- */
+.tk-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+.tk-table thead th {
+  text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; font-weight: 500;
+  color: var(--tk-body); background: var(--tk-line); padding: 13px 14px; text-align: left; white-space: nowrap;
+}
+.tk-table tbody td { padding: 14px 14px; border-bottom: 1px solid var(--tk-line); font-size: 13px; color: var(--tk-body); }
+.tk-table tbody tr:hover td { background: var(--tk-hover); }
+.tk-table__scroll { overflow-x: auto; }
+/* Cột đóng băng: viền dọc mảnh (KHÔNG đổ bóng tứ phía) */
+.tk-col-freeze-l { position: sticky; z-index: 2; background: var(--tk-surface); border-right: 1px solid var(--tk-line); }
+.tk-col-freeze-r { position: sticky; right: 0; z-index: 2; background: var(--tk-surface); border-left: 1px solid var(--tk-line); }
+.tk-table thead .tk-col-freeze-l, .tk-table thead .tk-col-freeze-r { z-index: 3; background: var(--tk-line); border-color: #eceaf1; }
+.tk-cell-code { font-family: var(--tk-font-mono); font-weight: 600; color: var(--tk-accent); }
+
+/* ---- Status pill ---- */
+.tk-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
+.tk-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.tk-pill--success { color: #1f9d57; background: var(--tk-success-soft); }
+.tk-pill--warning { color: #d9821f; background: var(--tk-warning-soft); }
+.tk-pill--danger { color: #d1494a; background: var(--tk-danger-soft); }
+.tk-pill--muted { color: var(--tk-body); background: #f0eef4; }
+
+/* ---- Avatar chữ cái tròn màu accent ---- */
+.tk-avatar { border-radius: 50%; background: var(--tk-accent-soft); color: var(--tk-accent); display: flex; align-items: center; justify-content: center; font-weight: 600; flex: 0 0 auto; }
+
+/* ---- Toolbar lọc ---- */
+.tk-toolbar { background: var(--tk-surface); border-radius: var(--tk-radius-xl); padding: 16px 18px; box-shadow: var(--tk-shadow-card); margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+/* ---- Form modal (label trên, 1 cột nhóm 2) ---- */
+.tk-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+.tk-form-grid label { display: block; font-size: 12.5px; font-weight: 500; color: var(--tk-heading); margin-bottom: 6px; }
+.tk-form-section { font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--tk-muted); font-weight: 600; margin-bottom: 14px; }
