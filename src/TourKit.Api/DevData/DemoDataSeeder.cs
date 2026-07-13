@@ -250,19 +250,29 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
-        // 7h) 1 hóa đơn đã phát hành cho đơn đầu (để filter TT hóa đơn có dữ liệu) — idempotent.
-        if (!await db.Set<Invoice>().AnyAsync())
+        // 7h) Hoá đơn VAT (varied trạng thái) cho màn Hoá đơn + filter TT hóa đơn — idempotent theo số HĐ.
+        if (!await db.Set<Invoice>().AnyAsync(i => i.Number == "0000001"))
         {
-            var firstOrder = opsOrders.FirstOrDefault();
-            if (firstOrder is not null)
+            db.Add(new Invoice
             {
-                db.Add(new Invoice
-                {
-                    OrderId = firstOrder.Id, Series = "1C26TK", Number = "0000001", InvoiceDate = now,
-                    BuyerName = "Nguyễn Văn An", Subtotal = 6_363_636m, VatAmount = 636_364m, TotalAmount = 7_000_000m, Status = 1,
-                });
-                await db.SaveChangesAsync();
-            }
+                OrderId = opsOrders.FirstOrDefault()?.Id, Series = "1C26TK", Number = "0000001", InvoiceDate = now,
+                BuyerName = "Nguyễn Văn An", BuyerTaxCode = "0101234567", Subtotal = 6_363_636m, VatAmount = 636_364m, TotalAmount = 7_000_000m, Status = 1,
+            });
+            await db.SaveChangesAsync();
+        }
+        if (!await db.Set<Invoice>().AnyAsync(i => i.Number == "0000002"))
+        {
+            db.Add(new Invoice
+            {
+                Series = "1C26TK", Number = "0000002", InvoiceDate = now.AddDays(-1),
+                BuyerName = "Công ty Du Lịch Xanh", BuyerTaxCode = "0209876543", Subtotal = 16_181_818m, VatAmount = 1_618_182m, TotalAmount = 17_800_000m, Status = 0,
+            });
+            db.Add(new Invoice
+            {
+                Series = "1C26TK", Number = "0000003", InvoiceDate = now.AddDays(-3),
+                BuyerName = "Trần Thị Bình", Subtotal = 5_454_545m, VatAmount = 545_455m, TotalAmount = 6_000_000m, Status = 2,
+            });
+            await db.SaveChangesAsync();
         }
 
         // 7i) Chỗ (TourCustomer) cho đơn demo — mỗi đơn 1 dòng, trạng thái xen kẽ để cột "Khách (chỗ)" có số.

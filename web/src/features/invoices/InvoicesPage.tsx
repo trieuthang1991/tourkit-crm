@@ -1,13 +1,15 @@
-import { App, Button, Popconfirm, Space, Table, Typography } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Space, Statistic, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
+import dayjs from 'dayjs';
 import { useAuth } from '../auth/AuthContext';
 import { errorMessage } from '../../shared/api/problem';
 import { dateText, money, statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { InvoiceLinesField } from './InvoiceLinesField';
-import { useCreateInvoice, useDeleteInvoice, useInvoice, useInvoices, useUpdateInvoice } from './invoicesApi';
+import { useCreateInvoice, useDeleteInvoice, useInvoice, useInvoices, useInvoiceStats, useUpdateInvoice } from './invoicesApi';
+import type { InvoiceFilter } from './invoicesApi';
 import { invoiceFormSchema } from './types';
 import type { InvoiceForm, InvoiceSummary } from './types';
 
@@ -16,6 +18,7 @@ const INVOICE_STATUS: Record<number, string> = {
   1: 'Phát hành',
   2: 'Huỷ',
 };
+const INVOICE_STATUS_COLOR: Record<number, string> = { 0: 'default', 1: 'green', 2: 'red' };
 
 function emptyForm(): InvoiceForm {
   return {
@@ -38,7 +41,20 @@ export function InvoicesPage() {
 
   const [page, setPage] = useState(1);
   const size = 20;
-  const list = useInvoices(page, size);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<number | undefined>();
+  const [dateDraft, setDateDraft] = useState<{ from?: string; to?: string }>({});
+  const [filter, setFilter] = useState<InvoiceFilter>({});
+  const applyFilters = () => setFilter({ q: search || undefined, dateFrom: dateDraft.from, dateTo: dateDraft.to });
+  const resetFilters = () => {
+    setSearch('');
+    setStatus(undefined);
+    setDateDraft({});
+    setFilter({});
+    setPage(1);
+  };
+  const list = useInvoices(page, size, { ...filter, status });
+  const stats = useInvoiceStats();
 
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const isEdit = editingId !== null && editingId !== 'new';
@@ -93,12 +109,14 @@ export function InvoicesPage() {
   }
 
   const columns: ColumnsType<InvoiceSummary> = [
-    { title: 'Ký hiệu', dataIndex: 'series', key: 'series' },
-    { title: 'Số', dataIndex: 'number', key: 'number' },
-    { title: 'Ngày', dataIndex: 'invoiceDate', key: 'invoiceDate', render: (v: string) => dateText(v) },
-    { title: 'Người mua', dataIndex: 'buyerName', key: 'buyerName' },
-    { title: 'Tổng tiền', dataIndex: 'totalAmount', key: 'totalAmount', render: (v: number) => money(v) },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (v: number) => statusText(INVOICE_STATUS, v) },
+    { title: 'Ký hiệu', dataIndex: 'series', key: 'series', width: 120 },
+    { title: 'Số', dataIndex: 'number', key: 'number', width: 110 },
+    { title: 'Ngày', dataIndex: 'invoiceDate', key: 'invoiceDate', width: 110, render: (v: string) => dateText(v) },
+    { title: 'Người mua', dataIndex: 'buyerName', key: 'buyerName', width: 180 },
+    { title: 'MST', dataIndex: 'buyerTaxCode', key: 'buyerTaxCode', width: 120, render: (v: string | null) => v ?? '—' },
+    { title: 'Tiền thuế', dataIndex: 'vatAmount', key: 'vatAmount', width: 120, align: 'right', render: (v?: number) => money(v ?? 0) },
+    { title: 'Tổng tiền', dataIndex: 'totalAmount', key: 'totalAmount', width: 130, align: 'right', render: (v: number) => money(v) },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: (v: number) => <Tag color={INVOICE_STATUS_COLOR[v]}>{statusText(INVOICE_STATUS, v)}</Tag> },
     {
       title: '',
       key: '__actions',
@@ -132,11 +150,60 @@ export function InvoicesPage() {
         ) : null}
       </div>
 
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        {[
+          { title: 'Tổng hoá đơn', value: stats.data?.total ?? 0, money: false },
+          { title: 'Tổng tiền', value: stats.data?.totalAmount ?? 0, money: true },
+          { title: 'Tổng VAT', value: stats.data?.totalVat ?? 0, money: true },
+          { title: 'Đã phát hành', value: stats.data?.issued ?? 0, money: false },
+          { title: 'Nháp', value: stats.data?.draft ?? 0, money: false },
+          { title: 'Huỷ', value: stats.data?.cancelled ?? 0, money: false },
+        ].map((c) => (
+          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
+            <Card styles={{ body: { padding: 16 } }}>
+              <Statistic title={c.title} value={c.value} loading={stats.isLoading} formatter={c.money ? (v) => money(Number(v)) : undefined} />
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      <Card size="small" style={{ marginBottom: 12 }}>
+        <Row gutter={[12, 12]}>
+          <Col xs={24} sm={12} lg={8}>
+            <Input.Search allowClear placeholder="Ký hiệu / số / người mua / MST" value={search}
+              onChange={(e) => setSearch(e.target.value)} onSearch={applyFilters} />
+          </Col>
+          <Col xs={24} sm={12} lg={8}>
+            <DatePicker.RangePicker style={{ width: '100%' }} placeholder={['Ngày từ', 'đến']}
+              value={dateDraft.from && dateDraft.to ? [dayjs(dateDraft.from), dayjs(dateDraft.to)] : null}
+              onChange={(d) => setDateDraft({ from: d?.[0]?.startOf('day').toISOString(), to: d?.[1]?.endOf('day').toISOString() })} />
+          </Col>
+          <Col span={24}>
+            <Space>
+              <Button type="primary" onClick={applyFilters}>Tìm kiếm</Button>
+              <Button onClick={resetFilters}>Đặt lại</Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      <div style={{ marginBottom: 12, overflowX: 'auto' }}>
+        <Segmented
+          value={status === undefined ? 'all' : String(status)}
+          onChange={(val) => {
+            setStatus(val === 'all' ? undefined : Number(val));
+            setPage(1);
+          }}
+          options={[{ label: `Tất cả (${stats.data?.total ?? 0})`, value: 'all' }, ...Object.entries(INVOICE_STATUS).map(([v, label]) => ({ label, value: v }))]}
+        />
+      </div>
+
       <Table
         rowKey="id"
         columns={columns}
         dataSource={list.data?.items ?? []}
         loading={list.isLoading}
+        scroll={{ x: 'max-content' }}
         pagination={{
           current: page,
           pageSize: size,

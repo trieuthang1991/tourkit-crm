@@ -9,7 +9,16 @@ public sealed record InvoiceDto(
     decimal Subtotal, decimal VatAmount, decimal TotalAmount, int Status, string? Note, InvoiceLineDto[] Lines);
 
 public sealed record InvoiceSummaryDto(
-    Guid Id, string Series, string Number, DateTimeOffset InvoiceDate, string BuyerName, decimal TotalAmount, int Status);
+    Guid Id, string Series, string Number, DateTimeOffset InvoiceDate, string BuyerName, decimal TotalAmount, int Status,
+    string? BuyerTaxCode = null, decimal VatAmount = 0m);
+
+/// <summary>Bộ lọc danh sách hoá đơn (bám hệ cũ). Status: 0 nháp · 1 phát hành · 2 huỷ.</summary>
+public sealed record InvoiceListFilter(
+    string? Q = null, int? Status = null, DateTimeOffset? DateFrom = null, DateTimeOffset? DateTo = null);
+
+/// <summary>Thẻ thống kê đầu màn Hoá đơn: tổng + theo trạng thái + tổng tiền + tổng VAT.</summary>
+public sealed record InvoiceStatsDto(
+    int Total, int Draft, int Issued, int Cancelled, decimal TotalAmount, decimal TotalVat);
 
 public sealed record CreateInvoiceLineDto(string Description, int Quantity, decimal UnitPrice, decimal VatRate);
 

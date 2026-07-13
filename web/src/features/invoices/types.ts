@@ -41,6 +41,8 @@ export const invoiceSummarySchema = z.object({
   buyerName: z.string(),
   totalAmount: z.number(),
   status: z.number(),
+  buyerTaxCode: z.string().nullable().optional(),
+  vatAmount: z.number().optional(),
 });
 export type InvoiceSummary = z.infer<typeof invoiceSummarySchema>;
 

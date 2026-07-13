@@ -16,13 +16,37 @@ public sealed class InvoiceService(
     IValidator<CreateInvoiceDto> createValidator,
     IValidator<UpdateInvoiceDto> updateValidator) : IInvoiceService
 {
-    public async Task<PagedResult<InvoiceSummaryDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<InvoiceSummaryDto>> ListAsync(int page, int size, InvoiceListFilter? filter = null)
     {
-        var (items, total) = await invoiceRepo.PageAsync(page, size);
-        var dtos = items
-            .Select(i => new InvoiceSummaryDto(i.Id, i.Series, i.Number, i.InvoiceDate, i.BuyerName, i.TotalAmount, i.Status))
+        var f = filter ?? new InvoiceListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        var all = await invoiceRepo.ListAsync(i =>
+            (f.Status == null || i.Status == f.Status) &&
+            (f.DateFrom == null || i.InvoiceDate >= f.DateFrom) &&
+            (f.DateTo == null || i.InvoiceDate <= f.DateTo));
+
+        bool MatchQ(Invoice i) =>
+            kw == null ||
+            i.Series.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            i.Number.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            i.BuyerName.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            (i.BuyerTaxCode?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
+
+        var filtered = all.Where(MatchQ).OrderByDescending(i => i.InvoiceDate).ToList();
+        var dtos = filtered.Skip((page - 1) * size).Take(size)
+            .Select(i => new InvoiceSummaryDto(i.Id, i.Series, i.Number, i.InvoiceDate, i.BuyerName, i.TotalAmount, i.Status, i.BuyerTaxCode, i.VatAmount))
             .ToList();
-        return new PagedResult<InvoiceSummaryDto>(dtos, total, page, size);
+        return new PagedResult<InvoiceSummaryDto>(dtos, filtered.Count, page, size);
+    }
+
+    public async Task<InvoiceStatsDto> GetStatsAsync()
+    {
+        var all = await invoiceRepo.ListAsync();
+        return new InvoiceStatsDto(
+            all.Count,
+            all.Count(i => i.Status == 0), all.Count(i => i.Status == 1), all.Count(i => i.Status == 2),
+            all.Sum(i => i.TotalAmount), all.Sum(i => i.VatAmount));
     }
 
     public async Task<InvoiceDto> GetAsync(Guid id)
