@@ -1,5 +1,5 @@
-import { App, Button, Input, InputNumber, Modal, Popconfirm, Select, Space, Statistic, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { App, Button, Input, InputNumber, Modal, Popconfirm, Select, Space, Statistic, Table } from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { errorMessage } from '../../shared/api/problem';
 import { money } from '../../shared/format';

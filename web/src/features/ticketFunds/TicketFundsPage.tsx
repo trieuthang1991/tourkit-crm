@@ -1,6 +1,6 @@
-import { App, Card, Col, Input, Popconfirm, Row, Select, Space, Statistic, Table, Tag } from 'antd';
+import { App, Card, Col, Input, Popconfirm, Row, Select, Space, Statistic, Table, Tag } from '../../shared/ui/antd';
 import { Button, DataCard, SegmentTabs, StatusTag } from '../../shared/ui';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { z } from 'zod';

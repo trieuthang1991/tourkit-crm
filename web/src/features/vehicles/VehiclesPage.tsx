@@ -1,4 +1,4 @@
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, TextField } from '../../shared/ui/Field';
 import { ResourcePage } from '../../shared/ui/ResourcePage';

@@ -1,5 +1,5 @@
-import { App, Button, Input, Modal, Popconfirm, Space, Table, Tag } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { App, Button, Input, Modal, Popconfirm, Space, Table, Tag } from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';

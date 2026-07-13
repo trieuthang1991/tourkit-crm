@@ -11,9 +11,9 @@ import {
   Space,
   Table,
   Tag,
-} from 'antd';
+} from '../../shared/ui/antd';
 import { Button, DataCard, SegmentTabs } from '../../shared/ui';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import dayjs from 'dayjs';

@@ -1,4 +1,4 @@
-import { App, Button, DatePicker, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
+import { App, Button, DatePicker, Input, InputNumber, Modal, Select, Space, Typography } from '../../shared/ui/antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

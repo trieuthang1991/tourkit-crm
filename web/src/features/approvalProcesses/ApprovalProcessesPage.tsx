@@ -1,4 +1,4 @@
-import { App, Button, Card, Divider, Empty, Input, List, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Divider, Empty, Input, List, Modal, Popconfirm, Select, Space, Tag, Typography } from '../../shared/ui/antd';
 import { useMemo, useState } from 'react';
 import { errorMessage } from '../../shared/api/problem';
 import { PageHeader } from '../../shared/ui/PageHeader';

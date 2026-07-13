@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Table, Tag, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Table, Tag, Typography } from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { dateText } from '../../shared/format';
 import { useActivityLogs } from './activityLogsApi';
 import type { ActivityLog } from './activityLogsApi';

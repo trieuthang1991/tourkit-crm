@@ -31,11 +31,22 @@ module.exports = {
         'no-restricted-imports': [
           'error',
           {
+            paths: [
+              {
+                name: 'antd',
+                message:
+                  "Không import 'antd' trực tiếp trong feature. Dùng component custom từ '@/shared/ui', hoặc re-export '@/shared/ui/antd' cho primitive (Input/Select/…).",
+              },
+            ],
             patterns: [
               {
                 group: ['../../features/*/**', '../../../features/*/**'],
                 message:
                   'Không import trực tiếp file nội bộ của feature khác. Nâng lên shared/ nếu cần dùng chung.',
+              },
+              {
+                group: ['antd/*'],
+                message: "Không import 'antd/*' trực tiếp trong feature. Dùng re-export '@/shared/ui/antd'.",
               },
             ],
           },

@@ -1,4 +1,4 @@
-import { Card, Col, Row, Statistic, Typography } from 'antd';
+import { Card, Col, Row, Statistic, Typography } from '../../shared/ui/antd';
 import { money } from '../../shared/format';
 import { useKpiSummary } from './kpiApi';
 

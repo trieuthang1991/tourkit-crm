@@ -1,6 +1,6 @@
-import { App, Button, Card, Col, DatePicker, Input, Modal, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, Modal, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
 import dayjs from 'dayjs';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { errorMessage } from '../../shared/api/problem';

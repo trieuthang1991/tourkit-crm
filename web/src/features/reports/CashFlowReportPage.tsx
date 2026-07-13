@@ -1,6 +1,6 @@
-import { Table, Typography } from 'antd';
+import { Table, Typography } from '../../shared/ui/antd';
 import { DataCard } from '../../shared/ui';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { money } from '../../shared/format';
 import { useCashFlow } from './cashFlowApi';
 import type { CashFlowRow } from './cashFlowApi';

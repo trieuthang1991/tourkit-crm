@@ -1,5 +1,5 @@
-import { App, Button, Input, InputNumber, Select, Space, Table, Tabs } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { App, Button, Input, InputNumber, Select, Space, Table, Tabs } from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';

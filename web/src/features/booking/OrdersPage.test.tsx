@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { App } from 'antd';
+import { App } from '../../shared/ui/antd';
 import { OrdersPage } from './OrdersPage';
 import { httpClient } from '../../shared/api/httpClient';
 

@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Button } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { z } from 'zod';

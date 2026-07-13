@@ -1,5 +1,5 @@
-import { Button, Card, Col, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Button, Card, Col, Row, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';

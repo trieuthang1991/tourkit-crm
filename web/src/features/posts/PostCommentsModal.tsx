@@ -1,4 +1,4 @@
-import { App, Button, Checkbox, Input, List, Modal, Popconfirm, Space, Tag, Typography } from 'antd';
+import { App, Button, Checkbox, Input, List, Modal, Popconfirm, Space, Tag, Typography } from '../../shared/ui/antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { z } from 'zod';

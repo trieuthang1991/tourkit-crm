@@ -1,5 +1,5 @@
-import { Avatar, Button, Card, Col, List, Row, Space, Table, Tabs, Tag, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Avatar, Button, Card, Col, List, Row, Space, Table, Tabs, Tag, Typography } from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import {
   BellOutlined,
   CalendarOutlined,

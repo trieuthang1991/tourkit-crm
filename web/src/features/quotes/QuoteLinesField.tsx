@@ -1,4 +1,4 @@
-import { Button, Select } from 'antd';
+import { Button, Select } from '../../shared/ui/antd';
 import { useMemo } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { NumberField, SelectField, TextField } from '../../shared/ui/Field';

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, App, Button, Form, Input, Result } from 'antd';
+import { Alert, App, Button, Form, Input, Result } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';

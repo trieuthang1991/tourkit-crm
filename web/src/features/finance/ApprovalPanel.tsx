@@ -1,4 +1,4 @@
-import { App, Button, Input, Select, Space, Steps, Typography } from 'antd';
+import { App, Button, Input, Select, Space, Steps, Typography } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { errorMessage } from '../../shared/api/problem';
 import { dateText } from '../../shared/format';

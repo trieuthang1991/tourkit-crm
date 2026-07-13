@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { Badge, Calendar, Typography } from 'antd';
-import type { CalendarProps } from 'antd';
+import { Badge, Calendar, Typography } from '../../shared/ui/antd';
+import type { CalendarProps } from '../../shared/ui/antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';

@@ -1,4 +1,4 @@
-import { App, Button, Card, Form, Input } from 'antd';
+import { App, Button, Card, Form, Input } from '../../shared/ui/antd';
 import { useEffect } from 'react';
 import { errorMessage } from '../../shared/api/problem';
 import { PageHeader } from '../../shared/ui/PageHeader';

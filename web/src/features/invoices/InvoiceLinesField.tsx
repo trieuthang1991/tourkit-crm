@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Button } from '../../shared/ui/antd';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { NumberField, TextField } from '../../shared/ui/Field';
 

@@ -1,5 +1,5 @@
-import { Button } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Button } from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useNavigate } from 'react-router-dom';
 import { money } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';

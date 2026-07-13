@@ -1,4 +1,4 @@
-import { Typography } from 'antd';
+import { Typography } from '../../shared/ui/antd';
 import { DepartureCalendar } from '../booking/DepartureCalendar';
 
 export function OperationsCalendarPage() {

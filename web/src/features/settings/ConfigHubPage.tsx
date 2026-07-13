@@ -1,4 +1,4 @@
-import { Card, Col, Row, Typography } from 'antd';
+import { Card, Col, Row, Typography } from '../../shared/ui/antd';
 import type { ReactNode } from 'react';
 import {
   ApartmentOutlined,

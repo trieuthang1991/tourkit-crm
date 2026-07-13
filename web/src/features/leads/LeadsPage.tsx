@@ -1,7 +1,7 @@
 import {
   App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import dayjs from 'dayjs';

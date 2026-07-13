@@ -1,4 +1,4 @@
-import { App, Button, List, Tag } from 'antd';
+import { App, Button, List, Tag } from '../../shared/ui/antd';
 import { useNavigate } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';
 import { PageHeader } from '../../shared/ui/PageHeader';

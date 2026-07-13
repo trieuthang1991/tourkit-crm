@@ -1,5 +1,5 @@
-import { App, Button, Card, Descriptions, Input, InputNumber, Modal, Space, Table, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { App, Button, Card, Descriptions, Input, InputNumber, Modal, Space, Table, Typography } from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';

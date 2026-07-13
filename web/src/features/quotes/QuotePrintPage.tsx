@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Button } from '../../shared/ui/antd';
 import { useParams } from 'react-router-dom';
 import { money } from '../../shared/format';
 import { useCompanyProfile } from '../settings/companyApi';

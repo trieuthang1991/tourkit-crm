@@ -1,5 +1,5 @@
-import { App, Button, Card, Input, InputNumber, Modal, Select, Space, Table, Tag } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { App, Button, Card, Input, InputNumber, Modal, Select, Space, Table, Tag } from '../../shared/ui/antd';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useMemo, useState } from 'react';
 import { errorMessage } from '../../shared/api/problem';
 import { money, statusText } from '../../shared/format';

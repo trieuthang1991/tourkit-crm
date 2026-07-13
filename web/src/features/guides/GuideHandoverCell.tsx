@@ -1,4 +1,4 @@
-import { App, Button, Input, Modal, Typography } from 'antd';
+import { App, Button, Input, Modal, Typography } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { httpClient } from '../../shared/api/httpClient';

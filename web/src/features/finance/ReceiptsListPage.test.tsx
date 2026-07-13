@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
-import { App } from 'antd';
+import { App } from '../../shared/ui/antd';
 import { ReceiptsListPage } from './ReceiptsListPage';
 import { httpClient } from '../../shared/api/httpClient';
 

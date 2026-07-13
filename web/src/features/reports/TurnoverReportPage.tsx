@@ -1,6 +1,6 @@
-import { Table, Typography } from 'antd';
+import { Table, Typography } from '../../shared/ui/antd';
 import { Button, DataCard } from '../../shared/ui';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType } from '../../shared/ui/antd';
 import { useNavigate } from 'react-router-dom';
 import { money } from '../../shared/format';
 import { useTurnover } from './turnoverApi';

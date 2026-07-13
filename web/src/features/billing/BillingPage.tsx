@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, Descriptions, Row, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Col, Descriptions, Row, Space, Tag, Typography } from '../../shared/ui/antd';
 import { errorMessage } from '../../shared/api/problem';
 import { dateText, money, statusText } from '../../shared/format';
 import { useAuth } from '../auth/AuthContext';

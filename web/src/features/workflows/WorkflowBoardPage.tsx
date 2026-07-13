@@ -1,4 +1,4 @@
-import { App, Button, Card, Input, Popconfirm, Select, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Input, Popconfirm, Select, Space, Tag, Typography } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';
