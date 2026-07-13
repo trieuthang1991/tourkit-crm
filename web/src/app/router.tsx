@@ -73,12 +73,15 @@ import { InvoicesPage } from '../features/invoices/InvoicesPage';
 import { AgentQuotesPage } from '../features/agentQuotes/AgentQuotesPage';
 import { TicketFundsPage } from '../features/ticketFunds/TicketFundsPage';
 import { AgentBookingsPage } from '../features/agentBookings/AgentBookingsPage';
+import { VuexyPreviewPage } from '../features/vuexyPreview/VuexyPreviewPage';
 
 export function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegistrationPage />} />
+      {/* XEM THỬ diện mạo Vuexy (Bootstrap) — công khai để duyệt nhanh, ngoài AppShell. */}
+      <Route path="/vuexy" element={<VuexyPreviewPage />} />
       {/* Bản in báo giá: cần đăng nhập nhưng nằm NGOÀI AppShell để trang in sạch (không sidebar). */}
       <Route
         path="/quotes/:id/print"
