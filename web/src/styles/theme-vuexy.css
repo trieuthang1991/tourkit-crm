@@ -8,10 +8,20 @@ body {
   font-family: 'Roboto', -apple-system, 'Segoe UI', Arial, sans-serif;
 }
 
-/* Nền nội dung xám nhạt */
+/* Nền nội dung xám ấm (bám bộ design) */
 .ant-layout,
 .ant-layout-content {
-  background: #f8f7fa;
+  background: #faf9f5;
+}
+
+/* Nhãn mục sidebar (vd "ĐIỀU HÀNH") */
+.vx-sider-label {
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 16px 20px 6px;
 }
 
 /* Card: bỏ viền, bo góc, shadow mềm */
@@ -64,12 +74,12 @@ body {
   box-shadow: 0 2px 6px 0 rgba(235, 83, 36, 0.35);
 }
 
-/* Sidebar tối: item chọn = gradient đỏ + glow (chất Vuexy) */
+/* Sidebar tối: item chọn = pill đỏ đặc (bám bộ design) */
 .ant-menu-dark.ant-menu-inline .ant-menu-item-selected,
 .ant-menu-dark .ant-menu-item-selected {
-  background: linear-gradient(118deg, #eb5324, rgba(235, 83, 36, 0.7)) !important;
-  box-shadow: 0 0 10px 1px rgba(235, 83, 36, 0.5);
-  border-radius: 6px;
+  background: #eb5324 !important;
+  border-radius: 8px;
+  font-weight: 500;
 }
 .ant-menu-dark.ant-menu-inline .ant-menu-item,
 .ant-menu-dark.ant-menu-inline .ant-menu-submenu-title {

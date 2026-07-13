@@ -1,4 +1,4 @@
-import { Avatar, Badge, Button, Dropdown, Layout, Menu, Tooltip, Typography } from 'antd';
+import { Avatar, Badge, Button, Dropdown, Input, Layout, Menu, Tooltip, Typography } from 'antd';
 import {
   BankOutlined,
   BarChartOutlined,
@@ -12,6 +12,7 @@ import {
   IdcardOutlined,
   LogoutOutlined,
   PercentageOutlined,
+  PlusOutlined,
   ProfileOutlined,
   ProjectOutlined,
   SendOutlined,
@@ -255,8 +256,6 @@ export function AppShell() {
   const initialOpen = selected ? ancestorKeys(MENU, selected.key) ?? [] : ['g-workspace'];
   const [openKeys, setOpenKeys] = useState<string[]>(initialOpen);
 
-  const title = selected?.label ?? 'TourKit';
-
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
@@ -266,7 +265,7 @@ export function AppShell() {
         collapsed={collapsed}
         onCollapse={setCollapsed}
         trigger={null}
-        style={{ overflow: 'auto', height: '100vh', position: 'sticky', top: 0, left: 0, background: '#333333' }}
+        style={{ overflow: 'auto', height: '100vh', position: 'sticky', top: 0, left: 0, background: '#2f2f34' }}
       >
         <div
           style={{
@@ -299,6 +298,7 @@ export function AppShell() {
             </Typography.Text>
           )}
         </div>
+        {!collapsed && <div className="vx-sider-label">Điều hành</div>}
         <Menu
           theme="dark"
           mode="inline"
@@ -335,9 +335,28 @@ export function AppShell() {
           >
             {collapsed ? '☰' : '⟨'}
           </Button>
-          <Typography.Title level={5} style={{ margin: 0, flex: 1 }}>
-            {title}
-          </Typography.Title>
+          <Input
+            prefix={<span style={{ color: '#bbb' }}>⌕</span>}
+            placeholder="Tìm kiếm khách hàng, đơn hàng..."
+            variant="filled"
+            style={{ maxWidth: 340, borderRadius: 20 }}
+            aria-label="Tìm kiếm"
+          />
+          <div style={{ flex: 1 }} />
+          <Dropdown
+            menu={{
+              items: [
+                { key: 'order', label: 'Tạo đơn hàng', onClick: () => navigate('/orders') },
+                { key: 'customer', label: 'Thêm khách hàng', onClick: () => navigate('/customers') },
+                { key: 'receipt', label: 'Lập phiếu thu', onClick: () => navigate('/receipts') },
+                { key: 'task', label: 'Tạo công việc', onClick: () => navigate('/work-tasks') },
+              ],
+            }}
+          >
+            <Button type="primary" icon={<PlusOutlined />}>
+              Tạo nhanh
+            </Button>
+          </Dropdown>
           <Tooltip title="Thông báo">
             <Badge count={unread.data ?? 0} size="small">
               <Button type="text" icon={<BellOutlined />} onClick={() => navigate('/notifications')} aria-label="Thông báo" />
@@ -352,13 +371,18 @@ export function AppShell() {
               ],
             }}
           >
-            <Button type="text" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Button type="text" style={{ display: 'flex', alignItems: 'center', gap: 8, height: 'auto' }}>
+              <div style={{ textAlign: 'right', lineHeight: 1.2 }}>
+                <div style={{ fontWeight: 600, color: '#5e5873', fontSize: 13, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {email}
+                </div>
+                <div style={{ fontSize: 11, color: '#a8a5b3' }}>Nhân viên</div>
+              </div>
               <Avatar size="small" style={{ background: '#EB5324' }} icon={<UserOutlined />} />
-              <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>{email}</span>
             </Button>
           </Dropdown>
         </Header>
-        <Content style={{ padding: 24, background: '#f5f6f8' }}>
+        <Content style={{ padding: 24, background: '#faf9f5' }}>
           <Outlet />
         </Content>
       </Layout>
