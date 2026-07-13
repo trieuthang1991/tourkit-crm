@@ -1,4 +1,5 @@
-import { App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { App, Card, Col, DatePicker, Input, Popconfirm, Row, Space, Statistic, Table, Typography } from 'antd';
+import { Button, DataCard, SegmentTabs, StatusTag, invoiceTone } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import dayjs from 'dayjs';
@@ -18,7 +19,6 @@ const INVOICE_STATUS: Record<number, string> = {
   1: 'Phát hành',
   2: 'Huỷ',
 };
-const INVOICE_STATUS_COLOR: Record<number, string> = { 0: 'default', 1: 'green', 2: 'red' };
 
 function emptyForm(): InvoiceForm {
   return {
@@ -116,7 +116,7 @@ export function InvoicesPage() {
     { title: 'MST', dataIndex: 'buyerTaxCode', key: 'buyerTaxCode', width: 120, render: (v: string | null) => v ?? '—' },
     { title: 'Tiền thuế', dataIndex: 'vatAmount', key: 'vatAmount', width: 120, align: 'right', render: (v?: number) => money(v ?? 0) },
     { title: 'Tổng tiền', dataIndex: 'totalAmount', key: 'totalAmount', width: 130, align: 'right', render: (v: number) => money(v) },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: (v: number) => <Tag color={INVOICE_STATUS_COLOR[v]}>{statusText(INVOICE_STATUS, v)}</Tag> },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: (v: number) => <StatusTag tone={invoiceTone(v)}>{statusText(INVOICE_STATUS, v)}</StatusTag> },
     {
       title: '',
       key: '__actions',
@@ -124,11 +124,11 @@ export function InvoicesPage() {
       render: (_: unknown, item: InvoiceSummary) =>
         canManage ? (
           <Space>
-            <Button size="small" onClick={() => setEditingId(item.id)}>
+            <Button variant="ghost" size="small" onClick={() => setEditingId(item.id)}>
               Sửa
             </Button>
             <Popconfirm title="Xoá hoá đơn này?" onConfirm={() => onDelete(item.id)}>
-              <Button size="small" danger>
+              <Button variant="danger" size="small">
                 Xoá
               </Button>
             </Popconfirm>
@@ -144,7 +144,7 @@ export function InvoicesPage() {
           Hoá đơn VAT
         </Typography.Title>
         {canManage ? (
-          <Button type="primary" onClick={() => setEditingId('new')}>
+          <Button variant="primary" onClick={() => setEditingId('new')}>
             Thêm hoá đơn
           </Button>
         ) : null}
@@ -180,15 +180,15 @@ export function InvoicesPage() {
           </Col>
           <Col span={24}>
             <Space>
-              <Button type="primary" onClick={applyFilters}>Tìm kiếm</Button>
-              <Button onClick={resetFilters}>Đặt lại</Button>
+              <Button variant="primary" onClick={applyFilters}>Tìm kiếm</Button>
+              <Button variant="ghost" onClick={resetFilters}>Đặt lại</Button>
             </Space>
           </Col>
         </Row>
       </Card>
 
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
-        <Segmented
+        <SegmentTabs
           value={status === undefined ? 'all' : String(status)}
           onChange={(val) => {
             setStatus(val === 'all' ? undefined : Number(val));
@@ -198,6 +198,7 @@ export function InvoicesPage() {
         />
       </div>
 
+      <DataCard title="Danh sách hoá đơn (VAT)">
       <Table
         rowKey="id"
         columns={columns}
@@ -212,6 +213,7 @@ export function InvoicesPage() {
           showSizeChanger: false,
         }}
       />
+      </DataCard>
 
       {modalOpen ? (
         <CrudFormModal

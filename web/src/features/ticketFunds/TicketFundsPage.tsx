@@ -1,4 +1,5 @@
-import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag } from 'antd';
+import { App, Card, Col, Input, Popconfirm, Row, Select, Space, Statistic, Table, Tag } from 'antd';
+import { Button, DataCard, SegmentTabs, StatusTag } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -99,7 +100,7 @@ export function TicketFundsPage() {
     { title: 'Mã vé', dataIndex: 'ticketCode', key: 'ticketCode', width: 160 },
     { title: 'Nhà cung cấp', dataIndex: 'providerName', key: 'providerName', width: 180, render: (v: string | null) => v ?? '—' },
     { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 100, align: 'center', render: (v: number) => <Tag>{v}</Tag> },
-    { title: 'Đóng quỹ', dataIndex: 'isClosed', key: 'isClosed', width: 120, render: (v: boolean) => <Tag color={v ? 'green' : 'orange'}>{v ? 'Đã đóng' : 'Chưa đóng'}</Tag> },
+    { title: 'Đóng quỹ', dataIndex: 'isClosed', key: 'isClosed', width: 120, render: (v: boolean) => <StatusTag tone={v ? 'success' : 'warning'}>{v ? 'Đã đóng' : 'Chưa đóng'}</StatusTag> },
     ...(canManage
       ? [
           {
@@ -109,9 +110,9 @@ export function TicketFundsPage() {
             fixed: 'right' as const,
             render: (_: unknown, r: TicketFund) => (
               <Space>
-                <Button size="small" onClick={() => setEditing(r)}>Sửa</Button>
+                <Button variant="ghost" size="small" onClick={() => setEditing(r)}>Sửa</Button>
                 <Popconfirm title="Xoá quỹ vé này?" onConfirm={() => onDelete(r.id)}>
-                  <Button size="small" danger>Xoá</Button>
+                  <Button variant="danger" size="small">Xoá</Button>
                 </Popconfirm>
               </Space>
             ),
@@ -136,7 +137,7 @@ export function TicketFundsPage() {
     <>
       <PageHeader
         title="Quỹ vé ứng"
-        extra={canManage ? <Button type="primary" onClick={() => setEditing('new')}>Thêm quỹ vé</Button> : undefined}
+        extra={canManage ? <Button variant="primary" onClick={() => setEditing('new')}>Thêm quỹ vé</Button> : undefined}
       />
 
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
@@ -160,15 +161,15 @@ export function TicketFundsPage() {
           </Col>
           <Col span={24}>
             <Space>
-              <Button type="primary" onClick={applyFilters}>Tìm kiếm</Button>
-              <Button onClick={resetFilters}>Đặt lại</Button>
+              <Button variant="primary" onClick={applyFilters}>Tìm kiếm</Button>
+              <Button variant="ghost" onClick={resetFilters}>Đặt lại</Button>
             </Space>
           </Col>
         </Row>
       </Card>
 
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
-        <Segmented
+        <SegmentTabs
           value={closed === undefined ? 'all' : closed ? 'closed' : 'open'}
           onChange={(val) => {
             setClosed(val === 'all' ? undefined : val === 'closed');
@@ -178,6 +179,7 @@ export function TicketFundsPage() {
         />
       </div>
 
+      <DataCard title="Danh sách quỹ vé ứng">
       <Table
         rowKey="id"
         columns={columns}
@@ -192,6 +194,7 @@ export function TicketFundsPage() {
           onChange: (p, sz) => setPage({ page: p, size: sz }),
         }}
       />
+      </DataCard>
 
       {editing && (
         <CrudFormModal

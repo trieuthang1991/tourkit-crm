@@ -1,4 +1,5 @@
-import { App, Button, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag } from 'antd';
+import { App, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Select, Space, Statistic, Table } from 'antd';
+import { Button, DataCard, SegmentTabs, StatusTag, voucherTone } from '../../shared/ui';
 import type { ColumnsType } from 'antd/es/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -10,7 +11,7 @@ import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { useAuth } from '../auth/AuthContext';
-import { receiptListItemSchema, VOUCHER_STATUS, voucherStatusColor } from './listTypes';
+import { receiptListItemSchema, VOUCHER_STATUS } from './listTypes';
 import type { ReceiptListItem } from './listTypes';
 
 const KEY = ['receipts-all'];
@@ -142,7 +143,7 @@ export function ReceiptsListPage() {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (s: number) => <Tag color={voucherStatusColor(s)}>{VOUCHER_STATUS[s] ?? s}</Tag>,
+      render: (s: number) => <StatusTag tone={voucherTone(s)}>{VOUCHER_STATUS[s] ?? s}</StatusTag>,
     },
     ...(canApprove
       ? [
@@ -155,12 +156,12 @@ export function ReceiptsListPage() {
               r.status === 0 ? (
                 <Space>
                   <Popconfirm title="Duyệt phiếu thu này?" onConfirm={() => run(r.id, 'approve')}>
-                    <Button size="small" type="primary">
+                    <Button variant="primary" size="small">
                       Duyệt
                     </Button>
                   </Popconfirm>
                   <Popconfirm title="Từ chối phiếu này?" onConfirm={() => run(r.id, 'reject')}>
-                    <Button size="small" danger>
+                    <Button variant="danger" size="small">
                       Từ chối
                     </Button>
                   </Popconfirm>
@@ -232,17 +233,17 @@ export function ReceiptsListPage() {
           </Col>
           <Col span={24}>
             <Space>
-              <Button type="primary" onClick={applyFilters}>
+              <Button variant="primary" onClick={applyFilters}>
                 Tìm kiếm
               </Button>
-              <Button onClick={resetFilters}>Đặt lại</Button>
+              <Button variant="ghost" onClick={resetFilters}>Đặt lại</Button>
             </Space>
           </Col>
         </Row>
       </Card>
 
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
-        <Segmented
+        <SegmentTabs
           value={status === undefined ? 'all' : String(status)}
           onChange={(val) => {
             setStatus(val === 'all' ? undefined : Number(val));
@@ -252,6 +253,7 @@ export function ReceiptsListPage() {
         />
       </div>
 
+      <DataCard title="Danh sách phiếu thu">
       <Table
         rowKey="id"
         columns={columns}
@@ -281,6 +283,7 @@ export function ReceiptsListPage() {
           );
         }}
       />
+      </DataCard>
     </>
   );
 }
