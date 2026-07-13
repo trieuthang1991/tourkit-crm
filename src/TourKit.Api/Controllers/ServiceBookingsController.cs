@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Authz;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
-using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Controllers;
 
@@ -15,14 +14,15 @@ public sealed class ServiceBookingsController(IServiceBookingService service) : 
     [HttpGet]
     [Authorize(Permissions.ServiceBookingView)]
     public async Task<IActionResult> List(
-        [FromQuery] int page = 1,
-        [FromQuery] int size = 20,
-        [FromQuery] ServiceBookingType? type = null,
-        [FromQuery] Guid? orderId = null)
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] ServiceBookingListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size, type, orderId);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.ServiceBookingView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpPost]
     [Authorize(Permissions.ServiceBookingManage)]

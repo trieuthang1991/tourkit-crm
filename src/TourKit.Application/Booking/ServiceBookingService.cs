@@ -12,16 +12,42 @@ public sealed class ServiceBookingService(
     IValidator<CreateServiceBookingDto> createValidator,
     IValidator<UpdateServiceBookingDto> updateValidator) : IServiceBookingService
 {
-    public async Task<PagedResult<ServiceBookingDto>> ListAsync(int page, int size, ServiceBookingType? type, Guid? orderId)
+    public async Task<PagedResult<ServiceBookingDto>> ListAsync(int page, int size, ServiceBookingListFilter? filter = null)
     {
-        var (items, total) = (type, orderId) switch
-        {
-            ({ } t, { } oid) => await repo.PageAsync(page, size, b => b.Type == t && b.OrderId == oid),
-            ({ } t, null) => await repo.PageAsync(page, size, b => b.Type == t),
-            (null, { } oid) => await repo.PageAsync(page, size, b => b.OrderId == oid),
-            _ => await repo.PageAsync(page, size),
-        };
-        return new PagedResult<ServiceBookingDto>(items.Select(Map).ToList(), total, page, size);
+        var f = filter ?? new ServiceBookingListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        // Lọc cột thật ở DB; q (mã/mô tả) lọc sau.
+        var all = await repo.ListAsync(b =>
+            (f.Type == null || b.Type == f.Type) &&
+            (f.ProviderId == null || b.ProviderId == f.ProviderId) &&
+            (f.OrderId == null || b.OrderId == f.OrderId) &&
+            (f.Status == null || b.Status == f.Status) &&
+            (f.DateFrom == null || b.StartDate >= f.DateFrom) &&
+            (f.DateTo == null || b.StartDate <= f.DateTo));
+
+        bool MatchQ(ServiceBooking b) =>
+            kw == null ||
+            b.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            b.Description.Contains(kw, StringComparison.OrdinalIgnoreCase);
+
+        var filtered = all.Where(MatchQ).OrderByDescending(b => b.CreatedAt).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(Map).ToList();
+        return new PagedResult<ServiceBookingDto>(pageItems, filtered.Count, page, size);
+    }
+
+    public async Task<ServiceBookingStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new ServiceBookingStatsDto(
+            all.Count,
+            all.Count(b => b.Type == ServiceBookingType.Hotel),
+            all.Count(b => b.Type == ServiceBookingType.Flight),
+            all.Count(b => b.Type == ServiceBookingType.Visa),
+            all.Count(b => b.Type == ServiceBookingType.Ticket),
+            all.Count(b => b.Type == ServiceBookingType.Transfer),
+            all.Count(b => b.Type == ServiceBookingType.Other),
+            all.Sum(b => b.TotalAmount));
     }
 
     public async Task<ServiceBookingDto> CreateAsync(CreateServiceBookingDto dto)

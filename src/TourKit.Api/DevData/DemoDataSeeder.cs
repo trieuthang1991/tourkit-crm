@@ -298,6 +298,24 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7k) Booking dịch vụ lẻ (ServiceBooking) — varied loại/NCC cho màn Booking & Dịch vụ.
+        if (!await db.Set<ServiceBooking>().AnyAsync())
+        {
+            var svcOrder = opsOrders.FirstOrDefault();
+            ServiceBooking Svc(string code, ServiceBookingType type, Guid? providerId, string desc, int daysToGo, int qty, decimal unit) => new()
+            {
+                Code = code, Type = type, OrderId = svcOrder?.Id, ProviderId = providerId, Description = desc,
+                StartDate = now.AddDays(daysToGo), EndDate = now.AddDays(daysToGo + 2), Quantity = qty, UnitPrice = unit,
+                TotalAmount = qty * unit, Status = 0,
+            };
+            db.AddRange(
+                Svc("DV_KS01", ServiceBookingType.Hotel, p1.Id, "Khách sạn Mường Thanh - 2 phòng", 20, 2, 1_200_000m),
+                Svc("DV_VE01", ServiceBookingType.Flight, p5.Id, "Vé máy bay HAN-SGN khứ hồi", 20, 4, 1_800_000m),
+                Svc("DV_XE01", ServiceBookingType.Transfer, p2.Id, "Xe đưa đón sân bay", 20, 1, 800_000m),
+                Svc("DV_VS01", ServiceBookingType.Visa, null, "Visa Thái Lan", 15, 2, 900_000m));
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {

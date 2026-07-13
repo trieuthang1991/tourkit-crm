@@ -58,11 +58,16 @@ public sealed class ServiceBookingServiceTests
         await service.CreateAsync(Sample(ServiceBookingType.Flight, orderId));
         await service.CreateAsync(Sample(ServiceBookingType.Hotel, Guid.NewGuid()));
 
-        var hotels = await service.ListAsync(1, 20, ServiceBookingType.Hotel, null);
+        var hotels = await service.ListAsync(1, 20, new ServiceBookingListFilter(Type: ServiceBookingType.Hotel));
         Assert.Equal(2, hotels.Total);
 
-        var byOrderHotel = await service.ListAsync(1, 20, ServiceBookingType.Hotel, orderId);
+        var byOrderHotel = await service.ListAsync(1, 20, new ServiceBookingListFilter(Type: ServiceBookingType.Hotel, OrderId: orderId));
         Assert.Single(byOrderHotel.Items);
+
+        var stats = await service.GetStatsAsync();
+        Assert.Equal(3, stats.Total);
+        Assert.Equal(2, stats.Hotel);
+        Assert.Equal(1, stats.Flight);
     }
 
     [Fact]
