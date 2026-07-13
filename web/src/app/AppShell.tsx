@@ -5,19 +5,20 @@ import {
   BellOutlined,
   CalculatorOutlined,
   CarOutlined,
-  ClusterOutlined,
   DashboardOutlined,
-  EnvironmentOutlined,
   FundOutlined,
+  HistoryOutlined,
+  HomeOutlined,
   IdcardOutlined,
   LogoutOutlined,
   PercentageOutlined,
+  ProfileOutlined,
   ProjectOutlined,
+  SendOutlined,
   SettingOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
   SoundOutlined,
-  TagsOutlined,
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
@@ -30,202 +31,215 @@ import { useUnreadCount } from '../features/notifications/api';
 
 const { Header, Sider, Content } = Layout;
 
-type NavLeaf = { key: string; label: string; perm: string };
-type NavGroup = { key: string; label: string; icon: ReactNode; children: NavLeaf[] };
+// key = ĐỊNH DANH menu (duy nhất); to = route local điều hướng; children = submenu lồng.
+// Bám CHÍNH XÁC menu hệ cũ (staging.tourkit.vn — HTML MenuLeft), map label/thứ tự/nhóm hệ cũ sang route local.
+// Tính năng đã hợp nhất ở local → nhiều mục legacy trỏ chung 1 màn (giữ nhãn để dò 1:1). NCC là danh sách động.
+type NavNode = { key: string; label: string; icon?: ReactNode; perm?: string; to?: string; children?: NavNode[] };
 
-// Gom nhóm + THỨ TỰ bám menu hệ cũ (staging.tourkit.vn / MenuLeft.ascx):
-// Bàn làm việc → Nhà cung cấp → CRM → Báo giá → Đơn hàng/LKH → Booking & Dịch vụ →
-// Hướng dẫn viên → Quản lý xe → Tài chính → KPIs → Hoa Hồng → Dự án → Marketing →
-// Báo cáo → Danh mục → Đại lý → Cài đặt. (HDV/Xe tách riêng, KPIs/Hoa Hồng tách riêng.)
-const GROUPS: NavGroup[] = [
+const MENU: NavNode[] = [
   {
-    key: 'g-workspace',
-    label: 'Bàn làm việc',
-    icon: <DashboardOutlined />,
-    children: [
-      { key: '/workspace', label: 'Bàn làm việc', perm: 'report.dashboard.view' },
-      { key: '/dashboard', label: 'Tổng quan', perm: 'report.dashboard.view' },
+    key: 'g-workspace', label: 'Workspace', icon: <DashboardOutlined />, children: [
+      { key: 'w-social', label: 'Mạng Nội Bộ', to: '/posts', perm: 'post.view' },
+      { key: 'w-workspace', label: 'Bàn làm việc', to: '/workspace', perm: 'report.dashboard.view' },
+      { key: 'w-dashboard', label: 'Tổng quan', to: '/dashboard', perm: 'report.dashboard.view' },
+      { key: 'w-noti', label: 'Thông báo', to: '/notifications', perm: 'report.dashboard.view' },
     ],
   },
   {
-    key: 'g-provider',
-    label: 'Nhà cung cấp',
-    icon: <ShopOutlined />,
-    children: [
-      { key: '/providers', label: 'Tất cả NCC', perm: 'provider.view' },
-      { key: '/service-items', label: 'Danh mục dịch vụ', perm: 'service.view' },
-      { key: '/provider-services', label: 'Bảng giá NCC', perm: 'service.view' },
-      { key: '/payment-terms', label: 'Điều khoản TT NCC', perm: 'provider.view' },
-      { key: '/currencies', label: 'Tỷ giá tiền tệ', perm: 'service.view' },
+    key: 'g-provider', label: 'Nhà cung cấp', icon: <ShopOutlined />, children: [
+      { key: 'p-all', label: 'Tất cả Nhà cung cấp', to: '/providers', perm: 'provider.view' },
+      { key: 'p-services', label: 'Danh mục dịch vụ', to: '/service-items', perm: 'service.view' },
+      { key: 'p-pricing', label: 'Bảng giá NCC', to: '/provider-services', perm: 'service.view' },
+      { key: 'p-terms', label: 'Điều khoản TT NCC', to: '/payment-terms', perm: 'provider.view' },
+      { key: 'p-series', label: 'Series Vé / Quỹ vé', to: '/ticket-funds', perm: 'ticketfund.view' },
     ],
   },
   {
-    key: 'g-crm',
-    label: 'CRM',
-    icon: <TeamOutlined />,
-    children: [
-      { key: '/leads', label: 'Cơ hội bán hàng (Lead)', perm: 'lead.view' },
-      { key: '/customers', label: 'Data khách hàng', perm: 'customer.view' },
-      { key: '/customer-cares', label: 'Quản lý lịch hẹn', perm: 'care.view' },
-      { key: '/tour-ratings', label: 'Feedback / Đánh giá', perm: 'rating.view' },
+    key: 'g-crm', label: 'CRM', icon: <TeamOutlined />, children: [
+      { key: 'crm-share', label: 'Chia số Sale', to: '/leads', perm: 'lead.view' },
+      { key: 'crm-opp', label: 'Cơ hội bán hàng', to: '/leads', perm: 'lead.view' },
+      { key: 'crm-data', label: 'Data khách hàng', to: '/customers', perm: 'customer.view' },
+      { key: 'crm-care', label: 'Quản lý lịch hẹn', to: '/customer-cares', perm: 'care.view' },
+      {
+        key: 'crm-feedback', label: 'Feedback', children: [
+          { key: 'fb-general', label: 'Feedback chung', to: '/tour-ratings', perm: 'rating.view' },
+          { key: 'fb-tour', label: 'Feedback theo Tour', to: '/tour-ratings', perm: 'rating.view' },
+          { key: 'fb-zns', label: 'Feedback ZNS', to: '/tour-ratings', perm: 'rating.view' },
+        ],
+      },
     ],
   },
   {
-    key: 'g-quote',
-    label: 'Báo giá',
-    icon: <CalculatorOutlined />,
-    children: [
-      { key: '/quotes', label: 'Tính giá tour', perm: 'quote.view' },
-      { key: '/agent-quotes', label: 'Báo giá Đại lý (B2B)', perm: 'agentquote.view' },
+    key: 'g-quote', label: 'Báo Giá', icon: <CalculatorOutlined />, children: [
+      { key: 'q-tour', label: 'Tính giá Tour', to: '/quotes', perm: 'quote.view' },
+      { key: 'q-combo', label: 'Tính giá Combo', to: '/quotes', perm: 'quote.view' },
+      { key: 'q-git', label: 'Tour GIT/Combo', to: '/quotes', perm: 'quote.view' },
+      { key: 'q-landtour', label: 'Landtour', to: '/quotes', perm: 'quote.view' },
+      { key: 'q-booking', label: 'Booking Phòng', to: '/quotes', perm: 'quote.view' },
+      { key: 'q-service', label: 'Dịch vụ lẻ', to: '/quotes', perm: 'quote.view' },
+      { key: 'q-visa', label: 'Visa', to: '/quotes', perm: 'quote.view' },
+      { key: 'q-agent', label: 'Báo giá Đại lý (B2B)', to: '/agent-quotes', perm: 'agentquote.view' },
     ],
   },
   {
-    key: 'g-order',
-    label: 'Đơn hàng / LKH',
-    icon: <ShoppingCartOutlined />,
-    children: [
-      { key: '/orders', label: 'Tất cả đơn hàng', perm: 'booking.view' },
-      { key: '/departures', label: 'Tất cả Tour / LKH', perm: 'departure.view' },
-      { key: '/departures/manage', label: 'Mở / Quản lý chuyến', perm: 'departure.view' },
-      { key: '/tour-templates', label: 'Tour mẫu', perm: 'tour.view' },
-      { key: '/operations-calendar', label: 'Lịch điều hành', perm: 'departure.view' },
-      { key: '/surcharges', label: 'Loại phụ thu', perm: 'booking.view' },
-      { key: '/transfer-reasons', label: 'Lý do chuyển chuyến', perm: 'booking.view' },
+    key: 'g-order', label: 'Đơn hàng/LKH', icon: <ShoppingCartOutlined />, children: [
+      { key: 'o-all', label: 'Tất cả đơn hàng', to: '/orders', perm: 'booking.view' },
+      { key: 'o-tours', label: 'Tất cả Tour/LKH', to: '/departures', perm: 'departure.view' },
+      { key: 'o-fit', label: 'Tour FIT', to: '/departures', perm: 'departure.view' },
+      { key: 'o-git', label: 'Tour GIT/Combo', to: '/departures', perm: 'departure.view' },
+      { key: 'o-landtour', label: 'LandTour', to: '/departures', perm: 'departure.view' },
+      { key: 'o-visa', label: 'Visa', to: '/orders', perm: 'booking.view' },
+      { key: 'o-service', label: 'Dịch vụ lẻ', to: '/orders', perm: 'booking.view' },
     ],
   },
   {
-    key: 'g-booking',
-    label: 'Booking & Dịch vụ',
-    icon: <EnvironmentOutlined />,
-    children: [
-      { key: '/service-bookings', label: 'Danh sách Booking', perm: 'servicebooking.view' },
-      { key: '/room-classes', label: 'Hạng phòng / Quỹ phòng', perm: 'servicebooking.view' },
-      { key: '/flight-tickets', label: 'Vé máy bay đoàn', perm: 'ticketfund.view' },
-      { key: '/service-operations', label: 'Phiếu điều hành dịch vụ', perm: 'servicebooking.view' },
+    key: 'g-booking', label: 'Booking Phòng/Khách sạn', icon: <HomeOutlined />, children: [
+      { key: 'b-roomfund', label: 'Quỹ phòng', to: '/room-classes', perm: 'servicebooking.view' },
+      { key: 'b-list', label: 'Danh sách Booking', to: '/service-bookings', perm: 'servicebooking.view' },
     ],
   },
   {
-    key: 'g-guide',
-    label: 'Hướng dẫn viên',
-    icon: <IdcardOutlined />,
-    children: [
-      { key: '/guide-assignments', label: 'Lịch điều HDV', perm: 'guide.view' },
-      { key: '/language-types', label: 'Ngôn ngữ HDV', perm: 'guide.view' },
+    key: 'g-flight', label: 'Vé Máy Bay', icon: <SendOutlined />, children: [
+      { key: 'f-provider', label: 'Nhà cung cấp vé', to: '/providers', perm: 'provider.view' },
+      { key: 'f-group', label: 'Vé máy bay đoàn', to: '/flight-tickets', perm: 'ticketfund.view' },
+      { key: 'f-individual', label: 'Vé máy bay lẻ', to: '/flight-tickets', perm: 'ticketfund.view' },
     ],
   },
   {
-    key: 'g-vehicle',
-    label: 'Quản lý xe',
-    icon: <CarOutlined />,
-    children: [
-      { key: '/vehicles', label: 'Kho xe', perm: 'vehicle.view' },
-      { key: '/car-types', label: 'Loại xe', perm: 'vehicle.view' },
-      { key: '/vehicle-assignments', label: 'Lịch điều xe', perm: 'vehicle.view' },
+    key: 'g-guide', label: 'Hướng dẫn viên', icon: <IdcardOutlined />, children: [
+      { key: 'gd-provider', label: 'Hướng dẫn viên', to: '/guide-assignments', perm: 'guide.view' },
+      { key: 'gd-calendar', label: 'Lịch điều Hướng dẫn viên', to: '/guide-assignments', perm: 'guide.view' },
+      { key: 'gd-report', label: 'Báo cáo', to: '/guide-assignments', perm: 'guide.view' },
     ],
   },
   {
-    key: 'g-finance',
-    label: 'Tài chính / Kế toán',
-    icon: <BankOutlined />,
-    children: [
-      { key: '/receipts', label: 'Phiếu thu', perm: 'receipt.view' },
-      { key: '/payments', label: 'Phiếu chi', perm: 'payment.view' },
-      { key: '/reports/order-debt', label: 'Công nợ khách', perm: 'report.debt.view' },
-      { key: '/reports/provider-debt', label: 'Công nợ NCC', perm: 'report.providerdebt.view' },
-      { key: '/invoices', label: 'Danh sách hoá đơn (VAT)', perm: 'invoice.view' },
-      { key: '/reports/cash-flow', label: 'Thống kê dòng tiền', perm: 'report.cashflow.view' },
-      { key: '/payment-accounts', label: 'Tài khoản nhận tiền', perm: 'paymentaccount.view' },
-      { key: '/ticket-funds', label: 'Quỹ vé ứng', perm: 'ticketfund.view' },
+    key: 'g-vehicle', label: 'Quản lý xe', icon: <CarOutlined />, children: [
+      { key: 'v-store', label: 'Kho xe', to: '/vehicles', perm: 'vehicle.view' },
+      { key: 'v-waiting', label: 'Lịch xe chờ duyệt', to: '/vehicle-assignments', perm: 'vehicle.view' },
+      { key: 'v-manage', label: 'Lịch điều xe', to: '/vehicle-assignments', perm: 'vehicle.view' },
+      { key: 'v-report', label: 'Báo cáo', to: '/vehicle-assignments', perm: 'vehicle.view' },
     ],
   },
   {
-    key: 'g-kpi',
-    label: 'KPIs',
-    icon: <FundOutlined />,
-    children: [{ key: '/reports/kpi', label: 'KPI phễu', perm: 'report.dashboard.view' }],
-  },
-  {
-    key: 'g-commission',
-    label: 'Hoa Hồng',
-    icon: <PercentageOutlined />,
-    children: [
-      { key: '/commission-rules', label: 'Thiết lập hoa hồng', perm: 'commission.view' },
-      { key: '/customer-commission-rules', label: 'HH theo loại khách', perm: 'commission.view' },
-      { key: '/reports/commission-by-user', label: 'Báo cáo theo nhân viên', perm: 'report.commission.view' },
+    key: 'g-operation', label: 'Điều hành Tour', icon: <ProfileOutlined />, children: [
+      { key: 'op-voucher', label: 'Phiếu điều hành dịch vụ', to: '/service-operations', perm: 'servicebooking.view' },
+      { key: 'op-calendar', label: 'Lịch điều hành', to: '/operations-calendar', perm: 'departure.view' },
     ],
   },
   {
-    key: 'g-project',
-    label: 'Dự án & Công việc',
-    icon: <ProjectOutlined />,
-    children: [
-      { key: '/work-tasks', label: 'Danh sách công việc', perm: 'task.view' },
-      { key: '/workflows', label: 'Board Kanban', perm: 'workflow.view' },
-      { key: '/approval-processes', label: 'Quy trình duyệt', perm: 'approvalprocess.view' },
+    key: 'g-finance', label: 'Tài chính/Kế toán', icon: <BankOutlined />, children: [
+      { key: 'fi-waiting', label: 'Phiếu thu chờ', to: '/receipts', perm: 'receipt.view' },
+      { key: 'fi-receipt', label: 'Phiếu thu', to: '/receipts', perm: 'receipt.view' },
+      { key: 'fi-payment', label: 'Phiếu chi', to: '/payments', perm: 'payment.view' },
+      { key: 'fi-invoice', label: 'Danh sách hoá đơn (VAT)', to: '/invoices', perm: 'invoice.view' },
+      { key: 'fi-cashflow', label: 'Thống kê dòng tiền', to: '/reports/cash-flow', perm: 'report.cashflow.view' },
+      { key: 'fi-debt-c', label: 'Công nợ khách', to: '/reports/order-debt', perm: 'report.debt.view' },
+      { key: 'fi-debt-p', label: 'Công nợ NCC', to: '/reports/provider-debt', perm: 'report.providerdebt.view' },
     ],
   },
   {
-    key: 'g-marketing',
-    label: 'Marketing',
-    icon: <SoundOutlined />,
-    children: [
-      { key: '/marketing', label: 'Chiến dịch', perm: 'marketing.view' },
-      { key: '/message-templates', label: 'Kho tin nhắn mẫu', perm: 'marketing.view' },
-      { key: '/posts', label: 'Bài viết', perm: 'post.view' },
-      { key: '/post-categories', label: 'Chuyên mục bài viết', perm: 'post.view' },
+    key: 'g-kpi', label: 'KPIs', icon: <FundOutlined />, children: [
+      { key: 'kpi-config', label: 'Thiết lập KPIs', to: '/reports/kpi', perm: 'report.dashboard.view' },
     ],
   },
   {
-    key: 'g-report',
-    label: 'Báo cáo',
-    icon: <BarChartOutlined />,
-    children: [
-      { key: '/reports/turnover', label: 'Doanh thu', perm: 'report.turnover.view' },
-      { key: '/reports/turnover-by-department', label: 'Doanh thu theo phòng ban', perm: 'report.turnover.view' },
+    key: 'g-commission', label: 'Hoa Hồng', icon: <PercentageOutlined />, children: [
+      { key: 'hh-config', label: 'Thiết lập hoa hồng', to: '/commission-rules', perm: 'commission.view' },
+      { key: 'hh-customer', label: 'HH theo loại khách', to: '/customer-commission-rules', perm: 'commission.view' },
+      { key: 'hh-source', label: 'Báo cáo theo nguồn', to: '/reports/commission-by-user', perm: 'report.commission.view' },
+      { key: 'hh-milestone', label: 'Báo cáo theo cột mốc', to: '/reports/commission-by-user', perm: 'report.commission.view' },
     ],
   },
   {
-    key: 'g-catalog',
-    label: 'Danh mục',
-    icon: <TagsOutlined />,
-    children: [
-      { key: '/customer-types', label: 'Loại khách hàng', perm: 'customertype.view' },
-      { key: '/customer-sources', label: 'Nguồn khách hàng', perm: 'customertype.view' },
-      { key: '/customer-tags', label: 'Nhãn khách hàng', perm: 'customertype.view' },
-      { key: '/market-types', label: 'Loại thị trường', perm: 'market.view' },
+    key: 'g-project', label: 'Dự án & Công việc', icon: <ProjectOutlined />, children: [
+      { key: 'pj-project', label: 'Dự án', to: '/workflows', perm: 'workflow.view' },
+      { key: 'pj-mytask', label: 'Công việc của tôi', to: '/work-tasks', perm: 'task.view' },
+      { key: 'pj-tasks', label: 'Danh sách Công việc', to: '/work-tasks', perm: 'task.view' },
+      { key: 'pj-perf', label: 'Báo cáo Hiệu suất', to: '/work-tasks', perm: 'task.view' },
     ],
   },
   {
-    key: 'g-agent',
-    label: 'Đại lý (B2B)',
-    icon: <ClusterOutlined />,
-    children: [
-      { key: '/agents', label: 'Danh sách đại lý', perm: 'agent.view' },
-      { key: '/agent-bookings', label: 'Đặt chỗ đại lý', perm: 'agentquote.view' },
+    key: 'g-marketing', label: 'Marketing', icon: <SoundOutlined />, children: [
+      {
+        key: 'mkt-email', label: 'Email Marketing', children: [
+          { key: 'mkt-campaign', label: 'Chiến dịch', to: '/marketing', perm: 'marketing.view' },
+          { key: 'mkt-store', label: 'Kho Email Mẫu', to: '/message-templates', perm: 'marketing.view' },
+        ],
+      },
+      {
+        key: 'mkt-zalo', label: 'Zalo OA/ZBS', children: [
+          { key: 'zalo-oa', label: 'Thông tin OA', to: '/marketing', perm: 'marketing.view' },
+          { key: 'zalo-zns', label: 'ZNS', to: '/marketing', perm: 'marketing.view' },
+          { key: 'zalo-uid', label: 'Zalo UID (Tin follow OA)', to: '/marketing', perm: 'marketing.view' },
+        ],
+      },
+      { key: 'mkt-posts', label: 'Bài viết', to: '/posts', perm: 'post.view' },
+      { key: 'mkt-postcat', label: 'Chuyên mục bài viết', to: '/post-categories', perm: 'post.view' },
     ],
   },
   {
-    key: 'g-system',
-    label: 'Cài đặt hệ thống',
-    icon: <SettingOutlined />,
-    children: [
-      { key: '/users', label: 'Thành viên', perm: 'user.view' },
-      { key: '/departments', label: 'Phòng ban', perm: 'user.view' },
-      { key: '/positions', label: 'Chức vụ', perm: 'user.view' },
-      { key: '/company-profile', label: 'Cấu hình / Hồ sơ công ty', perm: 'company.manage' },
-      { key: '/billing', label: 'Gói dịch vụ', perm: 'subscription.view' },
-      { key: '/activity-logs', label: 'Log hệ thống', perm: 'activitylog.view' },
+    key: 'g-report', label: 'Báo cáo', icon: <BarChartOutlined />, children: [
+      { key: 'rp-seller', label: 'Nhân viên', to: '/reports/turnover', perm: 'report.turnover.view' },
+      { key: 'rp-money', label: 'Tài chính', to: '/reports/turnover-by-department', perm: 'report.turnover.view' },
+      { key: 'rp-export', label: 'Xuất báo cáo', to: '/reports/turnover', perm: 'report.turnover.view' },
+      { key: 'rp-system', label: 'Báo cáo tổng hợp', to: '/reports/turnover-by-department', perm: 'report.turnover.view' },
+    ],
+  },
+  {
+    key: 'g-agent', label: 'Đại lý (B2B)', icon: <TeamOutlined />, children: [
+      { key: 'ag-list', label: 'Danh sách đại lý', to: '/agents', perm: 'agent.view' },
+      { key: 'ag-booking', label: 'Đặt chỗ đại lý', to: '/agent-bookings', perm: 'agentquote.view' },
+    ],
+  },
+  {
+    key: 'g-system', label: 'Cài đặt hệ thống', icon: <SettingOutlined />, children: [
+      { key: 'sys-users', label: 'Thành viên', to: '/users', perm: 'user.view' },
+      { key: 'sys-config', label: 'Cấu hình', to: '/config-hub', perm: 'user.view' },
+      { key: 'sys-billing', label: 'Gói dịch vụ', to: '/billing', perm: 'subscription.view' },
+    ],
+  },
+  {
+    key: 'g-log', label: 'Log hệ thống', icon: <HistoryOutlined />, children: [
+      { key: 'log-system', label: 'Log hệ thống', to: '/activity-logs', perm: 'activitylog.view' },
     ],
   },
 ];
 
-const ALL_LEAVES = GROUPS.flatMap((g) => g.children);
+function flattenLeaves(nodes: NavNode[]): NavNode[] {
+  return nodes.flatMap((n) => (n.children ? flattenLeaves(n.children) : [n]));
+}
+const LEAVES = flattenLeaves(MENU).filter((n) => n.to);
+const KEY_TO_ROUTE: Record<string, string> = Object.fromEntries(LEAVES.map((l) => [l.key, l.to!]));
 
-function findSelected(pathname: string): NavLeaf | undefined {
-  // Chọn leaf có key khớp tiền tố DÀI NHẤT (tránh /reports/turnover nuốt /reports/turnover-by-department).
-  return ALL_LEAVES
-    .filter((l) => pathname === l.key || pathname.startsWith(l.key + '/') || pathname.startsWith(l.key))
-    .sort((a, b) => b.key.length - a.key.length)[0];
+function findSelected(pathname: string): NavNode | undefined {
+  return LEAVES
+    .filter((l) => pathname === l.to || pathname.startsWith(l.to + '/') || pathname.startsWith(l.to!))
+    .sort((a, b) => b.to!.length - a.to!.length)[0];
+}
+
+// Chuỗi key tổ tiên của 1 leaf (để mở đúng submenu lồng khi active).
+function ancestorKeys(nodes: NavNode[], targetKey: string, trail: string[] = []): string[] | null {
+  for (const n of nodes) {
+    if (n.key === targetKey) return trail;
+    if (n.children) {
+      const r = ancestorKeys(n.children, targetKey, [...trail, n.key]);
+      if (r) return r;
+    }
+  }
+  return null;
+}
+
+function buildItems(nodes: NavNode[], has: (p: string) => boolean): NonNullable<MenuProps['items']> {
+  return nodes
+    .map((n) => {
+      if (n.children) {
+        const kids = buildItems(n.children, has);
+        return kids.length ? { key: n.key, label: n.label, icon: n.icon, children: kids } : null;
+      }
+      if (n.perm && !has(n.perm)) return null;
+      return { key: n.key, label: n.label, icon: n.icon };
+    })
+    .filter(Boolean) as NonNullable<MenuProps['items']>;
 }
 
 export function AppShell() {
@@ -235,21 +249,11 @@ export function AppShell() {
   const unread = useUnreadCount();
   const [collapsed, setCollapsed] = useState(false);
 
-  // Chỉ giữ nhóm có ít nhất 1 mục con được phép; bỏ nhóm rỗng.
-  const items: MenuProps['items'] = useMemo(
-    () =>
-      GROUPS.map((g) => {
-        const children = g.children.filter((c) => has(c.perm));
-        return children.length
-          ? { key: g.key, label: g.label, icon: g.icon, children: children.map((c) => ({ key: c.key, label: c.label })) }
-          : null;
-      }).filter(Boolean) as MenuProps['items'],
-    [has],
-  );
+  const items = useMemo(() => buildItems(MENU, has), [has]);
 
   const selected = findSelected(location.pathname);
-  const selectedGroup = GROUPS.find((g) => g.children.some((c) => c.key === selected?.key));
-  const [openKeys, setOpenKeys] = useState<string[]>(selectedGroup ? [selectedGroup.key] : ['g-workspace']);
+  const initialOpen = selected ? ancestorKeys(MENU, selected.key) ?? [] : ['g-workspace'];
+  const [openKeys, setOpenKeys] = useState<string[]>(initialOpen);
 
   const title = selected?.label ?? 'TourKit';
 
@@ -302,7 +306,10 @@ export function AppShell() {
           openKeys={collapsed ? undefined : openKeys}
           onOpenChange={(keys) => setOpenKeys(keys)}
           items={items}
-          onClick={({ key }) => navigate(key)}
+          onClick={({ key }) => {
+            const route = KEY_TO_ROUTE[key];
+            if (route) navigate(route);
+          }}
           style={{ borderInlineEnd: 'none' }}
         />
       </Sider>
