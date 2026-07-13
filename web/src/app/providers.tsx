@@ -14,12 +14,17 @@ export function AppProviders({ children }: AppProvidersProps) {
     <ConfigProvider
       theme={{
         token: {
-          // Brand TourKit (bám staging hệ cũ): đỏ-cam #EB5324, font Roboto.
+          // Brand TourKit đỏ-cam #EB5324 + chất admin hiện đại (card mềm, nền xám, Roboto).
           colorPrimary: '#EB5324',
           colorLink: '#EB5324',
           colorInfo: '#EB5324',
-          borderRadius: 8,
+          borderRadius: 6,
+          borderRadiusLG: 8,
           fontFamily: "'Roboto', -apple-system, 'Segoe UI', Arial, sans-serif",
+          colorBgLayout: '#f8f7fa',
+          colorText: '#6e6b7b',
+          colorTextHeading: '#5e5873',
+          colorBorderSecondary: '#f3f2f7',
         },
         components: {
           Menu: {
@@ -30,6 +35,8 @@ export function AppProviders({ children }: AppProvidersProps) {
             darkItemColor: 'rgba(255,255,255,0.75)',
             darkItemHoverColor: '#ffffff',
           },
+          Card: { borderRadiusLG: 8 },
+          Table: { headerBg: '#f3f2f7', headerColor: '#6e6b7b', borderColor: '#f3f2f7' },
         },
       }}
     >

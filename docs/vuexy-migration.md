@@ -1,5 +1,13 @@
 # Migration UI: Ant Design → Vuexy (Bootstrap 5 + reactstrap)
 
+> ⚠️ **ĐÃ THAY HƯỚNG (2026-07-13):** chủ dự án chốt **KHÔNG thay framework** — GIỮ Ant Design,
+> chỉ **chỉnh theme AntD ra chất admin hiện đại** (card mềm/nền xám/header bảng in hoa/active-glow)
+> ở `web/src/styles/theme-vuexy.css` + token trong `web/src/app/providers.tsx`. Bootstrap/reactstrap
+> đã gỡ. File dưới đây GIỮ LÀM THAM KHẢO nếu sau này muốn thay framework thật.
+
+---
+
+
 > Chủ dự án chốt (2026-07-13): **thay hẳn Ant Design bằng phong cách/component Vuexy** (ThemeForest,
 > bản React = Bootstrap 5 + reactstrap + SCSS). Đây là việc LỚN (nhiều tuần, ~60 màn). File này là
 > BẢN ĐỒ để làm **tăng dần, KHÔNG phá app** — AntD và Bootstrap **cùng tồn tại** trong lúc migrate.
