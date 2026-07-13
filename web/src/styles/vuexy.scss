@@ -1,0 +1,50 @@
+// ============================================================================
+// Theme Vuexy cho TourKit (Bootstrap 5 override).
+// CHƯA import global (main.tsx) cho tới khi migrate shell — import bootstrap ở đây
+// sẽ reset toàn cục (reboot) và đè style AntD của các màn CHƯA đổi. Xem docs/vuexy-migration.md.
+// Khi bắt đầu migrate shell: thêm `import './styles/vuexy.scss'` vào main.tsx.
+// ============================================================================
+
+// 1) Brand + token (giữ đỏ TourKit #EB5324 theo hệ cũ; layout theo Vuexy)
+$primary: #eb5324;
+$secondary: #82868b;
+$success: #28c76f;
+$info: #00cfe8;
+$warning: #ff9f43;
+$danger: #ea5455;
+$body-bg: #f8f7fa; // nền xám nhạt Vuexy
+$body-color: #6e6b7b;
+$border-radius: 0.428rem; // bo góc Vuexy
+$border-radius-lg: 0.6rem;
+$card-border-width: 0;
+$card-box-shadow: 0 4px 24px 0 rgba(34, 41, 47, 0.1); // shadow mềm Vuexy
+$font-family-sans-serif: 'Roboto', -apple-system, 'Segoe UI', Arial, sans-serif;
+$headings-color: #5e5873;
+$sidebar-bg: #ffffff; // Vuexy sidebar sáng (bản dark = #283046)
+
+// 2) Bootstrap core (bật khi migrate — hiện để trong file, chưa import ở main)
+@import 'bootstrap/scss/bootstrap';
+
+// 3) Lớp tiện ích Vuexy tối giản (mở rộng dần theo màn)
+.vx-shell {
+  min-height: 100vh;
+  background: $body-bg;
+}
+.vx-sidebar {
+  width: 260px;
+  background: $sidebar-bg;
+  box-shadow: 0 0 15px 0 rgba(34, 41, 47, 0.05);
+}
+.vx-card {
+  border: 0;
+  border-radius: $border-radius;
+  box-shadow: $card-box-shadow;
+}
+.vx-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: $border-radius;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
