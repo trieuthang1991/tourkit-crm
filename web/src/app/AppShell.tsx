@@ -109,7 +109,7 @@ const MENU: NavNode[] = [
   {
     key: 'g-guide', label: 'Hướng dẫn viên', icon: <IdcardOutlined />, children: [
       { key: 'gd-provider', label: 'Hướng dẫn viên', to: '/guide-assignments', perm: 'guide.view' },
-      { key: 'gd-calendar', label: 'Lịch điều Hướng dẫn viên', to: '/guide-assignments', perm: 'guide.view' },
+      { key: 'gd-calendar', label: 'Lịch điều Hướng dẫn viên', to: '/guide-schedule', perm: 'guide.view' },
       { key: 'gd-report', label: 'Báo cáo', to: '/guide-assignments', perm: 'guide.view' },
     ],
   },
@@ -117,7 +117,7 @@ const MENU: NavNode[] = [
     key: 'g-vehicle', label: 'Quản lý xe', icon: <CarOutlined />, children: [
       { key: 'v-store', label: 'Kho xe', to: '/vehicles', perm: 'vehicle.view' },
       { key: 'v-waiting', label: 'Lịch xe chờ duyệt', to: '/vehicle-assignments', perm: 'vehicle.view' },
-      { key: 'v-manage', label: 'Lịch điều xe', to: '/vehicle-assignments', perm: 'vehicle.view' },
+      { key: 'v-manage', label: 'Lịch điều xe', to: '/vehicle-schedule', perm: 'vehicle.view' },
       { key: 'v-report', label: 'Báo cáo', to: '/vehicle-assignments', perm: 'vehicle.view' },
     ],
   },

@@ -58,6 +58,8 @@ import { CustomerCaresPage } from '../features/care/CustomerCaresPage';
 import { TourRatingsPage } from '../features/ratings/TourRatingsPage';
 import { VehiclesPage } from '../features/vehicles/VehiclesPage';
 import { GuideAssignmentsPage } from '../features/guides/GuideAssignmentsPage';
+import { GuideSchedulePage } from '../features/guides/GuideSchedulePage';
+import { VehicleSchedulePage } from '../features/vehicleAssignments/VehicleSchedulePage';
 import { VehicleAssignmentsPage } from '../features/vehicleAssignments/VehicleAssignmentsPage';
 import { ActivityLogsPage } from '../features/activityLogs/ActivityLogsPage';
 import { OperationsCalendarPage } from '../features/operations/OperationsCalendarPage';
@@ -168,7 +170,9 @@ export function AppRouter() {
         <Route path="/tour-ratings" element={<TourRatingsPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/guide-assignments" element={<GuideAssignmentsPage />} />
+        <Route path="/guide-schedule" element={<GuideSchedulePage />} />
         <Route path="/vehicle-assignments" element={<VehicleAssignmentsPage />} />
+        <Route path="/vehicle-schedule" element={<VehicleSchedulePage />} />
         <Route path="/activity-logs" element={<ActivityLogsPage />} />
         {/* 7 view Báo giá — cùng khung QuotesPage, khác quoteType + tiêu đề (bám menu hệ cũ). */}
         <Route path="/quotes" element={<QuotesPage quoteType={0} title="Tính giá Tour" />} />
