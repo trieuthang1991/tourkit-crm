@@ -21,8 +21,8 @@ Các rule CỐT LÕI (chi tiết trong memory):
 5. **Mỗi màn danh sách phải có: hàng THẺ THỐNG KÊ + thanh SEARCH/LỌC + cột giàu** (bám staging), không chỉ bảng. → `screen-needs-search-and-stats.md`
 6. **UI bám staging**: brand đỏ `#EB5324`, sidebar `#333`, font Roboto; menu gom nhóm đúng thứ tự KojiCRM; trang chủ = "Bàn làm việc". → `legacy-ui-reference.md`
 
-### b) GitNexus (code intelligence) — `.gitnexus/` (đã commit trong repo)
-Graph đã index sẵn (~7300 symbols). Dùng để hiểu code / đánh giá blast-radius TRƯỚC khi sửa.
+### b) GitNexus (code intelligence) — `.gitnexus/` (KHÔNG commit; trong `.gitignore`)
+Graph index (~7300 symbols) KHÔNG còn trong git (đã gỡ vì file nhị phân ~95MB). **AI mới chạy `npx gitnexus analyze` MỘT LẦN** để tạo lại `.gitnexus/` local. Dùng để hiểu code / đánh giá blast-radius TRƯỚC khi sửa.
 - Refresh sau khi commit: `npx gitnexus analyze` (hook PostToolUse tự chạy sau `git commit`/`git merge`).
 - MCP tools: `gitnexus_query({query})`, `gitnexus_context({name})`, `gitnexus_impact({target,direction:"upstream"})`, `gitnexus_detect_changes()`.
 - Hướng dẫn đầy đủ: `CLAUDE.md` (mục GitNexus) + `.claude/skills/gitnexus/*`.
@@ -67,7 +67,7 @@ Mockup tĩnh + menu: `D:/MiGroup/tourkitapp/tourkit/UI/*.html`, `.../CMS/KojiCRM
   - **Màn phức tạp (có stats+search) → build CUSTOM** (không qua ResourcePage) — xem `CustomersPage.tsx` làm MẪU CHUẨN.
   - Render cột **PHÒNG THỦ** với mảng: `const arr = v => Array.isArray(v)?v:[]` (tránh crash cell).
 - **Test**: xUnit (unit: `FakeRepository<T>`; integration: `WebApplicationFactory`/`AuthTestFactory` InMemory). Web: vitest.
-  - Hiện tại: **357 unit · 107 integration · 4 arch · 125 web** (xanh).
+  - Hiện tại: **412 unit · 115 integration · 4 arch · 139 web** (xanh — cập nhật 2026-07-13).
   - Chạy: `dotnet test tests/TourKit.UnitTests/...`, `.../TourKit.Tests/...`; `cd web && npx tsc --noEmit && npx vitest run`.
 
 ---
@@ -75,7 +75,7 @@ Mockup tĩnh + menu: `D:/MiGroup/tourkitapp/tourkit/UI/*.html`, `.../CMS/KojiCRM
 ## 3. Trạng thái hiện tại (git)
 
 - Nhánh làm việc mặc định: **`dev`** (chủ dự án yêu cầu làm trên `dev`, merge về `main` khi chốt mốc).
-- `dev` HEAD ~ `56e7eb3` (màn Data khách hàng: model mở rộng + thống kê + search). `main` ~ `2e1bbd8`.
+- `dev` đã tiến tiếp (HEAD ~ `c057338`): CustomersPage + Phiếu thu/chi thêm bộ lọc nâng cao/phễu/stats; BranchesController; module Chia số Sale; menu mirror hệ cũ + hub Cấu hình `/config`. Toàn bộ build+test xanh.
 - FF-merge: `git switch main && git merge --ff-only dev`. Xong reindex GitNexus.
 
 ### Đã làm phiên này (bám giao diện hệ cũ)
