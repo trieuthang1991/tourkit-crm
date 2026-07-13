@@ -10,6 +10,9 @@ export const vehicleAssignmentSchema = z.object({
   timeCome: z.string().nullable(),
   note: z.string().nullable(),
   status: z.number(),
+  vehicleName: z.string().nullable().optional(),
+  departureTitle: z.string().nullable().optional(),
+  departureCode: z.string().nullable().optional(),
 });
 export type VehicleAssignment = z.infer<typeof vehicleAssignmentSchema>;
 

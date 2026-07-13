@@ -325,6 +325,19 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7m) Xe + phân xe (Vehicle / VehicleAssignment).
+        if (!await db.Set<Vehicle>().AnyAsync())
+        {
+            var xe16 = new Vehicle { Name = "Xe Ford Transit", SeatType = 16, Status = 1 };
+            var xe45 = new Vehicle { Name = "Xe Thaco 45 chỗ", SeatType = 45, Status = 1 };
+            db.AddRange(xe16, xe45);
+            await db.SaveChangesAsync();
+            db.AddRange(
+                new VehicleAssignment { TourDepartureId = depHalong.Id, VehicleId = xe45.Id, DriverName = "Nguyễn Văn Tài", DriverPhone = "0905111222", TimeGo = now.AddDays(20), TimeCome = now.AddDays(22), Status = 2 },
+                new VehicleAssignment { TourDepartureId = depThai.Id, VehicleId = xe16.Id, DriverName = "Trần Văn Lái", DriverPhone = "0905333444", TimeGo = now.AddDays(35), TimeCome = now.AddDays(39), Status = 1 });
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {

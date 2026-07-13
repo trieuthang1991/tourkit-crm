@@ -70,17 +70,17 @@ public sealed class VehicleAssignmentServiceTests
         await svc.UpdateAsync(created.Id,
             new UpdateVehicleAssignmentDto(vehId, "Anh Tư", "0911111111", null, null, "Đổi tài xế", 2));
 
-        var byDeparture = await svc.ListAsync(1, 20, depId);
+        var byDeparture = await svc.ListAsync(1, 20, new VehicleAssignmentListFilter(DepartureId: depId));
         var one = Assert.Single(byDeparture.Items);
         Assert.Equal("Anh Tư", one.DriverName);
         Assert.Equal("Đổi tài xế", one.Note);
         Assert.Equal(2, one.Status);
 
-        var otherDeparture = await svc.ListAsync(1, 20, Guid.NewGuid());
+        var otherDeparture = await svc.ListAsync(1, 20, new VehicleAssignmentListFilter(DepartureId: Guid.NewGuid()));
         Assert.Empty(otherDeparture.Items);
 
         await svc.DeleteAsync(created.Id);
-        var afterDelete = await svc.ListAsync(1, 20, null);
+        var afterDelete = await svc.ListAsync(1, 20);
         Assert.Empty(afterDelete.Items);
     }
 

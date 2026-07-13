@@ -14,13 +14,15 @@ public sealed class VehicleAssignmentsController(IVehicleAssignmentService servi
     [HttpGet]
     [Authorize(Permissions.VehicleView)]
     public async Task<IActionResult> List(
-        [FromQuery] int page = 1,
-        [FromQuery] int size = 20,
-        [FromQuery] Guid? departureId = null)
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] VehicleAssignmentListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size, departureId);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.VehicleView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpPost]
     [Authorize(Permissions.VehicleManage)]

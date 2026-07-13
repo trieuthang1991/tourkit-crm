@@ -16,12 +16,46 @@ public sealed class VehicleAssignmentService(
     IValidator<CreateVehicleAssignmentDto> createValidator,
     IValidator<UpdateVehicleAssignmentDto> updateValidator) : IVehicleAssignmentService
 {
-    public async Task<PagedResult<VehicleAssignmentDto>> ListAsync(int page, int size, Guid? departureId)
+    public async Task<PagedResult<VehicleAssignmentDto>> ListAsync(int page, int size, VehicleAssignmentListFilter? filter = null)
     {
-        var (items, total) = departureId is { } depId
-            ? await repo.PageAsync(page, size, a => a.TourDepartureId == depId)
-            : await repo.PageAsync(page, size);
-        return new PagedResult<VehicleAssignmentDto>(items.Select(Map).ToList(), total, page, size);
+        var f = filter ?? new VehicleAssignmentListFilter();
+        var all = await repo.ListAsync(a =>
+            (f.VehicleId == null || a.VehicleId == f.VehicleId) &&
+            (f.DepartureId == null || a.TourDepartureId == f.DepartureId) &&
+            (f.Status == null || a.Status == f.Status) &&
+            (f.DateFrom == null || a.TimeGo >= f.DateFrom) &&
+            (f.DateTo == null || a.TimeGo <= f.DateTo));
+
+        var ordered = all.OrderByDescending(a => a.TimeGo ?? a.CreatedAt).ToList();
+        var pageItems = ordered.Skip((page - 1) * size).Take(size).ToList();
+
+        var vehicleIds = pageItems.Select(a => a.VehicleId).ToHashSet();
+        var departureIds = pageItems.Select(a => a.TourDepartureId).ToHashSet();
+        var vehicles = (await vehicleRepo.ListAsync(v => vehicleIds.Contains(v.Id)))
+            .ToDictionary(v => v.Id, v => v);
+        var departures = (await departureRepo.ListAsync(d => departureIds.Contains(d.Id)))
+            .ToDictionary(d => d.Id, d => d);
+
+        var dtos = pageItems.Select(a =>
+        {
+            vehicles.TryGetValue(a.VehicleId, out var veh);
+            departures.TryGetValue(a.TourDepartureId, out var dep);
+            return Map(a) with
+            {
+                VehicleName = veh is null ? null : $"{veh.Name} ({veh.SeatType} chỗ)",
+                DepartureTitle = dep?.Title,
+                DepartureCode = dep?.Code,
+            };
+        }).ToList();
+        return new PagedResult<VehicleAssignmentDto>(dtos, ordered.Count, page, size);
+    }
+
+    public async Task<VehicleAssignmentStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new VehicleAssignmentStatsDto(
+            all.Count, all.Count(a => a.Status == 1), all.Count(a => a.Status == 2),
+            all.Select(a => a.VehicleId).Distinct().Count());
     }
 
     public async Task<VehicleAssignmentDto> CreateAsync(CreateVehicleAssignmentDto dto)
