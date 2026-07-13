@@ -379,10 +379,12 @@ export function CustomersPage() {
     <>
       <PageHeader
         title="Data khách hàng"
+        crumb={<>CRM <span>/</span> Data khách hàng</>}
+        desc="Quản lý toàn bộ hồ sơ khách hàng, phân nhóm và lịch chăm sóc."
         extra={
           canCreate ? (
             <Button type="primary" onClick={() => setEditing({ mode: 'create', item: null })}>
-              Thêm mới
+              Thêm khách hàng
             </Button>
           ) : null
         }
