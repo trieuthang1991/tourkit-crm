@@ -12,11 +12,15 @@ public sealed class CommissionRulesController(ICommissionRuleService service) : 
 {
     [HttpGet]
     [Authorize(Permissions.CommissionView)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20)
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] CommissionRuleListFilter? filter = null)
     {
-        var result = await service.ListAsync(page, size);
+        var result = await service.ListAsync(page, size, filter);
         return Ok(result);
     }
+
+    [HttpGet("stats")]
+    [Authorize(Permissions.CommissionView)]
+    public async Task<IActionResult> Stats() => Ok(await service.GetStatsAsync());
 
     [HttpPost]
     [Authorize(Permissions.CommissionCreate)]

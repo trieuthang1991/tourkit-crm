@@ -7,14 +7,41 @@ namespace TourKit.Application.Commission;
 
 public sealed class CommissionRuleService(
     IRepository<CommissionRule> repo,
+    IRepository<User> userRepo,
     IValidator<CreateCommissionRuleDto> createValidator,
     IValidator<UpdateCommissionRuleDto> updateValidator) : ICommissionRuleService
 {
-    public async Task<PagedResult<CommissionRuleDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<CommissionRuleDto>> ListAsync(int page, int size, CommissionRuleListFilter? filter = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
-        var dtos = items.Select(Map).ToList();
-        return new PagedResult<CommissionRuleDto>(dtos, total, page, size);
+        var f = filter ?? new CommissionRuleListFilter();
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        var all = await repo.ListAsync(r =>
+            (f.UserId == null || r.UserId == f.UserId) &&
+            (f.Status == null || r.Status == f.Status));
+
+        var userIds = all.Select(r => r.UserId).ToHashSet();
+        var userNames = (await userRepo.ListAsync(u => userIds.Contains(u.Id)))
+            .ToDictionary(u => u.Id, u => string.IsNullOrWhiteSpace(u.FullName) ? u.Email : u.FullName);
+
+        var filtered = all
+            .Select(r => Map(r) with { UserName = userNames.GetValueOrDefault(r.UserId) })
+            .Where(d => kw == null || (d.UserName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false))
+            .OrderByDescending(d => d.Percentage)
+            .ToList();
+
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
+        return new PagedResult<CommissionRuleDto>(pageItems, filtered.Count, page, size);
+    }
+
+    public async Task<CommissionRuleStatsDto> GetStatsAsync()
+    {
+        var all = await repo.ListAsync();
+        return new CommissionRuleStatsDto(
+            all.Count,
+            all.Count(r => r.Status == 1),
+            all.Count(r => r.Status != 1),
+            all.Count == 0 ? 0m : Math.Round(all.Average(r => r.Percentage), 2));
     }
 
     public async Task<CommissionRuleDto> CreateAsync(CreateCommissionRuleDto dto)

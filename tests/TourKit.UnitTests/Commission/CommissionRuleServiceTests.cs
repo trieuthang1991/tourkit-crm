@@ -12,7 +12,7 @@ public class CommissionRuleServiceTests
     private static CommissionRuleService NewService(out FakeRepository<CommissionRule> repo)
     {
         repo = new FakeRepository<CommissionRule>();
-        return new CommissionRuleService(repo, new CreateCommissionRuleValidator(), new UpdateCommissionRuleValidator());
+        return new CommissionRuleService(repo, new FakeRepository<User>(), new CreateCommissionRuleValidator(), new UpdateCommissionRuleValidator());
     }
 
     [Fact]

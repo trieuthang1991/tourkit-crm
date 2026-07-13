@@ -5,8 +5,12 @@ export const commissionRuleSchema = z.object({
   userId: z.string().uuid(),
   percentage: z.number(),
   status: z.number(),
+  userName: z.string().nullable().optional(),
 });
 export type CommissionRule = z.infer<typeof commissionRuleSchema>;
+
+/// Trạng thái quy tắc hoa hồng (legacy Status): 1 áp dụng, 0 tạm ngừng.
+export const COMMISSION_RULE_STATUS: Record<number, string> = { 1: 'Áp dụng', 0: 'Tạm ngừng' };
 
 const commissionRuleCommonFields = {
   percentage: z.number(),
