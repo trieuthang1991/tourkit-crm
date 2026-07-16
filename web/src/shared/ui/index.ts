@@ -3,6 +3,7 @@
 // KHÔNG phải bản presentational của handoff — giữ nguyên để không phá form hiện có.
 export { PageHeader } from './PageHeader';
 export { StatCard, StatRow } from './StatCard';
+export { WidgetCard, ListWidget } from './WidgetCard';
 export { StatusTag, voucherTone, invoiceTone, activeTone } from './StatusTag';
 export { CatalogStatusTag } from './CatalogStatusTag';
 export { DataCard, FilterToolbar, InitialsAvatar } from './DataCard';

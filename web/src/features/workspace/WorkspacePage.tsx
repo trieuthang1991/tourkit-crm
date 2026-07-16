@@ -23,7 +23,7 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { StatCard, StatRow } from '../../shared/ui';
+import { ListWidget, StatCard, StatRow, WidgetCard } from '../../shared/ui';
 import { useAuth } from '../auth/AuthContext';
 import { customersCrud } from '../customers/customersCrud';
 import { useNotifications } from '../notifications/api';
@@ -237,46 +237,46 @@ export function WorkspacePage() {
         </Col>
 
         <Col xs={24} lg={8}>
-          <Card title={<Space><BellOutlined /> Thông báo bạn cần quan tâm</Space>} styles={{ body: { padding: 0, height: 340, overflow: 'auto' } }}>
-            <List
-              dataSource={(notifications.data ?? []).slice(0, 10)}
-              loading={notifications.isLoading}
-              locale={{ emptyText: 'Không có thông báo' }}
-              renderItem={(n) => (
-                <List.Item style={{ padding: '10px 16px', cursor: n.linkUrl ? 'pointer' : 'default' }} onClick={() => n.linkUrl && navigate(n.linkUrl)}>
-                  <List.Item.Meta
-                    title={<span style={{ fontWeight: n.isRead ? 400 : 600 }}>{n.title}</span>}
-                    description={
-                      <Space direction="vertical" size={0}>
-                        <span>{n.message}</span>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{new Date(n.createdAt).toLocaleString('vi-VN')}</Typography.Text>
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          </Card>
+          <ListWidget
+            title="Thông báo bạn cần quan tâm"
+            icon={<BellOutlined />}
+            items={(notifications.data ?? []).slice(0, 10)}
+            loading={notifications.isLoading}
+            emptyText="Không có thông báo"
+            renderItem={(n) => (
+              <List.Item style={{ padding: '10px 16px', cursor: n.linkUrl ? 'pointer' : 'default' }} onClick={() => n.linkUrl && navigate(n.linkUrl)}>
+                <List.Item.Meta
+                  title={<span style={{ fontWeight: n.isRead ? 400 : 600 }}>{n.title}</span>}
+                  description={
+                    <Space direction="vertical" size={0}>
+                      <span>{n.message}</span>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{new Date(n.createdAt).toLocaleString('vi-VN')}</Typography.Text>
+                    </Space>
+                  }
+                />
+              </List.Item>
+            )}
+          />
         </Col>
 
         <Col xs={24} lg={8}>
-          <Card title={<Space><DollarOutlined /> Công nợ khách hàng</Space>} styles={{ body: { padding: 0, height: 340, overflow: 'auto' } }}>
-            <List
-              dataSource={topDebt}
-              loading={debt.isLoading}
-              locale={{ emptyText: 'Không có công nợ' }}
-              renderItem={(d, i) => (
-                <List.Item style={{ padding: '10px 16px', cursor: 'pointer' }} onClick={() => navigate(`/orders/${d.orderId}`)}>
-                  <List.Item.Meta
-                    avatar={<Tag color={i < 3 ? '#EB5324' : 'default'}>#{i + 1}</Tag>}
-                    title={customerName.get(d.customerId) ?? d.orderCode}
-                    description={<Typography.Text type="secondary">{d.orderCode}</Typography.Text>}
-                  />
-                  <Typography.Text strong style={{ color: '#cf1322' }}>{money(d.outstanding)}</Typography.Text>
-                </List.Item>
-              )}
-            />
-          </Card>
+          <ListWidget
+            title="Công nợ khách hàng"
+            icon={<DollarOutlined />}
+            items={topDebt}
+            loading={debt.isLoading}
+            emptyText="Không có công nợ"
+            renderItem={(d, i) => (
+              <List.Item style={{ padding: '10px 16px', cursor: 'pointer' }} onClick={() => navigate(`/orders/${d.orderId}`)}>
+                <List.Item.Meta
+                  avatar={<Tag color={i < 3 ? '#EB5324' : 'default'}>#{i + 1}</Tag>}
+                  title={customerName.get(d.customerId) ?? d.orderCode}
+                  description={<Typography.Text type="secondary">{d.orderCode}</Typography.Text>}
+                />
+                <Typography.Text strong style={{ color: '#cf1322' }}>{money(d.outstanding)}</Typography.Text>
+              </List.Item>
+            )}
+          />
         </Col>
       </Row>
 
@@ -314,7 +314,7 @@ export function WorkspacePage() {
         </Col>
 
         <Col xs={24} lg={8}>
-          <Card title={<Space><ScheduleOutlined /> Phiếu cần duyệt</Space>} styles={{ body: { padding: 0 } }}>
+          <WidgetCard title="Phiếu cần duyệt" icon={<ScheduleOutlined />}>
             <Tabs
               style={{ padding: '0 12px' }}
               items={[
@@ -364,34 +364,32 @@ export function WorkspacePage() {
                 },
               ]}
             />
-          </Card>
+          </WidgetCard>
         </Col>
 
         <Col xs={24} lg={8}>
-          <Card
-            title={<Space><ReadOutlined /> Thông tin doanh nghiệp</Space>}
+          <ListWidget
+            title="Thông tin doanh nghiệp"
+            icon={<ReadOutlined />}
+            height={320}
             extra={<Button type="link" size="small" onClick={() => navigate('/posts')}>Xem thêm</Button>}
-            styles={{ body: { padding: 0, height: 320, overflow: 'auto' } }}
-          >
-            <List
-              dataSource={(posts.data ?? []).slice(0, 8)}
-              loading={posts.isLoading}
-              locale={{ emptyText: 'Chưa có bài viết' }}
-              renderItem={(p) => (
-                <List.Item style={{ padding: '10px 16px', cursor: 'pointer' }} onClick={() => navigate('/posts')}>
-                  <List.Item.Meta
-                    title={p.title}
-                    description={
-                      <Space size={8}>
-                        {p.categoryName ? <Tag>{p.categoryName}</Tag> : null}
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('vi-VN') : ''}</Typography.Text>
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          </Card>
+            items={(posts.data ?? []).slice(0, 8)}
+            loading={posts.isLoading}
+            emptyText="Chưa có bài viết"
+            renderItem={(p) => (
+              <List.Item style={{ padding: '10px 16px', cursor: 'pointer' }} onClick={() => navigate('/posts')}>
+                <List.Item.Meta
+                  title={p.title}
+                  description={
+                    <Space size={8}>
+                      {p.categoryName ? <Tag>{p.categoryName}</Tag> : null}
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('vi-VN') : ''}</Typography.Text>
+                    </Space>
+                  }
+                />
+              </List.Item>
+            )}
+          />
         </Col>
       </Row>
 
