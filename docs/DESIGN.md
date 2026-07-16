@@ -33,19 +33,22 @@ thuật). Chuyển động **tiết chế, chức năng** (chỉ hover/skeleton,
 - **Cấm:** đen tuyền `#000000`; tím/xanh neon "AI"; gradient chữ trên tiêu đề lớn; nhiều accent.
 
 ## 3. Typography Rules
-- **Font chính:** `Roboto` (300/400/500/700) — **brand cố định**, dùng cho cả heading lẫn body.
-  (Đây là ràng buộc thương hiệu; không thay bằng font khác.)
-- **Số & tiền trong bảng/thẻ (mật độ cao):** `Roboto Mono` (hoặc `JetBrains Mono`) — canh phải, dễ so cột.
-- **Heading:** track-tight, phân cấp bằng **đậm nhạt + màu**, KHÔNG bằng cỡ khổng lồ. H4 tiêu đề màn ~20px,
-  H5 tiêu đề card ~16px.
+- **Font chính:** `Geist Variable` (self-host offline `@fontsource-variable/geist`) — sans hình học hiện đại,
+  dùng cho cả heading lẫn body. Siết letter-spacing nhẹ (`-0.005em` body, `-0.018em` heading) cho đặc/chuyên nghiệp.
+  (Thay `Roboto` cũ — Geist khác biệt & cao cấp hơn cho phần mềm dashboard.)
+- **Số & tiền/mã (mật độ cao):** `JetBrains Mono Variable` — tabular-nums (`font-variant-numeric: tabular-nums`),
+  canh phải, không lệch cột khi đổi số. Dùng cho: giá trị Statistic, cột số/tiền, mã (VMB_/GIT_), badge count, mã code.
+- **Heading:** track-tight, weight **650**, phân cấp bằng **đậm nhạt + màu** (KHÔNG cỡ khổng lồ). H4 tiêu đề màn ~20px,
+  H5 tiêu đề card ~16px, màu `#5E5873`.
 - **Body:** 14px, leading thoải mái, màu `#6E6B7B`.
-- **Header bảng:** IN HOA, 12px, letter-spacing 0.4px, màu `#6E6B7B`, nền `#F3F2F7`.
+- **Header bảng:** IN HOA, 11px, letter-spacing 0.5px, màu `#A8A5B5` (muted), nền `#F6F5F9`, kẻ dưới `#E6E3EE`.
 - **Cấm:** serif mọi loại (đây là phần mềm UI); `Inter`; cỡ chữ quá lớn kiểu marketing.
 
 ## 4. Component Stylings
-- **Nút (Button):** phẳng, bo 6px, KHÔNG glow ngoài. Primary = nền đỏ `#EB5324` + bóng đổ rất nhẹ
-  `0 2px 6px rgba(235,83,36,.35)`; Secondary = outline/ghost. Active: lún nhẹ (translateY 1px).
-- **Card:** bo 8px, **không viền**, bóng khuếch tán `0 4px 24px rgba(34,41,47,.10)`. Header card có kẻ dưới
+- **Nút (Button):** phẳng, bo 7px, KHÔNG neon-glow. Primary = nền đỏ `#EB5324` + **elevation có hướng** rất nhẹ
+  `0 6px 16px -6px rgba(235,83,36,.4)` (không phải halo neon); Secondary = outline/ghost. Hover: nhấc -1px; Active: phẳng lại.
+- **Card:** bo 14px, **không viền**, **bóng phân tầng** `0 1px 2px rgba(34,41,47,.04), 0 4px 16px -6px rgba(34,41,47,.08)`
+  (ambient + key, tinh tế). Header card có kẻ dưới
   `#F3F2F7`. Dùng card cho: thẻ thống kê, khối bảng, khối form.
 - **Thẻ thống kê (Stat card):** card + [icon chip vuông bo góc, nền accent-nhạt 12% + icon màu semantic] +
   [số lớn đậm `#5E5873` (mono)] + [nhãn nhỏ `#6E6B7B`]. Hàng 4–5 thẻ đầu màn danh sách.
@@ -57,8 +60,8 @@ thuật). Chuyển động **tiết chế, chức năng** (chỉ hover/skeleton,
 - **Toolbar lọc:** hàng ngang gồm [ô Search rộng] + [các Select lọc] + link "Xem thêm bộ lọc" mở panel lọc nâng cao.
 - **Loading:** **skeleton** khớp kích thước bảng/thẻ — KHÔNG spinner tròn.
 - **Empty state:** minh hoạ nhẹ + 1 câu hướng dẫn tạo dữ liệu — KHÔNG chỉ chữ "No data".
-- **Sidebar item active:** nền **gradient đỏ** `linear-gradient(118deg,#EB5324,rgba(235,83,36,.7))` + glow
-  `0 0 10px 1px rgba(235,83,36,.5)`, bo 6px; item thường chữ trắng mờ.
+- **Sidebar item active:** nền **gradient đỏ** `linear-gradient(118deg,#EB5324,#D94A1E)` + **elevation có hướng**
+  `0 6px 16px -6px rgba(235,83,36,.55)` (không neon-halo), bo 7px; item thường chữ trắng mờ, hover nền trắng 6%.
 
 ## 5. Layout Principles (khung + 3 archetype màn)
 **Khung app (đã có, mô tả để Stitch canh nội dung):** Sidebar dọc tối `#333` (260px, gom nhóm menu) bên trái

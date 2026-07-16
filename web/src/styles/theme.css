@@ -10,8 +10,9 @@
   --tk-accent-hover: #d94a1e;
   --tk-accent-press: #c73e17;
   --tk-accent-soft: rgba(235, 83, 36, 0.12);
-  --tk-accent-grad: linear-gradient(118deg, #eb5324, rgba(235, 83, 36, 0.7));
-  --tk-accent-glow: 0 0 10px 1px rgba(235, 83, 36, 0.5);
+  --tk-accent-grad: linear-gradient(118deg, #eb5324, #d94a1e);
+  /* Elevation có hướng thay cho neon-glow (skill taste-design: cấm outer glow) */
+  --tk-accent-glow: 0 6px 16px -6px rgba(235, 83, 36, 0.55);
 
   /* Nền / bề mặt */
   --tk-canvas: #f8f7fa;      /* nền vùng nội dung */
@@ -38,16 +39,17 @@
   --tk-danger-soft: rgba(234, 84, 85, 0.14);
 
   /* Hình khối */
-  --tk-radius: 6px;
-  --tk-radius-lg: 8px;
-  --tk-radius-xl: 12px;
-  --tk-shadow-card: 0 4px 24px rgba(34, 41, 47, 0.06);
-  --tk-shadow-pop: 0 12px 32px rgba(34, 41, 47, 0.13);
-  --tk-shadow-accent: 0 4px 12px rgba(235, 83, 36, 0.35);
+  --tk-radius: 7px;
+  --tk-radius-lg: 10px;
+  --tk-radius-xl: 14px;
+  /* Bóng phân tầng (ambient + key) — tinh tế, không neon */
+  --tk-shadow-card: 0 1px 2px rgba(34, 41, 47, 0.04), 0 4px 16px -6px rgba(34, 41, 47, 0.08);
+  --tk-shadow-pop: 0 4px 10px rgba(34, 41, 47, 0.06), 0 16px 40px -12px rgba(34, 41, 47, 0.18);
+  --tk-shadow-accent: 0 6px 16px -6px rgba(235, 83, 36, 0.4);
 
-  /* Font (brand cố định) */
-  --tk-font: "Roboto", -apple-system, "Segoe UI", Arial, sans-serif;
-  --tk-font-mono: "Roboto Mono", "JetBrains Mono", ui-monospace, monospace;
+  /* Font — Geist (sans) + JetBrains Mono (số/mã). Self-host offline @fontsource-variable */
+  --tk-font: "Geist Variable", "Geist", -apple-system, "Segoe UI", Arial, sans-serif;
+  --tk-font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
 }
 
 /* Reset nhẹ + nền app */
@@ -57,11 +59,17 @@ body {
   color: var(--tk-body);
   background: var(--tk-canvas);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.005em; /* Geist hơi rộng — siết nhẹ cho đặc, chuyên nghiệp */
 }
 
 /* Số & tiền canh phải, dễ so cột */
 .tk-mono { font-family: var(--tk-font-mono); }
 .tk-num { font-family: var(--tk-font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Tabular numerals mặc định cho mọi con số hiển thị dạng bảng/thẻ (không lệch cột khi đổi số) */
+.ant-table, .ant-statistic-content, .ant-pagination, .ant-picker, .ant-badge-count { font-variant-numeric: tabular-nums; }
 
 /* Scrollbar mảnh */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
