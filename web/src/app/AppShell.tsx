@@ -266,7 +266,9 @@ export function AppShell() {
         collapsed={collapsed}
         onCollapse={setCollapsed}
         trigger={null}
-        style={{ overflow: 'auto', height: '100vh', position: 'sticky', top: 0, left: 0, background: '#2f2f34' }}
+        breakpoint="lg"
+        collapsedWidth={0}
+        style={{ overflow: 'auto', height: '100vh', position: 'sticky', top: 0, left: 0, background: '#2f2f34', zIndex: 20 }}
       >
         <div
           style={{

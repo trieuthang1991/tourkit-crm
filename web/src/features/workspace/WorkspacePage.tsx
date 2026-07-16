@@ -1,14 +1,17 @@
 import { Avatar, Button, Card, Col, List, Row, Space, Table, Tabs, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
 import {
+  BankOutlined,
   BellOutlined,
   CalendarOutlined,
   DollarOutlined,
   FileAddOutlined,
+  FundOutlined,
   IdcardOutlined,
   PlusOutlined,
   ReadOutlined,
   ScheduleOutlined,
+  ShoppingCartOutlined,
   TeamOutlined,
   UserAddOutlined,
   UserOutlined,
@@ -20,9 +23,11 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
+import { StatCard, StatRow } from '../../shared/ui';
 import { useAuth } from '../auth/AuthContext';
 import { customersCrud } from '../customers/customersCrud';
 import { useNotifications } from '../notifications/api';
+import { useDashboard } from '../reports/dashboardApi';
 import { useOrderDebt } from '../reports/reportApi';
 import { customerCareSchema } from '../care/customerCareTypes';
 import { DepartureCalendar } from '../booking/DepartureCalendar';
@@ -99,6 +104,7 @@ export function WorkspacePage() {
 
   const notifications = useNotifications();
   const debt = useOrderDebt();
+  const dashboard = useDashboard();
   const customers = customersCrud.useList({ page: 1, size: 200 });
 
   const customerName = useMemo(() => {
@@ -154,12 +160,12 @@ export function WorkspacePage() {
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {/* Lời chào (bám bộ design) */}
+      {/* Lời chào */}
       <div>
         <Typography.Title level={3} style={{ margin: 0, color: '#5e5873' }}>
-          Chào mừng, {email ?? 'bạn'} 👋
+          Bàn làm việc
         </Typography.Title>
-        <Typography.Text type="secondary">Tổng quan công việc và hoạt động của bạn hôm nay.</Typography.Text>
+        <Typography.Text type="secondary">Chào mừng, {email ?? 'bạn'} — tổng quan công việc và hoạt động hôm nay.</Typography.Text>
       </div>
       <Card styles={{ body: { padding: 12 } }}>
         <Space wrap size={12}>
@@ -170,6 +176,36 @@ export function WorkspacePage() {
           ))}
         </Space>
       </Card>
+
+      {/* Hàng thẻ KPI (doanh thu / đơn / khách / công nợ) — bám bản Stitch */}
+      {has('report.dashboard.view') ? (
+        <StatRow cols={4}>
+          <StatCard
+            tone="accent"
+            icon={<FundOutlined />}
+            value={money(dashboard.data?.totalRevenue ?? 0)}
+            label="Doanh thu (đã ghi nhận)"
+          />
+          <StatCard
+            tone="info"
+            icon={<ShoppingCartOutlined />}
+            value={(dashboard.data?.orderCount ?? 0).toLocaleString('vi-VN')}
+            label="Đơn hàng"
+          />
+          <StatCard
+            tone="success"
+            icon={<TeamOutlined />}
+            value={(customers.data?.total ?? 0).toLocaleString('vi-VN')}
+            label="Khách hàng"
+          />
+          <StatCard
+            tone="danger"
+            icon={<BankOutlined />}
+            value={money(dashboard.data?.receivableOutstanding ?? 0)}
+            label="Công nợ phải thu"
+          />
+        </StatRow>
+      ) : null}
 
       {/* Hàng 1: hồ sơ+donut / thông báo / công nợ */}
       <Row gutter={[16, 16]}>
