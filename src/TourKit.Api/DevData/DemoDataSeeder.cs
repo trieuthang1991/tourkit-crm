@@ -655,6 +655,33 @@ public static class DemoDataSeeder
             }
         }
 
+        // 7p) Thông báo (cho admin) + Bài viết doanh nghiệp — để Bàn làm việc không trống.
+        var adminUser = await db.Set<User>().FirstOrDefaultAsync(u => u.Email == "admin@demo.vn");
+        if (adminUser is not null && !await db.Set<Notification>().AnyAsync())
+        {
+            db.AddRange(
+                new Notification { UserId = adminUser.Id, Title = "Đơn hàng mới OD_0005", Message = "Khách Phạm Thu Dung vừa đặt tour Nha Trang.", LinkUrl = "/orders", IsRead = false },
+                new Notification { UserId = adminUser.Id, Title = "Phiếu thu chờ duyệt PT_0003", Message = "Phiếu thu 2.000.000đ của Lê Hoàng Cường cần duyệt.", LinkUrl = "/receipts", IsRead = false },
+                new Notification { UserId = adminUser.Id, Title = "Tour khởi hành ngày mai", Message = "Đoàn Hạ Long 3N2Đ khởi hành 06:00 — kiểm tra danh sách khách.", LinkUrl = "/operations-calendar", IsRead = false },
+                new Notification { UserId = adminUser.Id, Title = "Báo giá BG_0002 đã gửi", Message = "Báo giá Thái Lan 5N4Đ đã gửi cho Trần Thị Bình.", LinkUrl = "/quotes", IsRead = true },
+                new Notification { UserId = adminUser.Id, Title = "Công nợ cần thu", Message = "Công ty TNHH Ánh Dương còn nợ 45.000.000đ.", LinkUrl = "/reports/order-debt", IsRead = true });
+            await db.SaveChangesAsync();
+        }
+
+        if (!await db.Set<Post>().AnyAsync())
+        {
+            var catKM = new PostCategory { Name = "Khuyến mãi", Slug = "khuyen-mai", SortOrder = 1, Status = 1 };
+            var catCN = new PostCategory { Name = "Cẩm nang", Slug = "cam-nang", SortOrder = 2, Status = 1 };
+            db.AddRange(catKM, catCN);
+            await db.SaveChangesAsync();
+            db.AddRange(
+                new Post { Title = "Ưu đãi hè: giảm 15% tour Nha Trang", Slug = "uu-dai-he-nha-trang", Summary = "Áp dụng đến hết tháng 8/2026.", Body = "Chương trình ưu đãi mùa hè cho các đoàn khách lẻ và đoàn ghép.", CategoryId = catKM.Id, Status = 1, PublishedAt = now.AddDays(-2), AuthorUserId = adminUser?.Id, LikeCount = 24 },
+                new Post { Title = "Cẩm nang du lịch Hạ Long 3N2Đ", Slug = "cam-nang-ha-long", Summary = "Lịch trình gợi ý + kinh nghiệm điều hành.", Body = "Tổng hợp lịch trình, điểm ăn uống và lưu ý thời tiết.", CategoryId = catCN.Id, Status = 1, PublishedAt = now.AddDays(-5), AuthorUserId = adminUser?.Id, LikeCount = 11 },
+                new Post { Title = "Quy trình xác nhận đoàn khởi hành", Slug = "quy-trinh-xac-nhan-doan", Summary = "Checklist cho phòng điều hành.", Body = "Các bước xác nhận chỗ, phân công HDV/xe và chốt danh sách.", CategoryId = catCN.Id, Status = 1, PublishedAt = now.AddDays(-8), AuthorUserId = adminUser?.Id, LikeCount = 7 },
+                new Post { Title = "Combo Phú Quốc mùa thấp điểm", Slug = "combo-phu-quoc-thap-diem", Summary = "Giá tốt cho nhóm 6+.", Body = "Gói combo phòng + vé + đưa đón cho nhóm khách.", CategoryId = catKM.Id, Status = 1, PublishedAt = now.AddDays(-11), AuthorUserId = adminUser?.Id, LikeCount = 18 });
+            await db.SaveChangesAsync();
+        }
+
         // 7o) Đại lý B2B (Agent) — varied trạng thái/hạn mức cho màn Đại lý.
         if (!await db.Set<Agent>().AnyAsync())
         {

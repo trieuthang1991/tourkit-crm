@@ -390,7 +390,10 @@ export function AppShell() {
           </Dropdown>
         </Header>
         <Content style={{ padding: 24, background: '#faf9f5' }}>
-          <Outlet />
+          {/* Giới hạn bề rộng + căn giữa: tránh nội dung giãn thưa trên màn siêu rộng (DESIGN.md §5). */}
+          <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+            <Outlet />
+          </div>
         </Content>
       </Layout>
     </Layout>

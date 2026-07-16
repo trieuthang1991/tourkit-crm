@@ -83,10 +83,19 @@ function SectionTitle({ children }: { children: ReactNode }) {
 
 // Thẻ KPI thống nhất về StatCard chung (mono, 1 accent — bỏ viền/số nhiều màu cũ).
 // `color` giữ trong type cho tương thích call site nhưng KHÔNG dùng (design: 1 accent duy nhất).
+// Map màu cũ → tông chuẩn (thêm màu có kiểm soát cho dải viền/tint của StatCard).
+const COLOR_TONE: Record<string, 'accent' | 'info' | 'success' | 'danger' | 'warning'> = {
+  '#3f8600': 'success',
+  '#1677ff': 'info',
+  '#cf1322': 'danger',
+  '#722ed1': 'accent',
+};
+
 function KpiCard({
   title,
   value,
   isMoney = true,
+  color,
   to,
 }: {
   title: string;
@@ -99,6 +108,7 @@ function KpiCard({
   return (
     <Col xs={12} sm={12} lg={6}>
       <StatCard
+        tone={color ? COLOR_TONE[color] ?? 'accent' : 'accent'}
         value={isMoney && typeof value === 'number' ? money(Number(value)) : value}
         label={title}
         footer={

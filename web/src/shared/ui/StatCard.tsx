@@ -20,7 +20,7 @@ export function StatCard({
   footer?: ReactNode;
 }) {
   return (
-    <div className="tk-stat">
+    <div className={`tk-stat tk-stat--${tone}`}>
       {icon || trend ? (
         <div className="tk-stat__top">
           {icon ? <span className={`tk-stat__chip tk-chip--${tone}`}>{icon}</span> : <span />}
