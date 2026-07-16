@@ -39,6 +39,24 @@ public static class DemoDataSeeder
         // 2) Mọi thao tác đọc/ghi tiếp theo scope theo tenant demo (interceptor tự gán TenantId khi lưu).
         ambient.SetTenant(tenant.Id);
 
+        // 2b) Backfill quyền MỚI cho role "Admin" (đã provision từ trước → thiếu quyền thêm sau, vd RoomFund).
+        var adminRole = await db.Set<Role>().FirstOrDefaultAsync(r => r.Name == "Admin");
+        if (adminRole is not null)
+        {
+            var grantedPermIds = await db.Set<RolePermission>()
+                .Where(rp => rp.RoleId == adminRole.Id).Select(rp => rp.PermissionId).ToListAsync();
+            var missingPerms = await db.Permissions
+                .Where(p => !grantedPermIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+            foreach (var pid in missingPerms)
+            {
+                db.Add(new RolePermission { RoleId = adminRole.Id, PermissionId = pid });
+            }
+            if (missingPerms.Count > 0)
+            {
+                await db.SaveChangesAsync();
+            }
+        }
+
         var now = DateTimeOffset.UtcNow;
 
         // --- Get-or-create helpers (theo mã/tên tự nhiên) ---
@@ -574,6 +592,67 @@ public static class DemoDataSeeder
                     Status = 2, AssigneeRef = uSalesHn.Id.ToString(),
                 });
             await db.SaveChangesAsync();
+        }
+
+        // 7n''') Quỹ phòng / allotment (RoomAllotment) — grid NCC × loại phòng × ngày, tô màu theo loại ngày.
+        // Seed KHỐI LƯỢNG LỚN để test hiệu năng (≈40 KS × 5 loại phòng × 180 ngày = 36.000 ô).
+        if (!await db.Set<RoomAllotment>().AnyAsync())
+        {
+            var start = new DateTimeOffset(now.Date, TimeSpan.Zero);
+            var rng = new Random(20260716); // seed cố định → tái tạo được
+            string[] provinces = ["Hà Nội", "Hồ Chí Minh", "Đà Nẵng", "Nha Trang", "Đà Lạt", "Phú Quốc", "Hạ Long", "Huế", "Hội An", "Vũng Tàu", "Sa Pa", "Quy Nhơn"];
+            string[] markets = ["Nội địa", "Inbound", "Outbound"];
+            (string room, decimal basePrice)[] roomTypes =
+            [
+                ("Standard Double", 700_000m), ("Superior Twin", 950_000m), ("Deluxe Double", 1_250_000m),
+                ("Family Suite", 1_900_000m), ("Ocean Suite", 2_600_000m),
+            ];
+
+            const int hotels = 40;
+            const int spanDays = 180;
+            var buffer = 0;
+            for (var h = 0; h < hotels; h++)
+            {
+                // 2 KS đầu gắn NCC thật (p1/p3) để hiện tên; còn lại synthetic ref (ResolveRef fallback chuỗi).
+                var provRef = h == 0 ? p1.Id.ToString() : h == 1 ? p3.Id.ToString() : $"NCC-KS-{h:000}";
+                var province = provinces[h % provinces.Length];
+                var rating = 3 + h % 3;
+                var project = $"Combo {province} {3 + h % 3}N2Đ";
+                var market = markets[h % markets.Length];
+                foreach (var rt in roomTypes)
+                {
+                    var basePrice = rt.basePrice + (h % 6) * 50_000m;
+                    for (var d = 0; d < spanDays; d++)
+                    {
+                        var date = start.AddDays(d);
+                        var dow = date.DayOfWeek;
+                        var mday = date.Day;
+                        // Loại ngày: lễ (mùng 1-3) > cao điểm (14-18) > cuối tuần > thường.
+                        var dayType = mday <= 3 ? 2 : mday is >= 14 and <= 18 ? 3
+                            : dow is DayOfWeek.Saturday or DayOfWeek.Sunday ? 1 : 0;
+                        var factor = dayType switch { 2 => 1.5m, 3 => 1.35m, 1 => 1.2m, _ => 1m };
+                        var quota = 5 + (h + rt.room.Length) % 16;
+                        db.Add(new RoomAllotment
+                        {
+                            ProviderRef = provRef, ServiceName = rt.room, ProjectName = project,
+                            Province = province, Market = market, Rating = rating,
+                            Date = date, DayType = dayType, Quota = quota,
+                            Booked = rng.Next(0, quota + 1),
+                            Price = Math.Round(basePrice * factor / 1000m) * 1000m,
+                        });
+                        if (++buffer >= 4000)
+                        {
+                            await db.SaveChangesAsync();
+                            db.ChangeTracker.Clear(); // tránh tích luỹ 36k entity tracked (DetectChanges O(n²))
+                            buffer = 0;
+                        }
+                    }
+                }
+            }
+            if (buffer > 0)
+            {
+                await db.SaveChangesAsync();
+            }
         }
 
         // 7o) Đại lý B2B (Agent) — varied trạng thái/hạn mức cho màn Đại lý.

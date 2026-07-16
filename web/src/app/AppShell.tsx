@@ -95,8 +95,9 @@ const MENU: NavNode[] = [
   },
   {
     key: 'g-booking', label: 'Booking Phòng/Khách sạn', icon: <HomeOutlined />, children: [
-      { key: 'b-roomfund', label: 'Quỹ phòng', to: '/room-classes', perm: 'servicebooking.view' },
+      { key: 'b-roomfund', label: 'Quỹ phòng', to: '/room-fund', perm: 'roomfund.view' },
       { key: 'b-list', label: 'Danh sách Booking', to: '/service-bookings', perm: 'servicebooking.view' },
+      { key: 'b-roomclass', label: 'Hạng phòng (danh mục)', to: '/room-classes', perm: 'servicebooking.view' },
     ],
   },
   {

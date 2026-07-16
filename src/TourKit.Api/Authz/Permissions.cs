@@ -106,6 +106,8 @@ public static class Permissions
     public const string FileManage = "file.manage";  // upload tệp đính kèm
     public const string TicketFundView = "ticketfund.view";      // quỹ vé ứng
     public const string TicketFundManage = "ticketfund.manage";
+    public const string RoomFundView = "roomfund.view";      // quỹ phòng / allotment khách sạn
+    public const string RoomFundManage = "roomfund.manage";
     public const string QuoteView = "quote.view";      // báo giá
     public const string QuoteManage = "quote.manage";
     public const string InvoiceView = "invoice.view";      // hoá đơn VAT
@@ -160,6 +162,7 @@ public static class Permissions
         (ActivityLogView, "System"),
         (FileView, "System"), (FileManage, "System"),
         (TicketFundView, "Finance"), (TicketFundManage, "Finance"),
+        (RoomFundView, "Booking"), (RoomFundManage, "Booking"),
         (QuoteView, "CRM"), (QuoteManage, "CRM"),
         (InvoiceView, "Finance"), (InvoiceManage, "Finance"),
         (ServiceBookingView, "Booking"), (ServiceBookingManage, "Booking"),

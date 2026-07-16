@@ -68,6 +68,7 @@ import { FlightTicketsPage } from '../features/flights/FlightTicketsPage';
 import { FlightTicketsIndividualPage } from '../features/flights/FlightTicketsIndividualPage';
 import { ServiceOperationsPage } from '../features/serviceOperations/ServiceOperationsPage';
 import { RoomClassesPage } from '../features/roomClasses/RoomClassesPage';
+import { RoomFundPage } from '../features/rooms/RoomFundPage';
 import { AgentsPage } from '../features/agents/AgentsPage';
 import { CustomerCommissionRulesPage } from '../features/customerCommissionRules/CustomerCommissionRulesPage';
 import { QuotesPage } from '../features/quotes/QuotesPage';
@@ -153,6 +154,7 @@ export function AppRouter() {
         <Route path="/flight-tickets-individual" element={<FlightTicketsIndividualPage />} />
         <Route path="/service-operations" element={<ServiceOperationsPage />} />
         <Route path="/room-classes" element={<RoomClassesPage />} />
+        <Route path="/room-fund" element={<RoomFundPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/customer-commission-rules" element={<CustomerCommissionRulesPage />} />
         <Route path="/tour-templates" element={<TourTemplateListPage />} />
