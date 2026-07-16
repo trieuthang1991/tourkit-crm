@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Badge, Calendar, Typography } from '../../shared/ui/antd';
+import { Calendar } from '../../shared/ui/antd';
 import type { CalendarProps } from '../../shared/ui/antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -27,28 +27,59 @@ export function DepartureCalendar({ fullscreen = true }: { fullscreen?: boolean 
     return map;
   }, [list.data]);
 
+  // Kiểu Stitch: mỗi ngày có tour hiện badge "N chuyến" (chấm cam) + tên tuyến + số chỗ (mono).
+  // GIỮ NGUYÊN dữ liệu & điều hướng — chỉ đổi trình bày.
+  const max = fullscreen ? 3 : 2;
   const cellRender: CalendarProps<Dayjs>['cellRender'] = (current, info) => {
     if (info.type !== 'date') return info.originNode;
     const items = byDate.get(current.format('YYYY-MM-DD')) ?? [];
     if (!items.length) return null;
     return (
-      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-        {items.slice(0, fullscreen ? 6 : 2).map((d) => (
-          <li key={d.id} style={{ marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            <Badge
-              color="#EB5324"
-              text={
-                <Typography.Link style={{ fontSize: 12 }} onClick={() => navigate(`/departures/${d.id}`)}>
-                  {d.title || d.code} · {d.totalSlots} chỗ
-                </Typography.Link>
-              }
-            />
-          </li>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 2 }}>
+        <span
+          style={{
+            alignSelf: 'flex-start',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'var(--tk-accent)',
+            background: 'var(--tk-accent-soft)',
+            borderRadius: 20,
+            padding: '1px 8px',
+            fontFamily: 'var(--tk-font-mono)',
+          }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--tk-accent)', display: 'inline-block' }} />
+          {items.length} chuyến
+        </span>
+        {items.slice(0, max).map((d) => (
+          <div
+            key={d.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/departures/${d.id}`);
+            }}
+            title={`${d.title || d.code} · ${d.totalSlots} chỗ`}
+            style={{
+              fontSize: 12,
+              lineHeight: 1.35,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              color: 'var(--tk-body)',
+            }}
+          >
+            {d.title || d.code}
+            <span style={{ color: 'var(--tk-muted)', fontFamily: 'var(--tk-font-mono)' }}> · {d.totalSlots} chỗ</span>
+          </div>
         ))}
-        {items.length > (fullscreen ? 6 : 2) ? (
-          <li style={{ fontSize: 11, color: '#999' }}>+{items.length - (fullscreen ? 6 : 2)} chuyến</li>
+        {items.length > max ? (
+          <div style={{ fontSize: 11, color: 'var(--tk-muted)' }}>+{items.length - max} chuyến khác</div>
         ) : null}
-      </ul>
+      </div>
     );
   };
 
