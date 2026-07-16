@@ -5,6 +5,7 @@ import '@fontsource-variable/geist'; // sans chính (heading + body) — thay Ro
 import '@fontsource-variable/jetbrains-mono'; // mono cho số/tiền/mã — thay Roboto Mono
 import './styles/theme.css'; // biến --tk-* + reset + nền app (bộ handoff CSS)
 import './styles/components.css'; // class .tk-* cho shell/card/table/pill/form
+import './styles/tailwind.css'; // Tailwind utilities (no preflight) — cho component AntD-free (pilot)
 import { AppProviders } from './app/providers';
 import { AppRouter } from './app/router';
 

@@ -1,5 +1,3 @@
-import { Avatar, Button, Card, Col, List, Row, Space, Table, Tabs, Tag, Typography } from '../../shared/ui/antd';
-import type { ColumnsType } from '../../shared/ui/antd';
 import {
   BankOutlined,
   BellOutlined,
@@ -24,28 +22,31 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { GradientStatCard, ListWidget, STAT_GRADIENTS, StatRow, WidgetCard } from '../../shared/ui';
-import type { StatGradient } from '../../shared/ui';
 import { useAuth } from '../auth/AuthContext';
 import { customersCrud } from '../customers/customersCrud';
 import { useNotifications } from '../notifications/api';
 import { useDashboard } from '../reports/dashboardApi';
 import { useOrderDebt } from '../reports/reportApi';
 import { customerCareSchema } from '../care/customerCareTypes';
-import { DepartureCalendar } from '../booking/DepartureCalendar';
 import { receiptListItemSchema, paymentListItemSchema } from '../finance/listTypes';
 import { postSchema } from '../posts/types';
 import { workTaskSchema, priorityLabel, statusLabel } from '../workTasks/types';
 import type { WorkTask } from '../workTasks/types';
 import { TaskDonut } from './TaskDonut';
 import type { DonutSegment } from './TaskDonut';
+import { Btn, Card, CardHead, Empty, GradAvatar, GradientStat, Pill, Tabs } from '../../ui/kit';
+import { DepartureCalendarLite } from '../../ui/DepartureCalendarLite';
 
-const TASK_STATUS_META: { status: number; label: string; color: string }[] = [
-  { status: 0, label: 'Cần làm', color: '#8c8c8c' },
-  { status: 1, label: 'Đang làm', color: '#1677ff' },
-  { status: 2, label: 'Hoàn thành', color: '#52c41a' },
-  { status: 3, label: 'Huỷ', color: '#f5222d' },
+type ReceiptListItem = z.infer<typeof receiptListItemSchema>;
+type PaymentListItem = z.infer<typeof paymentListItemSchema>;
+
+const TASK_STATUS_META: { status: number; label: string; color: string; tone: 'muted' | 'info' | 'success' | 'danger' }[] = [
+  { status: 0, label: 'Cần làm', color: '#8c8c8c', tone: 'muted' },
+  { status: 1, label: 'Đang làm', color: '#1677ff', tone: 'info' },
+  { status: 2, label: 'Hoàn thành', color: '#52c41a', tone: 'success' },
+  { status: 3, label: 'Huỷ', color: '#f5222d', tone: 'danger' },
 ];
+const toneOf = (s: number) => TASK_STATUS_META.find((m) => m.status === s)?.tone ?? 'muted';
 
 function isToday(iso: string | null): boolean {
   if (!iso) return false;
@@ -61,30 +62,36 @@ const dateVi = (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN'
 const shortDateTime = (iso: string) =>
   new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 
-// Avatar tròn nền GRADIENT (bám hướng "rực rỡ") — xoay 4 gradient theo index.
-const GRAD_KEYS: StatGradient[] = ['orange', 'blue', 'green', 'purple'];
-function gradAvatar(i: number, content: ReactNode, size = 36) {
-  const grad = STAT_GRADIENTS[GRAD_KEYS[i % GRAD_KEYS.length] ?? 'orange'];
+// Dòng danh sách có avatar gradient + tiêu đề/mô tả + phần phải.
+function Row({
+  i,
+  icon,
+  title,
+  desc,
+  right,
+  onClick,
+}: {
+  i: number;
+  icon: ReactNode;
+  title: ReactNode;
+  desc?: ReactNode;
+  right?: ReactNode;
+  onClick?: () => void;
+}) {
   return (
-    <span
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#fff',
-        fontWeight: 700,
-        fontFamily: 'var(--tk-font-mono)',
-        fontSize: size > 40 ? 22 : 13,
-        flex: '0 0 auto',
-        background: grad,
-        boxShadow: '0 4px 10px -3px rgba(0,0,0,0.25)',
-      }}
+    <div
+      onClick={onClick}
+      className={`flex items-center gap-3 px-4 py-[11px] border-b border-[#f5f4f8] last:border-0 ${onClick ? 'cursor-pointer hover:bg-[#faf9fc]' : ''}`}
     >
-      {content}
-    </span>
+      <GradAvatar i={i}>{icon}</GradAvatar>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-[14px] text-[#5e5873]">{title}</span>
+          {right}
+        </div>
+        {desc ? <div className="truncate text-[13px] text-[#a8a5b5]">{desc}</div> : null}
+      </div>
+    </div>
   );
 }
 
@@ -94,42 +101,33 @@ export function WorkspacePage() {
 
   const tasks = useQuery({
     queryKey: ['work-tasks', 'workspace'],
-    queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/work-tasks');
-      return z.array(workTaskSchema).parse(data);
-    },
+    queryFn: async () => z.array(workTaskSchema).parse((await httpClient.get<unknown>('/api/v1/work-tasks')).data),
     enabled: has('task.view'),
   });
   const cares = useQuery({
     queryKey: ['customer-cares', 'workspace'],
-    queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/customer-cares');
-      return z.array(customerCareSchema).parse(data);
-    },
+    queryFn: async () => z.array(customerCareSchema).parse((await httpClient.get<unknown>('/api/v1/customer-cares')).data),
     enabled: has('care.view'),
   });
   const pendingReceipts = useQuery({
     queryKey: ['receipts-all', 'pending'],
-    queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/receipts', { params: { page: 1, size: 50 } });
-      return pagedSchema(receiptListItemSchema).parse(data).items.filter((r) => r.status === 0);
-    },
+    queryFn: async () =>
+      pagedSchema(receiptListItemSchema)
+        .parse((await httpClient.get<unknown>('/api/v1/receipts', { params: { page: 1, size: 50 } })).data)
+        .items.filter((r) => r.status === 0),
     enabled: has('receipt.view'),
   });
   const pendingPayments = useQuery({
     queryKey: ['payments-all', 'pending'],
-    queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/payments', { params: { page: 1, size: 50 } });
-      return pagedSchema(paymentListItemSchema).parse(data).items.filter((p) => p.status === 0);
-    },
+    queryFn: async () =>
+      pagedSchema(paymentListItemSchema)
+        .parse((await httpClient.get<unknown>('/api/v1/payments', { params: { page: 1, size: 50 } })).data)
+        .items.filter((p) => p.status === 0),
     enabled: has('payment.view'),
   });
   const posts = useQuery({
     queryKey: ['posts', 'workspace'],
-    queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/posts');
-      return z.array(postSchema).parse(data);
-    },
+    queryFn: async () => z.array(postSchema).parse((await httpClient.get<unknown>('/api/v1/posts')).data),
     enabled: has('post.view'),
   });
 
@@ -150,10 +148,7 @@ export function WorkspacePage() {
     value: (tasks.data ?? []).filter((t) => t.status === m.status).length,
   }));
 
-  const topDebt = useMemo(
-    () => [...(debt.data ?? [])].sort((a, b) => b.outstanding - a.outstanding).slice(0, 8),
-    [debt.data],
-  );
+  const topDebt = useMemo(() => [...(debt.data ?? [])].sort((a, b) => b.outstanding - a.outstanding).slice(0, 6), [debt.data]);
   const todayCares = useMemo(() => (cares.data ?? []).filter((c) => isToday(c.remindAt)), [cares.data]);
 
   const allTasks = tasks.data ?? [];
@@ -168,289 +163,317 @@ export function WorkspacePage() {
     { label: 'Tạo đơn', icon: <FileAddOutlined />, to: '/orders', perm: 'booking.view', color: '#ec4899' },
   ].filter((a) => has(a.perm));
 
-  const taskColumns: ColumnsType<WorkTask> = [
-    { title: 'Công việc', dataIndex: 'title', key: 'title', ellipsis: true },
-    { title: 'Phụ trách', dataIndex: 'assigneeName', key: 'assigneeName', width: 140, render: (v: string | null) => v ?? '—' },
-    { title: 'Ưu tiên', dataIndex: 'priority', key: 'priority', width: 100, render: (v: number) => priorityLabel(v) },
-    { title: 'Hạn', dataIndex: 'dueDate', key: 'dueDate', width: 110, render: dateVi },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (v: number) => {
-        const m = TASK_STATUS_META.find((x) => x.status === v);
-        return <Tag color={m?.color}>{statusLabel(v)}</Tag>;
-      },
-    },
-  ];
-
   const taskTable = (data: WorkTask[]) => (
-    <Table rowKey="id" size="small" columns={taskColumns} dataSource={data} loading={tasks.isLoading} pagination={{ pageSize: 8 }} scroll={{ x: 'max-content' }} />
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-[13px]">
+        <thead>
+          <tr className="border-b border-[#f1eff5] text-[11px] uppercase tracking-wide text-[#a8a5b5]">
+            <th className="px-4 py-2.5 font-medium">Công việc</th>
+            <th className="px-4 py-2.5 font-medium">Phụ trách</th>
+            <th className="px-4 py-2.5 font-medium">Ưu tiên</th>
+            <th className="px-4 py-2.5 font-medium">Hạn</th>
+            <th className="px-4 py-2.5 font-medium">Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.length === 0 ? (
+            <tr>
+              <td colSpan={5}>
+                <Empty text="Không có công việc" />
+              </td>
+            </tr>
+          ) : (
+            data.map((t) => (
+              <tr key={t.id} className="border-b border-[#f5f4f8] text-[#6e6b7b] last:border-0 hover:bg-[#faf9fc]">
+                <td className="px-4 py-3 text-[#5e5873]">{t.title}</td>
+                <td className="px-4 py-3">{t.assigneeName ?? '—'}</td>
+                <td className="px-4 py-3">{priorityLabel(t.priority)}</td>
+                <td className="px-4 py-3 font-mono">{dateVi(t.dueDate)}</td>
+                <td className="px-4 py-3">
+                  <Pill tone={toneOf(t.status)}>{statusLabel(t.status)}</Pill>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 
+  const s = dashboard.data;
+
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {/* Lời chào */}
+    <div className="flex flex-col gap-4 font-sans">
+      {/* Header */}
       <div>
-        <Typography.Title level={3} style={{ margin: 0, color: '#5e5873' }}>
-          Bàn làm việc
-        </Typography.Title>
-        <Typography.Text type="secondary">Chào mừng, {email ?? 'bạn'} — tổng quan công việc và hoạt động hôm nay.</Typography.Text>
+        <h1 className="m-0 text-[24px] font-bold tracking-[-0.02em] text-[#5e5873]">Bàn làm việc</h1>
+        <p className="mt-1 text-[14px] text-[#a8a5b5]">Chào mừng, {email ?? 'bạn'} — tổng quan công việc và hoạt động hôm nay.</p>
       </div>
-      <Card styles={{ body: { padding: 12 } }}>
-        <Space wrap size={12}>
+
+      {/* Quick actions */}
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-3">
           {quickActions.map((a) => (
-            <Button key={a.to} icon={<span style={{ color: a.color }}>{a.icon}</span>} onClick={() => navigate(a.to)}>
+            <Btn key={a.to} onClick={() => navigate(a.to)}>
+              <span style={{ color: a.color }}>{a.icon}</span>
               {a.label}
-            </Button>
+            </Btn>
           ))}
-        </Space>
+        </div>
       </Card>
 
-      {/* Hàng thẻ KPI (doanh thu / đơn / khách / công nợ) — bám bản Stitch */}
+      {/* KPI gradient */}
       {has('report.dashboard.view') ? (
-        <StatRow cols={4}>
-          <GradientStatCard
-            gradient="orange"
-            icon={<FundOutlined />}
-            value={money(dashboard.data?.totalRevenue ?? 0)}
-            label="Doanh thu (đã ghi nhận)"
-          />
-          <GradientStatCard
-            gradient="blue"
-            icon={<ShoppingCartOutlined />}
-            value={(dashboard.data?.orderCount ?? 0).toLocaleString('vi-VN')}
-            label="Đơn hàng"
-          />
-          <GradientStatCard
-            gradient="green"
-            icon={<TeamOutlined />}
-            value={(customers.data?.total ?? 0).toLocaleString('vi-VN')}
-            label="Khách hàng"
-          />
-          <GradientStatCard
-            gradient="purple"
-            icon={<BankOutlined />}
-            value={money(dashboard.data?.receivableOutstanding ?? 0)}
-            label="Công nợ phải thu"
-          />
-        </StatRow>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <GradientStat gradient="orange" icon={<FundOutlined />} value={money(s?.totalRevenue ?? 0)} label="Doanh thu (đã ghi nhận)" />
+          <GradientStat gradient="blue" icon={<ShoppingCartOutlined />} value={(s?.orderCount ?? 0).toLocaleString('vi-VN')} label="Đơn hàng" />
+          <GradientStat gradient="green" icon={<TeamOutlined />} value={(customers.data?.total ?? 0).toLocaleString('vi-VN')} label="Khách hàng" />
+          <GradientStat gradient="purple" icon={<BankOutlined />} value={money(s?.receivableOutstanding ?? 0)} label="Công nợ phải thu" />
+        </div>
       ) : null}
 
-      {/* Hàng 1: hồ sơ+donut / thông báo / công nợ */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={8}>
-          <Card>
-            <Space direction="vertical" align="center" style={{ width: '100%' }} size={4}>
-              <Avatar size={72} style={{ background: STAT_GRADIENTS.orange, boxShadow: '0 8px 18px -6px rgba(235,83,36,0.5)' }} icon={<UserOutlined />} />
-              <Typography.Title level={5} style={{ margin: '8px 0 0' }}>
-                {email ?? 'Người dùng'}
-              </Typography.Title>
-              <Tag color="#EB5324">Nhân viên</Tag>
-            </Space>
-            <div style={{ borderTop: '1px solid #f0f0f0', margin: '16px 0' }} />
-            <Typography.Text strong>Tỉ lệ công việc</Typography.Text>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12 }}>
-              <TaskDonut segments={donutSegments} />
-              <Space direction="vertical" size={4}>
-                {donutSegments.map((s) => (
-                  <Space key={s.label} size={8}>
-                    <span style={{ width: 10, height: 10, borderRadius: 2, background: s.color, display: 'inline-block' }} />
-                    <Typography.Text type="secondary">
-                      {s.label} ({s.value})
-                    </Typography.Text>
-                  </Space>
-                ))}
-              </Space>
+      {/* Hàng 1 */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Hồ sơ + donut */}
+        <Card className="p-5">
+          <div className="flex flex-col items-center">
+            <GradAvatar i={0} size={72}>
+              <UserOutlined />
+            </GradAvatar>
+            <div className="mt-3 text-[16px] font-semibold text-[#5e5873]">{email ?? 'Người dùng'}</div>
+            <span className="mt-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium text-white" style={{ background: 'linear-gradient(135deg,#eb5324,#ff7a45)' }}>
+              Nhân viên
+            </span>
+          </div>
+          <div className="my-4 border-t border-[#f1eff5]" />
+          <div className="text-[14px] font-semibold text-[#5e5873]">Tỉ lệ công việc</div>
+          <div className="mt-3 flex items-center gap-4">
+            <TaskDonut segments={donutSegments} />
+            <div className="flex flex-col gap-1.5">
+              {donutSegments.map((seg) => (
+                <div key={seg.label} className="flex items-center gap-2 text-[13px] text-[#8b899a]">
+                  <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: seg.color }} />
+                  {seg.label} ({seg.value})
+                </div>
+              ))}
             </div>
-          </Card>
-        </Col>
+          </div>
+        </Card>
 
-        <Col xs={24} lg={8}>
-          <ListWidget
-            title="Thông báo bạn cần quan tâm"
-            icon={<BellOutlined />}
-            items={(notifications.data ?? []).slice(0, 10)}
-            loading={notifications.isLoading}
-            emptyText="Không có thông báo"
-            renderItem={(n, i) => (
-              <List.Item style={{ padding: '11px 16px', cursor: n.linkUrl ? 'pointer' : 'default' }} onClick={() => n.linkUrl && navigate(n.linkUrl)}>
-                <List.Item.Meta
-                  avatar={gradAvatar(i, <BellOutlined style={{ fontSize: 15 }} />)}
-                  title={
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
-                      <span style={{ fontWeight: n.isRead ? 500 : 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</span>
-                      <Typography.Text type="secondary" style={{ fontSize: 11.5, whiteSpace: 'nowrap', flex: '0 0 auto' }}>{shortDateTime(n.createdAt)}</Typography.Text>
-                    </div>
-                  }
-                  description={
-                    <span style={{ display: 'block', color: 'var(--tk-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {n.message}
+        {/* Thông báo */}
+        <Card>
+          <CardHead icon={<BellOutlined className="text-[#eb5324]" />} title="Thông báo bạn cần quan tâm" />
+          <div className="h-[340px] overflow-auto">
+            {notifications.data?.length ? (
+              notifications.data.slice(0, 10).map((n, i) => (
+                <Row
+                  key={n.id}
+                  i={i}
+                  icon={<BellOutlined className="text-[15px]" />}
+                  onClick={() => n.linkUrl && navigate(n.linkUrl)}
+                  title={<span className={n.isRead ? '' : 'font-semibold'}>{n.title}</span>}
+                  desc={n.message}
+                  right={<span className="shrink-0 font-mono text-[11.5px] text-[#a8a5b5]">{shortDateTime(n.createdAt)}</span>}
+                />
+              ))
+            ) : (
+              <Empty text="Không có thông báo" />
+            )}
+          </div>
+        </Card>
+
+        {/* Công nợ khách hàng */}
+        <Card>
+          <CardHead icon={<DollarOutlined className="text-[#eb5324]" />} title="Công nợ khách hàng" />
+          <div className="h-[340px] overflow-auto">
+            {topDebt.length ? (
+              topDebt.map((d, i) => (
+                <Row
+                  key={d.orderId}
+                  i={i}
+                  icon={i + 1}
+                  onClick={() => navigate(`/orders/${d.orderId}`)}
+                  title={customerName.get(d.customerId) ?? d.orderCode}
+                  desc={d.orderCode}
+                  right={<span className="shrink-0 font-mono text-[14px] font-semibold text-[#cf1322]">{money(d.outstanding)}</span>}
+                />
+              ))
+            ) : (
+              <Empty text="Không có công nợ" />
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Hàng 2 */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Thông tin cá nhân + lịch hẹn */}
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2 text-[15px] font-semibold text-[#5e5873]">
+            <IdcardOutlined className="text-[#eb5324]" /> Thông tin cá nhân
+          </div>
+          <div className="flex flex-col gap-2.5 text-[13px]">
+            <div className="flex justify-between"><span className="text-[#a8a5b5]">Email</span><span className="text-[#5e5873]">{email ?? '—'}</span></div>
+            <div className="flex justify-between"><span className="text-[#a8a5b5]">Điện thoại</span><span>—</span></div>
+            <div className="flex justify-between"><span className="text-[#a8a5b5]">Văn phòng</span><span>—</span></div>
+          </div>
+          <div className="my-3 border-t border-[#f1eff5]" />
+          <div className="mb-2 flex items-center gap-2 text-[14px] font-semibold text-[#5e5873]">
+            <CalendarOutlined className="text-[#eb5324]" /> Lịch hẹn hôm nay
+          </div>
+          {todayCares.length ? (
+            <div className="flex flex-col gap-2">
+              {todayCares.map((c) => (
+                <div key={c.id} className="flex items-center justify-between text-[13px]">
+                  <span className="text-[#5e5873]">{c.title}</span>
+                  {c.remindAt ? (
+                    <Pill tone="warning">{new Date(c.remindAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Pill>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-[13px] text-[#a8a5b5]">Hôm nay không có lịch hẹn</div>
+          )}
+        </Card>
+
+        {/* Phiếu cần duyệt */}
+        <Card>
+          <CardHead icon={<ScheduleOutlined className="text-[#eb5324]" />} title="Phiếu cần duyệt" />
+          <Tabs2
+            receipts={pendingReceipts.data ?? []}
+            payments={pendingPayments.data ?? []}
+            onReceipt={() => navigate('/receipts')}
+            onPayment={() => navigate('/payments')}
+          />
+        </Card>
+
+        {/* Thông tin doanh nghiệp */}
+        <Card>
+          <CardHead
+            icon={<ReadOutlined className="text-[#eb5324]" />}
+            title="Thông tin doanh nghiệp"
+            extra={<Btn variant="link" onClick={() => navigate('/posts')}>Xem thêm</Btn>}
+          />
+          <div className="h-[300px] overflow-auto">
+            {posts.data?.length ? (
+              posts.data.slice(0, 8).map((p, i) => (
+                <Row
+                  key={p.id}
+                  i={i}
+                  icon={<ReadOutlined className="text-[14px]" />}
+                  onClick={() => navigate('/posts')}
+                  title={p.title}
+                  desc={
+                    <span className="flex items-center gap-2">
+                      {p.categoryName ? <Pill tone="info">{p.categoryName}</Pill> : null}
+                      <span>{p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('vi-VN') : ''}</span>
                     </span>
                   }
                 />
-              </List.Item>
+              ))
+            ) : (
+              <Empty text="Chưa có bài viết" />
             )}
-          />
-        </Col>
+          </div>
+        </Card>
+      </div>
 
-        <Col xs={24} lg={8}>
-          <ListWidget
-            title="Công nợ khách hàng"
-            icon={<DollarOutlined />}
-            items={topDebt}
-            loading={debt.isLoading}
-            emptyText="Không có công nợ"
-            renderItem={(d, i) => (
-              <List.Item style={{ padding: '10px 16px', cursor: 'pointer' }} onClick={() => navigate(`/orders/${d.orderId}`)}>
-                <List.Item.Meta
-                  avatar={gradAvatar(i, i + 1)}
-                  title={customerName.get(d.customerId) ?? d.orderCode}
-                  description={<Typography.Text type="secondary">{d.orderCode}</Typography.Text>}
-                />
-                <Typography.Text strong style={{ color: '#cf1322' }}>{money(d.outstanding)}</Typography.Text>
-              </List.Item>
-            )}
-          />
-        </Col>
-      </Row>
-
-      {/* Hàng 2: thông tin cá nhân+lịch hẹn / phiếu cần duyệt / thông tin doanh nghiệp */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={8}>
-          <Card title={<Space><IdcardOutlined /> Thông tin cá nhân</Space>}>
-            <Space direction="vertical" size={10} style={{ width: '100%' }}>
-              <Row justify="space-between"><Typography.Text type="secondary">Email</Typography.Text><span>{email ?? '—'}</span></Row>
-              <Row justify="space-between"><Typography.Text type="secondary">Điện thoại</Typography.Text><span>—</span></Row>
-              <Row justify="space-between"><Typography.Text type="secondary">Văn phòng</Typography.Text><span>—</span></Row>
-            </Space>
-            <div style={{ borderTop: '1px solid #f0f0f0', margin: '14px 0 10px' }} />
-            <Typography.Text strong><CalendarOutlined /> Lịch hẹn hôm nay</Typography.Text>
-            <List
-              size="small"
-              dataSource={todayCares}
-              loading={cares.isLoading}
-              locale={{ emptyText: 'Hôm nay không có lịch hẹn' }}
-              renderItem={(c) => (
-                <List.Item style={{ padding: '8px 0' }}>
-                  <List.Item.Meta
-                    title={c.title}
-                    description={
-                      <Space size={8}>
-                        <Typography.Text type="secondary">{customerName.get(c.customerId) ?? ''}</Typography.Text>
-                        {c.remindAt ? <Tag color="#EB5324">{new Date(c.remindAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Tag> : null}
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          </Card>
-        </Col>
-
-        <Col xs={24} lg={8}>
-          <WidgetCard title="Phiếu cần duyệt" icon={<ScheduleOutlined />}>
-            <Tabs
-              style={{ padding: '0 12px' }}
-              items={[
-                {
-                  key: 'receipt',
-                  label: `Phiếu thu (${pendingReceipts.data?.length ?? 0})`,
-                  children: (
-                    <List
-                      size="small"
-                      dataSource={pendingReceipts.data ?? []}
-                      loading={pendingReceipts.isLoading}
-                      locale={{ emptyText: 'Không có phiếu chờ' }}
-                      style={{ maxHeight: 280, overflow: 'auto' }}
-                      renderItem={(r) => (
-                        <List.Item onClick={() => navigate('/receipts')} style={{ cursor: 'pointer' }}>
-                          <List.Item.Meta title={r.code} description={r.customerName ?? r.orderCode ?? ''} />
-                          <Space direction="vertical" align="end" size={0}>
-                            <Typography.Text strong>{money(r.amount)}</Typography.Text>
-                            <Tag color="green">THU</Tag>
-                          </Space>
-                        </List.Item>
-                      )}
-                    />
-                  ),
-                },
-                {
-                  key: 'payment',
-                  label: `Phiếu chi (${pendingPayments.data?.length ?? 0})`,
-                  children: (
-                    <List
-                      size="small"
-                      dataSource={pendingPayments.data ?? []}
-                      loading={pendingPayments.isLoading}
-                      locale={{ emptyText: 'Không có phiếu chờ' }}
-                      style={{ maxHeight: 280, overflow: 'auto' }}
-                      renderItem={(p) => (
-                        <List.Item onClick={() => navigate('/payments')} style={{ cursor: 'pointer' }}>
-                          <List.Item.Meta title={p.code} description={p.providerName ?? p.orderCode ?? ''} />
-                          <Space direction="vertical" align="end" size={0}>
-                            <Typography.Text strong>{money(p.amount)}</Typography.Text>
-                            <Tag color="red">CHI</Tag>
-                          </Space>
-                        </List.Item>
-                      )}
-                    />
-                  ),
-                },
-              ]}
-            />
-          </WidgetCard>
-        </Col>
-
-        <Col xs={24} lg={8}>
-          <ListWidget
-            title="Thông tin doanh nghiệp"
-            icon={<ReadOutlined />}
-            height={320}
-            extra={<Button type="link" size="small" onClick={() => navigate('/posts')}>Xem thêm</Button>}
-            items={(posts.data ?? []).slice(0, 8)}
-            loading={posts.isLoading}
-            emptyText="Chưa có bài viết"
-            renderItem={(p) => (
-              <List.Item style={{ padding: '10px 16px', cursor: 'pointer' }} onClick={() => navigate('/posts')}>
-                <List.Item.Meta
-                  title={p.title}
-                  description={
-                    <Space size={8}>
-                      {p.categoryName ? <Tag>{p.categoryName}</Tag> : null}
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('vi-VN') : ''}</Typography.Text>
-                    </Space>
-                  }
-                />
-              </List.Item>
-            )}
-          />
-        </Col>
-      </Row>
-
-      {/* Lịch khởi hành: lịch tháng các chuyến (bám widget hệ cũ) */}
+      {/* Lịch khởi hành */}
       {has('departure.view') ? (
-        <Card
-          title={<Space><CalendarOutlined /> Lịch khởi hành</Space>}
-          extra={<Button type="link" onClick={() => navigate('/operations-calendar')}>Xem lịch điều hành →</Button>}
-        >
-          <DepartureCalendar />
+        <Card>
+          <CardHead
+            icon={<CalendarOutlined className="text-[#eb5324]" />}
+            title="Lịch khởi hành"
+            extra={<Btn variant="link" onClick={() => navigate('/operations-calendar')}>Xem lịch điều hành →</Btn>}
+          />
+          <DepartureCalendarLite />
         </Card>
       ) : null}
 
       {/* Công việc của tôi */}
       {has('task.view') ? (
-        <Card title={<Space><ScheduleOutlined /> Công việc của tôi</Space>} styles={{ body: { paddingTop: 0 } }}>
-          <Tabs
-            items={[
-              { key: 'all', label: `Tất cả (${allTasks.length})`, children: taskTable(allTasks) },
-              { key: 'overdue', label: `Quá hạn (${overdueTasks.length})`, children: taskTable(overdueTasks) },
-              { key: 'done', label: `Hoàn thành (${doneTasks.length})`, children: taskTable(doneTasks) },
-            ]}
-          />
+        <Card>
+          <CardHead icon={<ScheduleOutlined className="text-[#eb5324]" />} title="Công việc của tôi" />
+          <TasksTabs all={allTasks} overdue={overdueTasks} done={doneTasks} render={taskTable} />
         </Card>
       ) : null}
-    </Space>
+    </div>
+  );
+}
+
+/* Tabs phiếu thu/chi (nội bộ trang) */
+function Tabs2({
+  receipts,
+  payments,
+  onReceipt,
+  onPayment,
+}: {
+  receipts: ReceiptListItem[];
+  payments: PaymentListItem[];
+  onReceipt: () => void;
+  onPayment: () => void;
+}) {
+  const list = (
+    rows: { code: string; sub: string; amount: number }[],
+    tone: 'success' | 'danger',
+    tag: string,
+    onClick: () => void,
+  ) =>
+    rows.length ? (
+      <div className="max-h-[280px] overflow-auto">
+        {rows.map((r) => (
+          <div key={r.code} onClick={onClick} className="flex cursor-pointer items-center justify-between border-b border-[#f5f4f8] px-4 py-2.5 last:border-0 hover:bg-[#faf9fc]">
+            <div className="min-w-0">
+              <div className="truncate text-[13px] font-medium text-[#5e5873]">{r.code}</div>
+              <div className="truncate text-[12px] text-[#a8a5b5]">{r.sub}</div>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="font-mono text-[13px] font-semibold text-[#5e5873]">{money(r.amount)}</span>
+              <Pill tone={tone}>{tag}</Pill>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <Empty text="Không có phiếu chờ" />
+    );
+  return (
+    <Tabs
+      items={[
+        {
+          key: 'receipt',
+          label: `Phiếu thu (${receipts.length})`,
+          children: list(receipts.map((r) => ({ code: r.code, sub: r.customerName ?? r.orderCode ?? '', amount: r.amount })), 'success', 'THU', onReceipt),
+        },
+        {
+          key: 'payment',
+          label: `Phiếu chi (${payments.length})`,
+          children: list(payments.map((p) => ({ code: p.code, sub: p.providerName ?? p.orderCode ?? '', amount: p.amount })), 'danger', 'CHI', onPayment),
+        },
+      ]}
+    />
+  );
+}
+
+function TasksTabs({
+  all,
+  overdue,
+  done,
+  render,
+}: {
+  all: WorkTask[];
+  overdue: WorkTask[];
+  done: WorkTask[];
+  render: (d: WorkTask[]) => ReactNode;
+}) {
+  return (
+    <Tabs
+      items={[
+        { key: 'all', label: `Tất cả (${all.length})`, children: render(all) },
+        { key: 'overdue', label: `Quá hạn (${overdue.length})`, children: render(overdue) },
+        { key: 'done', label: `Hoàn thành (${done.length})`, children: render(done) },
+      ]}
+    />
   );
 }
