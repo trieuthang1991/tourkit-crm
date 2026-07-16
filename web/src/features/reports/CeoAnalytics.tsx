@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
+import { StatCard } from '../../shared/ui';
 import { useDashboard } from './dashboardApi';
 import { useCashFlow } from './cashFlowApi';
 import { DepartureCalendar } from '../booking/DepartureCalendar';
@@ -80,11 +81,12 @@ function SectionTitle({ children }: { children: ReactNode }) {
   );
 }
 
+// Thẻ KPI thống nhất về StatCard chung (mono, 1 accent — bỏ viền/số nhiều màu cũ).
+// `color` giữ trong type cho tương thích call site nhưng KHÔNG dùng (design: 1 accent duy nhất).
 function KpiCard({
   title,
   value,
   isMoney = true,
-  color,
   to,
 }: {
   title: string;
@@ -96,19 +98,17 @@ function KpiCard({
   const navigate = useNavigate();
   return (
     <Col xs={12} sm={12} lg={6}>
-      <Card styles={{ body: { padding: 16 } }} style={color ? { borderTop: `3px solid ${color}` } : undefined}>
-        <Statistic
-          title={title}
-          value={value}
-          valueStyle={color ? { color } : undefined}
-          formatter={isMoney && typeof value === 'number' ? (v) => money(Number(v)) : undefined}
-        />
-        {to && (
-          <Typography.Link style={{ fontSize: 12 }} onClick={() => navigate(to)}>
-            Xem chi tiết ›
-          </Typography.Link>
-        )}
-      </Card>
+      <StatCard
+        value={isMoney && typeof value === 'number' ? money(Number(value)) : value}
+        label={title}
+        footer={
+          to ? (
+            <Typography.Link style={{ fontSize: 12 }} onClick={() => navigate(to)}>
+              Xem chi tiết ›
+            </Typography.Link>
+          ) : undefined
+        }
+      />
     </Col>
   );
 }
