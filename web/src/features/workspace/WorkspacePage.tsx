@@ -18,12 +18,14 @@ import {
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { GradientStatCard, ListWidget, StatRow, WidgetCard } from '../../shared/ui';
+import { GradientStatCard, ListWidget, STAT_GRADIENTS, StatRow, WidgetCard } from '../../shared/ui';
+import type { StatGradient } from '../../shared/ui';
 import { useAuth } from '../auth/AuthContext';
 import { customersCrud } from '../customers/customersCrud';
 import { useNotifications } from '../notifications/api';
@@ -56,6 +58,33 @@ function isOverdue(t: WorkTask): boolean {
   return new Date(t.dueDate) < new Date(new Date().toDateString());
 }
 const dateVi = (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—');
+
+// Avatar tròn nền GRADIENT (bám hướng "rực rỡ") — xoay 4 gradient theo index.
+const GRAD_KEYS: StatGradient[] = ['orange', 'blue', 'green', 'purple'];
+function gradAvatar(i: number, content: ReactNode, size = 36) {
+  const grad = STAT_GRADIENTS[GRAD_KEYS[i % GRAD_KEYS.length] ?? 'orange'];
+  return (
+    <span
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+        fontWeight: 700,
+        fontFamily: 'var(--tk-font-mono)',
+        fontSize: size > 40 ? 22 : 13,
+        flex: '0 0 auto',
+        background: grad,
+        boxShadow: '0 4px 10px -3px rgba(0,0,0,0.25)',
+      }}
+    >
+      {content}
+    </span>
+  );
+}
 
 export function WorkspacePage() {
   const { email, has } = useAuth();
@@ -130,11 +159,11 @@ export function WorkspacePage() {
   const doneTasks = allTasks.filter((t) => t.status === 2);
 
   const quickActions = [
-    { label: 'Tạo việc', icon: <PlusOutlined />, to: '/work-tasks', perm: 'task.view' },
-    { label: 'Tạo cơ hội', icon: <TeamOutlined />, to: '/leads', perm: 'lead.view' },
-    { label: 'Tạo lịch hẹn', icon: <CalendarOutlined />, to: '/customer-cares', perm: 'care.view' },
-    { label: 'Tạo Data khách', icon: <UserAddOutlined />, to: '/customers', perm: 'customer.view' },
-    { label: 'Tạo đơn', icon: <FileAddOutlined />, to: '/orders', perm: 'booking.view' },
+    { label: 'Tạo việc', icon: <PlusOutlined />, to: '/work-tasks', perm: 'task.view', color: '#eb5324' },
+    { label: 'Tạo cơ hội', icon: <TeamOutlined />, to: '/leads', perm: 'lead.view', color: '#4e7bff' },
+    { label: 'Tạo lịch hẹn', icon: <CalendarOutlined />, to: '/customer-cares', perm: 'care.view', color: '#22c55e' },
+    { label: 'Tạo Data khách', icon: <UserAddOutlined />, to: '/customers', perm: 'customer.view', color: '#a855f7' },
+    { label: 'Tạo đơn', icon: <FileAddOutlined />, to: '/orders', perm: 'booking.view', color: '#ec4899' },
   ].filter((a) => has(a.perm));
 
   const taskColumns: ColumnsType<WorkTask> = [
@@ -170,7 +199,7 @@ export function WorkspacePage() {
       <Card styles={{ body: { padding: 12 } }}>
         <Space wrap size={12}>
           {quickActions.map((a) => (
-            <Button key={a.to} icon={a.icon} onClick={() => navigate(a.to)}>
+            <Button key={a.to} icon={<span style={{ color: a.color }}>{a.icon}</span>} onClick={() => navigate(a.to)}>
               {a.label}
             </Button>
           ))}
@@ -212,7 +241,7 @@ export function WorkspacePage() {
         <Col xs={24} lg={8}>
           <Card>
             <Space direction="vertical" align="center" style={{ width: '100%' }} size={4}>
-              <Avatar size={72} style={{ background: '#EB5324' }} icon={<UserOutlined />} />
+              <Avatar size={72} style={{ background: STAT_GRADIENTS.orange, boxShadow: '0 8px 18px -6px rgba(235,83,36,0.5)' }} icon={<UserOutlined />} />
               <Typography.Title level={5} style={{ margin: '8px 0 0' }}>
                 {email ?? 'Người dùng'}
               </Typography.Title>
@@ -243,9 +272,10 @@ export function WorkspacePage() {
             items={(notifications.data ?? []).slice(0, 10)}
             loading={notifications.isLoading}
             emptyText="Không có thông báo"
-            renderItem={(n) => (
+            renderItem={(n, i) => (
               <List.Item style={{ padding: '10px 16px', cursor: n.linkUrl ? 'pointer' : 'default' }} onClick={() => n.linkUrl && navigate(n.linkUrl)}>
                 <List.Item.Meta
+                  avatar={gradAvatar(i, <BellOutlined style={{ fontSize: 15 }} />)}
                   title={<span style={{ fontWeight: n.isRead ? 400 : 600 }}>{n.title}</span>}
                   description={
                     <Space direction="vertical" size={0}>
@@ -269,7 +299,7 @@ export function WorkspacePage() {
             renderItem={(d, i) => (
               <List.Item style={{ padding: '10px 16px', cursor: 'pointer' }} onClick={() => navigate(`/orders/${d.orderId}`)}>
                 <List.Item.Meta
-                  avatar={<Tag color={i < 3 ? '#EB5324' : 'default'}>#{i + 1}</Tag>}
+                  avatar={gradAvatar(i, i + 1)}
                   title={customerName.get(d.customerId) ?? d.orderCode}
                   description={<Typography.Text type="secondary">{d.orderCode}</Typography.Text>}
                 />

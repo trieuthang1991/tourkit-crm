@@ -42,7 +42,7 @@ export const antdTheme: ThemeConfig = {
       itemBorderRadius: 7,
       itemMarginInline: 8,
     },
-    Card: { borderRadiusLG: 14, boxShadowTertiary: '0 1px 2px rgba(34,41,47,.04), 0 4px 16px -6px rgba(34,41,47,.08)' },
+    Card: { borderRadiusLG: 16, boxShadowTertiary: '0 1px 2px rgba(34,41,47,.04), 0 8px 24px -10px rgba(34,41,47,.12)' },
     Table: {
       headerBg: C.line,
       headerColor: C.body,
