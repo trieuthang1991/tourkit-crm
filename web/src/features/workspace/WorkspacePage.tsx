@@ -23,7 +23,7 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { ListWidget, StatCard, StatRow, WidgetCard } from '../../shared/ui';
+import { GradientStatCard, ListWidget, StatRow, WidgetCard } from '../../shared/ui';
 import { useAuth } from '../auth/AuthContext';
 import { customersCrud } from '../customers/customersCrud';
 import { useNotifications } from '../notifications/api';
@@ -180,26 +180,26 @@ export function WorkspacePage() {
       {/* Hàng thẻ KPI (doanh thu / đơn / khách / công nợ) — bám bản Stitch */}
       {has('report.dashboard.view') ? (
         <StatRow cols={4}>
-          <StatCard
-            tone="accent"
+          <GradientStatCard
+            gradient="orange"
             icon={<FundOutlined />}
             value={money(dashboard.data?.totalRevenue ?? 0)}
             label="Doanh thu (đã ghi nhận)"
           />
-          <StatCard
-            tone="info"
+          <GradientStatCard
+            gradient="blue"
             icon={<ShoppingCartOutlined />}
             value={(dashboard.data?.orderCount ?? 0).toLocaleString('vi-VN')}
             label="Đơn hàng"
           />
-          <StatCard
-            tone="success"
+          <GradientStatCard
+            gradient="green"
             icon={<TeamOutlined />}
             value={(customers.data?.total ?? 0).toLocaleString('vi-VN')}
             label="Khách hàng"
           />
-          <StatCard
-            tone="danger"
+          <GradientStatCard
+            gradient="purple"
             icon={<BankOutlined />}
             value={money(dashboard.data?.receivableOutstanding ?? 0)}
             label="Công nợ phải thu"

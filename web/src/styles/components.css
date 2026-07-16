@@ -75,6 +75,39 @@
 .tk-stat__value { position: relative; z-index: 1; font-family: var(--tk-font-mono); font-size: 30px; font-weight: 700; color: var(--tk-heading); letter-spacing: -0.03em; line-height: 1.05; }
 .tk-stat__label { position: relative; z-index: 1; font-size: 13px; color: var(--tk-body); margin-top: 8px; font-weight: 500; }
 .tk-stat__footer { margin-top: 10px; font-size: 12px; }
+
+/* ---- Thẻ KPI GRADIENT (hướng "rực rỡ") ---- */
+.tk-gstat {
+  position: relative; overflow: hidden;
+  border-radius: 20px; padding: 20px 22px; color: #fff;
+  box-shadow: 0 12px 26px -10px rgba(235, 83, 36, 0.45);
+}
+.tk-gstat--blue { box-shadow: 0 12px 26px -10px rgba(78, 123, 255, 0.5); }
+.tk-gstat--green { box-shadow: 0 12px 26px -10px rgba(16, 185, 129, 0.45); }
+.tk-gstat--purple { box-shadow: 0 12px 26px -10px rgba(168, 85, 247, 0.5); }
+/* Vệt sáng chéo tinh tế cho bề mặt gradient */
+.tk-gstat::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(120% 120% at 100% 0%, rgba(255, 255, 255, 0.25), transparent 55%);
+  pointer-events: none;
+}
+.tk-gstat__top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
+.tk-gstat__chip {
+  width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: #fff; background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.tk-gstat__trend {
+  font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+  background: rgba(255, 255, 255, 0.22); font-family: var(--tk-font-mono);
+}
+.tk-gstat__value {
+  position: relative; z-index: 1; margin-top: 18px;
+  font-family: var(--tk-font-mono); font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05;
+}
+.tk-gstat__label { position: relative; z-index: 1; margin-top: 5px; font-size: 13px; font-weight: 500; opacity: 0.92; }
+.tk-gstat { transition: transform .15s ease, box-shadow .2s ease; }
+.tk-gstat:hover { transform: translateY(-2px); }
 .tk-trend { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
 .tk-trend--up { color: var(--tk-success); background: var(--tk-success-soft); }
 .tk-trend--down { color: var(--tk-danger); background: var(--tk-danger-soft); }
