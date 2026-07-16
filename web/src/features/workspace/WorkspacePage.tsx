@@ -58,6 +58,8 @@ function isOverdue(t: WorkTask): boolean {
   return new Date(t.dueDate) < new Date(new Date().toDateString());
 }
 const dateVi = (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—');
+const shortDateTime = (iso: string) =>
+  new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 
 // Avatar tròn nền GRADIENT (bám hướng "rực rỡ") — xoay 4 gradient theo index.
 const GRAD_KEYS: StatGradient[] = ['orange', 'blue', 'green', 'purple'];
@@ -273,15 +275,19 @@ export function WorkspacePage() {
             loading={notifications.isLoading}
             emptyText="Không có thông báo"
             renderItem={(n, i) => (
-              <List.Item style={{ padding: '10px 16px', cursor: n.linkUrl ? 'pointer' : 'default' }} onClick={() => n.linkUrl && navigate(n.linkUrl)}>
+              <List.Item style={{ padding: '11px 16px', cursor: n.linkUrl ? 'pointer' : 'default' }} onClick={() => n.linkUrl && navigate(n.linkUrl)}>
                 <List.Item.Meta
                   avatar={gradAvatar(i, <BellOutlined style={{ fontSize: 15 }} />)}
-                  title={<span style={{ fontWeight: n.isRead ? 400 : 600 }}>{n.title}</span>}
+                  title={
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+                      <span style={{ fontWeight: n.isRead ? 500 : 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</span>
+                      <Typography.Text type="secondary" style={{ fontSize: 11.5, whiteSpace: 'nowrap', flex: '0 0 auto' }}>{shortDateTime(n.createdAt)}</Typography.Text>
+                    </div>
+                  }
                   description={
-                    <Space direction="vertical" size={0}>
-                      <span>{n.message}</span>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{new Date(n.createdAt).toLocaleString('vi-VN')}</Typography.Text>
-                    </Space>
+                    <span style={{ display: 'block', color: 'var(--tk-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {n.message}
+                    </span>
                   }
                 />
               </List.Item>
