@@ -36,8 +36,8 @@ type A = typeof AntdNS;
 export type { ColumnsType } from 'antd/es/table';
 export type { CalendarProps } from 'antd';
 
-// Giữ real antd cho các component hiếm (chưa migrate) — xử lý từng màn sau.
-export { Form, List, Calendar, Steps, Result } from 'antd';
+// Giữ real antd cho các component còn khó shim — xử lý từng màn sau.
+export { Form, Calendar } from 'antd';
 
 const cast = <K extends keyof A>(impl: unknown): A[K] => impl as A[K];
 const asProps = (p: unknown) => p as Record<string, unknown>;
@@ -508,6 +508,107 @@ DescriptionsImpl.Item = function Item({ label, children }: Record<string, unknow
   );
 };
 export const Descriptions = cast<'Descriptions'>(DescriptionsImpl);
+
+/* ---------------------- List (+ Item / Item.Meta) ---------------------- */
+function ListItemMeta({ avatar, title, description }: Record<string, unknown>) {
+  return (
+    <div style={{ display: 'flex', gap: 12, flex: 1, minWidth: 0 }}>
+      {avatar ? <div style={{ flexShrink: 0 }}>{avatar as ReactNode}</div> : null}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        {title != null ? <div style={{ font: '600 13.5px var(--tk-font)', color: 'var(--tk-heading)' }}>{title as ReactNode}</div> : null}
+        {description != null ? <div style={{ fontSize: 12.5, color: 'var(--tk-body)', marginTop: 2 }}>{description as ReactNode}</div> : null}
+      </div>
+    </div>
+  );
+}
+function ListItemImpl({ children, actions, extra, style, onClick }: Record<string, unknown>) {
+  const acts = actions as ReactNode[] | undefined;
+  return (
+    <div className={`rf-row ${onClick ? 'rf-row--click' : ''}`} style={{ gap: 12, ...(style as CSSProperties) }} onClick={onClick as React.MouseEventHandler<HTMLDivElement> | undefined}>
+      {children as ReactNode}
+      {acts && acts.length ? <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>{acts}</div> : null}
+      {extra ? <div style={{ flexShrink: 0 }}>{extra as ReactNode}</div> : null}
+    </div>
+  );
+}
+ListItemImpl.Meta = ListItemMeta;
+function ListImpl<T>(props: Record<string, unknown>) {
+  const data = (props.dataSource ?? []) as T[];
+  const renderItem = props.renderItem as ((item: T, index: number) => ReactNode) | undefined;
+  const loading = props.loading as boolean;
+  const header = props.header as ReactNode;
+  const footer = props.footer as ReactNode;
+  const emptyText = (props.locale as { emptyText?: ReactNode } | undefined)?.emptyText;
+  return (
+    <div className="rf-card" style={props.style as CSSProperties}>
+      {header ? <div className="rf-card__head">{header}</div> : null}
+      {loading ? (
+        <div style={{ padding: 24, textAlign: 'center', color: 'var(--tk-muted)' }}>Đang tải…</div>
+      ) : data.length === 0 ? (
+        <RfEmpty text={typeof emptyText === 'string' ? emptyText : 'Không có dữ liệu'} />
+      ) : (
+        data.map((it, i) => <Fragment key={i}>{renderItem?.(it, i)}</Fragment>)
+      )}
+      {footer ? <div style={{ padding: '10px 16px', borderTop: '1px solid var(--tk-line)' }}>{footer}</div> : null}
+    </div>
+  );
+}
+ListImpl.Item = ListItemImpl;
+export const List = cast<'List'>(ListImpl);
+
+/* ---------------------- Steps ---------------------- */
+const STEP_COLOR: Record<string, string> = { wait: 'var(--tk-muted)', process: 'var(--tk-accent)', finish: 'var(--tk-success)', error: 'var(--tk-danger)' };
+function StepsImpl(props: Record<string, unknown>) {
+  const items = (props.items ?? []) as { title?: ReactNode; description?: ReactNode; status?: string }[];
+  const current = (props.current as number) ?? 0;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {items.map((s, i) => {
+        const status = s.status ?? (i < current ? 'finish' : i === current ? 'process' : 'wait');
+        const color = STEP_COLOR[status] ?? 'var(--tk-muted)';
+        return (
+          <div key={i} style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ width: 22, height: 22, borderRadius: '50%', background: color, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '700 11px var(--tk-font-mono)', flexShrink: 0 }}>
+                {status === 'finish' ? <Icon name="check" size={14} /> : i + 1}
+              </span>
+              {i < items.length - 1 ? <span style={{ width: 2, flex: 1, minHeight: 18, background: 'var(--tk-line)' }} /> : null}
+            </div>
+            <div style={{ paddingBottom: 14 }}>
+              <div style={{ font: '600 13px var(--tk-font)', color: 'var(--tk-heading)' }}>{s.title}</div>
+              {s.description ? <div style={{ fontSize: 12.5, color: 'var(--tk-body)', marginTop: 3 }}>{s.description}</div> : null}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+export const Steps = cast<'Steps'>(StepsImpl);
+
+/* ---------------------- Result ---------------------- */
+const RESULT_ICON: Record<string, { icon: string; color: string }> = {
+  success: { icon: 'check_circle', color: 'var(--tk-success)' },
+  error: { icon: 'cancel', color: 'var(--tk-danger)' },
+  warning: { icon: 'warning', color: 'var(--tk-warning)' },
+  info: { icon: 'info', color: 'var(--tk-info)' },
+  404: { icon: 'search_off', color: 'var(--tk-muted)' },
+  403: { icon: 'lock', color: 'var(--tk-muted)' },
+  500: { icon: 'error', color: 'var(--tk-danger)' },
+};
+function ResultImpl(props: Record<string, unknown>) {
+  const { status, title, subTitle, extra, icon } = asProps(props);
+  const meta = RESULT_ICON[String(status ?? 'info')] ?? RESULT_ICON.info!;
+  return (
+    <div style={{ textAlign: 'center', padding: '32px 16px' }}>
+      {(icon as ReactNode) ?? <Icon name={meta.icon} size={56} style={{ color: meta.color }} />}
+      <div style={{ font: '700 20px var(--tk-font)', color: 'var(--tk-heading)', marginTop: 12 }}>{title as ReactNode}</div>
+      {subTitle ? <div style={{ fontSize: 13.5, color: 'var(--tk-muted-2)', marginTop: 6 }}>{subTitle as ReactNode}</div> : null}
+      {extra ? <div style={{ marginTop: 20, display: 'flex', gap: 8, justifyContent: 'center' }}>{extra as ReactNode}</div> : null}
+    </div>
+  );
+}
+export const Result = cast<'Result'>(ResultImpl);
 
 /* ---------------------- Table (+ Summary) ---------------------- */
 function SummaryRoot({ children }: { children?: ReactNode }) {
