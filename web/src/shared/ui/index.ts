@@ -13,9 +13,6 @@ export { SegmentTabs } from './SegmentTabs';
 export type { SegOption } from './SegmentTabs';
 export { Button } from './Button';
 export type { ButtonProps } from './Button';
-export { DataTable } from './DataTable';
-export type { DataTableProps } from './DataTable';
-export { Modal } from './Modal';
 export { CrudFormModal } from './CrudFormModal';
 // Field (react-hook-form, name-based) — dùng bên trong CrudFormModal.
 export { TextField, NumberField, TextAreaField, DatePickerField, SelectField, CheckboxField } from './Field';

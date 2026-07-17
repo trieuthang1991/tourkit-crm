@@ -1,4 +1,4 @@
-import { Tag } from 'antd';
+import { Tag } from '../../ui/primitives';
 
 /// Nhãn trạng thái danh mục bám hệ cũ (Thiết lập hệ thống): 1 = Hoạt động (xanh), 0 = Ngưng hoạt động (xám).
 export const CATALOG_STATUS: Record<number, string> = { 1: 'Hoạt động', 0: 'Ngưng hoạt động' };

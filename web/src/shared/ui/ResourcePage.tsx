@@ -1,5 +1,5 @@
-import { App, Popconfirm, Space, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { App, Popconfirm, Space, Table } from './antd';
+import type { ColumnsType } from './antd';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { DEFAULT_PAGE } from '../api/paged';
