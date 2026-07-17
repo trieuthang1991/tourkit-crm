@@ -1,45 +1,25 @@
-import { Avatar, Badge, Button, Dropdown, Input, Layout, Menu, Tooltip, Typography } from 'antd';
-import {
-  BankOutlined,
-  BarChartOutlined,
-  BellOutlined,
-  CalculatorOutlined,
-  CarOutlined,
-  DashboardOutlined,
-  FundOutlined,
-  HistoryOutlined,
-  HomeOutlined,
-  IdcardOutlined,
-  LogoutOutlined,
-  PercentageOutlined,
-  PlusOutlined,
-  ProfileOutlined,
-  ProjectOutlined,
-  SendOutlined,
-  SettingOutlined,
-  ShopOutlined,
-  ShoppingCartOutlined,
-  SoundOutlined,
-  TeamOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import type { MenuProps } from 'antd';
-import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { useUnreadCount } from '../features/notifications/api';
+import { Button, Icon, IconButton } from '../ui/kit';
+import { Avatar, Badge, Tooltip } from '../ui/primitives';
+import { SearchInput } from '../ui/inputs';
+import { Dropdown } from '../ui/overlay';
 
-const { Header, Sider, Content } = Layout;
+/* =========================================================================
+   AppShell hệ "Refined": rail SÁNG 252px + topbar 60px, icon Material Symbols.
+   KHÔNG antd. Cấu trúc MENU giữ NGUYÊN (bám hệ cũ) — chỉ đổi lớp trình bày.
+   ========================================================================= */
 
 // key = ĐỊNH DANH menu (duy nhất); to = route local điều hướng; children = submenu lồng.
 // Bám CHÍNH XÁC menu hệ cũ (staging.tourkit.vn — HTML MenuLeft), map label/thứ tự/nhóm hệ cũ sang route local.
 // Tính năng đã hợp nhất ở local → nhiều mục legacy trỏ chung 1 màn (giữ nhãn để dò 1:1). NCC là danh sách động.
-type NavNode = { key: string; label: string; icon?: ReactNode; perm?: string; to?: string; children?: NavNode[] };
+type NavNode = { key: string; label: string; icon?: string; perm?: string; to?: string; children?: NavNode[] };
 
 const MENU: NavNode[] = [
   {
-    key: 'g-workspace', label: 'Workspace', icon: <DashboardOutlined />, children: [
+    key: 'g-workspace', label: 'Workspace', icon: 'dashboard', children: [
       { key: 'w-social', label: 'Mạng Nội Bộ', to: '/posts', perm: 'post.view' },
       { key: 'w-workspace', label: 'Bàn làm việc', to: '/workspace', perm: 'report.dashboard.view' },
       { key: 'w-dashboard', label: 'Tổng quan', to: '/dashboard', perm: 'report.dashboard.view' },
@@ -47,7 +27,7 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-provider', label: 'Nhà cung cấp', icon: <ShopOutlined />, children: [
+    key: 'g-provider', label: 'Nhà cung cấp', icon: 'storefront', children: [
       { key: 'p-all', label: 'Tất cả Nhà cung cấp', to: '/providers', perm: 'provider.view' },
       { key: 'p-services', label: 'Danh mục dịch vụ', to: '/service-items', perm: 'service.view' },
       { key: 'p-pricing', label: 'Bảng giá NCC', to: '/provider-services', perm: 'service.view' },
@@ -56,7 +36,7 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-crm', label: 'CRM', icon: <TeamOutlined />, children: [
+    key: 'g-crm', label: 'CRM', icon: 'groups', children: [
       { key: 'crm-share', label: 'Chia số Sale', to: '/lead-campaigns', perm: 'lead.view' },
       { key: 'crm-opp', label: 'Cơ hội bán hàng', to: '/leads', perm: 'lead.view' },
       { key: 'crm-data', label: 'Data khách hàng', to: '/customers', perm: 'customer.view' },
@@ -71,7 +51,7 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-quote', label: 'Báo Giá', icon: <CalculatorOutlined />, children: [
+    key: 'g-quote', label: 'Báo Giá', icon: 'calculate', children: [
       { key: 'q-tour', label: 'Tính giá Tour', to: '/quotes', perm: 'quote.view' },
       { key: 'q-combo', label: 'Tính giá Combo', to: '/quotes/combo', perm: 'quote.view' },
       { key: 'q-git', label: 'Tour GIT/Combo', to: '/quotes/git', perm: 'quote.view' },
@@ -83,7 +63,7 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-order', label: 'Đơn hàng/LKH', icon: <ShoppingCartOutlined />, children: [
+    key: 'g-order', label: 'Đơn hàng/LKH', icon: 'shopping_cart', children: [
       { key: 'o-all', label: 'Tất cả đơn hàng', to: '/orders', perm: 'booking.view' },
       { key: 'o-tours', label: 'Tất cả Tour/LKH', to: '/departures', perm: 'departure.view' },
       { key: 'o-fit', label: 'Tour FIT', to: '/departures', perm: 'departure.view' },
@@ -94,28 +74,28 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-booking', label: 'Booking Phòng/Khách sạn', icon: <HomeOutlined />, children: [
+    key: 'g-booking', label: 'Booking Phòng/Khách sạn', icon: 'hotel', children: [
       { key: 'b-roomfund', label: 'Quỹ phòng', to: '/room-fund', perm: 'roomfund.view' },
       { key: 'b-list', label: 'Danh sách Booking', to: '/service-bookings', perm: 'servicebooking.view' },
       { key: 'b-roomclass', label: 'Hạng phòng (danh mục)', to: '/room-classes', perm: 'servicebooking.view' },
     ],
   },
   {
-    key: 'g-flight', label: 'Vé Máy Bay', icon: <SendOutlined />, children: [
+    key: 'g-flight', label: 'Vé Máy Bay', icon: 'flight', children: [
       { key: 'f-provider', label: 'Nhà cung cấp vé', to: '/providers', perm: 'provider.view' },
       { key: 'f-group', label: 'Vé máy bay đoàn', to: '/flight-tickets', perm: 'ticketfund.view' },
       { key: 'f-individual', label: 'Vé máy bay lẻ', to: '/flight-tickets-individual', perm: 'ticketfund.view' },
     ],
   },
   {
-    key: 'g-guide', label: 'Hướng dẫn viên', icon: <IdcardOutlined />, children: [
+    key: 'g-guide', label: 'Hướng dẫn viên', icon: 'badge', children: [
       { key: 'gd-provider', label: 'Hướng dẫn viên', to: '/guide-assignments', perm: 'guide.view' },
       { key: 'gd-calendar', label: 'Lịch điều Hướng dẫn viên', to: '/guide-schedule', perm: 'guide.view' },
       { key: 'gd-report', label: 'Báo cáo', to: '/guide-assignments', perm: 'guide.view' },
     ],
   },
   {
-    key: 'g-vehicle', label: 'Quản lý xe', icon: <CarOutlined />, children: [
+    key: 'g-vehicle', label: 'Quản lý xe', icon: 'directions_car', children: [
       { key: 'v-store', label: 'Kho xe', to: '/vehicles', perm: 'vehicle.view' },
       { key: 'v-waiting', label: 'Lịch xe chờ duyệt', to: '/vehicle-assignments', perm: 'vehicle.view' },
       { key: 'v-manage', label: 'Lịch điều xe', to: '/vehicle-schedule', perm: 'vehicle.view' },
@@ -123,13 +103,13 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-operation', label: 'Điều hành Tour', icon: <ProfileOutlined />, children: [
+    key: 'g-operation', label: 'Điều hành Tour', icon: 'assignment', children: [
       { key: 'op-voucher', label: 'Phiếu điều hành dịch vụ', to: '/service-operations', perm: 'servicebooking.view' },
       { key: 'op-calendar', label: 'Lịch điều hành', to: '/operations-calendar', perm: 'departure.view' },
     ],
   },
   {
-    key: 'g-finance', label: 'Tài chính/Kế toán', icon: <BankOutlined />, children: [
+    key: 'g-finance', label: 'Tài chính/Kế toán', icon: 'account_balance', children: [
       { key: 'fi-waiting', label: 'Phiếu thu chờ', to: '/receipts', perm: 'receipt.view' },
       { key: 'fi-receipt', label: 'Phiếu thu', to: '/receipts', perm: 'receipt.view' },
       { key: 'fi-payment', label: 'Phiếu chi', to: '/payments', perm: 'payment.view' },
@@ -140,12 +120,12 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-kpi', label: 'KPIs', icon: <FundOutlined />, children: [
+    key: 'g-kpi', label: 'KPIs', icon: 'trending_up', children: [
       { key: 'kpi-config', label: 'Thiết lập KPIs', to: '/reports/kpi', perm: 'report.dashboard.view' },
     ],
   },
   {
-    key: 'g-commission', label: 'Hoa Hồng', icon: <PercentageOutlined />, children: [
+    key: 'g-commission', label: 'Hoa Hồng', icon: 'percent', children: [
       { key: 'hh-config', label: 'Thiết lập hoa hồng', to: '/commission-rules', perm: 'commission.view' },
       { key: 'hh-customer', label: 'HH theo loại khách', to: '/customer-commission-rules', perm: 'commission.view' },
       { key: 'hh-source', label: 'Báo cáo theo nguồn', to: '/reports/commission-by-user', perm: 'report.commission.view' },
@@ -153,7 +133,7 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-project', label: 'Dự án & Công việc', icon: <ProjectOutlined />, children: [
+    key: 'g-project', label: 'Dự án & Công việc', icon: 'checklist', children: [
       { key: 'pj-project', label: 'Dự án', to: '/workflows', perm: 'workflow.view' },
       { key: 'pj-mytask', label: 'Công việc của tôi', to: '/work-tasks', perm: 'task.view' },
       { key: 'pj-tasks', label: 'Danh sách Công việc', to: '/work-tasks', perm: 'task.view' },
@@ -161,7 +141,7 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-marketing', label: 'Marketing', icon: <SoundOutlined />, children: [
+    key: 'g-marketing', label: 'Marketing', icon: 'campaign', children: [
       {
         key: 'mkt-email', label: 'Email Marketing', children: [
           { key: 'mkt-campaign', label: 'Chiến dịch', to: '/marketing', perm: 'marketing.view' },
@@ -180,7 +160,7 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-report', label: 'Báo cáo', icon: <BarChartOutlined />, children: [
+    key: 'g-report', label: 'Báo cáo', icon: 'bar_chart', children: [
       { key: 'rp-seller', label: 'Nhân viên', to: '/reports/turnover', perm: 'report.turnover.view' },
       { key: 'rp-money', label: 'Tài chính', to: '/reports/turnover-by-department', perm: 'report.turnover.view' },
       { key: 'rp-export', label: 'Xuất báo cáo', to: '/reports/turnover', perm: 'report.turnover.view' },
@@ -188,20 +168,20 @@ const MENU: NavNode[] = [
     ],
   },
   {
-    key: 'g-agent', label: 'Đại lý (B2B)', icon: <TeamOutlined />, children: [
+    key: 'g-agent', label: 'Đại lý (B2B)', icon: 'handshake', children: [
       { key: 'ag-list', label: 'Danh sách đại lý', to: '/agents', perm: 'agent.view' },
       { key: 'ag-booking', label: 'Đặt chỗ đại lý', to: '/agent-bookings', perm: 'agentquote.view' },
     ],
   },
   {
-    key: 'g-system', label: 'Cài đặt hệ thống', icon: <SettingOutlined />, children: [
+    key: 'g-system', label: 'Cài đặt hệ thống', icon: 'settings', children: [
       { key: 'sys-users', label: 'Thành viên', to: '/users', perm: 'user.view' },
       { key: 'sys-config', label: 'Cấu hình', to: '/config-hub', perm: 'user.view' },
       { key: 'sys-billing', label: 'Gói dịch vụ', to: '/billing', perm: 'subscription.view' },
     ],
   },
   {
-    key: 'g-log', label: 'Log hệ thống', icon: <HistoryOutlined />, children: [
+    key: 'g-log', label: 'Log hệ thống', icon: 'history', children: [
       { key: 'log-system', label: 'Log hệ thống', to: '/activity-logs', perm: 'activitylog.view' },
     ],
   },
@@ -211,7 +191,6 @@ function flattenLeaves(nodes: NavNode[]): NavNode[] {
   return nodes.flatMap((n) => (n.children ? flattenLeaves(n.children) : [n]));
 }
 const LEAVES = flattenLeaves(MENU).filter((n) => n.to);
-const KEY_TO_ROUTE: Record<string, string> = Object.fromEntries(LEAVES.map((l) => [l.key, l.to!]));
 
 function findSelected(pathname: string): NavNode | undefined {
   return LEAVES
@@ -231,17 +210,68 @@ function ancestorKeys(nodes: NavNode[], targetKey: string, trail: string[] = [])
   return null;
 }
 
-function buildItems(nodes: NavNode[], has: (p: string) => boolean): NonNullable<MenuProps['items']> {
+/** Lọc menu theo quyền: bỏ leaf thiếu perm, bỏ nhóm rỗng sau khi lọc. */
+function filterByPerm(nodes: NavNode[], has: (p: string) => boolean): NavNode[] {
   return nodes
     .map((n) => {
       if (n.children) {
-        const kids = buildItems(n.children, has);
-        return kids.length ? { key: n.key, label: n.label, icon: n.icon, children: kids } : null;
+        const kids = filterByPerm(n.children, has);
+        return kids.length ? { ...n, children: kids } : null;
       }
-      if (n.perm && !has(n.perm)) return null;
-      return { key: n.key, label: n.label, icon: n.icon };
+      return n.perm && !has(n.perm) ? null : n;
     })
-    .filter(Boolean) as NonNullable<MenuProps['items']>;
+    .filter(Boolean) as NavNode[];
+}
+
+function NavItems({
+  nodes,
+  depth,
+  selectedKey,
+  openKeys,
+  toggle,
+  go,
+}: {
+  nodes: NavNode[];
+  depth: number;
+  selectedKey?: string;
+  openKeys: string[];
+  toggle: (k: string) => void;
+  go: (to: string) => void;
+}) {
+  return (
+    <>
+      {nodes.map((n) => {
+        if (n.children) {
+          const open = openKeys.includes(n.key);
+          return (
+            <div key={n.key}>
+              <button type="button" className="rf-nav__item" onClick={() => toggle(n.key)} aria-expanded={open}>
+                {n.icon ? <Icon name={n.icon} size={19} /> : null}
+                <span className="rf-nav__txt">{n.label}</span>
+                <Icon name="chevron_right" className={`rf-nav__chev ${open ? 'rf-nav__chev--open' : ''}`} />
+              </button>
+              {open ? (
+                <div className="rf-nav__sub">
+                  <NavItems nodes={n.children} depth={depth + 1} selectedKey={selectedKey} openKeys={openKeys} toggle={toggle} go={go} />
+                </div>
+              ) : null}
+            </div>
+          );
+        }
+        return (
+          <button
+            key={n.key}
+            type="button"
+            className={`rf-nav__item ${selectedKey === n.key ? 'rf-nav__item--active' : ''}`}
+            onClick={() => n.to && go(n.to)}
+          >
+            {n.icon ? <Icon name={n.icon} size={19} /> : null}
+            <span className="rf-nav__txt">{n.label}</span>
+          </button>
+        );
+      })}
+    </>
+  );
 }
 
 export function AppShell() {
@@ -250,152 +280,76 @@ export function AppShell() {
   const location = useLocation();
   const unread = useUnreadCount();
   const [collapsed, setCollapsed] = useState(false);
+  const [q, setQ] = useState('');
 
-  const items = useMemo(() => buildItems(MENU, has), [has]);
+  const menu = useMemo(() => filterByPerm(MENU, has), [has]);
 
   const selected = findSelected(location.pathname);
   const initialOpen = selected ? ancestorKeys(MENU, selected.key) ?? [] : ['g-workspace'];
   const [openKeys, setOpenKeys] = useState<string[]>(initialOpen);
+  const toggle = (k: string) => setOpenKeys((ks) => (ks.includes(k) ? ks.filter((x) => x !== k) : [...ks, k]));
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        theme="dark"
-        width={248}
-        collapsible
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        trigger={null}
-        breakpoint="lg"
-        collapsedWidth={0}
-        style={{ overflow: 'auto', height: '100vh', position: 'sticky', top: 0, left: 0, background: '#2f2f34', zIndex: 20 }}
-      >
-        <div
-          style={{
-            height: 56,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: collapsed ? '0 20px' : '0 20px',
-            color: '#fff',
-          }}
-        >
-          <div
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg,#EB5324,#c73e17)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-              flex: '0 0 auto',
-            }}
-          >
-            T
-          </div>
-          {!collapsed && (
-            <Typography.Text strong style={{ color: '#fff', fontSize: 16 }}>
-              TourKit
-            </Typography.Text>
-          )}
+    <div className="rf-shell">
+      <aside className={`rf-rail ${collapsed ? 'rf-rail--off' : ''}`}>
+        <div className="rf-brand">
+          <span className="rf-brand__logo">T</span>
+          <span className="rf-brand__name">TourKit</span>
         </div>
-        {!collapsed && (
-          <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: 11, fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', padding: '16px 20px 6px' }}>
-            Điều hành
-          </div>
-        )}
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={selected ? [selected.key] : []}
-          openKeys={collapsed ? undefined : openKeys}
-          onOpenChange={(keys) => setOpenKeys(keys)}
-          items={items}
-          onClick={({ key }) => {
-            const route = KEY_TO_ROUTE[key];
-            if (route) navigate(route);
-          }}
-          style={{ borderInlineEnd: 'none' }}
-        />
-      </Sider>
-      <Layout>
-        <Header
-          style={{
-            background: '#fff',
-            padding: '0 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            borderBottom: '1px solid #f0f0f0',
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
-          }}
-        >
-          <Button
-            type="text"
-            aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
-            onClick={() => setCollapsed((v) => !v)}
-            style={{ fontSize: 16 }}
-          >
-            {collapsed ? '☰' : '⟨'}
-          </Button>
-          <Input
-            prefix={<span style={{ color: '#bbb' }}>⌕</span>}
-            placeholder="Tìm kiếm khách hàng, đơn hàng..."
-            variant="filled"
-            style={{ maxWidth: 340, borderRadius: 20 }}
-            aria-label="Tìm kiếm"
-          />
+        <nav className="rf-nav">
+          <div className="rf-nav__label">Điều hành</div>
+          <NavItems nodes={menu} depth={0} selectedKey={selected?.key} openKeys={openKeys} toggle={toggle} go={(to) => navigate(to)} />
+        </nav>
+      </aside>
+
+      <div className="rf-main">
+        <header className="rf-topbar">
+          <IconButton icon={collapsed ? 'menu' : 'menu_open'} onClick={() => setCollapsed((v) => !v)} title={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'} />
+          <SearchInput value={q} onChange={setQ} placeholder="Tìm kiếm khách hàng, đơn hàng..." filled style={{ maxWidth: 340, flex: 1 }} />
           <div style={{ flex: 1 }} />
           <Dropdown
-            menu={{
-              items: [
-                { key: 'order', label: 'Tạo đơn hàng', onClick: () => navigate('/orders') },
-                { key: 'customer', label: 'Thêm khách hàng', onClick: () => navigate('/customers') },
-                { key: 'receipt', label: 'Lập phiếu thu', onClick: () => navigate('/receipts') },
-                { key: 'task', label: 'Tạo công việc', onClick: () => navigate('/work-tasks') },
-              ],
-            }}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              Tạo nhanh
-            </Button>
-          </Dropdown>
+            trigger={
+              <Button variant="primary" icon="add">
+                Tạo nhanh
+              </Button>
+            }
+            items={[
+              { key: 'order', label: 'Tạo đơn hàng', icon: 'shopping_cart', onClick: () => navigate('/orders') },
+              { key: 'customer', label: 'Thêm khách hàng', icon: 'person_add', onClick: () => navigate('/customers') },
+              { key: 'receipt', label: 'Lập phiếu thu', icon: 'receipt_long', onClick: () => navigate('/receipts') },
+              { key: 'task', label: 'Tạo công việc', icon: 'task_alt', onClick: () => navigate('/work-tasks') },
+            ]}
+          />
           <Tooltip title="Thông báo">
-            <Badge count={unread.data ?? 0} size="small">
-              <Button type="text" icon={<BellOutlined />} onClick={() => navigate('/notifications')} aria-label="Thông báo" />
+            <Badge count={unread.data ?? 0}>
+              <IconButton icon="notifications" onClick={() => navigate('/notifications')} title="Thông báo" />
             </Badge>
           </Tooltip>
           <Dropdown
-            menu={{
-              items: [
-                { key: 'email', label: email ?? '', disabled: true },
-                { type: 'divider' },
-                { key: 'logout', label: 'Đăng xuất', icon: <LogoutOutlined />, onClick: logout },
-              ],
-            }}
-          >
-            <Button type="text" style={{ display: 'flex', alignItems: 'center', gap: 8, height: 'auto' }}>
-              <div style={{ textAlign: 'right', lineHeight: 1.2 }}>
-                <div style={{ fontWeight: 600, color: '#5e5873', fontSize: 13, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {email}
-                </div>
-                <div style={{ fontSize: 11, color: '#a8a5b3' }}>Nhân viên</div>
-              </div>
-              <Avatar size="small" style={{ background: '#EB5324' }} icon={<UserOutlined />} />
-            </Button>
-          </Dropdown>
-        </Header>
-        <Content style={{ padding: 24, background: '#faf9f5' }}>
-          {/* Giới hạn bề rộng + căn giữa: tránh nội dung giãn thưa trên màn siêu rộng (DESIGN.md §5). */}
-          <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+            trigger={
+              <span className="rf-user">
+                <span style={{ textAlign: 'right', lineHeight: 1.25 }}>
+                  <span className="rf-user__name" style={{ display: 'block' }}>
+                    {email}
+                  </span>
+                  <span className="rf-user__role">Nhân viên</span>
+                </span>
+                <Avatar size={32}>
+                  <Icon name="person" size={18} />
+                </Avatar>
+              </span>
+            }
+            items={[{ key: 'logout', label: 'Đăng xuất', icon: 'logout', danger: true, onClick: logout }]}
+          />
+        </header>
+
+        <main className="rf-content">
+          {/* Giới hạn bề rộng + căn giữa: tránh nội dung giãn thưa trên màn siêu rộng. */}
+          <div className="rf-content__in">
             <Outlet />
           </div>
-        </Content>
-      </Layout>
-    </Layout>
+        </main>
+      </div>
+    </div>
   );
 }

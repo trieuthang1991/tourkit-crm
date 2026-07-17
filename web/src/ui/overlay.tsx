@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
+import { Icon } from './kit';
 
 /* =========================================================================
-   ui/overlay — Modal, Drawer (trượt phải), Dropdown, Popconfirm. AntD-free.
+   ui/overlay — Modal, Drawer (trượt phải), Dropdown, Popconfirm.
+   Hệ "Refined" (.rf-dialog / .rf-menu / .rf-pop). KHÔNG antd.
    ========================================================================= */
 
 function useEsc(open: boolean, onClose: () => void) {
@@ -13,6 +15,38 @@ function useEsc(open: boolean, onClose: () => void) {
     document.addEventListener('keydown', h);
     return () => document.removeEventListener('keydown', h);
   }, [open, onClose]);
+}
+
+/** Khoá cuộn nền khi mở lớp phủ. */
+function useLockScroll(open: boolean) {
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+}
+
+/** Đóng khi click ra ngoài — dùng cho Dropdown/Popconfirm. */
+function useClickOutside(open: boolean, ref: React.RefObject<HTMLElement | null>, close: () => void) {
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open, ref, close]);
+}
+
+function CloseBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="rf-iconbtn" aria-label="Đóng">
+      <Icon name="close" size={20} />
+    </button>
+  );
 }
 
 /** Drawer trượt từ phải — dùng cho form CRUD. */
@@ -32,23 +66,22 @@ export function Drawer({
   children: ReactNode;
 }) {
   useEsc(open, onClose);
+  useLockScroll(open);
   if (!open) return null;
   return createPortal(
-    <div className="fixed inset-0 z-[1000]">
-      <div className="absolute inset-0 bg-black/35 animate-[fadeIn_.15s_ease]" onClick={onClose} />
-      <div
-        className="absolute right-0 top-0 flex h-full flex-col bg-white shadow-[-8px_0_32px_-8px_rgba(0,0,0,0.25)] animate-[slideIn_.2s_ease]"
-        style={{ width: `min(${width}px, 96vw)` }}
-      >
-        <div className="flex items-center justify-between border-b border-[#f1eff5] px-5 py-4">
-          <div className="text-[16px] font-semibold text-[#5e5873]">{title}</div>
-          <button type="button" onClick={onClose} className="text-[#a8a5b5] hover:text-[#5e5873]">✕</button>
+    <>
+      <div className="rf-mask" onClick={onClose} />
+      <div className="rf-dialog rf-drawer" style={{ width: `min(${width}px, 96vw)` }} role="dialog" aria-modal="true">
+        <div className="rf-dialog__head">
+          <div className="rf-dialog__title">{title}</div>
+          <CloseBtn onClick={onClose} />
         </div>
-        <div className="flex-1 overflow-auto p-5">{children}</div>
-        {footer ? <div className="border-t border-[#f1eff5] px-5 py-3">{footer}</div> : null}
+        <div className="rf-dialog__body" style={{ flex: 1 }}>
+          {children}
+        </div>
+        {footer ? <div className="rf-dialog__foot">{footer}</div> : null}
       </div>
-      <style>{`@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
-    </div>,
+    </>,
     document.body,
   );
 }
@@ -70,17 +103,17 @@ export function Modal({
   children: ReactNode;
 }) {
   useEsc(open, onClose);
+  useLockScroll(open);
   if (!open) return null;
   return createPortal(
-    <div className="fixed inset-0 z-[1000] flex items-start justify-center overflow-auto p-6">
-      <div className="absolute inset-0 bg-black/35" onClick={onClose} />
-      <div className="relative z-10 mt-[8vh] w-full rounded-[14px] bg-white shadow-[0_24px_60px_-12px_rgba(0,0,0,0.35)]" style={{ maxWidth: width }}>
-        <div className="flex items-center justify-between border-b border-[#f1eff5] px-5 py-4">
-          <div className="text-[16px] font-semibold text-[#5e5873]">{title}</div>
-          <button type="button" onClick={onClose} className="text-[#a8a5b5] hover:text-[#5e5873]">✕</button>
+    <div className="rf-mask" style={{ overflow: 'auto', padding: '0 16px' }} onClick={onClose}>
+      <div className="rf-dialog rf-modal" style={{ maxWidth: width }} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        <div className="rf-dialog__head">
+          <div className="rf-dialog__title">{title}</div>
+          <CloseBtn onClick={onClose} />
         </div>
-        <div className="p-5">{children}</div>
-        {footer ? <div className="border-t border-[#f1eff5] px-5 py-3">{footer}</div> : null}
+        <div className="rf-dialog__body">{children}</div>
+        {footer ? <div className="rf-dialog__foot">{footer}</div> : null}
       </div>
     </div>,
     document.body,
@@ -88,20 +121,23 @@ export function Modal({
 }
 
 /** Dropdown menu popover. */
-export function Dropdown({ trigger, items }: { trigger: ReactNode; items: { key: string; label: ReactNode; danger?: boolean; onClick?: () => void }[] }) {
+export function Dropdown({
+  trigger,
+  items,
+}: {
+  trigger: ReactNode;
+  items: { key: string; label: ReactNode; icon?: string; danger?: boolean; onClick?: () => void }[];
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [open]);
+  useClickOutside(open, ref, () => setOpen(false));
   return (
-    <div ref={ref} className="relative inline-block">
-      <span onClick={() => setOpen((o) => !o)} className="cursor-pointer">{trigger}</span>
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <span onClick={() => setOpen((o) => !o)} style={{ cursor: 'pointer' }}>
+        {trigger}
+      </span>
       {open ? (
-        <div className="absolute right-0 z-50 mt-1 min-w-[160px] overflow-hidden rounded-[10px] border border-[#eee] bg-white py-1 shadow-[0_10px_30px_-8px_rgba(34,41,47,0.22)]">
+        <div className="rf-menu">
           {items.map((it) => (
             <button
               key={it.key}
@@ -110,8 +146,9 @@ export function Dropdown({ trigger, items }: { trigger: ReactNode; items: { key:
                 it.onClick?.();
                 setOpen(false);
               }}
-              className={`block w-full px-4 py-2 text-left text-[13px] hover:bg-[#faf7f5] ${it.danger ? 'text-[#d1494a]' : 'text-[#5e5873]'}`}
+              className={`rf-menu__item ${it.danger ? 'rf-menu__item--danger' : ''}`}
             >
+              {it.icon ? <Icon name={it.icon} size={18} /> : null}
               {it.label}
             </button>
           ))}
@@ -122,32 +159,42 @@ export function Dropdown({ trigger, items }: { trigger: ReactNode; items: { key:
 }
 
 /** Popconfirm — xác nhận (vd xoá). */
-export function Popconfirm({ title, onConfirm, children }: { title: string; onConfirm: () => void; children: ReactNode }) {
+export function Popconfirm({
+  title,
+  okText = 'Xoá',
+  onConfirm,
+  children,
+}: {
+  title: string;
+  okText?: string;
+  onConfirm: () => void;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [open]);
+  useClickOutside(open, ref, () => setOpen(false));
   return (
-    <div ref={ref} className="relative inline-block">
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <span onClick={() => setOpen((o) => !o)}>{children}</span>
       {open ? (
-        <div className="absolute right-0 z-50 mt-1 w-[220px] rounded-[10px] border border-[#eee] bg-white p-3 shadow-[0_10px_30px_-8px_rgba(34,41,47,0.22)]">
-          <div className="mb-2 text-[13px] text-[#5e5873]">{title}</div>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setOpen(false)} className="rounded-md border border-[#e6e3ee] px-2.5 py-1 text-[12px] text-[#6e6b7b]">Huỷ</button>
+        <div className="rf-pop">
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <Icon name="help" size={18} style={{ color: 'var(--tk-warning)', flexShrink: 0 }} />
+            <div style={{ fontSize: 13, color: 'var(--tk-text-strong)', lineHeight: 1.5 }}>{title}</div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <button type="button" className="rf-btn rf-btn--ghost rf-btn--sm" onClick={() => setOpen(false)}>
+              Huỷ
+            </button>
             <button
               type="button"
+              className="rf-btn rf-btn--danger rf-btn--sm"
               onClick={() => {
                 onConfirm();
                 setOpen(false);
               }}
-              className="rounded-md bg-[#d1494a] px-2.5 py-1 text-[12px] text-white"
             >
-              Xoá
+              {okText}
             </button>
           </div>
         </div>

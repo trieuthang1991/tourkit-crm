@@ -1,9 +1,10 @@
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
+import { Icon } from './kit';
 
 /* =========================================================================
-   ui/message — hệ thống toast AntD-free. Thay App.useApp().message.
+   ui/message — hệ thống toast AntD-free, kiểu "Refined" (.rf-toast).
    Dùng: bọc app bằng <MessageProvider>, trong component: const msg = useToast();
    msg.success('...') / msg.error('...') / msg.info('...').
    ========================================================================= */
@@ -15,11 +16,12 @@ type Api = { success: (t: string) => void; error: (t: string) => void; info: (t:
 
 const Ctx = createContext<Api | null>(null);
 
-const STYLE: Record<Kind, { bar: string; icon: string }> = {
-  success: { bar: '#28c76f', icon: '✓' },
-  error: { bar: '#ea5455', icon: '✕' },
-  info: { bar: '#4e7bff', icon: 'i' },
-  warning: { bar: '#ff9f43', icon: '!' },
+/** Icon + màu theo semantic token (không dùng hex rời). */
+const STYLE: Record<Kind, { icon: string; color: string }> = {
+  success: { icon: 'check_circle', color: 'var(--tk-success)' },
+  error: { icon: 'error', color: 'var(--tk-danger)' },
+  info: { icon: 'info', color: 'var(--tk-info)' },
+  warning: { icon: 'warning', color: 'var(--tk-warning)' },
 };
 
 export function MessageProvider({ children }: { children: ReactNode }) {
@@ -32,31 +34,25 @@ export function MessageProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 3200);
   }, []);
 
-  const api: Api = {
-    success: (t) => push('success', t),
-    error: (t) => push('error', t),
-    info: (t) => push('info', t),
-    warning: (t) => push('warning', t),
-  };
+  const api = useMemo<Api>(
+    () => ({
+      success: (t) => push('success', t),
+      error: (t) => push('error', t),
+      info: (t) => push('info', t),
+      warning: (t) => push('warning', t),
+    }),
+    [push],
+  );
 
   return (
     <Ctx.Provider value={api}>
       {children}
       {createPortal(
-        <div className="pointer-events-none fixed left-1/2 top-4 z-[2000] flex -translate-x-1/2 flex-col items-center gap-2">
+        <div className="rf-toasts">
           {toasts.map((t) => (
-            <div
-              key={t.id}
-              className="pointer-events-auto flex items-center gap-3 rounded-[10px] border border-[#eef0f5] bg-white px-4 py-2.5 shadow-[0_10px_30px_-8px_rgba(34,41,47,0.25)]"
-              style={{ borderLeft: `4px solid ${STYLE[t.kind].bar}` }}
-            >
-              <span
-                className="flex h-5 w-5 items-center justify-center rounded-full text-[12px] font-bold text-white"
-                style={{ background: STYLE[t.kind].bar }}
-              >
-                {STYLE[t.kind].icon}
-              </span>
-              <span className="text-[13px] text-[#5e5873]">{t.text}</span>
+            <div key={t.id} className="rf-toast" role="status">
+              <Icon name={STYLE[t.kind].icon} size={18} style={{ color: STYLE[t.kind].color }} />
+              <span>{t.text}</span>
             </div>
           ))}
         </div>,
