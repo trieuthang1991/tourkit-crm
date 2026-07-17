@@ -258,11 +258,15 @@ export const Col = cast<'Col'>(ColImpl);
 
 /* ---------------------- Card ---------------------- */
 function CardImpl(props: Record<string, unknown>) {
-  const { title, extra, children, size, style, styles, className } = asProps(props);
+  const { title, extra, children, size, style, styles, className, onClick, hoverable } = asProps(props);
   const body = (styles as { body?: CSSProperties } | undefined)?.body;
   const bodyPad = body?.padding ?? (size === 'small' ? 14 : 18);
   return (
-    <div className={`rf-card ${(className as string) ?? ''}`} style={style as CSSProperties}>
+    <div
+      className={`rf-card ${hoverable ? 'rf-card--hover' : ''} ${(className as string) ?? ''}`}
+      style={{ ...(onClick ? { cursor: 'pointer' } : null), ...(style as CSSProperties) }}
+      onClick={onClick as React.MouseEventHandler<HTMLDivElement> | undefined}
+    >
       {title || extra ? (
         <div className="rf-card__head">
           <div className="rf-card__title">{title as ReactNode}</div>

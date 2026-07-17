@@ -438,3 +438,7 @@
 /* spinner cho Button loading (shim antd) */
 .rf-spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-top-color:transparent;display:inline-block;animation:rf-spin .6s linear infinite}
 @keyframes rf-spin{to{transform:rotate(360deg)}}
+
+/* Card hoverable (shim antd) */
+.rf-card--hover { transition: box-shadow .15s ease, border-color .15s ease, transform .12s ease; }
+.rf-card--hover:hover { border-color: var(--tk-border); box-shadow: var(--tk-shadow-pop); transform: translateY(-1px); }
