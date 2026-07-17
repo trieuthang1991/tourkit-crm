@@ -139,6 +139,7 @@ export function Select({
   allowClear,
   showSearch,
   multiple,
+  tags,
   style,
 }: {
   value: (string | number) | (string | number)[] | null | undefined;
@@ -148,8 +149,12 @@ export function Select({
   allowClear?: boolean;
   showSearch?: boolean;
   multiple?: boolean;
+  /** tags = multi + cho phép tự nhập giá trị mới (thay mode="tags" của AntD) */
+  tags?: boolean;
   style?: CSSProperties;
 }) {
+  multiple = multiple || tags;
+  showSearch = showSearch || tags;
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -164,11 +169,26 @@ export function Select({
   }, [open]);
 
   const selected = multiple ? (Array.isArray(value) ? value : []) : value;
+  // tags: giá trị tự nhập chưa có trong options -> vẫn phải hiện ra để bỏ chọn được.
+  const allOptions = useMemo(() => {
+    if (!tags || !Array.isArray(value)) return options;
+    const extra = value.filter((v) => !options.some((o) => o.value === v)).map((v) => ({ label: String(v), value: v }));
+    return [...options, ...extra];
+  }, [options, tags, value]);
   const filtered = useMemo(
-    () => (showSearch && q ? options.filter((o) => o.label.toLowerCase().includes(q.toLowerCase())) : options),
-    [options, q, showSearch],
+    () => (showSearch && q ? allOptions.filter((o) => o.label.toLowerCase().includes(q.toLowerCase())) : allOptions),
+    [allOptions, q, showSearch],
   );
-  const labelOf = (v: string | number) => options.find((o) => o.value === v)?.label ?? String(v);
+  const canAddTag = !!tags && q.trim() !== '' && !allOptions.some((o) => o.label.toLowerCase() === q.trim().toLowerCase());
+  const labelOf = (v: string | number) => allOptions.find((o) => o.value === v)?.label ?? String(v);
+  const addTag = () => {
+    const v = q.trim();
+    if (!v) return;
+    const arr2 = Array.isArray(selected) ? [...selected] : [];
+    if (!arr2.includes(v)) arr2.push(v);
+    onChange(arr2);
+    setQ('');
+  };
   const display =
     multiple && Array.isArray(selected) && selected.length
       ? `${labelOf(selected[0]!)}${selected.length > 1 ? ` +${selected.length - 1}` : ''}`
@@ -213,9 +233,15 @@ export function Select({
             <div style={{ padding: 8, borderBottom: '1px solid var(--tk-line)' }}>
               <input
                 autoFocus
-                placeholder="Tìm…"
+                placeholder={tags ? 'Tìm hoặc nhập giá trị mới…' : 'Tìm…'}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && canAddTag) {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
                 style={{
                   width: '100%',
                   padding: '6px 8px',
@@ -228,6 +254,12 @@ export function Select({
             </div>
           ) : null}
           <div className="rf-select__opts">
+            {canAddTag ? (
+              <button type="button" onClick={addTag} className="rf-select__opt" style={{ color: 'var(--tk-accent)' }}>
+                Thêm “{q.trim()}”
+                <Icon name="add" size={16} />
+              </button>
+            ) : null}
             {filtered.length ? (
               filtered.map((o) => {
                 const on = multiple ? Array.isArray(selected) && selected.includes(o.value) : selected === o.value;
@@ -238,7 +270,7 @@ export function Select({
                   </button>
                 );
               })
-            ) : (
+            ) : canAddTag ? null : (
               <div style={{ padding: '14px 12px', textAlign: 'center', fontSize: 13, color: 'var(--tk-muted)' }}>Không có lựa chọn</div>
             )}
           </div>

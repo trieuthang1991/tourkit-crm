@@ -1,42 +1,25 @@
-import {
-  App,
-  Card,
-  Col,
-  DatePicker,
-  Input,
-  InputNumber,
-  Popconfirm,
-  Row,
-  Select,
-  Space,
-  Table,
-  Tag,
-} from '../../shared/ui/antd';
-import { Button, DataCard, SegmentTabs } from '../../shared/ui';
-import type { ColumnsType } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import dayjs from 'dayjs';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { CrudFormModal } from '../../shared/ui/CrudFormModal';
-import { DatePickerField, NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
-import { PageHeader } from '../../shared/ui/PageHeader';
-import { CalendarOutlined, ReloadOutlined, StarOutlined, TeamOutlined, UserAddOutlined } from '@ant-design/icons';
-import { StatCard, StatRow } from '../../shared/ui/StatCard';
+import { Button, DataCard, FilterChip, Icon, SegmentTabs, StatCardIcon } from '../../ui/kit';
+import { DateRangeInput, NumberInput, SearchInput, Select } from '../../ui/inputs';
+import { Tag } from '../../ui/primitives';
+import { Popconfirm } from '../../ui/overlay';
+import { useToast } from '../../ui/message';
+import { Pagination, Table } from '../../ui/Table';
+import type { Column } from '../../ui/Table';
+import { CrudDrawer, DatePickerField, NumberField, SelectField, TextAreaField, TextField } from '../../ui/form';
 import { useAuth } from '../auth/AuthContext';
 import { customersCrud } from './customersCrud';
-import {
-  CUSTOMER_TYPE_OPTIONS,
-  GENDER_OPTIONS,
-  customerFormSchema,
-  customerSchema,
-  customerTypeLabel,
-} from './types';
+import { CUSTOMER_TYPE_OPTIONS, GENDER_OPTIONS, customerFormSchema, customerSchema, customerTypeLabel } from './types';
 import type { Customer, CustomerForm } from './types';
+
+/* Màn "Data khách hàng" (/customers) — hệ Refined. KHÔNG antd.
+   Dữ liệu/bộ lọc/quyền giữ NGUYÊN; chỉ đổi lớp trình bày. */
 
 const userRowSchema = z.object({ id: z.string().uuid(), fullName: z.string() });
 const strList = z.array(z.string());
@@ -106,9 +89,7 @@ type AdvFilters = {
 
 // Bỏ field rỗng để không gửi param thừa.
 export function cleanParams(obj: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''),
-  );
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ''));
 }
 
 function AssignedToField() {
@@ -123,8 +104,25 @@ function AssignedToField() {
   return <SelectField name="assignedTo" label="NV phụ trách" options={options} mode="multiple" />;
 }
 
+/** Danh sách Tag rút gọn cho ô bảng (nhiều giá trị -> +N). */
+function TagList({ items, color, max = 2 }: { items: string[]; color?: string; max?: number }) {
+  if (!items.length) return <>—</>;
+  const shown = items.slice(0, max);
+  const rest = items.length - shown.length;
+  return (
+    <span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>
+      {shown.map((s) => (
+        <Tag key={s} color={color}>
+          {s}
+        </Tag>
+      ))}
+      {rest > 0 ? <Tag title={items.join(', ')}>+{rest}</Tag> : null}
+    </span>
+  );
+}
+
 export function CustomersPage() {
-  const { message } = App.useApp();
+  const message = useToast();
   const { has } = useAuth();
   const [page, setPage] = useState(DEFAULT_PAGE);
   const [search, setSearch] = useState('');
@@ -232,68 +230,39 @@ export function CustomersPage() {
     }
   }
 
-  const columns: ColumnsType<Customer> = [
-    {
-      title: 'STT',
-      key: '__stt',
-      width: 60,
-      fixed: 'left',
-      align: 'center',
-      render: (_: unknown, __: Customer, index: number) => (page.page - 1) * page.size + index + 1,
-    },
-    { title: 'Mã KH', dataIndex: 'code', key: 'code', width: 130, fixed: 'left', render: dash },
-    { title: 'Họ và tên', dataIndex: 'fullName', key: 'fullName', width: 180, fixed: 'left' },
-    { title: 'Số điện thoại', dataIndex: 'phone', key: 'phone', width: 120, render: dash },
-    { title: 'Email', dataIndex: 'email', key: 'email', width: 170, render: dash },
-    { title: 'Tỉnh thành', dataIndex: 'city', key: 'city', width: 120, render: dash },
-    {
-      title: 'Phân nhóm',
-      dataIndex: 'segments',
-      key: 'segments',
-      width: 200,
-      render: (v: string[]) => (arr(v).length ? arr(v).map((s) => <Tag key={s}>{s}</Tag>) : '—'),
-    },
-    { title: 'Ngày sinh', dataIndex: 'dateOfBirth', key: 'dateOfBirth', width: 110, render: dateVi },
-    { title: 'Ngày tạo', dataIndex: 'createdAt', key: 'createdAt', width: 110, render: dateVi },
-    { title: 'Ngày CSKH gần nhất', dataIndex: 'lastCareAt', key: 'lastCareAt', width: 150, render: dateVi },
-    { title: 'Nội dung CSKH mới nhất', dataIndex: 'lastCareContent', key: 'lastCareContent', width: 200, render: dash },
-    { title: 'Nhu cầu ban đầu', dataIndex: 'initialNeed', key: 'initialNeed', width: 200, render: dash },
-    { title: 'Số lần mua', dataIndex: 'purchaseCount', key: 'purchaseCount', width: 100, align: 'center' },
-    { title: 'Doanh thu', dataIndex: 'revenue', key: 'revenue', width: 130, align: 'right', render: (v: number) => money(v ?? 0) },
-    { title: 'Loại KH', dataIndex: 'customerType', key: 'customerType', width: 110, render: (v: number) => customerTypeLabel(v) },
-    {
-      title: 'Người tạo',
-      key: 'createdBy',
-      width: 140,
-      render: (_: unknown, c: Customer) => c.createdByName ?? dash(c.createdBy),
-    },
-    { title: 'CTV', dataIndex: 'collaboratorName', key: 'collaboratorName', width: 140, render: dash },
-    { title: 'Chiến dịch', dataIndex: 'campaign', key: 'campaign', width: 150, render: dash },
-    {
-      title: 'NV phụ trách',
-      dataIndex: 'assignedToNames',
-      key: 'assignedTo',
-      width: 160,
-      render: (v: string[]) => (arr(v).length ? arr(v).map((n) => <Tag key={n}>{n}</Tag>) : '—'),
-    },
-    {
-      title: 'Thẻ',
-      dataIndex: 'tags',
-      key: 'tags',
-      width: 140,
-      render: (v: string[]) => (arr(v).length ? arr(v).map((t) => <Tag key={t} color="blue">{t}</Tag>) : '—'),
-    },
+  const rows = list.data?.items ?? [];
+
+  const columns: Column<Customer>[] = [
+    { key: '__stt', title: '#', width: 46, align: 'center', mono: true, render: (_c, i) => (page.page - 1) * page.size + i + 1 },
+    { key: 'code', title: 'Mã KH', width: 124, mono: true, render: (c) => dash(c.code) },
+    { key: 'fullName', title: 'Họ và tên', width: 178, render: (c) => <span style={{ fontWeight: 600, color: 'var(--tk-heading)' }}>{c.fullName}</span> },
+    { key: 'phone', title: 'Số điện thoại', width: 120, mono: true, render: (c) => dash(c.phone) },
+    { key: 'email', title: 'Email', width: 170, render: (c) => dash(c.email) },
+    { key: 'city', title: 'Tỉnh thành', width: 118, render: (c) => dash(c.city) },
+    { key: 'segments', title: 'Phân nhóm', width: 190, render: (c) => <TagList items={arr(c.segments)} /> },
+    { key: 'dateOfBirth', title: 'Ngày sinh', width: 108, mono: true, render: (c) => dateVi(c.dateOfBirth) },
+    { key: 'createdAt', title: 'Ngày tạo', width: 108, mono: true, render: (c) => dateVi(c.createdAt) },
+    { key: 'lastCareAt', title: 'Ngày CSKH gần nhất', width: 148, mono: true, render: (c) => dateVi(c.lastCareAt) },
+    { key: 'lastCareContent', title: 'Nội dung CSKH mới nhất', width: 200, render: (c) => dash(c.lastCareContent) },
+    { key: 'initialNeed', title: 'Nhu cầu ban đầu', width: 190, render: (c) => dash(c.initialNeed) },
+    { key: 'purchaseCount', title: 'Số lần mua', width: 96, align: 'center', mono: true, render: (c) => c.purchaseCount ?? 0 },
+    { key: 'revenue', title: 'Doanh thu', width: 128, align: 'right', mono: true, render: (c) => money(c.revenue ?? 0) },
+    { key: 'customerType', title: 'Loại KH', width: 108, render: (c) => customerTypeLabel(c.customerType) },
+    { key: 'createdBy', title: 'Người tạo', width: 138, render: (c) => c.createdByName ?? dash(c.createdBy) },
+    { key: 'collaboratorName', title: 'CTV', width: 136, render: (c) => dash(c.collaboratorName) },
+    { key: 'campaign', title: 'Chiến dịch', width: 148, render: (c) => dash(c.campaign) },
+    { key: 'assignedTo', title: 'NV phụ trách', width: 158, render: (c) => <TagList items={arr(c.assignedToNames)} /> },
+    { key: 'tags', title: 'Thẻ', width: 136, render: (c) => <TagList items={arr(c.tags)} color="blue" /> },
     ...(canUpdate || canRemove
       ? [
           {
-            title: '',
             key: '__actions',
-            width: 150,
-            fixed: 'right' as const,
-            render: (_: unknown, c: Customer) => (
-              <Space>
+            title: '',
+            width: 132,
+            render: (c: Customer) => (
+              <span style={{ display: 'inline-flex', gap: 6 }}>
                 {canUpdate ? (
-                  <Button variant="ghost" size="small" onClick={() => setEditing({ mode: 'edit', item: c })}>
+                  <Button size="sm" icon="edit" onClick={() => setEditing({ mode: 'edit', item: c })}>
                     Sửa
                   </Button>
                 ) : null}
@@ -309,17 +278,34 @@ export function CustomersPage() {
                       }
                     }}
                   >
-                    <Button variant="danger" size="small">
+                    <Button variant="danger" size="sm" icon="delete">
                       Xoá
                     </Button>
                   </Popconfirm>
                 ) : null}
-              </Space>
+              </span>
             ),
-          } as ColumnsType<Customer>[number],
+          } as Column<Customer>,
         ]
       : []),
   ];
+
+  // Tổng cộng trang hiện tại (giữ đủ 2 chỉ số như bản cũ).
+  const purchases = rows.reduce((s, c) => s + (c.purchaseCount ?? 0), 0);
+  const revenueSum = rows.reduce((s, c) => s + (c.revenue ?? 0), 0);
+  const summary = (
+    <td colSpan={columns.length}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 22px', alignItems: 'baseline' }}>
+        <strong style={{ color: 'var(--tk-heading)' }}>Tổng cộng (trang này)</strong>
+        <span style={{ color: 'var(--tk-muted-2)', fontSize: 12 }}>
+          Tổng số lần mua: <strong style={{ fontFamily: 'var(--tk-font-mono)', color: 'var(--tk-heading)' }}>{purchases.toLocaleString('vi-VN')}</strong>
+        </span>
+        <span style={{ color: 'var(--tk-muted-2)', fontSize: 12 }}>
+          Tổng doanh thu: <strong style={{ fontFamily: 'var(--tk-font-mono)', color: 'var(--tk-heading)' }}>{money(revenueSum)}</strong>
+        </span>
+      </div>
+    </td>
+  );
 
   const item = editing?.item ?? null;
   const defaultValues: CustomerForm = {
@@ -351,11 +337,11 @@ export function CustomersPage() {
   };
 
   const statCards = [
-    { label: 'Tổng số khách hàng', value: (stats.data?.total ?? 0).toLocaleString('vi-VN'), icon: <TeamOutlined />, tone: 'accent' as const },
-    { label: 'Tạo hôm nay', value: stats.data?.newToday ?? 0, icon: <UserAddOutlined />, tone: 'info' as const },
-    { label: 'Tạo trong tháng', value: (stats.data?.newThisMonth ?? 0).toLocaleString('vi-VN'), icon: <CalendarOutlined />, tone: 'warning' as const },
-    { label: 'Mua lần đầu', value: (stats.data?.firstTimeBuyers ?? 0).toLocaleString('vi-VN'), icon: <StarOutlined />, tone: 'success' as const },
-    { label: 'Mua lại nhiều lần', value: (stats.data?.repeatBuyers ?? 0).toLocaleString('vi-VN'), icon: <ReloadOutlined />, tone: 'danger' as const },
+    { label: 'Tổng số khách hàng', value: (stats.data?.total ?? 0).toLocaleString('vi-VN'), icon: 'groups', tone: 'accent' as const },
+    { label: 'Tạo hôm nay', value: (stats.data?.newToday ?? 0).toLocaleString('vi-VN'), icon: 'person_add', tone: 'info' as const },
+    { label: 'Tạo trong tháng', value: (stats.data?.newThisMonth ?? 0).toLocaleString('vi-VN'), icon: 'calendar_month', tone: 'warning' as const },
+    { label: 'Mua lần đầu', value: (stats.data?.firstTimeBuyers ?? 0).toLocaleString('vi-VN'), icon: 'star', tone: 'success' as const },
+    { label: 'Mua lại nhiều lần', value: (stats.data?.repeatBuyers ?? 0).toLocaleString('vi-VN'), icon: 'refresh', tone: 'danger' as const },
   ];
 
   // Chip "Chăm sóc khách hàng" (bám hệ cũ): mua lần đầu/mua lại + N ngày chưa liên hệ (phân tầng loại trừ).
@@ -376,257 +362,118 @@ export function CustomersPage() {
 
   return (
     <>
-      <PageHeader
-        title="Data khách hàng"
-        crumb={<>CRM <span>/</span> Data khách hàng</>}
-        desc="Quản lý toàn bộ hồ sơ khách hàng, phân nhóm và lịch chăm sóc."
-        extra={
-          canCreate ? (
-            <Button variant="primary" onClick={() => setEditing({ mode: 'create', item: null })}>
-              Thêm khách hàng
-            </Button>
-          ) : null
-        }
-      />
+      <div className="rf-crumb">
+        <span>CRM</span>
+        <Icon name="chevron_right" size={14} className="rf-crumb__sep" />
+        <span className="rf-crumb__cur">Data khách hàng</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div>
+          <h1 className="rf-page__title">Data khách hàng</h1>
+          <div className="rf-page__sub">Quản lý toàn bộ hồ sơ khách hàng, phân nhóm và lịch chăm sóc.</div>
+        </div>
+        {canCreate ? (
+          <Button variant="primary" icon="add" onClick={() => setEditing({ mode: 'create', item: null })}>
+            Thêm khách hàng
+          </Button>
+        ) : null}
+      </div>
 
       {/* Thẻ thống kê (icon-chip + số) — bộ handoff */}
-      <StatRow cols={5}>
+      <div className="rf-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginTop: 16 }}>
         {statCards.map((s) => (
-          <StatCard key={s.label} icon={s.icon} tone={s.tone} value={s.value} label={s.label} />
+          <StatCardIcon key={s.label} icon={s.icon} tone={s.tone} value={s.value} label={s.label} />
         ))}
-      </StatRow>
+      </div>
 
       {/* Thanh lọc đầy đủ (bám "Xem thêm bộ lọc" hệ cũ) */}
-      <Card size="small" style={{ marginBottom: 12 }}>
-        <Row gutter={[12, 12]}>
-          <Col xs={24} sm={12} lg={8}>
-            <Input.Search
-              allowClear
-              placeholder="Nhập tên, SĐT, Email…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onSearch={applyFilters}
-            />
-          </Col>
-          <Col xs={12} sm={6} lg={4}>
-            <InputNumber
-              style={{ width: '100%' }}
-              placeholder="Doanh thu từ"
-              min={0}
-              value={draft.revenueFrom}
-              onChange={(v) => setD({ revenueFrom: v ?? undefined })}
-            />
-          </Col>
-          <Col xs={12} sm={6} lg={4}>
-            <InputNumber
-              style={{ width: '100%' }}
-              placeholder="Doanh thu đến"
-              min={0}
-              value={draft.revenueTo}
-              onChange={(v) => setD({ revenueTo: v ?? undefined })}
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={8}>
-            <DatePicker.RangePicker
-              style={{ width: '100%' }}
-              placeholder={['Thời gian tạo từ', 'đến']}
-              value={draft.createdFrom && draft.createdTo ? [dayjs(draft.createdFrom), dayjs(draft.createdTo)] : null}
-              onChange={(d) =>
-                setD({
-                  createdFrom: d?.[0]?.startOf('day').toISOString(),
-                  createdTo: d?.[1]?.endOf('day').toISOString(),
-                })
-              }
-            />
-          </Col>
+      <div className="rf-card" style={{ padding: 12, marginTop: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
+          <SearchInput value={search} onChange={setSearch} onEnter={applyFilters} placeholder="Nhập tên, SĐT, Email…" style={{ gridColumn: 'span 2' }} />
+          <NumberInput value={draft.revenueFrom ?? null} min={0} placeholder="Doanh thu từ" onChange={(v) => setD({ revenueFrom: v ?? undefined })} />
+          <NumberInput value={draft.revenueTo ?? null} min={0} placeholder="Doanh thu đến" onChange={(v) => setD({ revenueTo: v ?? undefined })} />
+          <DateRangeInput from={draft.createdFrom} to={draft.createdTo} placeholder={['Thời gian tạo từ', 'đến']} onChange={(f, t) => setD({ createdFrom: f, createdTo: t })} />
 
           {moreOpen ? (
             <>
-              <Col xs={24} sm={12} lg={8}>
-                <DatePicker.RangePicker
-                  style={{ width: '100%' }}
-                  placeholder={['Thời gian chăm sóc từ', 'đến']}
-                  value={draft.careFrom && draft.careTo ? [dayjs(draft.careFrom), dayjs(draft.careTo)] : null}
-                  onChange={(d) =>
-                    setD({
-                      careFrom: d?.[0]?.startOf('day').toISOString(),
-                      careTo: d?.[1]?.endOf('day').toISOString(),
-                    })
-                  }
-                />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Chi nhánh" options={strOpts(fo?.branches)} value={draft.branch}
-                  onChange={(v) => setD({ branch: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Nhóm" options={strOpts(fo?.groups)} value={draft.group}
-                  onChange={(v) => setD({ group: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Nguồn khách" options={strOpts(fo?.sources)} value={draft.source}
-                  onChange={(v) => setD({ source: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Người tạo" options={userOpts} value={draft.createdBy}
-                  onChange={(v) => setD({ createdBy: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Thị trường" options={strOpts(fo?.marketGroups)} value={draft.marketGroup}
-                  onChange={(v) => setD({ marketGroup: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Tỉnh thành" options={strOpts(fo?.cities)} value={draft.city}
-                  onChange={(v) => setD({ city: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Phòng ban" options={strOpts(fo?.departments)} value={draft.department}
-                  onChange={(v) => setD({ department: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select allowClear style={{ width: '100%' }} placeholder="Giới tính" options={GENDER_OPTIONS}
-                  value={draft.gender} onChange={(v) => setD({ gender: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Tên CTV" options={strOpts(fo?.collaborators)} value={draft.collaborator}
-                  onChange={(v) => setD({ collaborator: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Tag" options={strOpts(fo?.tags)} value={draft.tag}
-                  onChange={(v) => setD({ tag: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="Chiến dịch" options={strOpts(fo?.campaigns)} value={draft.campaign}
-                  onChange={(v) => setD({ campaign: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }}
-                  placeholder="NV phụ trách" options={userOpts} value={draft.assignedTo}
-                  onChange={(v) => setD({ assignedTo: v ?? undefined })} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <Select
-                  allowClear
-                  style={{ width: '100%' }}
-                  placeholder="Sinh nhật (tháng)"
-                  options={MONTH_OPTIONS}
-                  value={draft.birthdayMonth}
-                  onChange={(v) => setD({ birthdayMonth: v ?? undefined })}
-                />
-              </Col>
+              <DateRangeInput from={draft.careFrom} to={draft.careTo} placeholder={['Thời gian chăm sóc từ', 'đến']} onChange={(f, t) => setD({ careFrom: f, careTo: t })} />
+              <Select allowClear showSearch placeholder="Chi nhánh" options={strOpts(fo?.branches)} value={draft.branch} onChange={(v) => setD({ branch: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="Nhóm" options={strOpts(fo?.groups)} value={draft.group} onChange={(v) => setD({ group: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="Nguồn khách" options={strOpts(fo?.sources)} value={draft.source} onChange={(v) => setD({ source: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="Người tạo" options={userOpts} value={draft.createdBy} onChange={(v) => setD({ createdBy: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="Thị trường" options={strOpts(fo?.marketGroups)} value={draft.marketGroup} onChange={(v) => setD({ marketGroup: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="Tỉnh thành" options={strOpts(fo?.cities)} value={draft.city} onChange={(v) => setD({ city: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="Phòng ban" options={strOpts(fo?.departments)} value={draft.department} onChange={(v) => setD({ department: (v as string) ?? undefined })} />
+              <Select allowClear placeholder="Giới tính" options={GENDER_OPTIONS} value={draft.gender} onChange={(v) => setD({ gender: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="Tên CTV" options={strOpts(fo?.collaborators)} value={draft.collaborator} onChange={(v) => setD({ collaborator: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="Tag" options={strOpts(fo?.tags)} value={draft.tag} onChange={(v) => setD({ tag: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="Chiến dịch" options={strOpts(fo?.campaigns)} value={draft.campaign} onChange={(v) => setD({ campaign: (v as string) ?? undefined })} />
+              <Select allowClear showSearch placeholder="NV phụ trách" options={userOpts} value={draft.assignedTo} onChange={(v) => setD({ assignedTo: (v as string) ?? undefined })} />
+              <Select allowClear placeholder="Sinh nhật (tháng)" options={MONTH_OPTIONS} value={draft.birthdayMonth} onChange={(v) => setD({ birthdayMonth: (v as number) ?? undefined })} />
             </>
           ) : null}
-
-          <Col span={24}>
-            <Space>
-              <Button variant="primary" onClick={applyFilters}>
-                Tìm kiếm
-              </Button>
-              <Button variant="ghost" onClick={resetFilters}>Đặt lại</Button>
-              <Button variant="text" onClick={() => setMoreOpen((o) => !o)}>
-                {moreOpen ? 'Thu gọn bộ lọc' : 'Xem thêm bộ lọc'}
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <Button variant="primary" icon="search" onClick={applyFilters}>
+            Tìm kiếm
+          </Button>
+          <Button onClick={resetFilters}>Đặt lại</Button>
+          <Button variant="text" icon={moreOpen ? 'expand_less' : 'tune'} onClick={() => setMoreOpen((o) => !o)}>
+            {moreOpen ? 'Thu gọn bộ lọc' : 'Xem thêm bộ lọc'}
+          </Button>
+        </div>
+      </div>
 
       {/* Tabs loại khách hàng (bám staging: Tất cả · Cá nhân · Doanh nghiệp · Đối tác · CTV) */}
-      <div style={{ marginBottom: 12, overflowX: 'auto' }}>
+      <div style={{ marginTop: 14, overflowX: 'auto' }}>
         <SegmentTabs
           value={typeFilter === undefined ? 'all' : String(typeFilter)}
           onChange={(val) => {
             setTypeFilter(val === 'all' ? undefined : Number(val));
             setPage({ ...page, page: 1 });
           }}
-          options={[
-            { label: 'Tất cả', value: 'all' },
-            ...CUSTOMER_TYPE_OPTIONS.map((o) => ({ label: o.label, value: String(o.value) })),
-          ]}
+          options={[{ label: 'Tất cả', value: 'all' }, ...CUSTOMER_TYPE_OPTIONS.map((o) => ({ label: o.label, value: String(o.value) }))]}
         />
       </div>
 
       {/* Phễu khách hàng + Chăm sóc khách hàng (chip lọc nhanh, bám hệ cũ) */}
-      <Card size="small" style={{ marginBottom: 12 }} loading={funnel.isLoading}>
-        <div style={{ marginBottom: 8 }}>
-          <strong style={{ marginRight: 8 }}>Phễu khách hàng</strong>
-          <Space size={[4, 8]} wrap>
-            <Tag.CheckableTag checked={adv.segment === undefined} onChange={() => pickChip({ segment: undefined })}>
-              Tất cả ({fn?.total ?? 0})
-            </Tag.CheckableTag>
-            {(fn?.segments ?? []).map((s) => (
-              <Tag.CheckableTag
-                key={s.name}
-                checked={adv.segment === s.name}
-                onChange={() => pickChip({ segment: adv.segment === s.name ? undefined : s.name })}
-              >
-                {s.name} ({s.count})
-              </Tag.CheckableTag>
-            ))}
-          </Space>
+      <div className="rf-card" style={{ padding: 14, marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span className="rf-section" style={{ margin: 0, minWidth: 128 }}>
+            Phễu khách hàng
+          </span>
+          <FilterChip active={adv.segment === undefined} onClick={() => pickChip({ segment: undefined })} count={fn?.total ?? 0}>
+            Tất cả
+          </FilterChip>
+          {(fn?.segments ?? []).map((s) => (
+            <FilterChip key={s.name} active={adv.segment === s.name} count={s.count} onClick={() => pickChip({ segment: adv.segment === s.name ? undefined : s.name })}>
+              {s.name}
+            </FilterChip>
+          ))}
         </div>
-        <div>
-          <strong style={{ marginRight: 8 }}>Chăm sóc khách hàng</strong>
-          <Space size={[4, 8]} wrap>
-            {careChips.map((c) => (
-              <Tag.CheckableTag key={c.key} checked={c.active} onChange={() => pickChip(c.patch)}>
-                {c.label} ({c.count ?? 0})
-              </Tag.CheckableTag>
-            ))}
-          </Space>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span className="rf-section" style={{ margin: 0, minWidth: 128 }}>
+            Chăm sóc khách hàng
+          </span>
+          {careChips.map((c) => (
+            <FilterChip key={c.key} active={c.active} count={c.count ?? 0} onClick={() => pickChip(c.patch)}>
+              {c.label}
+            </FilterChip>
+          ))}
         </div>
-      </Card>
+      </div>
 
-      <DataCard title="Danh sách khách hàng">
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{
-          current: page.page,
-          pageSize: page.size,
-          total: list.data?.total ?? 0,
-          showSizeChanger: true,
-          onChange: (p, s) => setPage({ page: p, size: s }),
-        }}
-        summary={(pageData) => {
-          const purchases = pageData.reduce((s, c) => s + (c.purchaseCount ?? 0), 0);
-          const revenueSum = pageData.reduce((s, c) => s + (c.revenue ?? 0), 0);
-          return (
-            <Table.Summary fixed>
-              <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={columns.length}>
-                  <Space size="large">
-                    <strong>Tổng cộng (trang này)</strong>
-                    <span>
-                      Tổng số lần mua: <strong>{purchases}</strong>
-                    </span>
-                    <span>
-                      Tổng doanh thu: <strong>{money(revenueSum)}</strong>
-                    </span>
-                  </Space>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-            </Table.Summary>
-          );
-        }}
-      />
-      </DataCard>
+      <div style={{ marginTop: 14 }}>
+        <DataCard title="Danh sách khách hàng" bodyless>
+          <Table columns={columns} data={rows} rowKey={(c) => c.id} loading={list.isLoading} minWidth={2400} summary={rows.length ? summary : undefined} empty="Không có khách hàng" />
+          <div style={{ padding: '10px 16px' }}>
+            <Pagination page={page.page} pageSize={page.size} total={list.data?.total ?? 0} unit="khách hàng" onChange={(p) => setPage({ ...page, page: p })} />
+          </div>
+        </DataCard>
+      </div>
 
       {editing ? (
-        <CrudFormModal
+        <CrudDrawer
           open
           title={editing.mode === 'edit' ? 'Sửa khách hàng' : 'Thêm khách hàng'}
           schema={customerFormSchema}
@@ -643,8 +490,8 @@ export function CustomersPage() {
           <TextField name="city" label="Tỉnh thành" />
           <TextField name="address" label="Địa chỉ" />
           <DatePickerField name="dateOfBirth" label="Ngày sinh" />
-          <SelectField name="segments" label="Phân nhóm" options={[]} mode="tags" />
-          <SelectField name="tags" label="Thẻ KH" options={[]} mode="tags" />
+          <SelectField name="segments" label="Phân nhóm" options={strOpts(fo?.segments)} mode="tags" />
+          <SelectField name="tags" label="Thẻ KH" options={strOpts(fo?.tags)} mode="tags" />
           <AssignedToField />
           <TextField name="source" label="Nguồn khách" />
           <TextField name="marketGroup" label="Nhóm/Thị trường" />
@@ -659,7 +506,7 @@ export function CustomersPage() {
           <TextField name="nationality" label="Quốc tịch" />
           <TextField name="passportNumber" label="Số hộ chiếu" />
           <DatePickerField name="passportExpiry" label="Hộ chiếu hết hạn" />
-        </CrudFormModal>
+        </CrudDrawer>
       ) : null}
     </>
   );

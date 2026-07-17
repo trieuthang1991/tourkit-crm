@@ -98,10 +98,12 @@ export function SelectField({
   required?: boolean;
   allowClear?: boolean;
   showSearch?: boolean;
-  mode?: 'multiple';
+  /** tags = multi + cho phép tự nhập giá trị mới (giữ hành vi mode="tags" của AntD) */
+  mode?: 'multiple' | 'tags';
 }) {
   const { control, formState } = useFormContext();
-  const multiple = mode === 'multiple';
+  const tags = mode === 'tags';
+  const multiple = mode === 'multiple' || tags;
   return (
     <Controller
       name={name}
@@ -115,7 +117,8 @@ export function SelectField({
             allowClear={allowClear}
             showSearch={showSearch || multiple}
             multiple={multiple}
-            placeholder={`Chọn ${lc(label)}`}
+            tags={tags}
+            placeholder={`${tags ? 'Chọn hoặc nhập' : 'Chọn'} ${lc(label)}`}
           />
         </Labeled>
       )}

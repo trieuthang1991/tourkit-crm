@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { App } from '../../shared/ui/antd';
+import { MessageProvider } from '../../ui/message';
 import { cleanParams, CustomersPage } from './CustomersPage';
 import { httpClient } from '../../shared/api/httpClient';
 
@@ -39,9 +39,9 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <App>
+      <MessageProvider>
         <CustomersPage />
-      </App>
+      </MessageProvider>
     </QueryClientProvider>,
   );
 }
@@ -70,19 +70,18 @@ describe('CustomersPage — thanh lọc', () => {
     });
   });
 
+  // Hệ Refined hiện số đếm trong chip riêng cạnh nhãn (thay nhãn gộp "Tiềm năng (30)").
   it('hiện chip phễu (segment + count) và chăm sóc', async () => {
-    render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <App>
-          <CustomersPage />
-        </App>
-      </QueryClientProvider>,
-    );
+    renderPage();
     await waitFor(() => {
       expect(screen.getByText('Phễu khách hàng')).toBeInTheDocument();
-      expect(screen.getByText('Tiềm năng (30)')).toBeInTheDocument();
-      expect(screen.getByText('Tất cả (42)')).toBeInTheDocument();
-      expect(screen.getByText('7 ngày chưa liên hệ (1)')).toBeInTheDocument();
+      const seg = screen.getByRole('button', { name: /Tiềm năng/ });
+      expect(seg).toHaveTextContent('30');
+      // "Tất cả" xuất hiện cả ở tab loại KH -> lấy đúng chip phễu (chip mang count 42).
+      const all = screen.getAllByRole('button', { name: /Tất cả/ }).find((b) => b.textContent?.includes('42'));
+      expect(all).toBeDefined();
+      const nc7 = screen.getByRole('button', { name: /7 ngày chưa liên hệ/ });
+      expect(nc7).toHaveTextContent('1');
     });
   });
 
@@ -91,7 +90,8 @@ describe('CustomersPage — thanh lọc', () => {
     await waitFor(() => expect(screen.getByText('Xem thêm bộ lọc')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Xem thêm bộ lọc'));
     await waitFor(() => {
-      const placeholders = [...container.querySelectorAll('.ant-select-selection-placeholder')].map((e) => e.textContent);
+      // span đầu = nhãn placeholder (span sau là icon Material Symbols "expand_more").
+      const placeholders = [...container.querySelectorAll('.rf-select__btn--placeholder > span:first-child')].map((e) => e.textContent);
       expect(placeholders).toContain('Tag');
       expect(placeholders).toContain('NV phụ trách');
     });
