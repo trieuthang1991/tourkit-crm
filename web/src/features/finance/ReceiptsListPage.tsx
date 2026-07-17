@@ -1,18 +1,23 @@
-import { App, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Select, Space, Statistic, Table } from '../../shared/ui/antd';
-import { Button, DataCard, SegmentTabs, StatusTag, voucherTone } from '../../shared/ui';
-import type { ColumnsType } from '../../shared/ui/antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import dayjs from 'dayjs';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { PageHeader } from '../../shared/ui/PageHeader';
+import { voucherTone } from '../../shared/ui';
+import { Button, DataCard, Icon, SegmentTabs, StatCard, StatusTag } from '../../ui/kit';
+import { DateRangeInput, Input, NumberInput, SearchInput, Select } from '../../ui/inputs';
+import { Popconfirm } from '../../ui/overlay';
+import { useToast } from '../../ui/message';
+import { Pagination, Table } from '../../ui/Table';
+import type { Column } from '../../ui/Table';
 import { useAuth } from '../auth/AuthContext';
 import { receiptListItemSchema, VOUCHER_STATUS } from './listTypes';
 import type { ReceiptListItem } from './listTypes';
+
+/* Màn "Phiếu thu" (/receipts) — hệ Refined. KHÔNG antd.
+   Dữ liệu/bộ lọc/quyền duyệt giữ NGUYÊN; chỉ đổi lớp trình bày. */
 
 const KEY = ['receipts-all'];
 const statsSchema = z.object({
@@ -28,7 +33,7 @@ function clean(obj: Record<string, unknown>): Record<string, unknown> {
 }
 
 export function ReceiptsListPage() {
-  const { message } = App.useApp();
+  const message = useToast();
   const { has } = useAuth();
   const canApprove = has('receipt.approve');
   const qc = useQueryClient();
@@ -121,128 +126,100 @@ export function ReceiptsListPage() {
   }
 
   const dateVi = (v: string) => new Date(v).toLocaleDateString('vi-VN');
+  const rows = list.data?.items ?? [];
 
-  const columns: ColumnsType<ReceiptListItem> = [
-    {
-      title: 'STT',
-      key: '__stt',
-      width: 60,
-      fixed: 'left',
-      align: 'center',
-      render: (_: unknown, __: ReceiptListItem, index: number) => (page.page - 1) * page.size + index + 1,
-    },
-    { title: 'Mã phiếu', dataIndex: 'code', key: 'code', fixed: 'left', width: 140 },
-    { title: 'Mã đơn', dataIndex: 'orderCode', key: 'orderCode', width: 130, render: (v: string | null) => v ?? '—' },
-    { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName', width: 170, render: (v: string | null) => v ?? '—' },
-    { title: 'Số tiền', dataIndex: 'amount', key: 'amount', width: 140, align: 'right', render: (v: number) => money(v) },
-    { title: 'Hình thức', dataIndex: 'paymentMethod', key: 'paymentMethod', width: 110 },
-    { title: 'Ngày', dataIndex: 'issuedAt', key: 'issuedAt', width: 110, render: dateVi },
-    { title: 'Người nộp', dataIndex: 'partner', key: 'partner', width: 150, render: (v: string | null) => v ?? '—' },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (s: number) => <StatusTag tone={voucherTone(s)}>{VOUCHER_STATUS[s] ?? s}</StatusTag>,
-    },
+  const columns: Column<ReceiptListItem>[] = [
+    { key: '__stt', title: '#', width: 46, align: 'center', mono: true, render: (_r, i) => (page.page - 1) * page.size + i + 1 },
+    { key: 'code', title: 'Mã phiếu', width: 138, render: (r) => <span style={{ font: '600 12.5px var(--tk-font-mono)', color: 'var(--tk-accent)' }}>{r.code}</span> },
+    { key: 'orderCode', title: 'Mã đơn', width: 128, mono: true, render: (r) => r.orderCode ?? '—' },
+    { key: 'customerName', title: 'Khách hàng', width: 168, render: (r) => r.customerName ?? '—' },
+    { key: 'amount', title: 'Số tiền', width: 138, align: 'right', mono: true, render: (r) => money(r.amount) },
+    { key: 'paymentMethod', title: 'Hình thức', width: 108, dataIndex: 'paymentMethod' },
+    { key: 'issuedAt', title: 'Ngày', width: 106, mono: true, render: (r) => dateVi(r.issuedAt) },
+    { key: 'partner', title: 'Người nộp', width: 148, render: (r) => r.partner ?? '—' },
+    { key: 'status', title: 'Trạng thái', width: 118, render: (r) => <StatusTag tone={voucherTone(r.status)}>{VOUCHER_STATUS[r.status] ?? r.status}</StatusTag> },
     ...(canApprove
       ? [
           {
-            title: '',
             key: '__actions',
-            width: 170,
-            fixed: 'right' as const,
-            render: (_: unknown, r: ReceiptListItem) =>
+            title: '',
+            width: 164,
+            render: (r: ReceiptListItem) =>
               r.status === 0 ? (
-                <Space>
-                  <Popconfirm title="Duyệt phiếu thu này?" onConfirm={() => run(r.id, 'approve')}>
-                    <Button variant="primary" size="small">
+                <span style={{ display: 'inline-flex', gap: 6 }}>
+                  <Popconfirm title="Duyệt phiếu thu này?" okText="Duyệt" onConfirm={() => run(r.id, 'approve')}>
+                    <Button variant="primary" size="sm" icon="check">
                       Duyệt
                     </Button>
                   </Popconfirm>
-                  <Popconfirm title="Từ chối phiếu này?" onConfirm={() => run(r.id, 'reject')}>
-                    <Button variant="danger" size="small">
+                  <Popconfirm title="Từ chối phiếu này?" okText="Từ chối" onConfirm={() => run(r.id, 'reject')}>
+                    <Button variant="danger" size="sm" icon="close">
                       Từ chối
                     </Button>
                   </Popconfirm>
-                </Space>
+                </span>
               ) : null,
-          } as ColumnsType<ReceiptListItem>[number],
+          } as Column<ReceiptListItem>,
         ]
       : []),
   ];
 
+  // Tổng cộng trang hiện tại.
+  const sumAmount = rows.reduce((a, r) => a + (r.amount ?? 0), 0);
+  const summary = (
+    <td colSpan={columns.length}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 22px', alignItems: 'baseline' }}>
+        <strong style={{ color: 'var(--tk-heading)' }}>Tổng cộng (trang này)</strong>
+        <span style={{ color: 'var(--tk-muted-2)', fontSize: 12 }}>
+          Tổng tiền: <strong style={{ fontFamily: 'var(--tk-font-mono)', color: 'var(--tk-heading)' }}>{money(sumAmount)}</strong>
+        </span>
+      </div>
+    </td>
+  );
+
   const s = stats.data;
   const statCards = [
-    { title: 'Tổng số phiếu', value: s?.total ?? 0, money: false },
-    { title: 'Tổng tiền', value: s?.totalAmount ?? 0, money: true },
-    { title: 'Chờ duyệt', value: s?.pending ?? 0, money: false },
-    { title: 'Đã duyệt', value: s?.approved ?? 0, money: false },
-    { title: 'Từ chối', value: s?.rejected ?? 0, money: false },
+    { title: 'Tổng số phiếu', value: s?.total ?? 0, money: false, tone: undefined },
+    { title: 'Tổng tiền', value: s?.totalAmount ?? 0, money: true, tone: 'accent' as const },
+    { title: 'Chờ duyệt', value: s?.pending ?? 0, money: false, tone: 'warning' as const },
+    { title: 'Đã duyệt', value: s?.approved ?? 0, money: false, tone: 'success' as const },
+    { title: 'Từ chối', value: s?.rejected ?? 0, money: false, tone: 'danger' as const },
   ];
 
   return (
     <>
-      <PageHeader title="Phiếu thu" />
+      <div className="rf-crumb">
+        <span>Tài chính / Kế toán</span>
+        <Icon name="chevron_right" size={14} className="rf-crumb__sep" />
+        <span className="rf-crumb__cur">Phiếu thu</span>
+      </div>
+      <h1 className="rf-page__title">Phiếu thu</h1>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+      <div className="rf-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', marginTop: 16 }}>
         {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} formatter={c.money ? (v) => money(Number(v)) : undefined} />
-            </Card>
-          </Col>
+          <StatCard key={c.title} label={c.title} tone={c.tone} value={c.money ? money(Number(c.value)) : Number(c.value).toLocaleString('vi-VN')} />
         ))}
-      </Row>
+      </div>
 
-      <Card size="small" style={{ marginBottom: 12 }}>
-        <Row gutter={[12, 12]}>
-          <Col xs={24} sm={12} lg={8}>
-            <Input.Search
-              allowClear
-              placeholder="Tìm theo mã phiếu / mã đơn / khách / người nộp"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onSearch={applyFilters}
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={8}>
-            <DatePicker.RangePicker
-              style={{ width: '100%' }}
-              placeholder={['Từ ngày', 'đến ngày']}
-              value={range.from && range.to ? [dayjs(range.from), dayjs(range.to)] : null}
-              onChange={(d) => setRange({ from: d?.[0]?.startOf('day').toISOString(), to: d?.[1]?.endOf('day').toISOString() })}
-            />
-          </Col>
-          <Col xs={12} sm={8} lg={4}>
-            <Input allowClear placeholder="PT thanh toán" value={pm} onChange={(e) => setPm(e.target.value)} onPressEnter={applyFilters} />
-          </Col>
-          <Col xs={6} sm={4} lg={2}>
-            <InputNumber style={{ width: '100%' }} placeholder="Số tiền từ" min={0} value={amtFrom} onChange={(v) => setAmtFrom(v ?? undefined)} />
-          </Col>
-          <Col xs={6} sm={4} lg={2}>
-            <InputNumber style={{ width: '100%' }} placeholder="đến" min={0} value={amtTo} onChange={(v) => setAmtTo(v ?? undefined)} />
-          </Col>
-          <Col xs={12} sm={8} lg={4}>
-            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Chi nhánh"
-              options={branchOpts} value={brId} onChange={(v) => setBrId(v ?? undefined)} />
-          </Col>
-          <Col xs={12} sm={8} lg={4}>
-            <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="NV phụ trách"
-              options={userOpts} value={suId} onChange={(v) => setSuId(v ?? undefined)} />
-          </Col>
-          <Col span={24}>
-            <Space>
-              <Button variant="primary" onClick={applyFilters}>
-                Tìm kiếm
-              </Button>
-              <Button variant="ghost" onClick={resetFilters}>Đặt lại</Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+      <div className="rf-card" style={{ padding: 12, marginTop: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+          <SearchInput value={search} onChange={setSearch} onEnter={applyFilters} placeholder="Tìm theo mã phiếu / mã đơn / khách / người nộp" style={{ gridColumn: 'span 2' }} />
+          <DateRangeInput from={range.from} to={range.to} placeholder={['Từ ngày', 'đến ngày']} onChange={(f, t) => setRange({ from: f, to: t })} />
+          <Input value={pm} onChange={setPm} onEnter={applyFilters} placeholder="PT thanh toán" />
+          <NumberInput value={amtFrom ?? null} min={0} placeholder="Số tiền từ" onChange={(v) => setAmtFrom(v ?? undefined)} />
+          <NumberInput value={amtTo ?? null} min={0} placeholder="đến" onChange={(v) => setAmtTo(v ?? undefined)} />
+          <Select allowClear showSearch placeholder="Chi nhánh" options={branchOpts} value={brId} onChange={(v) => setBrId((v as string) ?? undefined)} />
+          <Select allowClear showSearch placeholder="NV phụ trách" options={userOpts} value={suId} onChange={(v) => setSuId((v as string) ?? undefined)} />
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <Button variant="primary" icon="search" onClick={applyFilters}>
+            Tìm kiếm
+          </Button>
+          <Button onClick={resetFilters}>Đặt lại</Button>
+        </div>
+      </div>
 
-      <div style={{ marginBottom: 12, overflowX: 'auto' }}>
+      <div style={{ marginTop: 14, overflowX: 'auto' }}>
         <SegmentTabs
           value={status === undefined ? 'all' : String(status)}
           onChange={(val) => {
@@ -253,37 +230,14 @@ export function ReceiptsListPage() {
         />
       </div>
 
-      <DataCard title="Danh sách phiếu thu">
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{
-          current: page.page,
-          pageSize: page.size,
-          total: list.data?.total ?? 0,
-          showSizeChanger: true,
-          onChange: (p, sz) => setPage({ page: p, size: sz }),
-        }}
-        summary={(pageData) => {
-          const sum = pageData.reduce((a, r) => a + (r.amount ?? 0), 0);
-          return (
-            <Table.Summary fixed>
-              <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={columns.length}>
-                  <Space size="large">
-                    <strong>Tổng cộng (trang này)</strong>
-                    <span>Tổng tiền: <strong>{money(sum)}</strong></span>
-                  </Space>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-            </Table.Summary>
-          );
-        }}
-      />
-      </DataCard>
+      <div style={{ marginTop: 14 }}>
+        <DataCard title="Danh sách phiếu thu" bodyless>
+          <Table columns={columns} data={rows} rowKey={(r) => r.id} loading={list.isLoading} minWidth={1180} summary={rows.length ? summary : undefined} empty="Không có phiếu thu" />
+          <div style={{ padding: '10px 16px' }}>
+            <Pagination page={page.page} pageSize={page.size} total={list.data?.total ?? 0} unit="phiếu" onChange={(p) => setPage({ ...page, page: p })} />
+          </div>
+        </DataCard>
+      </div>
     </>
   );
 }

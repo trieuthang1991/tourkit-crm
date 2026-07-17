@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
-import { App } from '../../shared/ui/antd';
+import { MessageProvider } from '../../ui/message';
 import { ReceiptsListPage } from './ReceiptsListPage';
 import { httpClient } from '../../shared/api/httpClient';
 
@@ -22,9 +22,9 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <App>
+      <MessageProvider>
         <ReceiptsListPage />
-      </App>
+      </MessageProvider>
     </QueryClientProvider>,
   );
 }
