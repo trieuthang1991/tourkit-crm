@@ -415,3 +415,22 @@
 .rf-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 1200px) { .rf-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 780px) { .rf-grid--4, .rf-grid--2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Dòng danh sách (Bàn làm việc: thông báo / công nợ / bài viết / phiếu chờ) ---- */
+.rf-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 16px; border-bottom: 1px solid var(--tk-line);
+  text-align: left; width: 100%; background: transparent; border-left: none; border-right: none; border-top: none;
+}
+.rf-row:last-child { border-bottom: none; }
+.rf-row--click { cursor: pointer; }
+.rf-row--click:hover { background: var(--tk-nav-hover); }
+.rf-row__body { min-width: 0; flex: 1; }
+.rf-row__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.rf-row__title { font: 400 13px var(--tk-font); color: var(--tk-text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rf-row__title--unread { font-weight: 600; color: var(--tk-heading); }
+.rf-row__desc { font: 400 12px var(--tk-font); color: var(--tk-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.rf-row__time { flex-shrink: 0; font: 400 11.5px var(--tk-font-mono); color: var(--tk-muted); }
+.rf-kv { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.rf-kv__k { color: var(--tk-muted); }
+.rf-kv__v { color: var(--tk-text-strong); }
