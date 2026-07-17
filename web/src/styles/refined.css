@@ -1,0 +1,233 @@
+/* =========================================================================
+   TourKit CRM — Lớp component hệ "Refined" (.rf-*).
+   Bám design_handoff_refined_frontend. Hairline-first: viền mảnh, bóng rất nhẹ.
+   KHÔNG đụng components.css (lớp cũ) để màn chưa migrate vẫn chạy.
+   ========================================================================= */
+
+/* ---- Nút ---- */
+.rf-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 36px; padding: 0 14px; border-radius: var(--tk-radius);
+  font: 500 13px var(--tk-font); letter-spacing: -0.006em;
+  border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .2s ease, transform .12s ease;
+}
+.rf-btn:disabled { opacity: .5; cursor: not-allowed; }
+.rf-btn--sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
+.rf-btn--primary { background: var(--tk-accent); color: #fff; box-shadow: var(--tk-shadow-accent); }
+.rf-btn--primary:not(:disabled):hover { background: var(--tk-accent-hover); transform: translateY(-1px); }
+.rf-btn--primary:not(:disabled):active { background: var(--tk-accent-press); transform: translateY(0); box-shadow: none; }
+.rf-btn--ghost { background: var(--tk-surface); border-color: var(--tk-border); color: var(--tk-body); }
+.rf-btn--ghost:not(:disabled):hover { border-color: #d0d0d5; color: var(--tk-heading); }
+.rf-btn--text { background: transparent; color: var(--tk-body); }
+.rf-btn--text:not(:disabled):hover { background: var(--tk-nav-hover); color: var(--tk-heading); }
+.rf-btn--danger { background: var(--tk-surface); border-color: rgba(209, 73, 74, 0.5); color: var(--tk-danger); }
+.rf-btn--danger:not(:disabled):hover { background: var(--tk-danger-soft); }
+.rf-btn--link { background: transparent; height: auto; padding: 0; color: var(--tk-accent); font-size: 12px; }
+.rf-btn--link:hover { color: var(--tk-accent-hover); }
+.rf-btn .material-symbols-outlined { font-size: 18px; }
+.rf-iconbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: var(--tk-radius);
+  background: transparent; border: none; color: var(--tk-body); cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+.rf-iconbtn:hover { background: var(--tk-nav-hover); color: var(--tk-heading); }
+
+/* ---- Card ---- */
+.rf-card {
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-card-border);
+  border-radius: var(--tk-radius-card);
+  box-shadow: var(--tk-shadow-card);
+}
+.rf-card__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 18px; border-bottom: 1px solid var(--tk-line);
+}
+.rf-card__title { font: 700 14.5px var(--tk-font); color: var(--tk-heading); letter-spacing: -0.02em; }
+.rf-card__body { padding: 16px 18px; }
+
+/* ---- Section title (nhãn nhóm UPPERCASE) ---- */
+.rf-section {
+  font: 600 10.5px var(--tk-font); text-transform: uppercase; letter-spacing: 0.055em;
+  color: var(--tk-muted); margin: 0 0 10px;
+}
+
+/* ---- Thẻ KPI (label trên, số mono) — KHÔNG dải màu, KHÔNG gradient ---- */
+.rf-stat {
+  background: var(--tk-surface); border: 1px solid var(--tk-card-border);
+  border-radius: var(--tk-radius-card); box-shadow: var(--tk-shadow-card);
+  padding: 15px 16px;
+}
+.rf-stat__label {
+  font: 600 10.5px var(--tk-font); text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--tk-muted); margin-bottom: 8px;
+}
+.rf-stat__value {
+  font-family: var(--tk-font-mono); font-size: 23px; font-weight: 700; line-height: 1.1;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--tk-heading);
+}
+.rf-stat__value--success { color: var(--tk-success); }
+.rf-stat__value--info { color: var(--tk-info); }
+.rf-stat__value--danger { color: var(--tk-danger); }
+.rf-stat__value--warning { color: var(--tk-warning); }
+.rf-stat__value--accent { color: var(--tk-accent); }
+.rf-stat__value--muted { color: var(--tk-muted-2); }
+.rf-stat__link { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--tk-accent); cursor: pointer; }
+.rf-stat__link:hover { color: var(--tk-accent-hover); }
+
+/* Thẻ KPI có icon-chip (Data khách hàng / thẻ vận hành) */
+.rf-stat--icon { display: flex; align-items: center; gap: 12px; }
+.rf-stat__chip {
+  width: 42px; height: 42px; border-radius: 11px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+}
+.rf-stat__chip .material-symbols-outlined { font-size: 22px; }
+.rf-chip--accent { background: var(--tk-accent-soft); color: var(--tk-accent); }
+.rf-chip--success { background: var(--tk-success-soft); color: var(--tk-success); }
+.rf-chip--info { background: var(--tk-info-soft); color: var(--tk-info); }
+.rf-chip--warning { background: var(--tk-warning-soft); color: var(--tk-warning); }
+.rf-chip--danger { background: var(--tk-danger-soft); color: var(--tk-danger); }
+.rf-chip--muted { background: #f2f2f4; color: var(--tk-muted-2); }
+.rf-stat__num { font-family: var(--tk-font-mono); font-size: 22px; font-weight: 700; color: var(--tk-heading); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.rf-stat__sub { font-size: 12px; color: var(--tk-muted-2); margin-top: 2px; }
+
+/* ---- Pill / StatusTag ---- */
+.rf-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: var(--tk-radius-pill);
+  font: 600 11.5px var(--tk-font); white-space: nowrap;
+}
+.rf-pill--success { background: var(--tk-success-soft); color: var(--tk-success); }
+.rf-pill--warning { background: var(--tk-warning-soft); color: var(--tk-warning); }
+.rf-pill--danger { background: var(--tk-danger-soft); color: var(--tk-danger); }
+.rf-pill--info { background: var(--tk-info-soft); color: var(--tk-info); }
+.rf-pill--accent { background: var(--tk-accent-soft); color: var(--tk-accent); }
+.rf-pill--purple { background: var(--tk-purple-soft); color: var(--tk-purple); }
+.rf-pill--muted { background: #f2f2f4; color: var(--tk-muted-2); }
+
+/* ---- Seat pills (Khách (chỗ)) ---- */
+.rf-seat { display: inline-flex; gap: 4px; }
+.rf-seat span {
+  min-width: 26px; padding: 2px 6px; border-radius: 6px; text-align: center;
+  font-family: var(--tk-font-mono); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.rf-seat__total { background: var(--tk-seat-total-bg); color: var(--tk-seat-total); }
+.rf-seat__hold { background: var(--tk-seat-hold-bg); color: var(--tk-seat-hold); }
+.rf-seat__sold { background: var(--tk-seat-sold-bg); color: var(--tk-seat-sold); }
+.rf-seat__left { background: var(--tk-seat-left-bg); color: var(--tk-seat-left); }
+
+/* ---- Chip lọc nhanh ---- */
+.rf-fchip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 12px; border-radius: var(--tk-radius-pill);
+  border: 1px solid var(--tk-border); background: var(--tk-surface);
+  font: 500 12.5px var(--tk-font); color: var(--tk-body); cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.rf-fchip:hover { border-color: #d0d0d5; }
+.rf-fchip--active { background: var(--tk-accent-soft); border-color: transparent; color: var(--tk-accent); font-weight: 600; }
+.rf-fchip__count { font-family: var(--tk-font-mono); font-size: 11.5px; opacity: .75; }
+
+/* ---- Segment tabs ---- */
+.rf-segs {
+  display: inline-flex; gap: 4px; padding: 4px;
+  background: var(--tk-surface); border: 1px solid var(--tk-card-border);
+  border-radius: var(--tk-radius-lg); max-width: 100%; overflow-x: auto;
+}
+.rf-seg {
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  border: none; background: transparent; cursor: pointer;
+  padding: 7px 14px; border-radius: var(--tk-radius);
+  font: 500 13px var(--tk-font); color: var(--tk-body);
+  transition: background-color .15s ease, color .15s ease;
+}
+.rf-seg:hover { background: var(--tk-nav-hover); }
+.rf-seg--active { background: var(--tk-accent); color: #fff; font-weight: 600; }
+.rf-seg--active:hover { background: var(--tk-accent-hover); }
+.rf-seg__count { font-family: var(--tk-font-mono); font-size: 11.5px; opacity: .8; }
+
+/* ---- Bảng ---- */
+.rf-tablewrap { overflow-x: auto; }
+.rf-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.rf-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--tk-header-bg); color: var(--tk-muted);
+  font: 600 10.5px var(--tk-font); text-transform: uppercase; letter-spacing: 0.05em;
+  text-align: left; padding: 10px 12px; white-space: nowrap;
+  border-bottom: 1px solid var(--tk-line);
+}
+.rf-table tbody td {
+  padding: 11px 12px; border-bottom: 1px solid var(--tk-line);
+  font-size: 12.5px; color: var(--tk-body); vertical-align: middle;
+}
+.rf-table tbody tr:hover td { background: var(--tk-hover); }
+.rf-table tbody tr:last-child td { border-bottom: none; }
+.rf-table tfoot td {
+  padding: 11px 12px; background: var(--tk-header-bg);
+  font-size: 12.5px; color: var(--tk-body); border-top: 1px solid var(--tk-line);
+  white-space: nowrap;
+}
+.rf-cell-code { font-family: var(--tk-font-mono); font-weight: 600; color: var(--tk-accent); }
+.rf-cell-strong { color: var(--tk-text-strong); font-weight: 500; }
+.rf-cell-mono { font-family: var(--tk-font-mono); font-variant-numeric: tabular-nums; }
+.rf-cell-sub { font-family: var(--tk-font-mono); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+/* ---- Pagination ---- */
+.rf-pg { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-top: 1px solid var(--tk-line); }
+.rf-pg__info { font-size: 12.5px; color: var(--tk-muted-2); }
+.rf-pg__list { display: flex; align-items: center; gap: 4px; }
+.rf-pg__btn {
+  min-width: 30px; height: 30px; padding: 0 8px; border-radius: var(--tk-radius);
+  border: 1px solid var(--tk-border); background: var(--tk-surface);
+  font: 500 12.5px var(--tk-font-mono); color: var(--tk-body); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.rf-pg__btn:hover:not(:disabled) { border-color: #d0d0d5; }
+.rf-pg__btn:disabled { opacity: .4; cursor: not-allowed; }
+.rf-pg__btn--active { background: var(--tk-accent); border-color: var(--tk-accent); color: #fff; }
+
+/* ---- Input / Select ---- */
+.rf-field {
+  display: flex; align-items: center; gap: 8px;
+  height: 38px; padding: 0 11px; border-radius: var(--tk-radius);
+  border: 1px solid var(--tk-border); background: var(--tk-surface);
+  transition: border-color .15s ease;
+}
+.rf-field:focus-within { border-color: var(--tk-accent); }
+.rf-field--filled { background: var(--tk-fill); border-color: transparent; border-radius: 9px; }
+.rf-field input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  font: 400 13px var(--tk-font); color: var(--tk-heading);
+}
+.rf-field input::placeholder { color: var(--tk-muted); }
+.rf-field .material-symbols-outlined { font-size: 18px; color: var(--tk-muted); }
+.rf-select { position: relative; }
+.rf-select__btn {
+  width: 100%; height: 38px; padding: 0 11px; border-radius: var(--tk-radius);
+  border: 1px solid var(--tk-border); background: var(--tk-surface); cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font: 400 13px var(--tk-font); color: var(--tk-heading); text-align: left;
+}
+.rf-select__btn:hover { border-color: #d0d0d5; }
+.rf-select__btn--placeholder { color: var(--tk-muted); }
+.rf-select__menu {
+  position: absolute; z-index: 50; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--tk-surface); border: 1px solid var(--tk-card-border);
+  border-radius: var(--tk-radius-lg); box-shadow: var(--tk-shadow-pop);
+  overflow: hidden;
+}
+.rf-select__opts { max-height: 240px; overflow: auto; padding: 4px 0; }
+.rf-select__opt {
+  width: 100%; padding: 8px 12px; border: none; background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font: 400 13px var(--tk-font); color: var(--tk-body); text-align: left;
+}
+.rf-select__opt:hover { background: var(--tk-nav-hover); }
+.rf-select__opt--on { background: var(--tk-accent-soft); color: var(--tk-accent); font-weight: 500; }
+
+/* ---- Bar (dòng tiền / phễu) ---- */
+.rf-bar__track { height: 12px; border-radius: 6px; background: var(--tk-line); overflow: hidden; }
+.rf-bar__fill { height: 100%; border-radius: 6px; }

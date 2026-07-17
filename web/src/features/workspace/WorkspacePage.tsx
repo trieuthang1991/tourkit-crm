@@ -34,7 +34,8 @@ import { workTaskSchema, priorityLabel, statusLabel } from '../workTasks/types';
 import type { WorkTask } from '../workTasks/types';
 import { TaskDonut } from './TaskDonut';
 import type { DonutSegment } from './TaskDonut';
-import { Btn, Card, CardHead, Empty, GradAvatar, GradientStat, Pill, Tabs } from '../../ui/kit';
+// LEGACY: màn này còn dùng bộ gradient cũ — sẽ dựng lại theo design handoff ở bước 4.
+import { Btn, Card, CardHead, Empty, GradAvatar, GradientStat, Pill, Tabs } from '../../ui/legacy-kit';
 import { DepartureCalendarLite } from '../../ui/DepartureCalendarLite';
 
 type ReceiptListItem = z.infer<typeof receiptListItemSchema>;

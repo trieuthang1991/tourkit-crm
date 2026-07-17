@@ -1,78 +1,120 @@
 /* =========================================================================
-   TourKit CRM — Design tokens & global theme (KHÔNG dùng inline style)
-   Import 1 lần ở entry: `import './styles/theme.css'` (main.tsx).
-   Nguồn giá trị: docs/DESIGN.md. Chỉ đổi lớp trình bày — không đụng nghiệp vụ.
+   TourKit CRM — Design tokens hệ "Refined" (design_handoff_refined_frontend/README.md)
+   Nguồn chuẩn: bảng Design Tokens. Import 1 lần ở entry (main.tsx).
+   Hairline-first: viền mảnh, bóng rất nhẹ, KHÔNG dải màu trái, KHÔNG gradient nền thẻ.
    ========================================================================= */
 
 :root {
-  /* Brand / accent (cố định) */
+  /* --- Accent --- */
   --tk-accent: #eb5324;
   --tk-accent-hover: #d94a1e;
   --tk-accent-press: #c73e17;
-  --tk-accent-soft: rgba(235, 83, 36, 0.12);
-  --tk-accent-grad: linear-gradient(118deg, #eb5324, #d94a1e);
-  /* Elevation có hướng thay cho neon-glow (skill taste-design: cấm outer glow) */
-  --tk-accent-glow: 0 6px 16px -6px rgba(235, 83, 36, 0.55);
+  --tk-accent-soft: rgba(235, 83, 36, 0.1);
+  --tk-accent-grad: linear-gradient(135deg, #eb5324, #c73e17); /* logo */
 
-  /* Nền / bề mặt */
-  --tk-canvas: #f8f7fa;      /* nền vùng nội dung */
-  --tk-surface: #ffffff;     /* card, navbar, modal */
-  --tk-sidebar: #2f2f34;     /* menu dọc (KHÔNG dùng #000) */
-  --tk-hover: #faf9fc;       /* hover hàng bảng */
-  --tk-fill: #f6f5f9;        /* ô search, chip nền */
+  /* --- Nền / bề mặt --- */
+  --tk-canvas: #f6f6f7; /* nền vùng nội dung */
+  --tk-surface: #ffffff; /* card, sidebar, topbar */
+  --tk-header-bg: #fafafa; /* header bảng, tfoot */
+  --tk-fill: #f4f4f5; /* ô search filled */
+  --tk-hover: #fafafa; /* hover hàng bảng */
+  --tk-nav-hover: #f6f6f7; /* hover item nav */
 
-  /* Chữ */
-  --tk-heading: #5e5873;     /* tiêu đề, số nổi bật */
-  --tk-body: #6e6b7b;        /* chữ thường */
-  --tk-muted: #a8a5b5;       /* metadata, placeholder */
-  --tk-line: #f3f2f7;        /* viền card, kẻ hàng, header bảng */
-  --tk-border: #e6e3ee;      /* viền input / nút ghost */
+  /* --- Chữ --- */
+  --tk-heading: #17181c; /* tiêu đề trang, số lớn, tên */
+  --tk-text-strong: #33343a; /* ô bảng nhấn */
+  --tk-body: #56575f; /* chữ thường */
+  --tk-muted: #a9aab0; /* metadata, placeholder, header bảng */
+  --tk-muted-2: #8a8b93; /* nhãn phụ dưới số */
 
-  /* Semantic */
-  --tk-success: #28c76f;
-  --tk-warning: #ff9f43;
-  --tk-info: #00cfe8;
-  --tk-danger: #ea5455;
-  --tk-success-soft: rgba(40, 199, 111, 0.14);
-  --tk-warning-soft: rgba(255, 159, 67, 0.16);
-  --tk-info-soft: rgba(0, 207, 232, 0.14);
-  --tk-danger-soft: rgba(234, 84, 85, 0.14);
+  /* --- Viền / kẻ --- */
+  --tk-line: #f2f2f4; /* kẻ hàng bảng */
+  --tk-line-2: #f4f4f5;
+  --tk-border: #e2e2e5; /* viền input/nút ghost */
+  --tk-card-border: #ececee; /* viền card, viền phải sidebar */
 
-  /* Hình khối */
-  --tk-radius: 7px;
+  /* --- Semantic --- */
+  --tk-success: #1f9d57;
+  --tk-success-soft: rgba(31, 157, 87, 0.13);
+  --tk-warning: #d9821f;
+  --tk-warning-soft: rgba(217, 130, 31, 0.14);
+  --tk-info: #2f6bd6;
+  --tk-info-soft: rgba(47, 107, 214, 0.12);
+  --tk-info-soft-2: #e8f0ff;
+  --tk-danger: #d1494a;
+  --tk-danger-soft: rgba(209, 73, 74, 0.13);
+  --tk-purple: #7a5af0;
+  --tk-purple-soft: rgba(122, 90, 240, 0.1);
+
+  /* --- Seat pills (cột "Khách (chỗ)") --- */
+  --tk-seat-total: #2f6bd6;
+  --tk-seat-total-bg: #e8f0ff;
+  --tk-seat-hold: #b7791f;
+  --tk-seat-hold-bg: #fdf3e0;
+  --tk-seat-sold: #1f9d57;
+  --tk-seat-sold-bg: #e7f7ee;
+  --tk-seat-left: #d1494a;
+  --tk-seat-left-bg: #fbeae9;
+
+  /* --- Hình khối --- */
+  --tk-radius: 8px;
   --tk-radius-lg: 10px;
-  --tk-radius-xl: 14px;
-  /* Bóng phân tầng (ambient + key) — tinh tế, không neon */
-  --tk-shadow-card: 0 1px 2px rgba(34, 41, 47, 0.04), 0 4px 16px -6px rgba(34, 41, 47, 0.08);
-  --tk-shadow-pop: 0 4px 10px rgba(34, 41, 47, 0.06), 0 16px 40px -12px rgba(34, 41, 47, 0.18);
-  --tk-shadow-accent: 0 6px 16px -6px rgba(235, 83, 36, 0.4);
+  --tk-radius-card: 12px;
+  --tk-radius-logo: 9px;
+  --tk-radius-pill: 20px;
 
-  /* Font — Geist (sans) + JetBrains Mono (số/mã). Self-host offline @fontsource-variable */
-  --tk-font: "Geist Variable", "Geist", -apple-system, "Segoe UI", Arial, sans-serif;
-  --tk-font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+  /* --- Bóng (hairline-first) --- */
+  --tk-shadow-card: 0 1px 2px rgba(20, 20, 40, 0.04);
+  --tk-shadow-pop: 0 10px 30px -8px rgba(20, 20, 40, 0.18);
+  --tk-shadow-accent: 0 6px 16px -6px rgba(235, 83, 36, 0.5);
+
+  /* --- Layout --- */
+  --tk-shell-h: 60px; /* topbar & sidebar brand */
+  --tk-sidebar-w: 252px;
+  --tk-content-max: 1520px;
+
+  /* --- Font --- */
+  --tk-font: 'Geist Variable', 'Geist', -apple-system, 'Segoe UI', Arial, sans-serif;
+  --tk-font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* --- COMPAT (tạm) — cho components.css + các màn AntD CHƯA migrate.
+         Gỡ sau khi migrate xong toàn bộ màn sang hệ Refined. --- */
+  --tk-radius-xl: var(--tk-radius-card);
+  --tk-sidebar: #2f2f34; /* AppShell cũ (dark) — bước 3 đổi sang rail sáng */
+  --tk-accent-glow: var(--tk-shadow-accent);
 }
 
 /* Reset nhẹ + nền app */
 body {
   margin: 0;
   font-family: var(--tk-font);
+  font-size: 13px;
   color: var(--tk-body);
   background: var(--tk-canvas);
+  letter-spacing: -0.006em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  letter-spacing: -0.005em; /* Geist hơi rộng — siết nhẹ cho đặc, chuyên nghiệp */
 }
 
-/* Số & tiền canh phải, dễ so cột */
-.tk-mono { font-family: var(--tk-font-mono); }
+h1, h2, h3, h4, h5 {
+  letter-spacing: -0.02em;
+  color: var(--tk-heading);
+}
+
+/* Số & tiền: mono tabular, dễ so cột */
+.tk-mono { font-family: var(--tk-font-mono); font-variant-numeric: tabular-nums; }
 .tk-num { font-family: var(--tk-font-mono); text-align: right; font-variant-numeric: tabular-nums; }
 
-/* Tabular numerals mặc định cho mọi con số hiển thị dạng bảng/thẻ (không lệch cột khi đổi số) */
-.ant-table, .ant-statistic-content, .ant-pagination, .ant-picker, .ant-badge-count { font-variant-numeric: tabular-nums; }
+/* Material Symbols — nét mảnh theo handoff */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  line-height: 1;
+  user-select: none;
+}
 
 /* Scrollbar mảnh */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #d9d7e0; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
-::-webkit-scrollbar-thumb:hover { background: #bcb9c9; background-clip: content-box; }
+::-webkit-scrollbar-thumb { background: #dcdce0; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #c6c6cc; background-clip: content-box; }
 ::-webkit-scrollbar-track { background: transparent; }

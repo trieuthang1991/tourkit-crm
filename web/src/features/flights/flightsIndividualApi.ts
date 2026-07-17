@@ -33,7 +33,8 @@ export function useFlightIndividuals(page: number, size: number, filter: FlightI
 
 export function useFlightIndividualStats(filter: FlightIndividualFilter = {}) {
   // Thống kê/đếm sub-tab theo bộ lọc HIỆN TẠI nhưng KHÔNG theo tab (để badge mỗi tab đúng tổng).
-  const { tab: _tab, ...rest } = filter;
+  const rest: Omit<FlightIndividualFilter, 'tab'> = { ...filter };
+  delete (rest as FlightIndividualFilter).tab;
   return useQuery({
     queryKey: [...KEY, 'stats', rest],
     queryFn: async () => {
