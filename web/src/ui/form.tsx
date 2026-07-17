@@ -68,7 +68,7 @@ export function TextAreaField({ name, label, required, rows, placeholder }: { na
   );
 }
 
-export function DatePickerField({ name, label, required }: { name: string; label: string; required?: boolean }) {
+export function DatePickerField({ name, label, required }: { name: string; label: string; required?: boolean; placeholder?: string }) {
   const { control, formState } = useFormContext();
   return (
     <Controller
@@ -91,6 +91,7 @@ export function SelectField({
   allowClear,
   showSearch,
   mode,
+  placeholder,
 }: {
   name: string;
   label: string;
@@ -98,6 +99,7 @@ export function SelectField({
   required?: boolean;
   allowClear?: boolean;
   showSearch?: boolean;
+  placeholder?: string;
   /** tags = multi + cho phép tự nhập giá trị mới (giữ hành vi mode="tags" của AntD) */
   mode?: 'multiple' | 'tags';
 }) {
@@ -118,7 +120,7 @@ export function SelectField({
             showSearch={showSearch || multiple}
             multiple={multiple}
             tags={tags}
-            placeholder={`${tags ? 'Chọn hoặc nhập' : 'Chọn'} ${lc(label)}`}
+            placeholder={placeholder ?? `${tags ? 'Chọn hoặc nhập' : 'Chọn'} ${lc(label)}`}
           />
         </Labeled>
       )}
