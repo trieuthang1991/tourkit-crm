@@ -434,3 +434,7 @@
 .rf-kv { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
 .rf-kv__k { color: var(--tk-muted); }
 .rf-kv__v { color: var(--tk-text-strong); }
+
+/* spinner cho Button loading (shim antd) */
+.rf-spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-top-color:transparent;display:inline-block;animation:rf-spin .6s linear infinite}
+@keyframes rf-spin{to{transform:rotate(360deg)}}

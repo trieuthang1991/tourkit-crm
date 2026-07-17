@@ -67,3 +67,10 @@ export function useToast(): Api {
   if (!ctx) throw new Error('useToast phải nằm trong <MessageProvider>');
   return ctx;
 }
+
+/** Như useToast nhưng KHÔNG ném khi thiếu Provider — trả toast no-op (dùng cho shim App.useApp). */
+export function useToastOptional(): Api {
+  const ctx = useContext(Ctx);
+  const noop: Api = { success: () => {}, error: () => {}, info: () => {}, warning: () => {} };
+  return ctx ?? noop;
+}
