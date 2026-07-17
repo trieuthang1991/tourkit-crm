@@ -1,11 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, App, Button, Form, Input, Result } from '../../shared/ui/antd';
+import type { ReactNode } from 'react';
+import { Alert, App, Button, Input, Result } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';
 import { registerTenantFormSchema, useRegisterTenant } from './registrationApi';
 import type { RegisterTenantForm } from './registrationApi';
+
+function Field({ label, error, children }: { label?: string; error?: string; children: ReactNode }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      {label ? <label style={{ display: 'block', marginBottom: 6, fontSize: 12.5, fontWeight: 500, color: 'var(--tk-text-strong)' }}>{label}</label> : null}
+      {children}
+      {error ? <div style={{ marginTop: 6, fontSize: 12, color: 'var(--tk-danger)' }}>{error}</div> : null}
+    </div>
+  );
+}
 
 export function RegistrationPage() {
   const { message } = App.useApp();
@@ -54,55 +65,29 @@ export function RegistrationPage() {
     <div style={{ maxWidth: 400, margin: '64px auto' }}>
       <h1 style={{ textAlign: 'center', marginBottom: 24 }}>TourKit — Đăng ký công ty</h1>
       {submitError ? <Alert type="error" message={submitError} style={{ marginBottom: 16 }} /> : null}
-      <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
-        <Form.Item
-          label="Tên công ty"
-          validateStatus={errors.companyName ? 'error' : ''}
-          help={errors.companyName?.message}
-        >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Field label="Tên công ty" error={errors.companyName?.message}>
           <Controller name="companyName" control={control} render={({ field }) => <Input {...field} />} />
-        </Form.Item>
-        <Form.Item label="Mã tổ chức (slug)" validateStatus={errors.slug ? 'error' : ''} help={errors.slug?.message}>
-          <Controller
-            name="slug"
-            control={control}
-            render={({ field }) => <Input {...field} placeholder="vd: demo-tour" />}
-          />
-        </Form.Item>
-        <Form.Item
-          label="Họ tên quản trị viên"
-          validateStatus={errors.adminFullName ? 'error' : ''}
-          help={errors.adminFullName?.message}
-        >
+        </Field>
+        <Field label="Mã tổ chức (slug)" error={errors.slug?.message}>
+          <Controller name="slug" control={control} render={({ field }) => <Input {...field} placeholder="vd: demo-tour" />} />
+        </Field>
+        <Field label="Họ tên quản trị viên" error={errors.adminFullName?.message}>
           <Controller name="adminFullName" control={control} render={({ field }) => <Input {...field} />} />
-        </Form.Item>
-        <Form.Item
-          label="Email quản trị viên"
-          validateStatus={errors.adminEmail ? 'error' : ''}
-          help={errors.adminEmail?.message}
-        >
-          <Controller
-            name="adminEmail"
-            control={control}
-            render={({ field }) => <Input {...field} placeholder="admin@congty.vn" />}
-          />
-        </Form.Item>
-        <Form.Item
-          label="Mật khẩu"
-          validateStatus={errors.adminPassword ? 'error' : ''}
-          help={errors.adminPassword?.message}
-        >
+        </Field>
+        <Field label="Email quản trị viên" error={errors.adminEmail?.message}>
+          <Controller name="adminEmail" control={control} render={({ field }) => <Input {...field} placeholder="admin@congty.vn" />} />
+        </Field>
+        <Field label="Mật khẩu" error={errors.adminPassword?.message}>
           <Controller name="adminPassword" control={control} render={({ field }) => <Input.Password {...field} />} />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" block loading={isSubmitting}>
-            Đăng ký
-          </Button>
-        </Form.Item>
-        <div style={{ textAlign: 'center' }}>
+        </Field>
+        <Button type="primary" htmlType="submit" block loading={isSubmitting}>
+          Đăng ký
+        </Button>
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
           <Link to="/login">Đã có tài khoản? Đăng nhập</Link>
         </div>
-      </Form>
+      </form>
     </div>
   );
 }

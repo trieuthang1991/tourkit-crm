@@ -19,10 +19,6 @@
 .tk-sider__title { color: #fff; font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
 
 /* item menu active: gradient đỏ + glow (bám DESIGN.md §4) */
-.tk-sider .ant-menu-item-selected {
-  background: var(--tk-accent-grad) !important;
-  box-shadow: var(--tk-accent-glow);
-}
 
 .tk-navbar {
   height: 60px; background: var(--tk-surface); display: flex; align-items: center;
@@ -156,34 +152,21 @@
 
 /* =========================================================================
    Override cho Ant Design SẴN CÓ — đổi look toàn app mà KHÔNG sửa markup.
-   (những thứ token không phủ được: uppercase header bảng, viền/bóng card…)
-   ========================================================================= */
-
-/* Bảng: header IN HOA + giãn chữ (bám DESIGN.md §3). Hover/nền header đã lo bằng token. */
-.ant-table-wrapper .ant-table-thead > tr > th {
+   (những thứ token không phủ được: uppercase header bảng{
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 0.5px;
   font-weight: 500;
 }
 /* Số/tiền canh phải mono: thêm class "tk-num" vào column (className) */
-.ant-table-wrapper td.tk-num, .ant-table-wrapper th.tk-num { font-family: var(--tk-font-mono); font-variant-numeric: tabular-nums; }
-/* Cột đóng băng (fixed) nền trắng liền mạch */
-.ant-table-wrapper .ant-table-cell-fix-left,
-.ant-table-wrapper .ant-table-cell-fix-right { background: var(--tk-surface); }
-.ant-table-wrapper .ant-table-thead .ant-table-cell-fix-left,
-.ant-table-wrapper .ant-table-thead .ant-table-cell-fix-right { background: var(--tk-line); }
 
-/* Card: bóng khuếch tán, không viền cứng, header kẻ dưới mảnh */
-.ant-card { box-shadow: var(--tk-shadow-card); border: none; }
-.ant-card > .ant-card-head { border-bottom: 1px solid var(--tk-line); min-height: auto; color: var(--tk-heading); }
+/* Cột đóng băng (fixed) nền trắng liền mạch */
+
+/* Card: bóng khuếch tán, không viền cứng{ box-shadow: var(--tk-shadow-card); border: none; }
 
 /* Nút primary: lún nhẹ khi nhấn (bám DESIGN.md §4) */
-.ant-btn-primary:active { transform: translateY(1px); }
 
 /* Modal bo mềm + tiêu đề đậm */
-.ant-modal .ant-modal-content { border-radius: var(--tk-radius-xl); }
-.ant-modal .ant-modal-title { color: var(--tk-heading); font-weight: 700; }
 
 /* ---- Nút ghost trên navbar / thứ cấp ---- */
 .tk-btn-ghost {
@@ -210,107 +193,57 @@
 .tk-field { margin-bottom: 4px; }
 .tk-field__label { display: block; font-size: 12.5px; font-weight: 500; color: var(--tk-heading); margin-bottom: 6px; }
 .tk-field__req { color: var(--tk-danger); }
-.tk-field__error { font-size: 12px; color: var(--tk-danger); margin-top: 5px; }
-
-/* =========================================================================
-   POLISH — nâng cấp cảm giác cao cấp + chống lỗi lặt vặt (redesign pass)
-   ========================================================================= */
-
-/* Chuyển động mượt cho phần tử tương tác (GPU-friendly: color/shadow/transform) */
-.ant-btn, .tk-segtab, .tk-pill, .ant-select-selector, .ant-input,
-.ant-input-affix-wrapper, .ant-input-number, .ant-picker, .tk-card, .tk-stat,
-.tk-sider .ant-menu-item, .tk-sider .ant-menu-submenu-title {
+.tk-field__error { font-size: 12px; color: var(--tk-danger); margin-top: 5px; } .tk-segtab, .tk-pill, .tk-card, .tk-stat{
   transition: color .18s ease, background-color .18s ease, border-color .18s ease,
               box-shadow .2s ease, transform .12s ease;
 }
 
 /* Focus-visible: viền accent rõ ràng (a11y — điều hướng bàn phím) */
-a:focus-visible, button:focus-visible, .tk-segtab:focus-visible, .ant-btn:focus-visible {
+a:focus-visible, button:focus-visible, .tk-segtab:focus-visible{
   outline: 2px solid var(--tk-accent);
   outline-offset: 2px;
 }
 
-/* Nút primary: nhấc nhẹ + đổ bóng accent khi hover, phẳng lại khi nhấn */
-.ant-btn-primary:not(:disabled):hover { transform: translateY(-1px); box-shadow: var(--tk-shadow-accent); }
-.ant-btn-primary:not(:disabled):active { transform: translateY(0); box-shadow: none; }
+/* Nút primary: nhấc nhẹ + đổ bóng accent khi hover{ transform: translateY(-1px); box-shadow: var(--tk-shadow-accent); }
 
 /* Sidebar: hover item CHƯA active (trước chỉ active có style → cảm giác sống hơn) */
-.tk-sider .ant-menu-item:not(.ant-menu-item-selected):hover,
-.tk-sider .ant-menu-submenu-title:hover { background: rgba(255, 255, 255, 0.06) !important; }
 
 /* Card/stat: nhấc chiều sâu tinh tế khi hover */
 .tk-stat:hover, .tk-card:hover { box-shadow: var(--tk-shadow-pop); }
 .tk-segtab--active { transform: translateY(-1px); }
 
 /* Chống dính chữ / chữ mồ côi ở tiêu đề · mô tả · label */
-.tk-page__title, .ant-modal-title, .ant-card-head-title { text-wrap: balance; }
-.tk-page__desc, .tk-field__label, .ant-form-item-label > label, .tk-stat__label { text-wrap: pretty; }
+.tk-page__title{ text-wrap: balance; }
+.tk-page__desc, .tk-field__label, .tk-stat__label { text-wrap: pretty; }
 
 /* Bảng: canh giữa dọc cell + ô thao tác (nút) không dính nhau/không dính lề */
-.ant-table-wrapper .ant-table-tbody > tr > td { vertical-align: middle; }
-.ant-table-wrapper .ant-space { gap: 8px !important; }
 
 /* Input/Select/Picker: bo mềm đồng nhất */
-.ant-input, .ant-input-affix-wrapper, .ant-input-number, .ant-picker,
-.ant-select .ant-select-selector { border-radius: var(--tk-radius) !important; }
 
-/* Placeholder màu muted đồng nhất, không quá mờ (dễ đọc gợi ý) */
-.ant-input::placeholder, .ant-input-number-input::placeholder,
-.ant-picker-input > input::placeholder { color: var(--tk-muted); opacity: 1; }
-.ant-select-selection-placeholder { color: var(--tk-muted); }
+/* Placeholder màu muted đồng nhất{ color: var(--tk-muted); opacity: 1; }
 
-/* Modal: nội dung không dính lề, footer cách đều */
-.ant-modal .ant-modal-body { padding-top: 4px; }
-.ant-modal .ant-modal-footer { margin-top: 22px; }
+/* Modal: nội dung không dính lề{ padding-top: 4px; }
 
 /* =========================================================================
    PASS taste-design (Geist + JetBrains Mono) — nâng chất chuyên nghiệp toàn app
    ========================================================================= */
 
-/* Số liệu thẻ thống kê AntD (Statistic) dùng mono tabular — đồng bộ .tk-stat__value */
-.ant-statistic-content-value,
-.ant-statistic-content-prefix,
-.ant-statistic-content-suffix {
-  font-family: var(--tk-font-mono);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
-}
-.ant-statistic-content { color: var(--tk-heading); letter-spacing: -0.01em; }
-.ant-statistic-title { color: var(--tk-muted); font-size: 12.5px; }
-
-/* Heading Geist: đậm chắc, siết nhẹ — phân cấp bằng weight/màu (skill §3) */
-.ant-typography h1, .ant-typography h2, .ant-typography h3,
-h1.ant-typography, h2.ant-typography, h3.ant-typography,
-.ant-typography-title, .tk-page__title {
+/* Heading Geist: đậm chắc, .tk-page__title {
   color: var(--tk-heading);
   font-weight: 650;
   letter-spacing: -0.018em;
 }
 
-/* Mã/code trong bảng, tag, badge số → mono (dễ đọc, chuyên nghiệp) */
-.ant-tag { font-variant-numeric: tabular-nums; }
+/* Mã/code trong bảng, tag, badge số → mono (dễ đọc{ font-variant-numeric: tabular-nums; }
 
-/* Bảng: chữ đậm vừa cho ô nổi bật, hàng thoáng hơn 1px, viền dưới mảnh */
-.ant-table-wrapper .ant-table-tbody > tr > td { border-bottom-color: var(--tk-line); }
-.ant-table-wrapper .ant-table-thead > tr > th {
-  color: var(--tk-muted);
-  background: var(--tk-fill);
-  border-bottom: 1px solid var(--tk-border);
-}
+/* Bảng: chữ đậm vừa cho ô nổi bật, hàng thoáng hơn 1px{ border-bottom-color: var(--tk-line); }
 
 /* Nút: chữ chắc + bo mềm đồng bộ radius mới */
-.ant-btn { border-radius: var(--tk-radius) !important; letter-spacing: -0.01em; }
 
 /* Drawer (form trượt phải): tiêu đề đậm + thân thoáng */
-.ant-drawer .ant-drawer-title { color: var(--tk-heading); font-weight: 650; }
-.ant-drawer .ant-drawer-header { border-bottom: 1px solid var(--tk-line); }
 
-/* Tabs (AntD) + Segmented: gạch/nền accent mảnh, mượt */
-.ant-segmented { border-radius: var(--tk-radius-lg); padding: 3px; }
-.ant-segmented .ant-segmented-item-selected { box-shadow: var(--tk-shadow-accent); }
+/* Tabs (AntD) + Segmented: gạch/nền accent mảnh{ border-radius: var(--tk-radius-lg); padding: 3px; }
 
-/* Spin: chấm accent tinh, thay vòng xoay xanh mặc định (skill: hạn chế spinner thô) */
-.ant-spin-dot-item { background-color: var(--tk-accent); }
+/* Spin: chấm accent tinh{ background-color: var(--tk-accent); }
 
-/* Empty state gọn hơn: mô tả muted, không lệch */
-.ant-empty-description { color: var(--tk-muted); }
+/* Empty state gọn hơn: mô tả muted{ color: var(--tk-muted); }

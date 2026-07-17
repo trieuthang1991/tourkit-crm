@@ -1,10 +1,21 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Button, Form, Input } from '../../shared/ui/antd';
+import type { ReactNode } from 'react';
+import { Alert, Button, Input } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from './AuthContext';
+
+function Field({ label, error, children }: { label?: string; error?: string; children: ReactNode }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      {label ? <label style={{ display: 'block', marginBottom: 6, fontSize: 12.5, fontWeight: 500, color: 'var(--tk-text-strong)' }}>{label}</label> : null}
+      {children}
+      {error ? <div style={{ marginTop: 6, fontSize: 12, color: 'var(--tk-danger)' }}>{error}</div> : null}
+    </div>
+  );
+}
 
 const loginFormSchema = z.object({
   tenantSlug: z.string().min(1, 'Vui lòng nhập mã tổ chức'),
@@ -42,41 +53,23 @@ export function LoginPage() {
     <div style={{ maxWidth: 360, margin: '96px auto' }}>
       <h1 style={{ textAlign: 'center', marginBottom: 24 }}>TourKit — Đăng nhập</h1>
       {submitError ? <Alert type="error" message={submitError} style={{ marginBottom: 16 }} /> : null}
-      <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
-        <Form.Item
-          label="Mã tổ chức"
-          validateStatus={errors.tenantSlug ? 'error' : ''}
-          help={errors.tenantSlug?.message}
-        >
-          <Controller
-            name="tenantSlug"
-            control={control}
-            render={({ field }) => <Input {...field} placeholder="vd: demo-tour" />}
-          />
-        </Form.Item>
-        <Form.Item label="Email" validateStatus={errors.email ? 'error' : ''} help={errors.email?.message}>
-          <Controller
-            name="email"
-            control={control}
-            render={({ field }) => <Input {...field} placeholder="email@congty.vn" />}
-          />
-        </Form.Item>
-        <Form.Item
-          label="Mật khẩu"
-          validateStatus={errors.password ? 'error' : ''}
-          help={errors.password?.message}
-        >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Field label="Mã tổ chức" error={errors.tenantSlug?.message}>
+          <Controller name="tenantSlug" control={control} render={({ field }) => <Input {...field} placeholder="vd: demo-tour" />} />
+        </Field>
+        <Field label="Email" error={errors.email?.message}>
+          <Controller name="email" control={control} render={({ field }) => <Input {...field} placeholder="email@congty.vn" />} />
+        </Field>
+        <Field label="Mật khẩu" error={errors.password?.message}>
           <Controller name="password" control={control} render={({ field }) => <Input.Password {...field} />} />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" block loading={isSubmitting}>
-            Đăng nhập
-          </Button>
-        </Form.Item>
-        <div style={{ textAlign: 'center' }}>
+        </Field>
+        <Button type="primary" htmlType="submit" block loading={isSubmitting}>
+          Đăng nhập
+        </Button>
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
           <Link to="/register">Đăng ký công ty</Link>
         </div>
-      </Form>
+      </form>
     </div>
   );
 }

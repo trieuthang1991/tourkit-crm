@@ -1,6 +1,5 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import 'antd/dist/reset.css';
 import '@fontsource-variable/geist'; // sans chính (heading + body)
 import '@fontsource-variable/jetbrains-mono'; // mono cho số/tiền/mã
 import 'material-symbols/outlined.css'; // icon hệ Refined — thay @ant-design/icons

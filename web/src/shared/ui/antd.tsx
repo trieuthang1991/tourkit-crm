@@ -9,7 +9,7 @@
    Giữ real-antd runtime cho vài component hiếm (Form/List/Calendar/Steps/Result).
    ========================================================================= */
 import type { CSSProperties, ReactNode } from 'react';
-import { Fragment, isValidElement } from 'react';
+import { Fragment, forwardRef, isValidElement } from 'react';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import type * as AntdNS from 'antd';
@@ -34,10 +34,9 @@ import { useToastOptional } from '../../ui/message';
 type A = typeof AntdNS;
 
 export type { ColumnsType } from 'antd/es/table';
-export type { CalendarProps } from 'antd';
 
-// Giữ real antd cho các component còn khó shim — xử lý từng màn sau.
-export { Form, Calendar } from 'antd';
+// KHÔNG còn re-export runtime nào từ 'antd' — toàn bộ component đã shim bằng ui/*.
+// (antd chỉ còn được dùng ở dạng `import type` cho type-fidelity của các shim.)
 
 const cast = <K extends keyof A>(impl: unknown): A[K] => impl as A[K];
 const asProps = (p: unknown) => p as Record<string, unknown>;
@@ -84,13 +83,14 @@ function ButtonImpl(props: Record<string, unknown>) {
 export const Button = cast<'Button'>(ButtonImpl);
 
 /* ---------------------- Input (+ Search/TextArea/Password/Group) ---------------------- */
-function BaseInput(props: Record<string, unknown>) {
+const BaseInput = forwardRef<HTMLInputElement, Record<string, unknown>>(function BaseInput(props, ref) {
   const { value, onChange, placeholder, prefix, suffix, allowClear, onPressEnter, style, disabled, type, maxLength, className } = asProps(props);
   const has = value != null && value !== '';
   return (
     <div className={`rf-field ${(className as string) ?? ''}`} style={style as CSSProperties}>
       {prefix as ReactNode}
       <input
+        ref={ref}
         value={(value as string | number | undefined) ?? ''}
         placeholder={placeholder as string}
         disabled={disabled as boolean}
@@ -112,7 +112,7 @@ function BaseInput(props: Record<string, unknown>) {
       {suffix as ReactNode}
     </div>
   );
-}
+});
 function SearchInputImpl(props: Record<string, unknown>) {
   const { onSearch, enterButton, style, ...rest } = asProps(props);
   const os = onSearch as ((v: string) => void) | undefined;
@@ -127,10 +127,11 @@ function SearchInputImpl(props: Record<string, unknown>) {
     </div>
   );
 }
-function TextAreaImpl(props: Record<string, unknown>) {
+const TextAreaImpl = forwardRef<HTMLTextAreaElement, Record<string, unknown>>(function TextAreaImpl(props, ref) {
   const { value, onChange, placeholder, rows = 4, style, disabled, maxLength } = asProps(props);
   return (
     <textarea
+      ref={ref}
       value={(value as string | undefined) ?? ''}
       placeholder={placeholder as string}
       rows={rows as number}
@@ -144,12 +145,17 @@ function TextAreaImpl(props: Record<string, unknown>) {
       }}
     />
   );
-}
-BaseInput.Search = SearchInputImpl;
-BaseInput.TextArea = TextAreaImpl;
-BaseInput.Password = (props: Record<string, unknown>) => <BaseInput {...props} type="password" />;
-BaseInput.Group = ({ children, style }: { children?: ReactNode; style?: CSSProperties }) => <div style={{ display: 'flex', gap: 6, ...style }}>{children}</div>;
-export const Input = cast<'Input'>(BaseInput);
+});
+const PasswordImpl = forwardRef<HTMLInputElement, Record<string, unknown>>(function PasswordImpl(props, ref) {
+  return <BaseInput {...props} ref={ref} type="password" />;
+});
+const InputWithStatics = Object.assign(BaseInput, {
+  Search: SearchInputImpl,
+  TextArea: TextAreaImpl,
+  Password: PasswordImpl,
+  Group: ({ children, style }: { children?: ReactNode; style?: CSSProperties }) => <div style={{ display: 'flex', gap: 6, ...style }}>{children}</div>,
+});
+export const Input = cast<'Input'>(InputWithStatics);
 
 /* ---------------------- InputNumber ---------------------- */
 function InputNumberImpl(props: Record<string, unknown>) {

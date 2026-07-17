@@ -1,5 +1,6 @@
-import { App, Button, Card, Form, Input } from '../../shared/ui/antd';
+import { App, Button, Card, Input } from '../../shared/ui/antd';
 import { useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { errorMessage } from '../../shared/api/problem';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { useAuth } from '../auth/AuthContext';
@@ -26,13 +27,11 @@ export function CompanyProfilePage() {
   const canManage = has('company.manage');
   const profile = useCompanyProfile();
   const save = useSaveCompanyProfile();
-  const [form] = Form.useForm<CompanyProfile>();
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<CompanyProfile>();
 
   useEffect(() => {
-    if (profile.data) {
-      form.setFieldsValue(profile.data);
-    }
-  }, [profile.data, form]);
+    if (profile.data) reset(profile.data);
+  }, [profile.data, reset]);
 
   async function onFinish(values: CompanyProfile) {
     try {
@@ -47,23 +46,27 @@ export function CompanyProfilePage() {
     <>
       <PageHeader title="Hồ sơ công ty" />
       <Card loading={profile.isLoading} style={{ maxWidth: 640 }}>
-        <Form form={form} layout="vertical" onFinish={onFinish} disabled={!canManage}>
+        <form onSubmit={handleSubmit(onFinish)}>
           {FIELDS.map((f) => (
-            <Form.Item
-              key={f.name}
-              name={f.name}
-              label={f.label}
-              rules={f.required ? [{ required: true, message: 'Bắt buộc' }] : undefined}
-            >
-              <Input />
-            </Form.Item>
+            <div key={f.name} style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 12.5, fontWeight: 500, color: 'var(--tk-text-strong)' }}>
+                {f.label} {f.required ? <span style={{ color: 'var(--tk-danger)' }}>*</span> : null}
+              </label>
+              <Controller
+                name={f.name}
+                control={control}
+                rules={f.required ? { required: 'Bắt buộc' } : undefined}
+                render={({ field }) => <Input {...field} value={field.value ?? ''} disabled={!canManage} />}
+              />
+              {errors[f.name] ? <div style={{ marginTop: 6, fontSize: 12, color: 'var(--tk-danger)' }}>{errors[f.name]?.message as string}</div> : null}
+            </div>
           ))}
           {canManage ? (
             <Button type="primary" htmlType="submit" loading={save.isPending}>
               Lưu
             </Button>
           ) : null}
-        </Form>
+        </form>
       </Card>
     </>
   );

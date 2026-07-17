@@ -442,3 +442,19 @@
 /* Card hoverable (shim antd) */
 .rf-card--hover { transition: box-shadow .15s ease, border-color .15s ease, transform .12s ease; }
 .rf-card--hover:hover { border-color: var(--tk-border); box-shadow: var(--tk-shadow-pop); transform: translateY(-1px); }
+
+/* ---- Lịch tháng (DepartureCalendar) ---- */
+.rf-cal { background: var(--tk-surface); border: 1px solid var(--tk-card-border); border-radius: var(--tk-radius-card); overflow: hidden; }
+.rf-cal__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--tk-line); }
+.rf-cal__title { font: 700 15px var(--tk-font); color: var(--tk-heading); text-transform: capitalize; }
+.rf-cal__nav { display: flex; align-items: center; gap: 6px; }
+.rf-cal__wd { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--tk-line); }
+.rf-cal__wd > div { padding: 8px 10px; font: 600 10.5px var(--tk-font); text-transform: uppercase; letter-spacing: 0.05em; color: var(--tk-muted); text-align: left; }
+.rf-cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.rf-cal__cell { min-height: 96px; padding: 6px 8px; border-right: 1px solid var(--tk-line); border-bottom: 1px solid var(--tk-line); overflow: hidden; }
+.rf-cal__cell:nth-child(7n) { border-right: none; }
+.rf-cal__cell--out { background: #fbfbfc; }
+.rf-cal__daynum { font: 600 12.5px var(--tk-font-mono); color: var(--tk-text-strong); }
+.rf-cal__cell--out .rf-cal__daynum { color: var(--tk-muted); }
+.rf-cal__today .rf-cal__daynum { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--tk-accent); color: #fff; }
+.rf-cal--mini .rf-cal__cell { min-height: 68px; }
