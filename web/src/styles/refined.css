@@ -403,3 +403,15 @@
   .rf-rail { position: fixed; left: 0; box-shadow: var(--tk-shadow-pop); }
   .rf-content { padding: 18px 16px 32px; }
 }
+
+/* ---- Page header + lưới KPI ---- */
+.rf-crumb { display: flex; align-items: center; gap: 6px; font: 400 12px var(--tk-font); color: var(--tk-muted); margin-bottom: 8px; }
+.rf-crumb__sep { font-size: 14px !important; color: var(--tk-muted); }
+.rf-crumb__cur { color: var(--tk-body); }
+.rf-page__title { font: 700 23px var(--tk-font); letter-spacing: -0.028em; color: var(--tk-heading); margin: 0; }
+.rf-page__sub { font: 400 13px var(--tk-font); color: var(--tk-muted-2); margin-top: 3px; }
+.rf-grid { display: grid; gap: 14px; }
+.rf-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rf-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1200px) { .rf-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 780px) { .rf-grid--4, .rf-grid--2 { grid-template-columns: minmax(0, 1fr); } }

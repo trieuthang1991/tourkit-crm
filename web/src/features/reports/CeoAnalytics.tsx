@@ -1,18 +1,22 @@
-import { Button, Card, Col, Row, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
-import type { ColumnsType } from '../../shared/ui/antd';
-import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { StatCard } from '../../shared/ui';
+import { Button, Card, DataCard, Icon, SectionTitle, StatCard } from '../../ui/kit';
+import type { Tone } from '../../ui/kit';
+import { Statistic, Tag, Text } from '../../ui/primitives';
+import { Table } from '../../ui/Table';
+import type { Column } from '../../ui/Table';
 import { useDashboard } from './dashboardApi';
 import { useCashFlow } from './cashFlowApi';
 import { DepartureCalendar } from '../booking/DepartureCalendar';
 import { customerCareSchema } from '../care/customerCareTypes';
 import { TaskDonut } from '../workspace/TaskDonut';
+
+/* Màn "Tổng quan" (/dashboard) — hệ Refined. KHÔNG antd.
+   Dữ liệu/hook/section giữ NGUYÊN như bản cũ; chỉ đổi lớp trình bày. */
 
 // --- Schemas cho các endpoint report tái dùng ---
 const commissionRowSchema = z.object({
@@ -55,6 +59,11 @@ const orderStatsSchema = z.object({
 });
 const userRowSchema = z.object({ id: z.string().uuid(), fullName: z.string() });
 
+type BranchRow = z.infer<typeof branchRowSchema>;
+type CommissionRow = z.infer<typeof commissionRowSchema>;
+type TopCustomerRow = z.infer<typeof topCustomerSchema>;
+type CareRow = z.infer<typeof customerCareSchema>;
+
 function useReport<T>(key: string, url: string, schema: z.ZodType<T>) {
   return useQuery({
     queryKey: ['reports', key],
@@ -73,85 +82,54 @@ const CARE_STATUS: Record<number, { label: string; color: string }> = {
   3: { label: 'Huỷ', color: 'red' },
 };
 
-function SectionTitle({ children }: { children: ReactNode }) {
-  return (
-    <Typography.Title level={5} style={{ marginTop: 20, marginBottom: 8 }}>
-      {children}
-    </Typography.Title>
-  );
-}
-
-// Thẻ KPI thống nhất về StatCard chung (mono, 1 accent — bỏ viền/số nhiều màu cũ).
-// `color` giữ trong type cho tương thích call site nhưng KHÔNG dùng (design: 1 accent duy nhất).
-// Map màu cũ → tông chuẩn (thêm màu có kiểm soát cho dải viền/tint của StatCard).
-const COLOR_TONE: Record<string, 'accent' | 'info' | 'success' | 'danger' | 'warning'> = {
-  '#3f8600': 'success',
-  '#1677ff': 'info',
-  '#cf1322': 'danger',
-  '#722ed1': 'accent',
-};
-
-function KpiCard({
-  title,
-  value,
-  isMoney = true,
-  color,
-  to,
-}: {
-  title: string;
-  value: number | string;
-  isMoney?: boolean;
-  color?: string;
-  to?: string;
-}) {
+function KpiCard({ title, value, isMoney = true, tone, to }: { title: string; value: number | string; isMoney?: boolean; tone?: Tone; to?: string }) {
   const navigate = useNavigate();
   return (
-    <Col xs={12} sm={12} lg={6}>
-      <StatCard
-        tone={color ? COLOR_TONE[color] ?? 'accent' : 'accent'}
-        value={isMoney && typeof value === 'number' ? money(Number(value)) : value}
-        label={title}
-        footer={
-          to ? (
-            <Typography.Link style={{ fontSize: 12 }} onClick={() => navigate(to)}>
-              Xem chi tiết ›
-            </Typography.Link>
-          ) : undefined
-        }
-      />
-    </Col>
+    <StatCard
+      label={title}
+      tone={tone}
+      value={isMoney && typeof value === 'number' ? money(Number(value)) : value}
+      linkText={to ? 'Xem chi tiết' : undefined}
+      onLink={to ? () => navigate(to) : undefined}
+    />
   );
 }
 
 // Bar ngang đôi (thu/chi) cho dòng tiền — tự vẽ bằng div, không cần thư viện chart.
 function CashFlowBars({ rows }: { rows: { paymentMethod: string; inflow: number; outflow: number; net: number }[] }) {
   const max = Math.max(1, ...rows.flatMap((r) => [r.inflow, r.outflow]));
+  if (rows.length === 0) return <Text type="secondary">Chưa có dòng tiền</Text>;
   return (
-    <Space direction="vertical" size={12} style={{ width: '100%' }}>
-      {rows.length === 0 && <Typography.Text type="secondary">Chưa có dòng tiền</Typography.Text>}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {rows.map((r) => (
         <div key={r.paymentMethod}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-            <strong>{r.paymentMethod}</strong>
-            <span style={{ color: r.net < 0 ? '#cf1322' : '#3f8600' }}>Ròng: {money(r.net)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={{ font: '600 13px var(--tk-font)', color: 'var(--tk-heading)' }}>{r.paymentMethod}</span>
+            <span style={{ font: '600 12px var(--tk-font)', color: 'var(--tk-muted-2)' }}>
+              Ròng{' '}
+              <span style={{ fontFamily: 'var(--tk-font-mono)', color: r.net < 0 ? 'var(--tk-danger)' : 'var(--tk-success)' }}>
+                {r.net >= 0 ? '+' : ''}
+                {money(r.net)}
+              </span>
+            </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-            <span style={{ width: 44, fontSize: 12, color: '#8c8c8c' }}>Thu</span>
-            <div style={{ flex: 1, background: '#f0f0f0', borderRadius: 4, height: 14 }}>
-              <div style={{ width: `${(r.inflow / max) * 100}%`, background: '#52c41a', height: 14, borderRadius: 4 }} />
+          {(
+            [
+              ['Thu', r.inflow, 'var(--tk-success)'],
+              ['Chi', r.outflow, 'var(--tk-danger)'],
+            ] as const
+          ).map(([label, v, color]) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+              <span style={{ width: 30, font: '400 11.5px var(--tk-font)', color: 'var(--tk-muted)' }}>{label}</span>
+              <div className="rf-bar__track" style={{ flex: 1 }}>
+                <div className="rf-bar__fill" style={{ width: `${(v / max) * 100}%`, background: color }} />
+              </div>
+              <span style={{ width: 108, textAlign: 'right', font: '500 11.5px var(--tk-font-mono)', color: 'var(--tk-muted-2)' }}>{money(v)}</span>
             </div>
-            <span style={{ width: 110, textAlign: 'right', fontSize: 12 }}>{money(r.inflow)}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-            <span style={{ width: 44, fontSize: 12, color: '#8c8c8c' }}>Chi</span>
-            <div style={{ flex: 1, background: '#f0f0f0', borderRadius: 4, height: 14 }}>
-              <div style={{ width: `${(r.outflow / max) * 100}%`, background: '#ff4d4f', height: 14, borderRadius: 4 }} />
-            </div>
-            <span style={{ width: 110, textAlign: 'right', fontSize: 12 }}>{money(r.outflow)}</span>
-          </div>
+          ))}
         </div>
       ))}
-    </Space>
+    </div>
   );
 }
 
@@ -159,29 +137,30 @@ function CashFlowBars({ rows }: { rows: { paymentMethod: string; inflow: number;
 function FunnelBars({ stages }: { stages: { label: string; value: number; color: string }[] }) {
   const max = Math.max(1, ...stages.map((s) => s.value));
   return (
-    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {stages.map((s) => (
         <div key={s.label}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-            <span>{s.label}</span>
-            <strong>{s.value}</strong>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+            <span style={{ fontSize: 13, color: 'var(--tk-body)' }}>{s.label}</span>
+            <span style={{ font: '700 13px var(--tk-font-mono)', color: 'var(--tk-heading)' }}>{s.value.toLocaleString('vi-VN')}</span>
           </div>
-          <div style={{ background: '#f0f0f0', borderRadius: 4, height: 18, marginTop: 2 }}>
-            <div
-              style={{
-                width: `${Math.max(4, (s.value / max) * 100)}%`,
-                background: s.color,
-                height: 18,
-                borderRadius: 4,
-                transition: 'width .3s',
-              }}
-            />
+          <div className="rf-bar__track">
+            <div className="rf-bar__fill" style={{ width: `${Math.max(4, (s.value / max) * 100)}%`, background: s.color }} />
           </div>
         </div>
       ))}
-    </Space>
+    </div>
   );
 }
+
+const QUICK = [
+  { label: 'Tạo đơn', icon: 'add_shopping_cart', to: '/orders' },
+  { label: 'Tạo tour / LKH', icon: 'flag', to: '/departures' },
+  { label: 'Tạo báo giá', icon: 'description', to: '/quotes' },
+  { label: 'Tạo Data khách', icon: 'person_add', to: '/customers' },
+  { label: 'Tạo cơ hội', icon: 'my_location', to: '/leads' },
+  { label: 'Tạo công việc', icon: 'task', to: '/work-tasks' },
+];
 
 export function CeoAnalytics() {
   const navigate = useNavigate();
@@ -216,211 +195,177 @@ export function CeoAnalytics() {
   const topSales = [...(commission.data ?? [])].sort((a, b) => b.turnover - a.turnover).slice(0, 5);
 
   const contractSegments = [
-    { label: 'Đã chốt', value: os?.confirmed ?? 0, color: '#52c41a' },
-    { label: 'Nháp', value: os?.draft ?? 0, color: '#8c8c8c' },
-    { label: 'Huỷ', value: os?.cancelled ?? 0, color: '#f5222d' },
+    { label: 'Đã chốt', value: os?.confirmed ?? 0, color: '#1f9d57' },
+    { label: 'Nháp', value: os?.draft ?? 0, color: '#a9aab0' },
+    { label: 'Huỷ', value: os?.cancelled ?? 0, color: '#d1494a' },
   ];
   const funnelStages = [
-    { label: 'Báo giá', value: k?.quoteCount ?? 0, color: '#1677ff' },
-    { label: 'Chấp nhận', value: Math.round((k?.quoteCount ?? 0) * (k?.acceptanceRate ?? 0)), color: '#13c2c2' },
-    { label: 'Chuyển đơn', value: Math.round((k?.quoteCount ?? 0) * (k?.conversionRate ?? 0)), color: '#faad14' },
-    { label: 'Đơn chốt', value: k?.orderCount ?? 0, color: '#52c41a' },
+    { label: 'Báo giá', value: k?.quoteCount ?? 0, color: 'var(--tk-info)' },
+    { label: 'Chấp nhận', value: Math.round((k?.quoteCount ?? 0) * (k?.acceptanceRate ?? 0)), color: '#3aa8c1' },
+    { label: 'Chuyển đơn', value: Math.round((k?.quoteCount ?? 0) * (k?.conversionRate ?? 0)), color: 'var(--tk-warning)' },
+    { label: 'Đơn chốt', value: k?.orderCount ?? 0, color: 'var(--tk-success)' },
   ];
 
-  const branchColumns: ColumnsType<z.infer<typeof branchRowSchema>> = [
-    { title: 'Chi nhánh', dataIndex: 'branchName', key: 'branchName' },
-    { title: 'Số đơn', dataIndex: 'orderCount', key: 'orderCount', align: 'right' },
-    { title: 'Doanh thu', dataIndex: 'turnover', key: 'turnover', align: 'right', render: (v: number) => money(v) },
-    { title: 'Thực thu', dataIndex: 'received', key: 'received', align: 'right', render: (v: number) => money(v) },
+  const branchColumns: Column<BranchRow>[] = [
+    { key: 'branchName', title: 'Chi nhánh', dataIndex: 'branchName' },
+    { key: 'orderCount', title: 'Số đơn', align: 'right', mono: true, render: (r) => r.orderCount.toLocaleString('vi-VN') },
+    { key: 'turnover', title: 'Doanh thu', align: 'right', mono: true, render: (r) => money(r.turnover) },
+    { key: 'received', title: 'Thực thu', align: 'right', mono: true, render: (r) => money(r.received) },
     {
-      title: 'Còn thiếu',
-      dataIndex: 'outstanding',
       key: 'outstanding',
+      title: 'Còn thiếu',
       align: 'right',
-      render: (v: number) => <span style={{ color: v > 0 ? '#cf1322' : undefined }}>{money(v)}</span>,
+      mono: true,
+      render: (r) => <span style={{ color: r.outstanding > 0 ? 'var(--tk-danger)' : undefined }}>{money(r.outstanding)}</span>,
     },
-    { title: 'Lợi nhuận', dataIndex: 'profit', key: 'profit', align: 'right', render: (v: number) => money(v) },
+    { key: 'profit', title: 'Lợi nhuận', align: 'right', mono: true, render: (r) => money(r.profit) },
+  ];
+
+  const salesColumns: Column<CommissionRow>[] = [
+    { key: 'userId', title: 'Nhân viên', render: (r) => userName.get(r.userId) ?? '(đã xoá)' },
+    { key: 'turnover', title: 'Doanh thu', align: 'right', mono: true, render: (r) => money(r.turnover) },
+    { key: 'commissionAmount', title: 'Hoa hồng', align: 'right', mono: true, render: (r) => money(r.commissionAmount) },
+  ];
+
+  const topCustomerColumns: Column<TopCustomerRow>[] = [
+    { key: 'customerName', title: 'Khách hàng', dataIndex: 'customerName' },
+    { key: 'revenue', title: 'Doanh thu', align: 'right', mono: true, render: (r) => money(r.revenue) },
+    { key: 'received', title: 'Đã thu', align: 'right', mono: true, render: (r) => money(r.received) },
+  ];
+
+  const careColumns: Column<CareRow>[] = [
+    { key: 'title', title: 'Tiêu đề', dataIndex: 'title' },
+    { key: 'detail', title: 'Nội dung', render: (r) => r.detail ?? '—' },
+    { key: 'remindAt', title: 'Nhắc lúc', mono: true, render: (r) => (r.remindAt ? new Date(r.remindAt).toLocaleString('vi-VN') : '—') },
+    { key: 'status', title: 'Trạng thái', render: (r) => <Tag color={CARE_STATUS[r.status]?.color}>{CARE_STATUS[r.status]?.label ?? r.status}</Tag> },
   ];
 
   return (
-    <div style={{ paddingBottom: 24 }}>
-      <Typography.Title level={4} style={{ marginBottom: 0 }}>
-        CEO Analytics
-      </Typography.Title>
-      <Typography.Text type="secondary">Dữ liệu kinh doanh thời gian thực</Typography.Text>
+    <div>
+      <div className="rf-crumb">
+        <span>Workspace</span>
+        <Icon name="chevron_right" size={14} className="rf-crumb__sep" />
+        <span className="rf-crumb__cur">Tổng quan</span>
+      </div>
+      <h1 className="rf-page__title">CEO Analytics</h1>
+      <div className="rf-page__sub">Dữ liệu kinh doanh thời gian thực</div>
 
       {/* Thao tác nhanh */}
-      <Card size="small" style={{ marginTop: 12 }}>
-        <Space wrap size={8}>
-          {[
-            { label: 'Tạo đơn', to: '/orders' },
-            { label: 'Tạo tour / LKH', to: '/departures' },
-            { label: 'Tạo báo giá', to: '/quotes' },
-            { label: 'Tạo Data khách', to: '/customers' },
-            { label: 'Tạo cơ hội', to: '/leads' },
-            { label: 'Tạo công việc', to: '/work-tasks' },
-          ].map((a) => (
-            <Button key={a.to} onClick={() => navigate(a.to)}>
-              {a.label}
-            </Button>
-          ))}
-        </Space>
-      </Card>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
+        {QUICK.map((a) => (
+          <Button key={a.label} icon={a.icon} onClick={() => navigate(a.to)}>
+            {a.label}
+          </Button>
+        ))}
+      </div>
 
       {/* Nhóm 1 — Doanh thu & Cơ hội */}
-      <SectionTitle>Doanh thu &amp; Cơ hội</SectionTitle>
-      <Row gutter={[12, 12]}>
-        <KpiCard title="Tổng doanh thu" value={s?.totalRevenue ?? 0} color="#3f8600" to="/reports/turnover" />
-        <KpiCard title="Doanh thu thực tế" value={s?.totalReceived ?? 0} color="#1677ff" to="/reports/cash-flow" />
-        <KpiCard title="Phải thu khách hàng" value={s?.receivableOutstanding ?? 0} color="#cf1322" to="/reports/order-debt" />
-        <KpiCard title="Số đơn" value={s?.orderCount ?? 0} isMoney={false} color="#722ed1" to="/orders" />
-      </Row>
+      <div style={{ marginTop: 24 }}>
+        <SectionTitle>Doanh thu &amp; Cơ hội</SectionTitle>
+      </div>
+      <div className="rf-grid rf-grid--4">
+        <KpiCard title="Tổng doanh thu" value={s?.totalRevenue ?? 0} tone="success" to="/reports/turnover" />
+        <KpiCard title="Doanh thu thực tế" value={s?.totalReceived ?? 0} tone="info" to="/reports/cash-flow" />
+        <KpiCard title="Phải thu khách hàng" value={s?.receivableOutstanding ?? 0} tone="danger" to="/reports/order-debt" />
+        <KpiCard title="Số đơn" value={s?.orderCount ?? 0} isMoney={false} tone="accent" to="/orders" />
+      </div>
 
       {/* Nhóm 2 — Chi phí & Công nợ */}
-      <SectionTitle>Chi phí &amp; Công nợ</SectionTitle>
-      <Row gutter={[12, 12]}>
-        <KpiCard title="Tổng chi" value={s?.totalCost ?? 0} color="#3f8600" />
-        <KpiCard title="Tổng chi thực tế" value={s?.totalPaid ?? 0} color="#1677ff" />
-        <KpiCard title="Công nợ NCC" value={s?.payableOutstanding ?? 0} color="#cf1322" to="/reports/provider-debt" />
-        <KpiCard title="Lợi nhuận gộp" value={s?.grossProfit ?? 0} color="#722ed1" />
-      </Row>
+      <div style={{ marginTop: 24 }}>
+        <SectionTitle>Chi phí &amp; Công nợ</SectionTitle>
+      </div>
+      <div className="rf-grid rf-grid--4">
+        <KpiCard title="Tổng chi" value={s?.totalCost ?? 0} tone="success" />
+        <KpiCard title="Tổng chi thực tế" value={s?.totalPaid ?? 0} tone="info" />
+        <KpiCard title="Công nợ NCC" value={s?.payableOutstanding ?? 0} tone="danger" to="/reports/provider-debt" />
+        <KpiCard title="Lợi nhuận gộp" value={s?.grossProfit ?? 0} tone="accent" />
+      </div>
 
       {/* Nhóm 3 — Lợi nhuận & Hiệu quả */}
-      <SectionTitle>Lợi nhuận &amp; Hiệu quả</SectionTitle>
-      <Row gutter={[12, 12]}>
-        <KpiCard title="Lợi nhuận thực tế" value={actualProfit} color="#3f8600" />
-        <KpiCard title="Tiền hoa hồng" value={commissionTotal} color="#eb2f96" to="/reports/commission-by-user" />
-        <KpiCard title="Tỉ lệ thu tiền" value={k ? pct(k.collectionRate) : '—'} isMoney={false} color="#1677ff" />
-        <KpiCard title="Giá trị TB / đơn" value={k?.avgOrderValue ?? 0} color="#722ed1" />
-      </Row>
+      <div style={{ marginTop: 24 }}>
+        <SectionTitle>Lợi nhuận &amp; Hiệu quả</SectionTitle>
+      </div>
+      <div className="rf-grid rf-grid--4">
+        <KpiCard title="Lợi nhuận thực tế" value={actualProfit} tone="success" />
+        <KpiCard title="Tiền hoa hồng" value={commissionTotal} tone="accent" to="/reports/commission-by-user" />
+        <KpiCard title="Tỉ lệ thu tiền" value={k ? pct(k.collectionRate) : '—'} isMoney={false} tone="info" />
+        <KpiCard title="Giá trị TB / đơn" value={k?.avgOrderValue ?? 0} tone="accent" />
+      </div>
 
       {/* Dòng tiền + (Marketing: deferred) */}
-      <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
-        <Col xs={24} lg={16}>
-          <Card title="Dòng tiền theo phương thức" size="small">
-            <CashFlowBars rows={cashFlow.data ?? []} />
-          </Card>
-        </Col>
-        <Col xs={24} lg={8}>
-          <Card title="Hiệu quả Marketing" size="small">
-            <Typography.Text type="secondary">Chưa có model Marketing — bổ sung sau.</Typography.Text>
-          </Card>
-        </Col>
-      </Row>
+      <div className="rf-grid" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', marginTop: 22 }}>
+        <DataCard title="Dòng tiền theo phương thức">
+          <CashFlowBars rows={cashFlow.data ?? []} />
+        </DataCard>
+        <DataCard title="Hiệu quả Marketing">
+          <Text type="secondary">Chưa có model Marketing — bổ sung sau.</Text>
+        </DataCard>
+      </div>
 
       {/* Lịch khởi hành — dùng chung y hệt bản ở Bàn làm việc (DepartureCalendar fullscreen) */}
-      <SectionTitle>Lịch khởi hành</SectionTitle>
-      <Card>
+      <div style={{ marginTop: 24 }}>
+        <SectionTitle>Lịch khởi hành</SectionTitle>
+      </div>
+      <Card style={{ padding: 16 }}>
         <DepartureCalendar />
       </Card>
 
-      {/* Trạng thái hợp đồng (donut + cards) + Phễu bán hàng */}
-      <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
-        <Col xs={24} lg={12}>
-          <Card title="Trạng thái hợp đồng" size="small">
-            <Row align="middle" gutter={16}>
-              <Col flex="140px" style={{ textAlign: 'center' }}>
-                <TaskDonut segments={contractSegments} centerLabel="đơn" />
-              </Col>
-              <Col flex="auto">
-                <Row gutter={[8, 8]}>
-                  <Col span={12}><Statistic title="Đã chốt" value={os?.confirmed ?? 0} valueStyle={{ color: '#52c41a' }} /></Col>
-                  <Col span={12}><Statistic title="Nháp" value={os?.draft ?? 0} /></Col>
-                  <Col span={12}><Statistic title="Huỷ" value={os?.cancelled ?? 0} valueStyle={{ color: '#f5222d' }} /></Col>
-                  <Col span={12}><Statistic title="Tổng đơn" value={os?.total ?? 0} /></Col>
-                </Row>
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Phễu bán hàng thông minh" size="small">
-            <FunnelBars stages={funnelStages} />
-          </Card>
-        </Col>
-      </Row>
+      {/* Trạng thái hợp đồng (donut + số) */}
+      <div className="rf-grid rf-grid--2" style={{ marginTop: 22 }}>
+        <DataCard title="Trạng thái hợp đồng">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <div style={{ width: 140, textAlign: 'center', flexShrink: 0 }}>
+              <TaskDonut segments={contractSegments} centerLabel="đơn" />
+            </div>
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <Statistic title="Đã chốt" value={os?.confirmed ?? 0} valueStyle={{ color: 'var(--tk-success)' }} />
+              <Statistic title="Nháp" value={os?.draft ?? 0} />
+              <Statistic title="Huỷ" value={os?.cancelled ?? 0} valueStyle={{ color: 'var(--tk-danger)' }} />
+              <Statistic title="Tổng đơn" value={os?.total ?? 0} />
+            </div>
+          </div>
+        </DataCard>
+        <DataCard title="Phễu bán hàng thông minh">
+          <FunnelBars stages={funnelStages} />
+        </DataCard>
+      </div>
 
       {/* Quản lý lịch hẹn / chăm sóc */}
-      <SectionTitle>Quản lý lịch hẹn</SectionTitle>
-      <Card size="small">
-        <Table
-          rowKey="id"
-          size="small"
-          pagination={{ pageSize: 5 }}
-          loading={cares.isLoading}
-          dataSource={cares.data ?? []}
-          columns={[
-            { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
-            { title: 'Nội dung', dataIndex: 'detail', key: 'detail', render: (v: string | null) => v ?? '—' },
-            {
-              title: 'Nhắc lúc',
-              dataIndex: 'remindAt',
-              key: 'remindAt',
-              render: (v: string | null) => (v ? new Date(v).toLocaleString('vi-VN') : '—'),
-            },
-            {
-              title: 'Trạng thái',
-              dataIndex: 'status',
-              key: 'status',
-              render: (v: number) => <Tag color={CARE_STATUS[v]?.color}>{CARE_STATUS[v]?.label ?? v}</Tag>,
-            },
-          ]}
-        />
-      </Card>
+      <div style={{ marginTop: 24 }}>
+        <SectionTitle>Quản lý lịch hẹn</SectionTitle>
+      </div>
+      <DataCard title="Quản lý lịch hẹn" bodyless>
+        <Table columns={careColumns} data={cares.data ?? []} rowKey={(r) => r.id} loading={cares.isLoading} empty="Chưa có lịch hẹn" />
+      </DataCard>
 
       {/* Báo cáo tài chính sâu — hiệu suất theo chi nhánh */}
-      <SectionTitle>Hiệu suất theo chi nhánh</SectionTitle>
-      <Card size="small">
+      <div style={{ marginTop: 24 }}>
+        <SectionTitle>Hiệu suất theo chi nhánh</SectionTitle>
+      </div>
+      <DataCard title="Hiệu suất theo chi nhánh" bodyless>
         <Table
-          rowKey={(r) => r.branchId ?? 'unassigned'}
-          size="small"
           columns={branchColumns}
-          dataSource={branches.data ?? []}
+          data={branches.data ?? []}
+          rowKey={(r) => r.branchId ?? 'unassigned'}
           loading={branches.isLoading}
-          pagination={false}
-          scroll={{ x: 'max-content' }}
+          minWidth={820}
+          empty="Chưa có dữ liệu chi nhánh"
         />
-      </Card>
+      </DataCard>
 
       {/* Top sales + Top khách hàng */}
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col xs={24} lg={12}>
-          <Card title="Vinh danh chiến binh sales" size="small">
-            <Table
-              rowKey="userId"
-              size="small"
-              pagination={false}
-              columns={[
-                { title: 'Nhân viên', dataIndex: 'userId', key: 'userId', render: (id: string) => userName.get(id) ?? '(đã xoá)' },
-                { title: 'Doanh thu', dataIndex: 'turnover', key: 'turnover', align: 'right', render: (v: number) => money(v) },
-                { title: 'Hoa hồng', dataIndex: 'commissionAmount', key: 'commissionAmount', align: 'right', render: (v: number) => money(v) },
-              ]}
-              dataSource={topSales}
-              loading={commission.isLoading || users.isLoading}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Top khách hàng trung thành" size="small">
-            <Table
-              rowKey="customerId"
-              size="small"
-              pagination={false}
-              columns={[
-                { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName' },
-                { title: 'Doanh thu', dataIndex: 'revenue', key: 'revenue', align: 'right', render: (v: number) => money(v) },
-                { title: 'Đã thu', dataIndex: 'received', key: 'received', align: 'right', render: (v: number) => money(v) },
-              ]}
-              dataSource={topCustomers.data ?? []}
-              loading={topCustomers.isLoading}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <div className="rf-grid rf-grid--2" style={{ marginTop: 22 }}>
+        <DataCard title="Vinh danh chiến binh sales" bodyless>
+          <Table columns={salesColumns} data={topSales} rowKey={(r) => r.userId} loading={commission.isLoading || users.isLoading} empty="Chưa có dữ liệu" />
+        </DataCard>
+        <DataCard title="Top khách hàng trung thành" bodyless>
+          <Table columns={topCustomerColumns} data={topCustomers.data ?? []} rowKey={(r) => r.customerId} loading={topCustomers.isLoading} empty="Chưa có dữ liệu" />
+        </DataCard>
+      </div>
 
-      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12 }}>
+      <Text type="secondary" size={12} style={{ display: 'block', marginTop: 16 }}>
         (Doanh thu cơ hội · Chi phí quản lý · Lợi nhuận ròng · Hiệu quả Marketing · Cơ cấu dịch vụ · Doanh số theo dòng sản phẩm · Phân tích thị trường địa lý: chưa có quan hệ trong model — bổ sung sau)
-      </Typography.Text>
+      </Text>
     </div>
   );
 }
