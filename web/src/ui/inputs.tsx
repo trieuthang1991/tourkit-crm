@@ -104,6 +104,30 @@ export function DateInput({ value, onChange }: { value: string | null; onChange:
   );
 }
 
+/** Khoảng ngày (thay DatePicker.RangePicker). Trả về ISO đầu/cuối ngày. */
+export function DateRangeInput({
+  from,
+  to,
+  onChange,
+  placeholder = ['Từ ngày', 'đến'],
+}: {
+  from: string | null | undefined;
+  to: string | null | undefined;
+  onChange: (from: string | undefined, to: string | undefined) => void;
+  placeholder?: [string, string];
+}) {
+  const d = (v: string | null | undefined) => (v ? new Date(v).toISOString().slice(0, 10) : '');
+  const startIso = (v: string) => (v ? new Date(v + 'T00:00:00').toISOString() : undefined);
+  const endIso = (v: string) => (v ? new Date(v + 'T23:59:59').toISOString() : undefined);
+  return (
+    <div className="rf-field" style={{ gap: 4 }}>
+      <input type="date" title={placeholder[0]} style={{ fontFamily: 'var(--tk-font-mono)' }} value={d(from)} onChange={(e) => onChange(startIso(e.target.value), to ?? undefined)} />
+      <span style={{ color: 'var(--tk-muted)', flexShrink: 0 }}>–</span>
+      <input type="date" title={placeholder[1]} style={{ fontFamily: 'var(--tk-font-mono)' }} value={d(to)} onChange={(e) => onChange(from ?? undefined, endIso(e.target.value))} />
+    </div>
+  );
+}
+
 export type Option = { label: string; value: string | number };
 
 /** Select tuỳ chỉnh — searchable, single/multi, click-outside. */

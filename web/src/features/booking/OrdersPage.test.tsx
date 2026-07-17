@@ -59,7 +59,10 @@ describe('OrdersPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Tổng số đơn')).toBeInTheDocument();
       expect(screen.getByText('Đã chốt')).toBeInTheDocument();
-      expect(screen.getByText('Chưa thanh toán (1)')).toBeInTheDocument(); // tab trạng thái thanh toán
+      // Tab trạng thái thanh toán: hệ Refined tách số đếm ra chip riêng cạnh nhãn.
+      const tab = screen.getByRole('button', { name: /Chưa thanh toán/ });
+      expect(tab).toHaveTextContent('Chưa thanh toán');
+      expect(tab).toHaveTextContent('1');
     });
   });
 });
