@@ -1,11 +1,12 @@
-import { App, Button, Card, Descriptions, Input, InputNumber, Modal, Space, Table } from '../../shared/ui/antd';
+import { App, Button, Card, Descriptions, InputNumber, Modal, Select, Space, Table } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { errorMessage } from '../../shared/api/problem';
 import { money } from '../../shared/format';
 import { useAuth } from '../auth/AuthContext';
 import { useCreateProfitShare, useOrderProfit, useProfitShares } from './commissionApi';
 import type { CreateProfitShareForm, ProfitShare } from './commissionApi';
+import { useUserOptions } from './commissionRulesApi';
 
 const EMPTY_FORM: CreateProfitShareForm = { userId: '', percentage: 0 };
 
@@ -13,6 +14,8 @@ function CreateProfitShareModal({ orderId, open, onClose }: { orderId: string; o
   const { message } = App.useApp();
   const create = useCreateProfitShare(orderId);
   const [form, setForm] = useState<CreateProfitShareForm>(EMPTY_FORM);
+  const users = useUserOptions();
+  const userOptions = (users.data ?? []).map((u) => ({ label: u.fullName || u.email, value: u.id }));
 
   return (
     <Modal
@@ -33,10 +36,15 @@ function CreateProfitShareModal({ orderId, open, onClose }: { orderId: string; o
       }}
     >
       <Space direction="vertical" style={{ width: '100%' }}>
-        <Input
-          value={form.userId}
-          onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
-          placeholder="ID người dùng"
+        <Select
+          style={{ width: '100%' }}
+          showSearch
+          allowClear
+          placeholder="Chọn nhân viên"
+          optionFilterProp="label"
+          options={userOptions}
+          value={form.userId || undefined}
+          onChange={(v) => setForm((f) => ({ ...f, userId: (v as string) ?? '' }))}
         />
         <InputNumber
           style={{ width: '100%' }}
@@ -56,9 +64,15 @@ export function CommissionPanel({ orderId }: { orderId: string }) {
   const [createOpen, setCreateOpen] = useState(false);
   const profit = useOrderProfit(orderId);
   const shares = useProfitShares(orderId);
+  const users = useUserOptions();
+  const nameById = useMemo(() => {
+    const m = new Map<string, string>();
+    (users.data ?? []).forEach((u) => m.set(u.id, u.fullName || u.email));
+    return m;
+  }, [users.data]);
 
   const columns: ColumnsType<ProfitShare> = [
-    { title: 'ID người dùng', dataIndex: 'userId', key: 'userId' },
+    { title: 'Nhân viên', dataIndex: 'userId', key: 'userId', render: (v: string) => nameById.get(v) ?? v },
     { title: 'Tỉ lệ (%)', dataIndex: 'percentage', key: 'percentage' },
     { title: 'Số tiền', dataIndex: 'amount', key: 'amount', render: (v: number) => money(v) },
     { title: 'Lợi nhuận gốc', dataIndex: 'profitBase', key: 'profitBase', render: (v: number) => money(v) },

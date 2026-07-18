@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useActApproval, useApproval, useStartApproval } from './approvalApi';
 import { APPROVAL_METHOD, APPROVAL_STATUS, STEP_STATUS } from './approvalTypes';
 import type { StartApprovalStepInput } from './approvalTypes';
+import { useUserOptions } from '../commission/commissionRulesApi';
 
 const { TextArea } = Input;
 
@@ -24,6 +25,8 @@ function StartApprovalForm({ receiptId }: { receiptId: string }) {
   const start = useStartApproval(receiptId);
   const [method, setMethod] = useState<number>(1);
   const [steps, setSteps] = useState<StartApprovalStepInput[]>([{ stepOrder: 1, userIds: [] }]);
+  const users = useUserOptions();
+  const userOptions = (users.data ?? []).map((u) => ({ label: u.fullName || u.email, value: u.id }));
 
   function addStep() {
     setSteps((s) => [...s, { stepOrder: s.length + 1, userIds: [] }]);
@@ -59,13 +62,16 @@ function StartApprovalForm({ receiptId }: { receiptId: string }) {
         <Space
           key={index}
           direction="vertical"
-          style={{ width: '100%', border: '1px solid var(--tk-border)', padding: 8 }}
+          style={{ width: '100%', border: '1px solid var(--tk-line)', borderRadius: 10, padding: 12 }}
         >
           <Typography.Text>Bước {step.stepOrder}</Typography.Text>
           <Select
-            mode="tags"
+            mode="multiple"
             style={{ width: '100%' }}
-            placeholder="Nhập userId (UUID) rồi Enter"
+            showSearch
+            placeholder="Chọn người duyệt cho bước này"
+            optionFilterProp="label"
+            options={userOptions}
             value={step.userIds}
             onChange={(v) => setStepUserIds(index, v)}
           />
@@ -117,6 +123,8 @@ function ActApprovalForm({ receiptId }: { receiptId: string }) {
 export function ApprovalPanel({ receiptId }: { receiptId: string }) {
   const { has } = useAuth();
   const approval = useApproval(receiptId);
+  const users = useUserOptions();
+  const nameOf = (id: string) => (users.data ?? []).find((u) => u.id === id)?.fullName ?? id;
 
   if (approval.isLoading) {
     return <Typography.Text>Đang tải...</Typography.Text>;
@@ -141,7 +149,7 @@ export function ApprovalPanel({ receiptId }: { receiptId: string }) {
         size="small"
         current={a.currentStepOrder - 1}
         items={a.steps.map((step) => ({
-          title: `Bước ${step.stepOrder} — ${step.userId}`,
+          title: `Bước ${step.stepOrder} — ${nameOf(step.userId)}`,
           status: stepAntStatus(step.status),
           description: (
             <Space direction="vertical" size={0}>
