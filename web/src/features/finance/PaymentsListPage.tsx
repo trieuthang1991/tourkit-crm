@@ -16,6 +16,7 @@ import { PageHeader } from '../../shared/ui/PageHeader';
 import { useAuth } from '../auth/AuthContext';
 import { paymentListItemSchema, VOUCHER_STATUS } from './listTypes';
 import type { PaymentListItem } from './listTypes';
+import { PaymentDetailModal } from './PaymentDetailModal';
 
 const KEY = ['payments-all'];
 const statsSchema = z.object({
@@ -34,6 +35,7 @@ export function PaymentsListPage() {
   const { message } = App.useApp();
   const { has } = useAuth();
   const canApprove = has('payment.approve');
+  const [detail, setDetail] = useState<PaymentListItem | null>(null); // phiếu đang xem chi tiết (kích dòng)
   const qc = useQueryClient();
   const [page, setPage] = useState(DEFAULT_PAGE);
   const [search, setSearch] = useState('');
@@ -194,7 +196,7 @@ export function PaymentsListPage() {
             fixed: 'right' as const,
             render: (_: unknown, r: PaymentListItem) =>
               r.status === 0 ? (
-                <Space>
+                <Space onClick={(e) => e.stopPropagation()}>
                   <Popconfirm title="Duyệt phiếu chi này?" onConfirm={() => run(r.id, 'approve')}>
                     <Button variant="primary" size="small">
                       Duyệt
@@ -293,6 +295,7 @@ export function PaymentsListPage() {
         columns={columns}
         dataSource={list.data?.items ?? []}
         loading={list.isLoading}
+        onRow={(record) => ({ onClick: () => setDetail(record), style: { cursor: 'pointer' } })}
         scroll={{ x: 1080 }}
         pagination={{
           current: page.page,
@@ -318,6 +321,8 @@ export function PaymentsListPage() {
         }}
       />
       </DataCard>
+
+      <PaymentDetailModal payment={detail} onClose={() => setDetail(null)} canApprove={canApprove} onAct={run} />
     </>
   );
 }

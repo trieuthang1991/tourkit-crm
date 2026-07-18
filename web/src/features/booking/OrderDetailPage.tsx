@@ -1,5 +1,6 @@
-import { App, Button, Card, Descriptions, Input, InputNumber, Modal, Space, Table, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Descriptions, Input, InputNumber, Modal, Select, Space, Table, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
+import { useUserOptions } from '../commission/commissionRulesApi';
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';
@@ -115,26 +116,34 @@ function CancelModal({
 function AssignSalesControl({ orderId, salesUserId }: { orderId: string; salesUserId: string | null | undefined }) {
   const { has } = useAuth();
   const { message } = App.useApp();
-  const [value, setValue] = useState(salesUserId ?? '');
+  const [value, setValue] = useState<string | undefined>(salesUserId ?? undefined);
   const assignSales = useAssignSales(orderId);
+  const users = useUserOptions();
+  const options = (users.data ?? []).map((u) => ({ label: u.fullName || u.email, value: u.id }));
 
   useEffect(() => {
-    setValue(salesUserId ?? '');
+    setValue(salesUserId ?? undefined);
   }, [salesUserId]);
 
   if (!has('booking.create')) {
     return null;
   }
 
+  // Không cho gõ UUID — chọn nhân viên theo tên (ID lưu ngầm).
   return (
     <Space>
-      <Input
+      <Select
         style={{ width: 280 }}
+        showSearch
+        allowClear
+        placeholder="Chọn nhân viên sales phụ trách"
+        optionFilterProp="label"
+        options={options}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="ID sales phụ trách (UUID)"
+        onChange={(v) => setValue((v as string) ?? undefined)}
       />
       <Button
+        type="primary"
         loading={assignSales.isPending}
         onClick={async () => {
           try {
