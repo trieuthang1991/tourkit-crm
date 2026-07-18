@@ -30,6 +30,15 @@ import { DepartureCalendarLite } from '../../ui/DepartureCalendarLite';
 type ReceiptListItem = z.infer<typeof receiptListItemSchema>;
 type PaymentListItem = z.infer<typeof paymentListItemSchema>;
 
+const workTaskStatsSchema = z.object({
+  total: z.number(),
+  todo: z.number(),
+  inProgress: z.number(),
+  done: z.number(),
+  cancelled: z.number(),
+  overdue: z.number(),
+});
+
 const TASK_STATUS_META: { status: number; label: string; color: string; tone: 'muted' | 'info' | 'success' | 'danger' }[] = [
   { status: 0, label: 'Cần làm', color: 'var(--tk-muted)', tone: 'muted' },
   { status: 1, label: 'Đang làm', color: 'var(--tk-info)', tone: 'info' },
@@ -43,10 +52,6 @@ function isToday(iso: string | null): boolean {
   const d = new Date(iso);
   const n = new Date();
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
-}
-function isOverdue(t: WorkTask): boolean {
-  if (!t.dueDate || t.status === 2 || t.status === 3) return false;
-  return new Date(t.dueDate) < new Date(new Date().toDateString());
 }
 const dateVi = (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—');
 const shortDateTime = (iso: string) => new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
@@ -83,14 +88,27 @@ export function WorkspacePage() {
   const { email, has } = useAuth();
   const navigate = useNavigate();
 
-  const tasks = useQuery({
-    queryKey: ['work-tasks', 'workspace'],
-    queryFn: async () => z.array(workTaskSchema).parse((await httpClient.get<unknown>('/api/v1/work-tasks')).data),
+  // Đếm theo trạng thái lấy từ endpoint stats (KHÔNG fetch toàn bộ công việc) — dùng cho donut + badge.
+  const taskStats = useQuery({
+    queryKey: ['work-tasks', 'stats', 'workspace'],
+    queryFn: async () => workTaskStatsSchema.parse((await httpClient.get<unknown>('/api/v1/work-tasks/stats')).data),
+    enabled: has('task.view'),
+  });
+  // Danh sách hiển thị chỉ lấy 1 TRANG NHỎ (6 việc gần nhất), có link "Xem tất cả" sang trang đầy đủ.
+  const recentTasks = useQuery({
+    queryKey: ['work-tasks', 'recent', 'workspace'],
+    queryFn: async () =>
+      pagedSchema(workTaskSchema).parse(
+        (await httpClient.get<unknown>('/api/v1/work-tasks', { params: { page: 1, size: 6 } })).data,
+      ).items,
     enabled: has('task.view'),
   });
   const cares = useQuery({
     queryKey: ['customer-cares', 'workspace'],
-    queryFn: async () => z.array(customerCareSchema).parse((await httpClient.get<unknown>('/api/v1/customer-cares')).data),
+    queryFn: async () =>
+      pagedSchema(customerCareSchema).parse(
+        (await httpClient.get<unknown>('/api/v1/customer-cares', { params: { page: 1, size: 50 } })).data,
+      ).items,
     enabled: has('care.view'),
   });
   const pendingReceipts = useQuery({
@@ -126,18 +144,19 @@ export function WorkspacePage() {
     return map;
   }, [customers.data]);
 
+  const st = taskStats.data;
+  const statByStatus = (s: number) =>
+    s === 0 ? (st?.todo ?? 0) : s === 1 ? (st?.inProgress ?? 0) : s === 2 ? (st?.done ?? 0) : (st?.cancelled ?? 0);
   const donutSegments: DonutSegment[] = TASK_STATUS_META.map((m) => ({
     label: m.label,
     color: m.color,
-    value: (tasks.data ?? []).filter((t) => t.status === m.status).length,
+    value: statByStatus(m.status),
   }));
 
   const topDebt = useMemo(() => [...(debt.data ?? [])].sort((a, b) => b.outstanding - a.outstanding).slice(0, 6), [debt.data]);
   const todayCares = useMemo(() => (cares.data ?? []).filter((c) => isToday(c.remindAt)), [cares.data]);
 
-  const allTasks = tasks.data ?? [];
-  const overdueTasks = allTasks.filter(isOverdue);
-  const doneTasks = allTasks.filter((t) => t.status === 2);
+  const recent = recentTasks.data ?? [];
 
   const quickActions = [
     { label: 'Tạo việc', icon: 'add_task', to: '/work-tasks', perm: 'task.view' },
@@ -365,10 +384,23 @@ export function WorkspacePage() {
         </DataCard>
       ) : null}
 
-      {/* Công việc của tôi */}
+      {/* Công việc của tôi — badge đếm từ stats + 6 việc gần nhất (không tải toàn bộ) */}
       {has('task.view') ? (
-        <DataCard title="Công việc của tôi" bodyless>
-          <TasksTabs all={allTasks} overdue={overdueTasks} done={doneTasks} render={taskTable} />
+        <DataCard
+          title="Công việc của tôi"
+          extra={
+            <Button variant="link" onClick={() => navigate('/work-tasks')}>
+              Xem tất cả →
+            </Button>
+          }
+        >
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            <Pill tone="muted">Cần làm · {st?.todo ?? 0}</Pill>
+            <Pill tone="info">Đang làm · {st?.inProgress ?? 0}</Pill>
+            <Pill tone="success">Hoàn thành · {st?.done ?? 0}</Pill>
+            <Pill tone="danger">Quá hạn · {st?.overdue ?? 0}</Pill>
+          </div>
+          {taskTable(recent)}
         </DataCard>
       ) : null}
     </div>
@@ -424,14 +456,3 @@ function PendingVouchers({
   );
 }
 
-function TasksTabs({ all, overdue, done, render }: { all: WorkTask[]; overdue: WorkTask[]; done: WorkTask[]; render: (d: WorkTask[]) => ReactNode }) {
-  return (
-    <Tabs
-      items={[
-        { key: 'all', label: `Tất cả (${all.length})`, children: render(all) },
-        { key: 'overdue', label: `Quá hạn (${overdue.length})`, children: render(overdue) },
-        { key: 'done', label: `Hoàn thành (${done.length})`, children: render(done) },
-      ]}
-    />
-  );
-}

@@ -12,8 +12,11 @@ public sealed class WorkTasksController(IWorkTaskService service) : ControllerBa
 {
     [HttpGet]
     [Authorize(Permissions.TaskView)]
-    public async Task<IActionResult> List([FromQuery] Guid? assigneeUserId, [FromQuery] int? status, [FromQuery] string? q, [FromQuery] int? priority)
-        => Ok(await service.ListAsync(assigneeUserId, status, q, priority));
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1, [FromQuery] int size = 20,
+        [FromQuery] Guid? assigneeUserId = null, [FromQuery] int? status = null,
+        [FromQuery] string? q = null, [FromQuery] int? priority = null)
+        => Ok(await service.ListAsync(page, size, assigneeUserId, status, q, priority));
 
     [HttpGet("stats")]
     [Authorize(Permissions.TaskView)]

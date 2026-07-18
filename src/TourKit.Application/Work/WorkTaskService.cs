@@ -17,7 +17,8 @@ public sealed class WorkTaskService(
     IValidator<CreateWorkTaskDto> createValidator,
     IValidator<UpdateWorkTaskDto> updateValidator) : IWorkTaskService
 {
-    public async Task<IReadOnlyList<WorkTaskDto>> ListAsync(Guid? assigneeUserId, int? status, string? q = null, int? priority = null)
+    public async Task<PagedResult<WorkTaskDto>> ListAsync(
+        int page, int size, Guid? assigneeUserId, int? status, string? q = null, int? priority = null)
     {
         var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
         var items = await repo.ListAsync(x =>
@@ -26,13 +27,19 @@ public sealed class WorkTaskService(
             (priority == null || x.Priority == priority));
 
         var names = await LoadUserNamesAsync();
-        return items
+        var ordered = items
             .Where(x => kw == null || x.Title.Contains(kw, StringComparison.OrdinalIgnoreCase))
             .OrderBy(x => x.Status)
             .ThenByDescending(x => x.Priority)
             .ThenBy(x => x.DueDate ?? DateTimeOffset.MaxValue)
+            .ToList();
+
+        var pageItems = ordered
+            .Skip((page - 1) * size)
+            .Take(size)
             .Select(x => Map(x, names))
             .ToList();
+        return new PagedResult<WorkTaskDto>(pageItems, ordered.Count, page, size);
     }
 
     public async Task<WorkTaskStatsDto> GetStatsAsync()

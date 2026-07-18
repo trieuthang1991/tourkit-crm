@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
+import { pagedSchema } from '../../shared/api/paged';
 import { errorMessage } from '../../shared/api/problem';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { CellStack, CellText, CellDate } from '../../shared/ui/TableCells';
@@ -25,17 +26,17 @@ const userRowSchema = z.object({ id: z.string().uuid(), fullName: z.string() });
 
 type WorkTaskFilter = { status?: number; assigneeUserId?: string; q?: string; priority?: number };
 
-function useWorkTasks(filter: WorkTaskFilter) {
+function useWorkTasks(filter: WorkTaskFilter, page: number, size: number) {
   return useQuery({
-    queryKey: ['work-tasks', filter],
+    queryKey: ['work-tasks', filter, page, size],
     queryFn: async () => {
-      const params: Record<string, unknown> = {};
+      const params: Record<string, unknown> = { page, size };
       if (filter.status !== undefined) params.status = filter.status;
       if (filter.assigneeUserId) params.assigneeUserId = filter.assigneeUserId;
       if (filter.q) params.q = filter.q;
       if (filter.priority !== undefined) params.priority = filter.priority;
       const { data } = await httpClient.get<unknown>('/api/v1/work-tasks', { params });
-      return z.array(workTaskSchema).parse(data);
+      return pagedSchema(workTaskSchema).parse(data);
     },
   });
 }
@@ -123,19 +124,25 @@ export function WorkTasksPage() {
   const [assigneeUserId, setAssigneeUserId] = useState<string | undefined>();
   const [priority, setPriority] = useState<number | undefined>();
   const [applied, setApplied] = useState<{ q?: string; assigneeUserId?: string; priority?: number }>({});
-  const applyFilters = () => setApplied({ q: search || undefined, assigneeUserId, priority });
+  const [page, setPage] = useState(1);
+  const SIZE = 20;
+  const applyFilters = () => {
+    setPage(1); // đổi bộ lọc → về trang 1
+    setApplied({ q: search || undefined, assigneeUserId, priority });
+  };
   const resetFilters = () => {
     setSearch('');
     setAssigneeUserId(undefined);
     setPriority(undefined);
     setStatus(undefined);
     setApplied({});
+    setPage(1);
   };
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<WorkTask | null>(null);
 
-  const list = useWorkTasks({ status, ...applied });
+  const list = useWorkTasks({ status, ...applied }, page, SIZE);
   const stats = useWorkTaskStats();
   const users = useUserOptions();
   const create = useCreate();
@@ -290,13 +297,26 @@ export function WorkTasksPage() {
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
         <Segmented
           value={status === undefined ? 'all' : String(status)}
-          onChange={(val) => setStatus(val === 'all' ? undefined : Number(val))}
+          onChange={(val) => { setPage(1); setStatus(val === 'all' ? undefined : Number(val)); }}
           options={[{ label: `Tất cả (${stats.data?.total ?? 0})`, value: 'all' }, ...STATUS_OPTIONS.map((o) => ({ label: o.label, value: String(o.value) }))]}
         />
       </div>
 
       <DataCard title="Danh sách công việc">
-        <Table rowKey="id" columns={columns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          pagination={{
+            current: page,
+            pageSize: SIZE,
+            total: list.data?.total ?? 0,
+            showSizeChanger: false,
+            showTotal: (t) => `${t.toLocaleString('vi-VN')} công việc`,
+            onChange: setPage,
+          }}
+        />
       </DataCard>
       {open ? (
         <CrudFormModal

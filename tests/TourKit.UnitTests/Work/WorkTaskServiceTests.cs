@@ -103,13 +103,29 @@ public class WorkTaskServiceTests
         var t2 = await service.CreateAsync(NewDto("T2", u2.Id));
         await service.UpdateAsync(t2.Id, new UpdateWorkTaskDto("T2", null, u2.Id, null, 1, (int)WorkTaskStatus.Done, null, null, null));
 
-        var forU1 = await service.ListAsync(u1.Id, null);
-        Assert.Single(forU1);
-        Assert.Equal("T1", forU1[0].Title);
+        var forU1 = await service.ListAsync(1, 20, u1.Id, null);
+        Assert.Equal(1, forU1.Total);
+        Assert.Equal("T1", forU1.Items[0].Title);
 
-        var done = await service.ListAsync(null, (int)WorkTaskStatus.Done);
-        Assert.Single(done);
-        Assert.Equal("T2", done[0].Title);
+        var done = await service.ListAsync(1, 20, null, (int)WorkTaskStatus.Done);
+        Assert.Equal(1, done.Total);
+        Assert.Equal("T2", done.Items[0].Title);
+    }
+
+    [Fact]
+    public async Task ListAsync_phan_trang_dung()
+    {
+        var service = NewService(out var repo, out _, out _);
+        for (var i = 0; i < 25; i++)
+        {
+            await service.CreateAsync(NewDto($"T{i:D2}"));
+        }
+
+        var p1 = await service.ListAsync(1, 10, null, null);
+        Assert.Equal(25, p1.Total);        // tổng đúng
+        Assert.Equal(10, p1.Items.Count);  // chỉ 1 trang, KHÔNG trả hết
+        var p3 = await service.ListAsync(3, 10, null, null);
+        Assert.Equal(5, p3.Items.Count);   // trang cuối
     }
 
     [Fact]
