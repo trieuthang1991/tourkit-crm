@@ -9,6 +9,7 @@ import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { CellEntity, CellMoney, CellStack } from '../../shared/ui/TableCells';
 import { DatePickerField, NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { DataCard } from '../../shared/ui';
+import { OrderSelect } from '../booking/OrderSelect';
 import {
   useAssignFlightTicket,
   useCreateFlightTicket,
@@ -282,8 +283,8 @@ export function FlightTicketsPage() {
           }, 'Đã gán tour')
         }
       >
-        <Typography.Paragraph type="secondary">Nhập ID/mã đơn (order) cần gán vé đoàn này vào.</Typography.Paragraph>
-        <Input placeholder="Order ID / mã đơn" value={assignVal} onChange={(e) => setAssignVal(e.target.value)} />
+        <Typography.Paragraph type="secondary">Chọn đơn (order) cần gán vé đoàn này vào — gõ mã đơn hoặc tên khách để tìm.</Typography.Paragraph>
+        <OrderSelect value={assignVal || null} onChange={(v) => setAssignVal(v ?? '')} />
       </Modal>
     </>
   );
