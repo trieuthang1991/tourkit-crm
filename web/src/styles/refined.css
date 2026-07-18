@@ -34,19 +34,19 @@
 }
 .rf-iconbtn:hover { background: var(--tk-nav-hover); color: var(--tk-heading); }
 
-/* ---- Card (Vuexy: bóng nổi, KHÔNG viền) ---- */
+/* ---- Card (bám Stitch "Bàn làm việc": viền mảnh + gạch tiêu đề + bóng nhẹ) ---- */
 .rf-card {
   background: var(--tk-surface);
-  border: none;
+  border: 1px solid var(--tk-card-border);
   border-radius: var(--tk-radius-card);
   box-shadow: var(--tk-shadow-card);
 }
 .rf-card__head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 20px 20px 12px; border-bottom: none;
+  padding: 16px 20px; border-bottom: 1px solid var(--tk-line);
 }
-.rf-card__title { font: 500 18px var(--tk-font); color: var(--tk-heading); letter-spacing: normal; }
-.rf-card__body { padding: 12px 20px 20px; }
+.rf-card__title { font: 600 17px var(--tk-font); color: var(--tk-heading); letter-spacing: -0.01em; }
+.rf-card__body { padding: 16px 20px 20px; }
 
 /* ---- Section title (nhãn nhóm UPPERCASE) ---- */
 .rf-section {
@@ -56,7 +56,7 @@
 
 /* ---- Thẻ KPI (label trên, số mono) — KHÔNG dải màu, KHÔNG gradient ---- */
 .rf-stat {
-  background: var(--tk-surface); border: none;
+  background: var(--tk-surface); border: 1px solid var(--tk-card-border);
   border-radius: var(--tk-radius-card); box-shadow: var(--tk-shadow-card);
   padding: 20px;
 }
@@ -82,10 +82,10 @@
 .rf-stat--icon { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .rf-stat--icon > * { min-width: 0; }
 .rf-stat__chip {
-  width: 42px; height: 42px; border-radius: 11px; flex: 0 0 auto;
+  width: 48px; height: 48px; border-radius: 50%; flex: 0 0 auto;
   display: flex; align-items: center; justify-content: center;
 }
-.rf-stat__chip .material-symbols-outlined { font-size: 22px; }
+.rf-stat__chip .material-symbols-outlined { font-size: 26px; }
 .rf-chip--accent { background: var(--tk-accent-soft); color: var(--tk-accent); }
 .rf-chip--success { background: var(--tk-success-soft); color: var(--tk-success); }
 .rf-chip--info { background: var(--tk-info-soft); color: var(--tk-info); }

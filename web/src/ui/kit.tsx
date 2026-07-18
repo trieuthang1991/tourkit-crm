@@ -129,7 +129,7 @@ export function StatCardIcon({ icon, tone = 'accent', value, label }: { icon: st
   return (
     <div className="rf-stat rf-stat--icon">
       <span className={`rf-stat__chip rf-chip--${tone}`}>
-        <Icon name={icon} size={22} />
+        <Icon name={icon} size={26} />
       </span>
       <div>
         <div className="rf-stat__num">{value}</div>
