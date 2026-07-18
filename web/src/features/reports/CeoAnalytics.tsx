@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { Button, Card, DataCard, SectionTitle, StatCard } from '../../ui/kit';
+import { Button, DataCard, SectionTitle, StatCard } from '../../ui/kit';
 import type { Tone } from '../../ui/kit';
 import { Statistic, Tag, Text } from '../../ui/primitives';
 import { Table } from '../../ui/Table';
@@ -287,26 +287,8 @@ export function CeoAnalytics() {
         <KpiCard title="Giá trị TB / đơn" value={k?.avgOrderValue ?? 0} tone="accent" />
       </div>
 
-      {/* Dòng tiền + (Marketing: deferred) */}
-      <div className="rf-grid" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', marginTop: 22 }}>
-        <DataCard title="Dòng tiền theo phương thức">
-          <CashFlowBars rows={cashFlow.data ?? []} />
-        </DataCard>
-        <DataCard title="Hiệu quả Marketing">
-          <Text type="secondary">Chưa có model Marketing — bổ sung sau.</Text>
-        </DataCard>
-      </div>
-
-      {/* Lịch khởi hành — dùng chung y hệt bản ở Bàn làm việc (DepartureCalendar fullscreen) */}
-      <div style={{ marginTop: 24 }}>
-        <SectionTitle>Lịch khởi hành</SectionTitle>
-      </div>
-      <Card style={{ padding: 16 }}>
-        <DepartureCalendar />
-      </Card>
-
-      {/* Trạng thái hợp đồng (donut + số) */}
-      <div className="rf-grid rf-grid--2" style={{ marginTop: 22 }}>
+      {/* Insight — Trạng thái hợp đồng (donut) + Phễu bán hàng (đưa lên ngay sau KPI) */}
+      <div className="rf-grid rf-grid--2" style={{ marginTop: 24 }}>
         <DataCard title="Trạng thái hợp đồng">
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <div style={{ width: 140, textAlign: 'center', flexShrink: 0 }}>
@@ -322,6 +304,13 @@ export function CeoAnalytics() {
         </DataCard>
         <DataCard title="Phễu bán hàng thông minh">
           <FunnelBars stages={funnelStages} />
+        </DataCard>
+      </div>
+
+      {/* Dòng tiền theo phương thức (full-width, bỏ card Marketing rỗng) */}
+      <div style={{ marginTop: 22 }}>
+        <DataCard title="Dòng tiền theo phương thức">
+          <CashFlowBars rows={cashFlow.data ?? []} />
         </DataCard>
       </div>
 
@@ -355,6 +344,13 @@ export function CeoAnalytics() {
         </DataCard>
         <DataCard title="Top khách hàng trung thành" bodyless>
           <Table columns={topCustomerColumns} data={topCustomers.data ?? []} rowKey={(r) => r.customerId} loading={topCustomers.isLoading} empty="Chưa có dữ liệu" />
+        </DataCard>
+      </div>
+
+      {/* Lịch khởi hành — tham chiếu vận hành, đặt cuối */}
+      <div style={{ marginTop: 22 }}>
+        <DataCard title="Lịch khởi hành">
+          <DepartureCalendar />
         </DataCard>
       </div>
 

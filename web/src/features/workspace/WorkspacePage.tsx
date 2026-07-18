@@ -18,8 +18,8 @@ import { workTaskSchema, priorityLabel, statusLabel } from '../workTasks/types';
 import type { WorkTask } from '../workTasks/types';
 import { TaskDonut } from './TaskDonut';
 import type { DonutSegment } from './TaskDonut';
-import { Button, Card, DataCard, Empty, Icon, Pill, StatGrid, Tabs } from '../../ui/kit';
-import { Avatar, Divider } from '../../ui/primitives';
+import { Button, DataCard, Empty, Icon, Pill, StatGrid, Tabs } from '../../ui/kit';
+import { Avatar } from '../../ui/primitives';
 import { Table } from '../../ui/Table';
 import type { Column } from '../../ui/Table';
 import { DepartureCalendar } from '../booking/DepartureCalendar';
@@ -211,24 +211,13 @@ export function WorkspacePage() {
 
       {/* Hàng 1 */}
       <div className="rf-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-        {/* Hồ sơ + donut */}
-        <Card style={{ padding: 20 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Avatar size={68}>
-              <Icon name="person" size={32} />
-            </Avatar>
-            <div style={{ marginTop: 12, font: '700 15.5px var(--tk-font)', color: 'var(--tk-heading)' }}>{email ?? 'Người dùng'}</div>
-            <div style={{ marginTop: 6 }}>
-              <Pill tone="accent">Nhân viên</Pill>
-            </div>
-          </div>
-          <Divider />
-          <div className="rf-card__title">Tỉ lệ công việc</div>
-          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 18 }}>
+        {/* Tỉ lệ công việc (donut) */}
+        <DataCard title="Tỉ lệ công việc">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
             <TaskDonut segments={donutSegments} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {donutSegments.map((seg) => (
-                <div key={seg.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--tk-body)' }}>
+                <div key={seg.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--tk-body)' }}>
                   <span style={{ width: 9, height: 9, borderRadius: 2, background: seg.color, flexShrink: 0 }} />
                   {seg.label}
                   <span style={{ font: '600 12px var(--tk-font-mono)', color: 'var(--tk-muted-2)' }}>{seg.value}</span>
@@ -236,7 +225,7 @@ export function WorkspacePage() {
               ))}
             </div>
           </div>
-        </Card>
+        </DataCard>
 
         {/* Thông báo */}
         <DataCard title="Thông báo bạn cần quan tâm" bodyless>
@@ -289,42 +278,30 @@ export function WorkspacePage() {
 
       {/* Hàng 2 */}
       <div className="rf-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-        {/* Thông tin cá nhân + lịch hẹn */}
-        <Card style={{ padding: 18 }}>
-          <div className="rf-card__title" style={{ marginBottom: 12 }}>
-            Thông tin cá nhân
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-            <div className="rf-kv">
-              <span className="rf-kv__k">Email</span>
-              <span className="rf-kv__v">{email ?? '—'}</span>
-            </div>
-            <div className="rf-kv">
-              <span className="rf-kv__k">Điện thoại</span>
-              <span className="rf-kv__v">—</span>
-            </div>
-            <div className="rf-kv">
-              <span className="rf-kv__k">Văn phòng</span>
-              <span className="rf-kv__v">—</span>
-            </div>
-          </div>
-          <Divider />
-          <div className="rf-card__title" style={{ marginBottom: 10 }}>
-            Lịch hẹn hôm nay
-          </div>
+        {/* Lịch hẹn hôm nay */}
+        <DataCard
+          title="Lịch hẹn hôm nay"
+          extra={
+            <Button variant="link" onClick={() => navigate('/customer-cares')}>
+              Xem tất cả →
+            </Button>
+          }
+        >
           {todayCares.length ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {todayCares.map((c) => (
-                <div key={c.id} className="rf-kv" style={{ alignItems: 'center' }}>
-                  <span className="rf-kv__v">{c.title}</span>
-                  {c.remindAt ? <Pill tone="warning">{new Date(c.remindAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Pill> : null}
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <span style={{ color: 'var(--tk-heading)', fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</span>
+                  {c.remindAt ? (
+                    <Pill tone="warning">{new Date(c.remindAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Pill>
+                  ) : null}
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 13, color: 'var(--tk-muted)' }}>Hôm nay không có lịch hẹn</div>
+            <div style={{ fontSize: 13, color: 'var(--tk-muted)', padding: '8px 0' }}>Hôm nay không có lịch hẹn</div>
           )}
-        </Card>
+        </DataCard>
 
         {/* Phiếu cần duyệt */}
         <DataCard title="Phiếu cần duyệt" bodyless>
@@ -373,20 +350,6 @@ export function WorkspacePage() {
         </DataCard>
       </div>
 
-      {/* Lịch khởi hành */}
-      {has('departure.view') ? (
-        <DataCard
-          title="Lịch khởi hành"
-          extra={
-            <Button variant="link" onClick={() => navigate('/operations-calendar')}>
-              Xem lịch điều hành →
-            </Button>
-          }
-        >
-          <DepartureCalendar />
-        </DataCard>
-      ) : null}
-
       {/* Công việc của tôi — badge đếm từ stats + 6 việc gần nhất (không tải toàn bộ) */}
       {has('task.view') ? (
         <DataCard
@@ -404,6 +367,20 @@ export function WorkspacePage() {
             <Pill tone="danger">Quá hạn · {st?.overdue ?? 0}</Pill>
           </div>
           {taskTable(recent)}
+        </DataCard>
+      ) : null}
+
+      {/* Lịch khởi hành — tham chiếu vận hành, đặt cuối */}
+      {has('departure.view') ? (
+        <DataCard
+          title="Lịch khởi hành"
+          extra={
+            <Button variant="link" onClick={() => navigate('/operations-calendar')}>
+              Xem lịch điều hành →
+            </Button>
+          }
+        >
+          <DepartureCalendar />
         </DataCard>
       ) : null}
     </div>
