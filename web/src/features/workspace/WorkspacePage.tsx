@@ -201,10 +201,10 @@ export function WorkspacePage() {
       {has('report.dashboard.view') ? (
         <StatGrid
           items={[
-            { label: 'Doanh thu (đã ghi nhận)', value: moneyCompact(s?.totalRevenue ?? 0) },
-            { label: 'Đơn hàng', value: (s?.orderCount ?? 0).toLocaleString('vi-VN') },
-            { label: 'Khách hàng', value: (customers.data?.total ?? 0).toLocaleString('vi-VN') },
-            { label: 'Công nợ phải thu', value: moneyCompact(s?.receivableOutstanding ?? 0) },
+            { label: 'Doanh thu (đã ghi nhận)', value: moneyCompact(s?.totalRevenue ?? 0), icon: 'account_balance_wallet', tone: 'success' },
+            { label: 'Đơn hàng', value: (s?.orderCount ?? 0).toLocaleString('vi-VN'), icon: 'shopping_cart', tone: 'info' },
+            { label: 'Khách hàng', value: (customers.data?.total ?? 0).toLocaleString('vi-VN'), icon: 'groups', tone: 'accent' },
+            { label: 'Công nợ phải thu', value: moneyCompact(s?.receivableOutstanding ?? 0), icon: 'payments', tone: 'danger' },
           ]}
         />
       ) : null}
