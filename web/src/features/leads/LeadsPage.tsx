@@ -24,7 +24,14 @@ import type { Lead, LeadForm } from './types';
 const LEAD_STATUS_OPTIONS = Object.entries(LEAD_STATUS).map(([value, label]) => ({ value: Number(value), label }));
 const STATUS_COLOR: Record<number, string> = { 1: 'blue', 2: 'gold', 3: 'cyan', 4: 'green', 5: 'red' };
 // Màu chấm/accent kanban theo trạng thái (hệ token Vuexy)
-const KB_COLOR: Record<number, string> = { 1: '#7367f0', 2: '#ff9f43', 3: '#00bad1', 4: '#28c76f', 5: '#ff4c51' };
+// Màu cột kanban theo token semantic (không hardcode hex) — nhất quán light/dark.
+const KB_COLOR: Record<number, string> = {
+  1: 'var(--tk-accent)',
+  2: 'var(--tk-warning)',
+  3: 'var(--tk-info)',
+  4: 'var(--tk-success)',
+  5: 'var(--tk-danger)',
+};
 const dash = (v: string | null | undefined) => (v ? v : '—');
 
 const userRowSchema = z.object({ id: z.string().uuid(), fullName: z.string() });

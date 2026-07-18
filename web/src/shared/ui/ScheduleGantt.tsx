@@ -69,7 +69,7 @@ export function ScheduleGantt({
   const today = dayjs().startOf('day');
 
   return (
-    <div style={{ overflowX: 'auto', border: '1px solid var(--tk-border, #ebe9f1)', borderRadius: 8, background: '#fff' }}>
+    <div style={{ overflowX: 'auto', border: '1px solid var(--tk-border)', borderRadius: 8, background: 'var(--tk-surface)' }}>
       <div style={{ minWidth: labelWidth + gridWidth }}>
         {/* Header ngày */}
         <div style={{ display: 'flex', position: 'sticky', top: 0, zIndex: 2, background: 'var(--tk-header-bg)', borderBottom: '1px solid var(--tk-border)' }}>
@@ -156,7 +156,7 @@ export function ScheduleGantt({
                         lineHeight: 1.25,
                         overflow: 'hidden',
                         cursor: onBarClick ? 'pointer' : 'default',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                        boxShadow: 'var(--tk-shadow-sm)',
                       }}
                     >
                       <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.label}</div>

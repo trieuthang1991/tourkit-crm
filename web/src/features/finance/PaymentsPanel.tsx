@@ -1,4 +1,4 @@
-import { App, Button, Card, Input, InputNumber, Modal, Select, Space, Table, Tag } from '../../shared/ui/antd';
+import { App, Button, Card, Descriptions, Input, InputNumber, Modal, Select, Space, Table, Tag } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useMemo, useState } from 'react';
 import { errorMessage } from '../../shared/api/problem';
@@ -138,6 +138,12 @@ export function PaymentsPanel({ orderId }: { orderId: string }) {
   const { has } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
   const payments = usePayments(orderId);
+  const summary = useMemo(() => {
+    const rows = payments.data ?? [];
+    const paid = rows.filter((p) => p.isRecognized).reduce((a, p) => a + p.amount, 0);
+    const total = rows.reduce((a, p) => a + p.amount, 0);
+    return { count: rows.length, paid, total };
+  }, [payments.data]);
 
   const columns: ColumnsType<Payment> = [
     { title: 'Mã phiếu', dataIndex: 'code', key: 'code' },
@@ -164,6 +170,11 @@ export function PaymentsPanel({ orderId }: { orderId: string }) {
 
   return (
     <Card title="Phiếu chi">
+      <Descriptions column={3} bordered size="small" style={{ marginBottom: 16 }}>
+        <Descriptions.Item label="Số phiếu">{summary.count}</Descriptions.Item>
+        <Descriptions.Item label="Tổng chi">{money(summary.total)}</Descriptions.Item>
+        <Descriptions.Item label="Đã ghi nhận">{money(summary.paid)}</Descriptions.Item>
+      </Descriptions>
       <Space style={{ marginBottom: 16 }}>
         {has('payment.create') ? (
           <Button type="primary" onClick={() => setCreateOpen(true)}>

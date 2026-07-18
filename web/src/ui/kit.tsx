@@ -261,7 +261,7 @@ export function Tabs({ items }: { items: { key: string; label: ReactNode; childr
           </button>
         ))}
       </div>
-      <div>{cur?.children}</div>
+      <div style={{ paddingTop: 14 }}>{cur?.children}</div>
     </div>
   );
 }
