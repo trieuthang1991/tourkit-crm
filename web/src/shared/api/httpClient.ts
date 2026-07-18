@@ -35,15 +35,61 @@ httpClient.interceptors.request.use((config) => {
   return config;
 });
 
+function redirectToLogin(): void {
+  clearTokens();
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login';
+  }
+}
+
+// Single-flight: nhiều request cùng lúc gặp 401 chỉ gọi /auth/refresh MỘT lần.
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    return null;
+  }
+  try {
+    // Dùng axios "trần" (không qua interceptor) để tránh vòng lặp refresh.
+    const { data } = await axios.post<{ accessToken: string; refreshToken: string }>(
+      `${API_BASE}/api/v1/auth/refresh`,
+      { refreshToken },
+    );
+    setTokens(data.accessToken, data.refreshToken);
+    return data.accessToken;
+  } catch {
+    return null;
+  }
+}
+
 httpClient.interceptors.response.use(
   (response) => response,
-  (error: unknown) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      clearTokens();
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+  async (error: unknown) => {
+    if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    const original = error.config as typeof error.config & { _retried?: boolean };
+    const url = original.url ?? '';
+
+    // Chính login/refresh 401 hoặc đã thử refresh 1 lần rồi → hết cứu, về /login.
+    if (original._retried || url.includes('/auth/login') || url.includes('/auth/refresh')) {
+      redirectToLogin();
+      return Promise.reject(error);
+    }
+
+    original._retried = true;
+    refreshInFlight = refreshInFlight ?? refreshAccessToken();
+    const newToken = await refreshInFlight;
+    refreshInFlight = null;
+
+    if (!newToken) {
+      redirectToLogin();
+      return Promise.reject(error);
+    }
+
+    // Gọi lại request gốc — request interceptor sẽ tự gắn access token mới.
+    return httpClient(original);
   },
 );
