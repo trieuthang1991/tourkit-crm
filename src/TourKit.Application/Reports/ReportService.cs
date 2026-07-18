@@ -24,6 +24,8 @@ public sealed class ReportService(IReportQueries queries) : IReportService
 
     public Task<IReadOnlyList<TurnoverByDepartmentRowDto>> GetTurnoverByDepartmentAsync() => queries.GetTurnoverByDepartmentAsync();
 
+    public Task<IReadOnlyList<MoneyByTourTypeRowDto>> GetMoneyByTourTypeAsync() => queries.GetMoneyByTourTypeAsync();
+
     public Task<IReadOnlyList<TurnoverByBranchRowDto>> GetTurnoverByBranchAsync() => queries.GetTurnoverByBranchAsync();
 
     public Task<IReadOnlyList<TopCustomerRowDto>> GetTopCustomersAsync(int top = 10) => queries.GetTopCustomersAsync(top);

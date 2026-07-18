@@ -18,6 +18,7 @@ public interface IReportQueries
     Task<IReadOnlyList<CommissionByUserRowDto>> GetCommissionByUserAsync();
     Task<IReadOnlyList<CommissionByMilestoneRowDto>> GetCommissionByMilestoneAsync(DateTimeOffset? from, DateTimeOffset? to);
     Task<IReadOnlyList<TurnoverByDepartmentRowDto>> GetTurnoverByDepartmentAsync();
+    Task<IReadOnlyList<MoneyByTourTypeRowDto>> GetMoneyByTourTypeAsync();
     Task<IReadOnlyList<TurnoverByBranchRowDto>> GetTurnoverByBranchAsync();
     Task<IReadOnlyList<TopCustomerRowDto>> GetTopCustomersAsync(int top = 10);
     Task<KpiSummaryDto> GetKpiSummaryAsync();

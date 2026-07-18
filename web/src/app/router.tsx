@@ -53,6 +53,7 @@ import { TurnoverReportPage } from '../features/reports/TurnoverReportPage';
 import { CommissionByUserReportPage } from '../features/reports/CommissionByUserReportPage';
 import { CommissionByMilestoneReportPage } from '../features/reports/CommissionByMilestoneReportPage';
 import { TurnoverByDepartmentReportPage } from '../features/reports/TurnoverByDepartmentReportPage';
+import { MoneyByTourTypeReportPage } from '../features/reports/MoneyByTourTypeReportPage';
 import { KpiReportPage } from '../features/reports/KpiReportPage';
 import { CommissionRulesPage } from '../features/commission/CommissionRulesPage';
 import { CommissionCampaignsPage } from '../features/commission/CommissionCampaignsPage';
@@ -173,6 +174,7 @@ export function AppRouter() {
         <Route path="/reports/commission-by-user" element={<CommissionByUserReportPage />} />
         <Route path="/reports/commission-by-milestone" element={<CommissionByMilestoneReportPage />} />
         <Route path="/reports/turnover-by-department" element={<TurnoverByDepartmentReportPage />} />
+        <Route path="/reports/money-by-tour-type" element={<MoneyByTourTypeReportPage />} />
         <Route path="/reports/kpi" element={<KpiReportPage />} />
         <Route path="/commission-rules" element={<CommissionRulesPage />} />
         <Route path="/commission-campaigns" element={<CommissionCampaignsPage />} />

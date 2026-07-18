@@ -57,6 +57,14 @@ public sealed record CommissionByMilestoneRowDto(
 public sealed record TurnoverByDepartmentRowDto(
     Guid? DepartmentId, string DepartmentName, int OrderCount, decimal Turnover, decimal Cost, decimal Profit);
 
+/// <summary>
+/// Một dòng thu–chi theo LOẠI TOUR (legacy MoneyReport, tách nhánh FIT/GIT…): doanh thu gộp, hoàn/huỷ chỗ
+/// (Order.TotalRefund), doanh thu ròng = gộp − hoàn, chi phí thực (OrderCost), lợi nhuận = ròng − chi.
+/// </summary>
+public sealed record MoneyByTourTypeRowDto(
+    int BookingType, string TourTypeName, int OrderCount,
+    decimal GrossRevenue, decimal Refund, decimal NetRevenue, decimal Cost, decimal Profit);
+
 /// <summary>Hiệu suất theo CHI NHÁNH (gom đơn theo Order.BranchId): số đơn · doanh thu · thực thu · còn thiếu · lợi nhuận.</summary>
 public sealed record TurnoverByBranchRowDto(
     Guid? BranchId, string BranchName, int OrderCount,

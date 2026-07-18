@@ -164,6 +164,7 @@ export const MENU: NavNode[] = [
     key: 'g-report', label: 'Báo cáo', icon: 'bar_chart', children: [
       { key: 'rp-seller', label: 'Nhân viên', to: '/reports/turnover', perm: 'report.turnover.view' },
       { key: 'rp-money', label: 'Tài chính', to: '/reports/turnover-by-department', perm: 'report.turnover.view' },
+      { key: 'rp-tourtype', label: 'Thu chi theo loại tour', to: '/reports/money-by-tour-type', perm: 'report.turnover.view' },
       { key: 'rp-export', label: 'Xuất báo cáo', to: '/reports/turnover', perm: 'report.turnover.view' },
       { key: 'rp-system', label: 'Báo cáo tổng hợp', to: '/reports/turnover-by-department', perm: 'report.turnover.view' },
     ],

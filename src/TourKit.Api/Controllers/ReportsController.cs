@@ -91,6 +91,15 @@ public sealed class ReportsController(IReportService service) : ControllerBase
         return Ok(rows);
     }
 
+    // Thu–chi theo loại tour (FIT/GIT…) + hoàn/huỷ chỗ (legacy MoneyReport).
+    [HttpGet("money-by-tour-type")]
+    [Authorize(Permissions.ReportTurnoverView)]
+    public async Task<IActionResult> MoneyByTourType()
+    {
+        var rows = await service.GetMoneyByTourTypeAsync();
+        return Ok(rows);
+    }
+
     [HttpGet("top-customers")]
     [Authorize(Permissions.ReportDashboardView)]
     public async Task<IActionResult> TopCustomers([FromQuery] int top = 10)

@@ -430,6 +430,53 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
         return rows;
     }
 
+    // Nhãn loại tour (legacy tour_type / Order.BookingType). Khớp comment trên Order.
+    private static readonly IReadOnlyDictionary<int, string> TourTypeNames = new Dictionary<int, string>
+    {
+        [0] = "FIT (khách lẻ)",
+        [1] = "GIT (đoàn ghép)",
+        [2] = "Land tour/Combo",
+        [3] = "Booking phòng",
+        [4] = "Dịch vụ lẻ",
+        [5] = "Visa",
+        [6] = "Xe",
+    };
+
+    /// <summary>
+    /// Báo cáo thu–chi theo LOẠI TOUR (legacy MoneyReport, tách nhánh FIT/GIT…): gom đơn theo BookingType.
+    /// Doanh thu ròng = TotalRevenue − TotalRefund (trừ hoàn/huỷ chỗ); chi phí thực từ OrderCost; lợi nhuận =
+    /// ròng − chi. KHÔNG tái tạo cơ chế FIT-sub-booking của legacy (model tourkit-crm không có) — tính theo
+    /// BookingType trên Order (đủ dùng, đúng dữ liệu).
+    /// </summary>
+    public async Task<IReadOnlyList<MoneyByTourTypeRowDto>> GetMoneyByTourTypeAsync()
+    {
+        var orders = await db.Orders.AsNoTracking()
+            .Select(o => new { o.Id, o.TotalRevenue, o.TotalRefund, o.BookingType })
+            .ToListAsync();
+
+        var costByOrder = (await db.OrderCosts.AsNoTracking()
+                .GroupBy(c => c.OrderId)
+                .Select(g => new { OrderId = g.Key, Cost = g.Sum(x => x.ActualAmount) })
+                .ToListAsync())
+            .ToDictionary(x => x.OrderId, x => x.Cost);
+
+        IReadOnlyList<MoneyByTourTypeRowDto> rows = orders
+            .GroupBy(o => o.BookingType)
+            .Select(g =>
+            {
+                var gross = g.Sum(x => x.TotalRevenue);
+                var refund = g.Sum(x => x.TotalRefund);
+                var net = gross - refund;
+                var cost = g.Sum(x => costByOrder.GetValueOrDefault(x.Id, 0m));
+                var name = TourTypeNames.GetValueOrDefault(g.Key, $"Loại {g.Key}");
+                return new MoneyByTourTypeRowDto(g.Key, name, g.Count(), gross, refund, net, cost, OrderMath.Profit(net, cost));
+            })
+            .OrderBy(r => r.BookingType)
+            .ToList();
+
+        return rows;
+    }
+
     /// <summary>
     /// Hiệu suất theo CHI NHÁNH (legacy dashboard "Hiệu suất theo chi nhánh"): gom đơn theo Order.BranchId.
     /// Thực thu = Σ phiếu thu đã ghi nhận của đơn; Còn thiếu = phải thu; Cost từ OrderCost. Đơn chưa gán chi nhánh → "Chưa phân bổ".

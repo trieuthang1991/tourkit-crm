@@ -86,7 +86,9 @@ Zalo ZNS/UID + SMS thật · HĐĐT MiFi · CallCenter · Pancake · FeedBackTou
 
 - ✅ **Notification typed/actionable** (Item C1): `Notification.Type` + migration, `PushAsync(type)`, gán type tại emit (task/approval), FE icon+nhãn theo loại. *(C2 notify-creator = hoãn có kiểm soát: cần StartedByUserId trên approval + đụng state machine duyệt.)*
 
-Còn lại **P1**: dedup + auto-chia lead + import · MoneyReport nhánh FIT/hoàn huỷ · Excel export server-side (all-pages) · [C2 notify-creator].
+- ✅ **Báo cáo thu chi theo loại tour** (Item D): `GET /reports/money-by-tour-type` gom theo BookingType (FIT/GIT…), trừ TotalRefund ra doanh thu ròng + UI/Excel/menu. *(không tái tạo FIT-sub-booking legacy — model khác.)*
+
+Còn lại **P1**: dedup + auto-chia lead + import · Excel export server-side (all-pages) · [C2 notify-creator].
 
 ## 6.5) P2 (epic tích hợp ~3-4 tuần/cái): Zalo ZNS/UID · BankHub đối soát · HĐĐT MiFi · CallCenter · Pancake · FeedBackTour survey · KPI target-vs-actual · Tasking cộng tác · Workplace social feed.
 
