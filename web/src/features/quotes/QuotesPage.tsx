@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, DatePicker, Input, Modal, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, DatePicker, Input, Modal, Popconfirm, Row, Segmented, Select, Space, Table, Tag, Typography } from '../../shared/ui/antd';
 import dayjs from 'dayjs';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useMemo, useState } from 'react';
@@ -11,8 +11,12 @@ import { departuresCrud } from '../booking/departuresApi';
 import { QuoteLinesField } from './QuoteLinesField';
 import { useConvertQuote, useCreateQuote, useDeleteQuote, useQuote, useQuotes, useQuoteStats, useUpdateQuote } from './quotesApi';
 import type { QuoteFilter } from './quotesApi';
-import { quoteFormSchema } from './types';
+import { quoteFormSchema, QUOTE_TYPE_LABEL } from './types';
 import type { QuoteForm, QuoteSummary } from './types';
+import { CellStack, CellEntity, CellMoney, CellText, CellDate } from '../../shared/ui/TableCells';
+import { StatGrid } from '../../ui/kit';
+import { DataCard, ExportButton } from '../../shared/ui';
+import { exportRowsToCsv } from '../../shared/exportCsv';
 
 const QUOTE_STATUS_COLOR: Record<number, string> = { 0: 'default', 1: 'blue', 2: 'green', 3: 'red' };
 
@@ -163,38 +167,80 @@ export function QuotesPage({ quoteType = 0, title = 'Báo giá' }: { quoteType?:
     }
   }
 
+  // Xuất CSV trang hiện tại.
+  const exportCsv = () =>
+    exportRowsToCsv(
+      'bao-gia.csv',
+      ['Mã báo giá', 'Loại', 'Khách hàng', 'Tiêu đề', 'Người lớn', 'Trẻ em', 'Trẻ nhỏ', 'Tổng tiền', 'Lợi nhuận', 'Hạn hiệu lực', 'Trạng thái'],
+      (list.data?.items ?? []).map((r) => [
+        r.code,
+        QUOTE_TYPE_LABEL[r.quoteType],
+        r.customerName,
+        r.title,
+        r.adults ?? 0,
+        r.children ?? 0,
+        r.infants ?? 0,
+        r.totalAmount,
+        r.totalProfit ?? 0,
+        r.validUntil ? new Date(r.validUntil).toLocaleDateString('vi-VN') : '',
+        statusText(QUOTE_STATUS, r.status),
+      ]),
+    );
+
   const columns: ColumnsType<QuoteSummary> = [
-    { title: 'Mã', dataIndex: 'code', key: 'code', fixed: 'left', width: 130 },
-    { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName', width: 170 },
-    { title: 'Tiêu đề', dataIndex: 'title', key: 'title', width: 200, ellipsis: true },
+    // Báo giá: mã (mono) + loại báo giá
+    {
+      title: 'Báo giá',
+      key: 'code',
+      width: 160,
+      render: (_: unknown, r: QuoteSummary) => <CellStack main={r.code} mono sub={QUOTE_TYPE_LABEL[r.quoteType]} />,
+    },
+    // Khách / Tour: khách hàng (đậm) + tiêu đề (mờ)
+    {
+      title: 'Khách / Tour',
+      key: 'customerName',
+      width: 280,
+      render: (_: unknown, r: QuoteSummary) => <CellEntity name={r.customerName} meta={r.title} title={r.title} />,
+    },
+    // Số khách: NL / TE / EB
     {
       title: 'Số khách',
       key: '__pax',
-      width: 110,
+      width: 120,
       align: 'center',
-      render: (_: unknown, r: QuoteSummary) => `${r.adults ?? 0}NL / ${r.children ?? 0}TE / ${r.infants ?? 0}EB`,
+      render: (_: unknown, r: QuoteSummary) => (
+        <CellText mono>{`${r.adults ?? 0}NL / ${r.children ?? 0}TE / ${r.infants ?? 0}EB`}</CellText>
+      ),
     },
-    { title: 'Tổng bán', dataIndex: 'totalAmount', key: 'totalAmount', width: 130, align: 'right', render: (v: number) => money(v) },
+    // Giá trị: tổng bán (chính) + lợi nhuận (phụ, tone theo dấu)
     {
-      title: 'Lợi nhuận',
-      dataIndex: 'totalProfit',
-      key: 'totalProfit',
-      width: 130,
+      title: 'Giá trị',
+      key: 'totalAmount',
+      width: 180,
       align: 'right',
-      render: (v?: number) => <span style={{ color: (v ?? 0) < 0 ? '#cf1322' : '#3f8600' }}>{money(v ?? 0)}</span>,
+      render: (_: unknown, r: QuoteSummary) => (
+        <CellMoney
+          value={r.totalAmount}
+          sub={r.totalProfit ?? 0}
+          subLabel="LN"
+          subTone={(r.totalProfit ?? 0) < 0 ? 'danger' : 'success'}
+        />
+      ),
     },
+    // Hạn hiệu lực
     {
       title: 'Hạn hiệu lực',
-      dataIndex: 'validUntil',
       key: 'validUntil',
-      width: 120,
-      render: (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—'),
+      width: 130,
+      render: (_: unknown, r: QuoteSummary) => (
+        <CellDate value={r.validUntil ? new Date(r.validUntil).toLocaleDateString('vi-VN') : undefined} />
+      ),
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 150,
       render: (v: number, r: QuoteSummary) => (
         <Space size={4}>
           <Tag color={QUOTE_STATUS_COLOR[v]}>{statusText(QUOTE_STATUS, v)}</Tag>
@@ -205,7 +251,7 @@ export function QuotesPage({ quoteType = 0, title = 'Báo giá' }: { quoteType?:
     {
       title: '',
       key: '__actions',
-      width: 160,
+      width: 180,
       render: (_: unknown, item: QuoteSummary) =>
         canManage ? (
           <Space>
@@ -242,30 +288,28 @@ export function QuotesPage({ quoteType = 0, title = 'Báo giá' }: { quoteType?:
         <Typography.Title level={3} style={{ margin: 0 }}>
           {title}
         </Typography.Title>
-        {canManage ? (
-          <Button type="primary" onClick={() => setEditingId('new')}>
-            Thêm báo giá
-          </Button>
-        ) : null}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <ExportButton filename="bao-gia.csv" onExport={exportCsv} />
+          {canManage ? (
+            <Button type="primary" onClick={() => setEditingId('new')}>
+              Thêm báo giá
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {/* Thẻ thống kê */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng báo giá', value: stats.data?.total ?? 0, money: false },
-          { title: 'Tổng giá trị', value: stats.data?.totalAmount ?? 0, money: true },
-          { title: 'Lợi nhuận dự kiến', value: stats.data?.totalProfit ?? 0, money: true },
-          { title: 'Chấp nhận', value: stats.data?.accepted ?? 0, money: false },
-          { title: 'Đã gửi', value: stats.data?.sent ?? 0, money: false },
-          { title: 'Từ chối', value: stats.data?.rejected ?? 0, money: false },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} formatter={c.money ? (v) => money(Number(v)) : undefined} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Tổng báo giá', value: stats.data?.total ?? 0 },
+          { label: 'Tổng giá trị', value: money(stats.data?.totalAmount ?? 0) },
+          { label: 'Lợi nhuận dự kiến', value: money(stats.data?.totalProfit ?? 0) },
+          { label: 'Chấp nhận', value: stats.data?.accepted ?? 0 },
+          { label: 'Đã gửi', value: stats.data?.sent ?? 0 },
+          { label: 'Từ chối', value: stats.data?.rejected ?? 0 },
+        ]}
+      />
 
       {/* Thanh lọc */}
       <Card size="small" style={{ marginBottom: 12 }}>
@@ -300,21 +344,22 @@ export function QuotesPage({ quoteType = 0, title = 'Báo giá' }: { quoteType?:
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        childrenColumnName="__noNested" /* field 'children' (số trẻ em) KHÔNG phải hàng con lồng nhau */
-        scroll={{ x: 'max-content' }}
-        pagination={{
-          current: page,
-          pageSize: size,
-          total: list.data?.total ?? 0,
-          onChange: setPage,
-          showSizeChanger: false,
-        }}
-      />
+      <DataCard title="Danh sách báo giá">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          childrenColumnName="__noNested" /* field 'children' (số trẻ em) KHÔNG phải hàng con lồng nhau */
+          pagination={{
+            current: page,
+            pageSize: size,
+            total: list.data?.total ?? 0,
+            onChange: setPage,
+            showSizeChanger: false,
+          }}
+        />
+      </DataCard>
 
       {modalOpen ? (
         <CrudFormModal

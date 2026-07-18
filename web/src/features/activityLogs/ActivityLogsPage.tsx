@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Table, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
+import { DataCard } from '../../shared/ui';
 import { dateText } from '../../shared/format';
 import { useActivityLogs } from './activityLogsApi';
 import type { ActivityLog } from './activityLogsApi';
@@ -32,19 +33,21 @@ export function ActivityLogsPage() {
   return (
     <>
       <Typography.Title level={3}>Nhật ký thao tác</Typography.Title>
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={query.data?.items ?? []}
-        loading={query.isLoading}
-        pagination={{
-          current: page,
-          pageSize: size,
-          total: query.data?.total ?? 0,
-          onChange: setPage,
-          showSizeChanger: false,
-        }}
-      />
+      <DataCard title="Nhật ký hệ thống">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={query.data?.items ?? []}
+          loading={query.isLoading}
+          pagination={{
+            current: page,
+            pageSize: size,
+            total: query.data?.total ?? 0,
+            onChange: setPage,
+            showSizeChanger: false,
+          }}
+        />
+      </DataCard>
     </>
   );
 }

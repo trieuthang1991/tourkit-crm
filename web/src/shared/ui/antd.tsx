@@ -16,7 +16,7 @@ import type * as AntdNS from 'antd';
 import type { ColumnsType, ColumnType } from 'antd/es/table';
 
 import { Icon, Empty as RfEmpty } from '../../ui/kit';
-import { Select as RfSelect } from '../../ui/inputs';
+import { Select as RfSelect, DateRangeInput as RfDateRange } from '../../ui/inputs';
 import { Modal as RfModal, Drawer as RfDrawer, Popconfirm as RfPopconfirm } from '../../ui/overlay';
 import {
   Tag as RfTag,
@@ -140,7 +140,7 @@ const TextAreaImpl = forwardRef<HTMLTextAreaElement, Record<string, unknown>>(fu
       onChange={onChange as React.ChangeEventHandler<HTMLTextAreaElement>}
       style={{
         width: '100%', padding: '9px 11px', borderRadius: 'var(--tk-radius)', border: '1px solid var(--tk-border)',
-        background: 'var(--tk-surface)', font: '400 13px var(--tk-font)', color: 'var(--tk-heading)', outline: 'none', resize: 'vertical', lineHeight: 1.6,
+        background: 'var(--tk-surface)', font: '400 14px var(--tk-font)', color: 'var(--tk-heading)', outline: 'none', resize: 'vertical', lineHeight: 1.6,
         ...(style as CSSProperties),
       }}
     />
@@ -367,16 +367,19 @@ function RangePickerImpl(props: Record<string, unknown>) {
   const { value, onChange, placeholder, style } = asProps(props);
   const oc = onChange as ((d: [Dayjs | null, Dayjs | null] | null, s: [string, string]) => void) | undefined;
   const val = value as [Dayjs | null, Dayjs | null] | null | undefined;
-  const ph = placeholder as [string, string] | undefined;
-  const fmt = (d?: Dayjs | null) => (d ? dayjs(d).format('YYYY-MM-DD') : '');
-  const from = val?.[0] ?? null;
-  const to = val?.[1] ?? null;
-  const emit = (f: Dayjs | null, t: Dayjs | null) => oc?.(f || t ? [f, t] : null, [f ? f.format('YYYY-MM-DD') : '', t ? t.format('YYYY-MM-DD') : '']);
+  const ph = (placeholder as [string, string] | undefined) ?? ['Từ ngày', 'đến'];
   return (
-    <div className="rf-field" style={{ gap: 4, ...(style as CSSProperties) }}>
-      <input type="date" title={ph?.[0]} style={{ fontFamily: 'var(--tk-font-mono)' }} value={fmt(from)} onChange={(e) => emit(e.target.value ? dayjs(e.target.value) : null, to)} />
-      <span style={{ color: 'var(--tk-muted)', flexShrink: 0 }}>–</span>
-      <input type="date" title={ph?.[1]} style={{ fontFamily: 'var(--tk-font-mono)' }} value={fmt(to)} onChange={(e) => emit(from, e.target.value ? dayjs(e.target.value) : null)} />
+    <div style={style as CSSProperties}>
+      <RfDateRange
+        from={val?.[0] ? dayjs(val[0]).toISOString() : undefined}
+        to={val?.[1] ? dayjs(val[1]).toISOString() : undefined}
+        placeholder={ph}
+        onChange={(f, t) => {
+          const fd = f ? dayjs(f) : null;
+          const td = t ? dayjs(t) : null;
+          oc?.(fd || td ? [fd, td] : null, [fd ? fd.format('YYYY-MM-DD') : '', td ? td.format('YYYY-MM-DD') : '']);
+        }}
+      />
     </div>
   );
 }

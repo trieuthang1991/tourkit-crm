@@ -1,5 +1,8 @@
-import { App, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Select, Space, Statistic, Table } from '../../shared/ui/antd';
-import { Button, DataCard, SegmentTabs, StatusTag, voucherTone } from '../../shared/ui';
+import { App, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Select, Space, Table } from '../../shared/ui/antd';
+import { Button, DataCard, ExportButton, SegmentTabs, StatusTag, voucherTone } from '../../shared/ui';
+import { exportRowsToCsv } from '../../shared/exportCsv';
+import { StatGrid } from '../../ui/kit';
+import { CellEntity, CellMoney, CellStack, CellText } from '../../shared/ui/TableCells';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -122,6 +125,24 @@ export function PaymentsListPage() {
 
   const dateVi = (v: string) => new Date(v).toLocaleDateString('vi-VN');
 
+  // Xuất CSV trang hiện tại.
+  const exportCsv = () =>
+    exportRowsToCsv(
+      'phieu-chi.csv',
+      ['STT', 'Mã phiếu', 'Ngày', 'Nhà cung cấp', 'Mã đơn', 'Người nhận', 'Hình thức', 'Số tiền', 'Trạng thái'],
+      (list.data?.items ?? []).map((r, i) => [
+        (page.page - 1) * page.size + i + 1,
+        r.code,
+        dateVi(r.issuedAt),
+        r.providerName ?? '',
+        r.orderCode ?? '',
+        r.receiverName ?? '',
+        r.paymentMethod,
+        r.amount,
+        VOUCHER_STATUS[r.status] ?? r.status,
+      ]),
+    );
+
   const columns: ColumnsType<PaymentListItem> = [
     {
       title: 'STT',
@@ -131,18 +152,37 @@ export function PaymentsListPage() {
       align: 'center',
       render: (_: unknown, __: PaymentListItem, index: number) => (page.page - 1) * page.size + index + 1,
     },
-    { title: 'Mã phiếu', dataIndex: 'code', key: 'code', fixed: 'left', width: 140 },
-    { title: 'Mã đơn', dataIndex: 'orderCode', key: 'orderCode', width: 130, render: (v: string | null) => v ?? '—' },
-    { title: 'Nhà cung cấp', dataIndex: 'providerName', key: 'providerName', width: 180, render: (v: string | null) => v ?? '—' },
-    { title: 'Số tiền', dataIndex: 'amount', key: 'amount', width: 140, align: 'right', render: (v: number) => money(v) },
-    { title: 'Hình thức', dataIndex: 'paymentMethod', key: 'paymentMethod', width: 110 },
-    { title: 'Ngày', dataIndex: 'issuedAt', key: 'issuedAt', width: 110, render: dateVi },
-    { title: 'Người nhận', dataIndex: 'receiverName', key: 'receiverName', width: 150, render: (v: string | null) => v ?? '—' },
+    {
+      title: 'Phiếu chi',
+      key: 'code',
+      fixed: 'left',
+      width: 160,
+      render: (_: unknown, r: PaymentListItem) => <CellStack main={r.code} mono sub={dateVi(r.issuedAt)} subMono />,
+    },
+    {
+      title: 'Đối tượng nhận',
+      key: 'recipient',
+      width: 280,
+      render: (_: unknown, r: PaymentListItem) => <CellEntity name={r.providerName} code={r.orderCode} meta={r.receiverName} />,
+    },
+    {
+      title: 'Hình thức',
+      key: 'paymentMethod',
+      width: 130,
+      render: (_: unknown, r: PaymentListItem) => <CellText>{r.paymentMethod}</CellText>,
+    },
+    {
+      title: 'Số tiền',
+      key: 'amount',
+      width: 170,
+      align: 'right',
+      render: (_: unknown, r: PaymentListItem) => <CellMoney value={r.amount} tone="danger" />,
+    },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 130,
       render: (s: number) => <StatusTag tone={voucherTone(s)}>{VOUCHER_STATUS[s] ?? s}</StatusTag>,
     },
     ...(canApprove
@@ -173,27 +213,21 @@ export function PaymentsListPage() {
   ];
 
   const s = stats.data;
-  const statCards = [
-    { title: 'Tổng số phiếu', value: s?.total ?? 0, money: false },
-    { title: 'Tổng tiền', value: s?.totalAmount ?? 0, money: true },
-    { title: 'Chờ duyệt', value: s?.pending ?? 0, money: false },
-    { title: 'Đã duyệt', value: s?.approved ?? 0, money: false },
-    { title: 'Từ chối', value: s?.rejected ?? 0, money: false },
-  ];
 
   return (
     <>
-      <PageHeader title="Phiếu chi" />
+      <PageHeader title="Phiếu chi" extra={<ExportButton filename="phieu-chi.csv" onExport={exportCsv} />} />
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} formatter={c.money ? (v) => money(Number(v)) : undefined} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        items={[
+          { label: 'Tổng số phiếu', value: s?.total ?? 0 },
+          { label: 'Tổng tiền', value: money(s?.totalAmount ?? 0) },
+          { label: 'Chờ duyệt', value: s?.pending ?? 0 },
+          { label: 'Đã duyệt', value: s?.approved ?? 0 },
+          { label: 'Từ chối', value: s?.rejected ?? 0 },
+        ]}
+        style={{ marginBottom: 16 }}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -259,7 +293,7 @@ export function PaymentsListPage() {
         columns={columns}
         dataSource={list.data?.items ?? []}
         loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 1080 }}
         pagination={{
           current: page.page,
           pageSize: page.size,

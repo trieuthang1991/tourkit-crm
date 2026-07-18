@@ -5,13 +5,15 @@ import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { voucherTone } from '../../shared/ui';
-import { Button, DataCard, Icon, SegmentTabs, StatCard, StatusTag } from '../../ui/kit';
+import { exportRowsToCsv } from '../../shared/exportCsv';
+import { voucherTone, ExportButton } from '../../shared/ui';
+import { Button, DataCard, SegmentTabs, StatGrid, StatusTag } from '../../ui/kit';
 import { DateRangeInput, Input, NumberInput, SearchInput, Select } from '../../ui/inputs';
 import { Popconfirm } from '../../ui/overlay';
 import { useToast } from '../../ui/message';
 import { Pagination, Table } from '../../ui/Table';
 import type { Column } from '../../ui/Table';
+import { CellStack, CellEntity, CellMoney } from '../../shared/ui/TableCells';
 import { useAuth } from '../auth/AuthContext';
 import { receiptListItemSchema, VOUCHER_STATUS } from './listTypes';
 import type { ReceiptListItem } from './listTypes';
@@ -128,16 +130,31 @@ export function ReceiptsListPage() {
   const dateVi = (v: string) => new Date(v).toLocaleDateString('vi-VN');
   const rows = list.data?.items ?? [];
 
+  // Xuất CSV trang hiện tại.
+  const exportCsv = () =>
+    exportRowsToCsv(
+      'phieu-thu.csv',
+      ['STT', 'Mã phiếu', 'Ngày', 'Khách hàng', 'Mã đơn', 'Người nộp', 'Hình thức', 'Số tiền', 'Trạng thái'],
+      rows.map((r, i) => [
+        (page.page - 1) * page.size + i + 1,
+        r.code,
+        dateVi(r.issuedAt),
+        r.customerName ?? '',
+        r.orderCode ?? '',
+        r.partner ?? '',
+        r.paymentMethod,
+        r.amount,
+        VOUCHER_STATUS[r.status] ?? r.status,
+      ]),
+    );
+
   const columns: Column<ReceiptListItem>[] = [
     { key: '__stt', title: '#', width: 46, align: 'center', mono: true, render: (_r, i) => (page.page - 1) * page.size + i + 1 },
-    { key: 'code', title: 'Mã phiếu', width: 138, render: (r) => <span style={{ font: '600 12.5px var(--tk-font-mono)', color: 'var(--tk-accent)' }}>{r.code}</span> },
-    { key: 'orderCode', title: 'Mã đơn', width: 128, mono: true, render: (r) => r.orderCode ?? '—' },
-    { key: 'customerName', title: 'Khách hàng', width: 168, render: (r) => r.customerName ?? '—' },
-    { key: 'amount', title: 'Số tiền', width: 138, align: 'right', mono: true, render: (r) => money(r.amount) },
-    { key: 'paymentMethod', title: 'Hình thức', width: 108, dataIndex: 'paymentMethod' },
-    { key: 'issuedAt', title: 'Ngày', width: 106, mono: true, render: (r) => dateVi(r.issuedAt) },
-    { key: 'partner', title: 'Người nộp', width: 148, render: (r) => r.partner ?? '—' },
-    { key: 'status', title: 'Trạng thái', width: 118, render: (r) => <StatusTag tone={voucherTone(r.status)}>{VOUCHER_STATUS[r.status] ?? r.status}</StatusTag> },
+    { key: 'code', title: 'Phiếu thu', width: 152, render: (r) => <CellStack main={r.code} sub={dateVi(r.issuedAt)} tone="accent" mono subMono /> },
+    { key: 'customer', title: 'Khách / Đơn', width: 210, render: (r) => <CellEntity name={r.customerName} code={r.orderCode} /> },
+    { key: 'partner', title: 'Người nộp / Hình thức', width: 194, render: (r) => <CellStack main={r.partner} sub={r.paymentMethod} /> },
+    { key: 'amount', title: 'Số tiền', width: 158, align: 'right', render: (r) => <CellMoney value={r.amount} tone="success" sub={r.isRecognized ? 'Đã ghi nhận' : undefined} subTone="muted" /> },
+    { key: 'status', title: 'Trạng thái', width: 122, render: (r) => <StatusTag tone={voucherTone(r.status)}>{VOUCHER_STATUS[r.status] ?? r.status}</StatusTag> },
     ...(canApprove
       ? [
           {
@@ -178,28 +195,24 @@ export function ReceiptsListPage() {
   );
 
   const s = stats.data;
-  const statCards = [
-    { title: 'Tổng số phiếu', value: s?.total ?? 0, money: false, tone: undefined },
-    { title: 'Tổng tiền', value: s?.totalAmount ?? 0, money: true, tone: 'accent' as const },
-    { title: 'Chờ duyệt', value: s?.pending ?? 0, money: false, tone: 'warning' as const },
-    { title: 'Đã duyệt', value: s?.approved ?? 0, money: false, tone: 'success' as const },
-    { title: 'Từ chối', value: s?.rejected ?? 0, money: false, tone: 'danger' as const },
-  ];
 
   return (
     <>
-      <div className="rf-crumb">
-        <span>Tài chính / Kế toán</span>
-        <Icon name="chevron_right" size={14} className="rf-crumb__sep" />
-        <span className="rf-crumb__cur">Phiếu thu</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <h1 className="rf-page__title" style={{ margin: 0 }}>Phiếu thu</h1>
+        <ExportButton filename="phieu-thu.csv" onExport={exportCsv} />
       </div>
-      <h1 className="rf-page__title">Phiếu thu</h1>
 
-      <div className="rf-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', marginTop: 16 }}>
-        {statCards.map((c) => (
-          <StatCard key={c.title} label={c.title} tone={c.tone} value={c.money ? money(Number(c.value)) : Number(c.value).toLocaleString('vi-VN')} />
-        ))}
-      </div>
+      <StatGrid
+        style={{ marginTop: 16 }}
+        items={[
+          { label: 'Tổng số phiếu', value: (s?.total ?? 0).toLocaleString('vi-VN') },
+          { label: 'Tổng tiền', value: money(s?.totalAmount ?? 0) },
+          { label: 'Chờ duyệt', value: (s?.pending ?? 0).toLocaleString('vi-VN') },
+          { label: 'Đã duyệt', value: (s?.approved ?? 0).toLocaleString('vi-VN') },
+          { label: 'Từ chối', value: (s?.rejected ?? 0).toLocaleString('vi-VN') },
+        ]}
+      />
 
       <div className="rf-card" style={{ padding: 12, marginTop: 16 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
@@ -232,7 +245,7 @@ export function ReceiptsListPage() {
 
       <div style={{ marginTop: 14 }}>
         <DataCard title="Danh sách phiếu thu" bodyless>
-          <Table columns={columns} data={rows} rowKey={(r) => r.id} loading={list.isLoading} minWidth={1180} summary={rows.length ? summary : undefined} empty="Không có phiếu thu" />
+          <Table columns={columns} data={rows} rowKey={(r) => r.id} loading={list.isLoading} minWidth={1060} summary={rows.length ? summary : undefined} empty="Không có phiếu thu" />
           <div style={{ padding: '10px 16px' }}>
             <Pagination page={page.page} pageSize={page.size} total={list.data?.total ?? 0} unit="phiếu" onChange={(p) => setPage({ ...page, page: p })} />
           </div>

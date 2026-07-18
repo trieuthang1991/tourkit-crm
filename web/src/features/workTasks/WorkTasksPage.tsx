@@ -1,11 +1,14 @@
-import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Table, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
+import { StatGrid } from '../../ui/kit';
+import { DataCard } from '../../shared/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
+import { CellStack, CellText, CellDate } from '../../shared/ui/TableCells';
 import { DatePickerField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { useAuth } from '../auth/AuthContext';
 import {
@@ -169,16 +172,39 @@ export function WorkTasksPage() {
   }
 
   const columns: ColumnsType<WorkTask> = [
-    { title: 'Công việc', dataIndex: 'title', key: 'title' },
-    { title: 'Người được giao', dataIndex: 'assigneeName', key: 'assigneeName', render: (v: string | null) => v ?? '—' },
+    {
+      title: 'Công việc',
+      key: 'title',
+      render: (_: unknown, t: WorkTask) => <CellStack main={t.title} sub={t.description} />,
+    },
+    {
+      title: 'Phụ trách',
+      dataIndex: 'assigneeName',
+      key: 'assigneeName',
+      width: 180,
+      render: (v: string | null) => <CellText>{v}</CellText>,
+    },
+    {
+      title: 'Ưu tiên',
+      dataIndex: 'priority',
+      key: 'priority',
+      width: 130,
+      render: (v: number) => <Tag color={priorityColor(v)}>{priorityLabel(v)}</Tag>,
+    },
     {
       title: 'Hạn',
       dataIndex: 'dueDate',
       key: 'dueDate',
-      render: (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—'),
+      width: 150,
+      render: (v: string | null) => <CellDate value={v ? new Date(v).toLocaleDateString('vi-VN') : '—'} />,
     },
-    { title: 'Ưu tiên', dataIndex: 'priority', key: 'priority', render: (v: number) => <Tag color={priorityColor(v)}>{priorityLabel(v)}</Tag> },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (v: number) => <Tag color={statusColor(v)}>{statusLabel(v)}</Tag> },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: 140,
+      render: (v: number) => <Tag color={statusColor(v)}>{statusLabel(v)}</Tag>,
+    },
     ...(canManage
       ? [
           {
@@ -227,22 +253,17 @@ export function WorkTasksPage() {
         ) : null}
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng công việc', value: stats.data?.total ?? 0 },
-          { title: 'Cần làm', value: stats.data?.todo ?? 0 },
-          { title: 'Đang làm', value: stats.data?.inProgress ?? 0 },
-          { title: 'Hoàn thành', value: stats.data?.done ?? 0 },
-          { title: 'Huỷ', value: stats.data?.cancelled ?? 0 },
-          { title: 'Quá hạn', value: stats.data?.overdue ?? 0 },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Tổng công việc', value: stats.data?.total ?? 0 },
+          { label: 'Cần làm', value: stats.data?.todo ?? 0 },
+          { label: 'Đang làm', value: stats.data?.inProgress ?? 0 },
+          { label: 'Hoàn thành', value: stats.data?.done ?? 0 },
+          { label: 'Huỷ', value: stats.data?.cancelled ?? 0 },
+          { label: 'Quá hạn', value: stats.data?.overdue ?? 0 },
+        ]}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -274,7 +295,9 @@ export function WorkTasksPage() {
         />
       </div>
 
-      <Table rowKey="id" columns={columns} dataSource={list.data ?? []} loading={list.isLoading} scroll={{ x: 'max-content' }} pagination={false} />
+      <DataCard title="Danh sách công việc">
+        <Table rowKey="id" columns={columns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      </DataCard>
       {open ? (
         <CrudFormModal
           open={open}

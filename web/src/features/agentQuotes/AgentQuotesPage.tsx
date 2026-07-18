@@ -1,4 +1,6 @@
-import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Table, Tag, Typography } from '../../shared/ui/antd';
+import { StatGrid } from '../../ui/kit';
+import { DataCard } from '../../shared/ui';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -7,6 +9,7 @@ import { money, statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { agentsCrud } from '../agents/agentsCrud';
+import { CellEntity, CellMoney, CellText, CellDate } from '../../shared/ui/TableCells';
 import {
   useAgentQuotes,
   useAgentQuoteStats,
@@ -83,16 +86,44 @@ export function AgentQuotesPage() {
   }
 
   const columns: ColumnsType<AgentQuote> = [
-    { title: 'Đại lý', dataIndex: 'agentName', key: 'agentName', width: 200, render: (v: string | null) => v ?? '—' },
-    { title: 'Sản phẩm', dataIndex: 'productName', key: 'productName' },
-    { title: 'Số khách', dataIndex: 'paxCount', key: 'paxCount', width: 100, align: 'right' },
+    // Đại lý / Tour: tên đại lý (đậm) + sản phẩm/tour (mờ)
+    {
+      title: 'Đại lý / Tour',
+      key: '__agent',
+      width: 280,
+      render: (_: unknown, r: AgentQuote) => (
+        <CellEntity name={r.agentName ?? '—'} meta={r.productName} title={r.specialRequests ?? r.productName} />
+      ),
+    },
+    // Số khách
+    {
+      title: 'Số khách',
+      key: '__pax',
+      width: 110,
+      align: 'center',
+      render: (_: unknown, r: AgentQuote) => <CellText mono>{`${r.paxCount} khách`}</CellText>,
+    },
+    // Ngày đi: ngày khởi hành (chính) + ngày về (phụ)
+    {
+      title: 'Ngày đi',
+      key: '__dates',
+      width: 150,
+      render: (_: unknown, r: AgentQuote) => (
+        <CellDate
+          value={r.travelDate ? new Date(r.travelDate).toLocaleDateString('vi-VN') : undefined}
+          sub={r.returnDate ? `→ ${new Date(r.returnDate).toLocaleDateString('vi-VN')}` : undefined}
+        />
+      ),
+    },
+    // Giá chào: giá (chính, mono) + ghi chú chào giá (phụ)
     {
       title: 'Giá chào',
-      dataIndex: 'quotedAmount',
-      key: 'quotedAmount',
-      width: 150,
+      key: '__quoted',
+      width: 180,
       align: 'right',
-      render: (v: number | null) => (v == null ? '—' : money(v)),
+      render: (_: unknown, r: AgentQuote) => (
+        <CellMoney value={r.quotedAmount ?? undefined} sub={r.quotedNote ?? undefined} />
+      ),
     },
     {
       title: 'Trạng thái',
@@ -147,22 +178,17 @@ export function AgentQuotesPage() {
         ) : null}
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng yêu cầu', value: stats.data?.total ?? 0, money: false },
-          { title: 'Chờ chào', value: stats.data?.requested ?? 0, money: false },
-          { title: 'Đã chào', value: stats.data?.quoted ?? 0, money: false },
-          { title: 'Xác nhận', value: stats.data?.confirmed ?? 0, money: false },
-          { title: 'Từ chối', value: stats.data?.rejected ?? 0, money: false },
-          { title: 'Tổng giá chào', value: stats.data?.totalQuoted ?? 0, money: true },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} formatter={c.money ? (v) => money(Number(v)) : undefined} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        items={[
+          { label: 'Tổng yêu cầu', value: stats.data?.total ?? 0 },
+          { label: 'Chờ chào', value: stats.data?.requested ?? 0 },
+          { label: 'Đã chào', value: stats.data?.quoted ?? 0 },
+          { label: 'Xác nhận', value: stats.data?.confirmed ?? 0 },
+          { label: 'Từ chối', value: stats.data?.rejected ?? 0 },
+          { label: 'Tổng giá chào', value: money(stats.data?.totalQuoted ?? 0) },
+        ]}
+        style={{ marginBottom: 16 }}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -193,14 +219,15 @@ export function AgentQuotesPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
-      />
+      <DataCard title="Danh sách báo giá đại lý">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
+        />
+      </DataCard>
 
       {creating ? (
         <CrudFormModal

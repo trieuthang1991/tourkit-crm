@@ -1,11 +1,14 @@
-import { App, Button, Card, Col, Input, Modal, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Input, Modal, Popconfirm, Row, Segmented, Select, Space, Table, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { errorMessage } from '../../shared/api/problem';
 import { money } from '../../shared/format';
+import { StatGrid } from '../../ui/kit';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
+import { CellEntity, CellMoney, CellStack } from '../../shared/ui/TableCells';
 import { DatePickerField, NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
+import { DataCard } from '../../shared/ui';
 import {
   useAssignFlightTicket,
   useCreateFlightTicket,
@@ -27,7 +30,7 @@ function Itinerary({ segments }: { segments: FlightSegment[] }) {
     <div style={{ whiteSpace: 'nowrap', lineHeight: 1.5 }}>
       {segments.map((s, i) => (
         <div key={i} style={{ fontSize: 12 }}>
-          <span style={{ color: '#888' }}>{s.date}</span> <b>{s.flightNo}</b> {s.from}→{s.to} {s.depTime}
+          <span style={{ color: 'var(--tk-muted)' }}>{s.date}</span> <b>{s.flightNo}</b> {s.from}→{s.to} {s.depTime}
         </div>
       ))}
     </div>
@@ -94,31 +97,48 @@ export function FlightTicketsPage() {
   }
 
   const columns: ColumnsType<FlightTicket> = [
-    { title: 'PNR', dataIndex: 'pnr', key: 'pnr', width: 110, fixed: 'left' },
+    {
+      title: 'PNR / Loại hình',
+      key: 'pnr',
+      width: 130,
+      render: (_: unknown, r: FlightTicket) => (
+        <CellStack main={r.pnr} mono sub={r.tourType ? (FLIGHT_TOUR_TYPE[r.tourType] ?? r.tourType) : undefined} />
+      ),
+    },
     {
       title: 'Gán Tour',
       key: 'order',
       width: 170,
       render: (_: unknown, r: FlightTicket) =>
         r.orderRef ? (
-          <div>
-            <div><b>{r.orderCode ?? '—'}</b></div>
-            <div style={{ fontSize: 12, color: '#888' }}>{r.orderName ?? ''}</div>
-          </div>
+          <CellStack main={r.orderCode ?? '—'} sub={r.orderName ?? undefined} />
         ) : canManage ? (
           <Button size="small" type="primary" onClick={() => { setAssignRow(r); setAssignVal(''); }}>+ Gán tour</Button>
         ) : <Tag>Chưa gán</Tag>,
     },
-    { title: 'Loại hình', dataIndex: 'tourType', key: 'tourType', width: 100, render: (v: string | null) => (v ? (FLIGHT_TOUR_TYPE[v] ?? v) : '—') },
-    { title: 'Thị trường', dataIndex: 'marketName', key: 'marketName', width: 110, render: (v: string | null) => v ?? '—' },
-    { title: 'NCC', dataIndex: 'providerName', key: 'providerName', width: 140, render: (v: string | null) => v ?? '—' },
-    { title: 'Số ngày', dataIndex: 'days', key: 'days', width: 80, align: 'right' },
-    { title: 'Ngày đi', dataIndex: 'departureDate', key: 'departureDate', width: 110, render: (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—') },
-    { title: 'Hành trình', key: 'itin', width: 220, render: (_: unknown, r: FlightTicket) => <Itinerary segments={r.segments} /> },
     {
-      title: 'Vé (SL/Dùng/Còn)',
+      title: 'NCC / Thị trường',
+      key: 'provider',
+      width: 160,
+      render: (_: unknown, r: FlightTicket) => <CellEntity name={r.providerName ?? '—'} meta={r.marketName ?? undefined} />,
+    },
+    {
+      title: 'Lịch trình',
+      key: 'schedule',
+      width: 110,
+      render: (_: unknown, r: FlightTicket) => (
+        <CellStack
+          main={r.departureDate ? new Date(r.departureDate).toLocaleDateString('vi-VN') : '—'}
+          mono
+          sub={r.days ? `${r.days} ngày` : undefined}
+        />
+      ),
+    },
+    { title: 'Hành trình', key: 'itin', width: 210, render: (_: unknown, r: FlightTicket) => <Itinerary segments={r.segments} /> },
+    {
+      title: 'Vé (SL / Dùng / Còn)',
       key: 'qty',
-      width: 150,
+      width: 140,
       render: (_: unknown, r: FlightTicket) => (
         <Space size={4}>
           <Tag>{r.quantity}</Tag>
@@ -127,15 +147,26 @@ export function FlightTicketsPage() {
         </Space>
       ),
     },
-    { title: 'Tổng chi', dataIndex: 'totalCost', key: 'totalCost', width: 130, align: 'right', render: (v: number) => money(v) },
-    { title: 'Đã TT', dataIndex: 'paidAmount', key: 'paidAmount', width: 130, align: 'right', render: (v: number) => money(v) },
-    { title: 'Còn lại', dataIndex: 'remainingCost', key: 'remainingCost', width: 130, align: 'right', render: (v: number) => <span style={{ color: v > 0 ? '#cf1322' : undefined }}>{money(v)}</span> },
-    { title: 'Bảo lưu', dataIndex: 'reservedAmount', key: 'reservedAmount', width: 120, align: 'right', render: (v: number) => money(v) },
+    {
+      title: 'Tổng chi / Đã TT',
+      key: 'cost',
+      width: 150,
+      align: 'right',
+      render: (_: unknown, r: FlightTicket) => <CellMoney value={r.totalCost} sub={r.paidAmount} subLabel="Đã TT" />,
+    },
+    {
+      title: 'Còn lại / Bảo lưu',
+      key: 'remainingCost',
+      width: 150,
+      align: 'right',
+      render: (_: unknown, r: FlightTicket) => (
+        <CellMoney value={r.remainingCost} tone={r.remainingCost > 0 ? 'danger' : 'heading'} sub={r.reservedAmount} subLabel="Bảo lưu" />
+      ),
+    },
     {
       title: '',
       key: '__actions',
-      width: 90,
-      fixed: 'right',
+      width: 80,
       render: (_: unknown, r: FlightTicket) =>
         canManage ? (
           <Popconfirm title="Xoá vé đoàn này?" onConfirm={() => run(() => remove.mutateAsync(r.id), 'Đã xoá')}>
@@ -151,26 +182,21 @@ export function FlightTicketsPage() {
         <Typography.Title level={3} style={{ margin: 0 }}>
           Quản lý Vé Đoàn
         </Typography.Title>
-        {canManage ? <Button type="primary" onClick={() => setCreating(true)}>Tạo mới</Button> : null}
+        {canManage ? <Button type="primary" onClick={() => setCreating(true)}>Thêm vé đoàn</Button> : null}
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Số lượng vé', value: stats.data?.totalQuantity ?? 0, money: false },
-          { title: 'Đã sử dụng', value: stats.data?.totalUsed ?? 0, money: false },
-          { title: 'Vé còn lại', value: stats.data?.totalRemaining ?? 0, money: false },
-          { title: 'Tổng chi', value: stats.data?.totalCost ?? 0, money: true },
-          { title: 'Đã thanh toán', value: stats.data?.totalPaid ?? 0, money: true },
-          { title: 'Còn lại', value: stats.data?.totalRemainingCost ?? 0, money: true },
-          { title: 'Tiền bảo lưu', value: stats.data?.totalReserved ?? 0, money: true },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={3} flex="1">
-            <Card styles={{ body: { padding: 12 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} valueStyle={{ fontSize: 18 }} formatter={c.money ? (v) => money(Number(v)) : undefined} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Số lượng vé', value: stats.data?.totalQuantity ?? 0 },
+          { label: 'Đã sử dụng', value: stats.data?.totalUsed ?? 0 },
+          { label: 'Vé còn lại', value: stats.data?.totalRemaining ?? 0 },
+          { label: 'Tổng chi', value: money(stats.data?.totalCost ?? 0) },
+          { label: 'Đã thanh toán', value: money(stats.data?.totalPaid ?? 0) },
+          { label: 'Còn lại', value: money(stats.data?.totalRemainingCost ?? 0) },
+          { label: 'Tiền bảo lưu', value: money(stats.data?.totalReserved ?? 0) },
+        ]}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -210,14 +236,15 @@ export function FlightTicketsPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
-      />
+      <DataCard title="Danh sách vé máy bay đoàn">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
+        />
+      </DataCard>
 
       {creating ? (
         <CrudFormModal

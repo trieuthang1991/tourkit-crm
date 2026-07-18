@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, DatePicker, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag } from '../../shared/ui/antd';
+import { App, Button, Card, Col, DatePicker, Popconfirm, Row, Segmented, Select, Space, Table, Tag } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -9,8 +9,11 @@ import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { dateText } from '../../shared/format';
 import { errorMessage } from '../../shared/api/problem';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { CellDate, CellEntity, CellStack, CellText } from '../../shared/ui/TableCells';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, NumberField, TextAreaField, TextField } from '../../shared/ui/Field';
+import { StatGrid } from '../../ui/kit';
+import { DataCard } from '../../shared/ui';
 import { useAuth } from '../auth/AuthContext';
 import { vehiclesCrud } from '../vehicles/vehiclesCrud';
 import { departuresCrud } from '../booking/departuresApi';
@@ -111,22 +114,42 @@ export function VehicleAssignmentsPage() {
     {
       title: 'Chuyến',
       key: '__dep',
-      width: 220,
-      ellipsis: true,
-      render: (_: unknown, r: VehicleAssignment) => (r.departureCode ? `${r.departureCode} — ${r.departureTitle ?? ''}` : r.tourDepartureId.slice(0, 8)),
+      width: 280,
+      render: (_: unknown, r: VehicleAssignment) =>
+        r.departureCode ? (
+          <CellEntity name={r.departureTitle ?? r.departureCode} code={r.departureCode} />
+        ) : (
+          <CellText mono>{r.tourDepartureId.slice(0, 8)}</CellText>
+        ),
     },
-    { title: 'Xe', dataIndex: 'vehicleName', key: 'vehicleName', width: 170, render: (v: string | null) => v ?? '—' },
-    { title: 'Tài xế', dataIndex: 'driverName', key: 'driverName', width: 150, render: (v: string | null) => v ?? '—' },
-    { title: 'SĐT', dataIndex: 'driverPhone', key: 'driverPhone', width: 130, render: (v: string | null) => v ?? '—' },
-    { title: 'Giờ đón', dataIndex: 'timeGo', key: 'timeGo', width: 150, render: (v: string | null) => dateText(v) },
-    { title: 'Giờ trả', dataIndex: 'timeCome', key: 'timeCome', width: 150, render: (v: string | null) => dateText(v) },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 110, render: (v: number) => <Tag color={VA_STATUS_COLOR[v]}>{VA_STATUS[v] ?? v}</Tag> },
+    {
+      title: 'Xe',
+      dataIndex: 'vehicleName',
+      key: 'vehicleName',
+      width: 180,
+      render: (v: string | null) => <CellText tone="heading" strong>{v ?? '—'}</CellText>,
+    },
+    {
+      title: 'Tài xế',
+      key: '__driver',
+      width: 190,
+      render: (_: unknown, r: VehicleAssignment) => <CellStack main={r.driverName ?? '—'} sub={r.driverPhone ?? undefined} subMono />,
+    },
+    {
+      title: 'Thời gian',
+      key: '__time',
+      width: 210,
+      render: (_: unknown, r: VehicleAssignment) => (
+        <CellDate value={r.timeGo ? dateText(r.timeGo) : '—'} sub={r.timeCome ? `Trả: ${dateText(r.timeCome)}` : undefined} />
+      ),
+    },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: (v: number) => <Tag color={VA_STATUS_COLOR[v]}>{VA_STATUS[v] ?? v}</Tag> },
     ...(canManage
       ? [
           {
             title: '',
             key: '__actions',
-            width: 130,
+            width: 120,
             fixed: 'right' as const,
             render: (_: unknown, r: VehicleAssignment) => (
               <Space>
@@ -143,10 +166,10 @@ export function VehicleAssignmentsPage() {
 
   const s = stats.data;
   const statCards = [
-    { title: 'Tổng phân xe', value: s?.total ?? 0 },
-    { title: 'Mới', value: s?.created ?? 0 },
-    { title: 'Đang chạy', value: s?.active ?? 0 },
-    { title: 'Số xe', value: s?.vehicleCount ?? 0 },
+    { label: 'Tổng phân xe', value: s?.total ?? 0 },
+    { label: 'Mới', value: s?.created ?? 0 },
+    { label: 'Đang chạy', value: s?.active ?? 0 },
+    { label: 'Số xe', value: s?.vehicleCount ?? 0 },
   ];
 
   const isEdit = editing && editing !== 'new';
@@ -161,15 +184,7 @@ export function VehicleAssignmentsPage() {
         extra={canManage ? <Button type="primary" onClick={() => setEditing('new')}>Thêm phân xe</Button> : undefined}
       />
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={12} lg={6} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid items={statCards} style={{ marginBottom: 16 }} />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -206,20 +221,22 @@ export function VehicleAssignmentsPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{
-          current: page.page,
-          pageSize: page.size,
-          total: list.data?.total ?? 0,
-          showSizeChanger: true,
-          onChange: (p, sz) => setPage({ page: p, size: sz }),
-        }}
-      />
+      <DataCard title="Danh sách điều xe">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          scroll={{ x: 1080 }}
+          pagination={{
+            current: page.page,
+            pageSize: page.size,
+            total: list.data?.total ?? 0,
+            showSizeChanger: true,
+            onChange: (p, sz) => setPage({ page: p, size: sz }),
+          }}
+        />
+      </DataCard>
 
       {editing && (
         <CrudFormModal

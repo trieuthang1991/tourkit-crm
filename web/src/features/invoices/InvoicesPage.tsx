@@ -1,5 +1,7 @@
-import { App, Card, Col, DatePicker, Input, Popconfirm, Row, Space, Statistic, Table, Typography } from '../../shared/ui/antd';
-import { Button, DataCard, SegmentTabs, StatusTag, invoiceTone } from '../../shared/ui';
+import { App, Card, Col, DatePicker, Input, Popconfirm, Row, Space, Table, Typography } from '../../shared/ui/antd';
+import { StatGrid } from '../../ui/kit';
+import { Button, DataCard, ExportButton, SegmentTabs, StatusTag, invoiceTone } from '../../shared/ui';
+import { exportRowsToCsv } from '../../shared/exportCsv';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useState } from 'react';
 import dayjs from 'dayjs';
@@ -13,6 +15,7 @@ import { useCreateInvoice, useDeleteInvoice, useInvoice, useInvoices, useInvoice
 import type { InvoiceFilter } from './invoicesApi';
 import { invoiceFormSchema } from './types';
 import type { InvoiceForm, InvoiceSummary } from './types';
+import { CellDate, CellEntity, CellMoney, CellStack } from '../../shared/ui/TableCells';
 
 const INVOICE_STATUS: Record<number, string> = {
   0: 'Nháp',
@@ -108,15 +111,51 @@ export function InvoicesPage() {
     }
   }
 
+  // Xuất CSV trang hiện tại.
+  const exportCsv = () =>
+    exportRowsToCsv(
+      'hoa-don.csv',
+      ['Số hoá đơn', 'Ký hiệu', 'Ngày', 'Người mua', 'Mã số thuế', 'Tổng tiền', 'VAT', 'Trạng thái'],
+      (list.data?.items ?? []).map((item) => [
+        item.number,
+        item.series,
+        dateText(item.invoiceDate),
+        item.buyerName,
+        item.buyerTaxCode ?? '',
+        item.totalAmount,
+        item.vatAmount ?? 0,
+        statusText(INVOICE_STATUS, item.status),
+      ]),
+    );
+
   const columns: ColumnsType<InvoiceSummary> = [
-    { title: 'Ký hiệu', dataIndex: 'series', key: 'series', width: 120 },
-    { title: 'Số', dataIndex: 'number', key: 'number', width: 110 },
-    { title: 'Ngày', dataIndex: 'invoiceDate', key: 'invoiceDate', width: 110, render: (v: string) => dateText(v) },
-    { title: 'Người mua', dataIndex: 'buyerName', key: 'buyerName', width: 180 },
-    { title: 'MST', dataIndex: 'buyerTaxCode', key: 'buyerTaxCode', width: 120, render: (v: string | null) => v ?? '—' },
-    { title: 'Tiền thuế', dataIndex: 'vatAmount', key: 'vatAmount', width: 120, align: 'right', render: (v?: number) => money(v ?? 0) },
-    { title: 'Tổng tiền', dataIndex: 'totalAmount', key: 'totalAmount', width: 130, align: 'right', render: (v: number) => money(v) },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: (v: number) => <StatusTag tone={invoiceTone(v)}>{statusText(INVOICE_STATUS, v)}</StatusTag> },
+    {
+      title: 'Hoá đơn',
+      key: 'invoice',
+      width: 170,
+      render: (_: unknown, item: InvoiceSummary) => (
+        <CellStack main={item.number} sub={item.series} mono tone="heading" subTone="muted" subMono />
+      ),
+    },
+    { title: 'Ngày', dataIndex: 'invoiceDate', key: 'invoiceDate', width: 130, render: (v: string) => <CellDate value={dateText(v)} /> },
+    {
+      title: 'Người mua',
+      key: 'buyer',
+      width: 300,
+      render: (_: unknown, item: InvoiceSummary) => (
+        <CellEntity name={item.buyerName} code={item.buyerTaxCode ? `MST ${item.buyerTaxCode}` : undefined} />
+      ),
+    },
+    {
+      title: 'Giá trị',
+      key: 'amount',
+      width: 180,
+      align: 'right',
+      render: (_: unknown, item: InvoiceSummary) => (
+        <CellMoney value={item.totalAmount} sub={item.vatAmount ?? 0} subLabel="VAT" subTone="muted" />
+      ),
+    },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 140, render: (v: number) => <StatusTag tone={invoiceTone(v)}>{statusText(INVOICE_STATUS, v)}</StatusTag> },
     {
       title: '',
       key: '__actions',
@@ -143,29 +182,27 @@ export function InvoicesPage() {
         <Typography.Title level={3} style={{ margin: 0 }}>
           Hoá đơn VAT
         </Typography.Title>
-        {canManage ? (
-          <Button variant="primary" onClick={() => setEditingId('new')}>
-            Thêm hoá đơn
-          </Button>
-        ) : null}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <ExportButton filename="hoa-don.csv" onExport={exportCsv} />
+          {canManage ? (
+            <Button variant="primary" onClick={() => setEditingId('new')}>
+              Thêm hoá đơn
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng hoá đơn', value: stats.data?.total ?? 0, money: false },
-          { title: 'Tổng tiền', value: stats.data?.totalAmount ?? 0, money: true },
-          { title: 'Tổng VAT', value: stats.data?.totalVat ?? 0, money: true },
-          { title: 'Đã phát hành', value: stats.data?.issued ?? 0, money: false },
-          { title: 'Nháp', value: stats.data?.draft ?? 0, money: false },
-          { title: 'Huỷ', value: stats.data?.cancelled ?? 0, money: false },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} formatter={c.money ? (v) => money(Number(v)) : undefined} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Tổng hoá đơn', value: stats.data?.total ?? 0 },
+          { label: 'Tổng tiền', value: money(stats.data?.totalAmount ?? 0) },
+          { label: 'Tổng VAT', value: money(stats.data?.totalVat ?? 0) },
+          { label: 'Đã phát hành', value: stats.data?.issued ?? 0 },
+          { label: 'Nháp', value: stats.data?.draft ?? 0 },
+          { label: 'Huỷ', value: stats.data?.cancelled ?? 0 },
+        ]}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -204,7 +241,7 @@ export function InvoicesPage() {
         columns={columns}
         dataSource={list.data?.items ?? []}
         loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 1080 }}
         pagination={{
           current: page,
           pageSize: size,

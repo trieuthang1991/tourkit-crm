@@ -1,21 +1,19 @@
 import type { ReactNode } from 'react';
 
-// Thay PageHeader inline hiện tại. Dùng class .tk-page__* (styles/components.css).
+// Header trang DÙNG CHUNG (.tk-page__*): tiêu đề + mô tả + slot nút.
+// Breadcrumb do AppShell render 1 lần cho MỌI trang (không phụ thuộc trang có dùng PageHeader hay không).
 export function PageHeader({
   title,
-  crumb,
   desc,
   extra,
 }: {
   title: string;
-  crumb?: ReactNode;   // vd: <>CRM <span>/</span> Data khách hàng</>
   desc?: string;
-  extra?: ReactNode;   // nút hành động bên phải
+  extra?: ReactNode;
 }) {
   return (
     <div className="tk-page__head">
       <div>
-        {crumb ? <div className="tk-page__crumb">{crumb}</div> : null}
         <h1 className="tk-page__title">{title}</h1>
         {desc ? <div className="tk-page__desc">{desc}</div> : null}
       </div>

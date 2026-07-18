@@ -139,6 +139,56 @@ export function StatCardIcon({ icon, tone = 'accent', value, label }: { icon: st
   );
 }
 
+/* ---- StatGrid: hàng thẻ KPI icon-chip DÙNG CHUNG (icon & tone tự suy từ nhãn) ----
+   Mọi trang dùng <StatGrid items={[{label,value}]} /> -> đồng nhất icon-chip.
+   Có thể override icon/tone từng thẻ khi cần. */
+const STAT_ICON_RULES: [RegExp, string][] = [
+  [/doanh thu|doanh số|thực thu|đã thu|tiền/i, 'payments'],
+  [/còn nợ|công nợ|phải thu|phải chi|còn thiếu|nợ/i, 'account_balance_wallet'],
+  [/chi phí|tổng chi|đã chi|chi tiền/i, 'trending_down'],
+  [/lợi nhuận|lãi/i, 'trending_up'],
+  [/vat|thuế|hoá đơn|hóa đơn/i, 'receipt_long'],
+  [/hoa hồng/i, 'percent'],
+  [/khách|người mua|hành khách|lead|cơ hội/i, 'groups'],
+  [/đơn|order|lkh/i, 'shopping_cart'],
+  [/tour|chuyến|khởi hành/i, 'flag'],
+  [/vé/i, 'confirmation_number'],
+  [/phòng|booking|khách sạn/i, 'hotel'],
+  [/xe/i, 'directions_car'],
+  [/hdv|hướng dẫn/i, 'badge'],
+  [/nhà cung cấp|ncc|đại lý|đối tác/i, 'storefront'],
+  [/công việc|task|dự án/i, 'checklist'],
+  [/chiến dịch|marketing|gửi|email|zalo/i, 'campaign'],
+  [/huỷ|hủy|từ chối|thất bại|quá hạn/i, 'cancel'],
+  [/hoàn thành|đã duyệt|phát hành|thành công|đã chốt|đang hoạt động/i, 'check_circle'],
+  [/chờ|nháp|đang|sắp|dự kiến/i, 'schedule'],
+  [/quỹ|series|kho|tồn/i, 'inventory_2'],
+];
+function guessStatIcon(label: string): string {
+  for (const [re, ic] of STAT_ICON_RULES) if (re.test(label)) return ic;
+  return 'insights';
+}
+const STAT_TONE_RULES: [RegExp, Tone][] = [
+  [/doanh thu|đã thu|hoàn thành|thành công|lợi nhuận|đã chốt|đang hoạt động/i, 'success'],
+  [/còn nợ|công nợ|phải thu|còn thiếu|huỷ|hủy|từ chối|quá hạn|thiếu|ngừng/i, 'danger'],
+  [/chi phí|tổng chi|đã chi|phải chi|cảnh báo/i, 'warning'],
+  [/chờ|nháp|đang|sắp|dự kiến/i, 'info'],
+];
+function guessStatTone(label: string): Tone {
+  for (const [re, t] of STAT_TONE_RULES) if (re.test(label)) return t;
+  return 'accent';
+}
+export type StatItem = { label: string; value: ReactNode; icon?: string; tone?: Tone };
+export function StatGrid({ items, min = 200, style }: { items: StatItem[]; min?: number; style?: CSSProperties }) {
+  return (
+    <div className="rf-grid" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`, ...style }}>
+      {items.map((s, i) => (
+        <StatCardIcon key={i} icon={s.icon ?? guessStatIcon(s.label)} tone={s.tone ?? guessStatTone(s.label)} value={s.value} label={s.label} />
+      ))}
+    </div>
+  );
+}
+
 /* ---- Pill / StatusTag ---- */
 export function Pill({ tone = 'muted', children }: { tone?: Tone; children: ReactNode }) {
   return <span className={`rf-pill rf-pill--${tone}`}>{children}</span>;

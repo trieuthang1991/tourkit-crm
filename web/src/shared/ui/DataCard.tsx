@@ -13,10 +13,10 @@ export function DataCard({
   bodyPadding?: boolean;
 }) {
   return (
-    <div className="tk-card">
+    <div className="rf-card" style={{ overflow: 'hidden' }}>
       {title || extra ? (
-        <div className="tk-card__head">
-          <div className="tk-card__title">{title}</div>
+        <div className="rf-card__head">
+          <div className="rf-card__title">{title}</div>
           {extra}
         </div>
       ) : null}

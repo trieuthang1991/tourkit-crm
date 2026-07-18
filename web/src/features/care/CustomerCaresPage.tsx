@@ -1,11 +1,14 @@
-import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Table, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
+import { StatGrid } from '../../ui/kit';
+import { DataCard } from '../../shared/ui';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { errorMessage } from '../../shared/api/problem';
 import { dateText, statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
+import { CellStack, CellEntity, CellText, CellDate } from '../../shared/ui/TableCells';
 import { customerCaresCrud } from './customerCaresCrud';
 import {
   useCustomerCares,
@@ -80,21 +83,50 @@ export function CustomerCaresPage() {
   }
 
   const columns: ColumnsType<CustomerCare> = [
-    { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName', render: (v: string | null) => v ?? '—' },
-    { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
-    { title: 'Người phụ trách', dataIndex: 'assigneeName', key: 'assigneeName', render: (v: string | null) => v ?? '—' },
-    { title: 'Nhắc hẹn', dataIndex: 'remindAt', key: 'remindAt', width: 160, render: (v: string | null) => dateText(v) },
+    {
+      title: 'Khách hàng',
+      key: 'customer',
+      width: 200,
+      render: (_: unknown, item: CustomerCare) => <CellEntity name={item.customerName} />,
+    },
+    {
+      title: 'Nội dung',
+      key: 'content',
+      width: 300,
+      render: (_: unknown, item: CustomerCare) => <CellStack main={item.title} sub={item.detail} />,
+    },
+    {
+      title: 'Người phụ trách',
+      dataIndex: 'assigneeName',
+      key: 'assigneeName',
+      width: 160,
+      render: (v: string | null) => <CellText>{v}</CellText>,
+    },
+    {
+      title: 'Nhắc hẹn',
+      dataIndex: 'remindAt',
+      key: 'remindAt',
+      width: 150,
+      render: (v: string | null) => <CellDate value={dateText(v)} />,
+    },
+    {
+      title: 'Phản hồi',
+      dataIndex: 'feedback',
+      key: 'feedback',
+      width: 210,
+      render: (v: string | null) => <CellText tone="muted">{v}</CellText>,
+    },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 130,
+      width: 120,
       render: (v: number) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{statusText(CARE_STATUS, v)}</Tag>,
     },
     {
       title: '',
       key: '__actions',
-      width: 160,
+      width: 150,
       render: (_: unknown, item: CustomerCare) =>
         canManage ? (
           <Space>
@@ -138,21 +170,16 @@ export function CustomerCaresPage() {
         ) : null}
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng lịch', value: stats.data?.total ?? 0 },
-          { title: 'Mới', value: stats.data?.new ?? 0 },
-          { title: 'Đang xử lý', value: stats.data?.inProgress ?? 0 },
-          { title: 'Hoàn thành', value: stats.data?.done ?? 0 },
-          { title: 'Quá hạn', value: stats.data?.overdue ?? 0 },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Tổng lịch', value: stats.data?.total ?? 0 },
+          { label: 'Mới', value: stats.data?.new ?? 0 },
+          { label: 'Đang xử lý', value: stats.data?.inProgress ?? 0 },
+          { label: 'Hoàn thành', value: stats.data?.done ?? 0 },
+          { label: 'Quá hạn', value: stats.data?.overdue ?? 0 },
+        ]}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -184,14 +211,16 @@ export function CustomerCaresPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
-      />
+      <DataCard title="Danh sách lịch chăm sóc">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          scroll={{ x: 1080 }}
+          pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
+        />
+      </DataCard>
 
       {creating || editing ? (
         <CrudFormModal

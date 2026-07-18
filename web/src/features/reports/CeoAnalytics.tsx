@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { Button, Card, DataCard, Icon, SectionTitle, StatCard } from '../../ui/kit';
+import { Button, Card, DataCard, SectionTitle, StatCard } from '../../ui/kit';
 import type { Tone } from '../../ui/kit';
 import { Statistic, Tag, Text } from '../../ui/primitives';
 import { Table } from '../../ui/Table';
@@ -195,13 +195,13 @@ export function CeoAnalytics() {
   const topSales = [...(commission.data ?? [])].sort((a, b) => b.turnover - a.turnover).slice(0, 5);
 
   const contractSegments = [
-    { label: 'Đã chốt', value: os?.confirmed ?? 0, color: '#1f9d57' },
-    { label: 'Nháp', value: os?.draft ?? 0, color: '#a9aab0' },
-    { label: 'Huỷ', value: os?.cancelled ?? 0, color: '#d1494a' },
+    { label: 'Đã chốt', value: os?.confirmed ?? 0, color: 'var(--tk-success)' },
+    { label: 'Nháp', value: os?.draft ?? 0, color: 'var(--tk-muted)' },
+    { label: 'Huỷ', value: os?.cancelled ?? 0, color: 'var(--tk-danger)' },
   ];
   const funnelStages = [
     { label: 'Báo giá', value: k?.quoteCount ?? 0, color: 'var(--tk-info)' },
-    { label: 'Chấp nhận', value: Math.round((k?.quoteCount ?? 0) * (k?.acceptanceRate ?? 0)), color: '#3aa8c1' },
+    { label: 'Chấp nhận', value: Math.round((k?.quoteCount ?? 0) * (k?.acceptanceRate ?? 0)), color: 'var(--tk-info)' },
     { label: 'Chuyển đơn', value: Math.round((k?.quoteCount ?? 0) * (k?.conversionRate ?? 0)), color: 'var(--tk-warning)' },
     { label: 'Đơn chốt', value: k?.orderCount ?? 0, color: 'var(--tk-success)' },
   ];
@@ -242,11 +242,6 @@ export function CeoAnalytics() {
 
   return (
     <div>
-      <div className="rf-crumb">
-        <span>Workspace</span>
-        <Icon name="chevron_right" size={14} className="rf-crumb__sep" />
-        <span className="rf-crumb__cur">Tổng quan</span>
-      </div>
       <h1 className="rf-page__title">CEO Analytics</h1>
       <div className="rf-page__sub">Dữ liệu kinh doanh thời gian thực</div>
 

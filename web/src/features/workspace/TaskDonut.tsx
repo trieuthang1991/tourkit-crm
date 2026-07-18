@@ -45,12 +45,12 @@ export function TaskDonut({
 
   return (
     <svg width={size} height={size} role="img" aria-label="Tỉ lệ công việc">
-      <circle cx={cx} cy={cx} r={r} fill="none" stroke="#f0f0f0" strokeWidth={stroke} />
+      <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--tk-line)" strokeWidth={stroke} />
       {arcs}
-      <text x={cx} y={cx - 4} textAnchor="middle" fontSize="22" fontWeight="700" fill="#333">
+      <text x={cx} y={cx - 4} textAnchor="middle" fontSize="22" fontWeight="700" fill="var(--tk-heading)">
         {total}
       </text>
-      <text x={cx} y={cx + 16} textAnchor="middle" fontSize="11" fill="#999">
+      <text x={cx} y={cx + 16} textAnchor="middle" fontSize="11" fill="var(--tk-muted)">
         {centerLabel}
       </text>
     </svg>

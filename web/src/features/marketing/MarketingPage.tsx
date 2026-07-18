@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, Drawer, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Drawer, Input, Popconfirm, Row, Segmented, Select, Space, Table, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -15,6 +15,9 @@ import type { CampaignFilter } from './marketingApi';
 import { SendCampaignModal } from './SendCampaignModal';
 import { CAMPAIGN_STATUS, CHANNEL, campaignCreateSchema, campaignLogSchema, campaignUpdateSchema } from './types';
 import type { Campaign, CampaignForm } from './types';
+import { CellStack } from '../../shared/ui/TableCells';
+import { DataCard } from '../../shared/ui';
+import { StatGrid } from '../../ui/kit';
 
 const CHANNEL_OPTIONS = Object.entries(CHANNEL).map(([value, label]) => ({ value: Number(value), label }));
 const STATUS_OPTIONS = Object.entries(CAMPAIGN_STATUS).map(([value, label]) => ({ value: Number(value), label }));
@@ -120,10 +123,31 @@ export function MarketingPage() {
   }
 
   const columns: ColumnsType<Campaign> = [
-    { title: 'Tên', dataIndex: 'name', key: 'name' },
-    { title: 'Kênh', dataIndex: 'channel', key: 'channel', width: 120, render: (v: number) => <Tag color={CHANNEL_COLOR[v]}>{statusText(CHANNEL, v)}</Tag> },
-    { title: 'Tiêu đề', dataIndex: 'subject', key: 'subject', render: (v: string | null) => v ?? '—' },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: (v: number) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{statusText(CAMPAIGN_STATUS, v)}</Tag> },
+    {
+      title: 'Chiến dịch',
+      key: 'campaign',
+      render: (_: unknown, c: Campaign) => (
+        <CellStack main={c.name} sub={<Tag color={CHANNEL_COLOR[c.channel]}>{statusText(CHANNEL, c.channel)}</Tag>} />
+      ),
+    },
+    {
+      title: 'Nội dung',
+      key: 'content',
+      render: (_: unknown, c: Campaign) => (
+        <CellStack
+          main={c.subject ?? '—'}
+          sub={c.body ? (c.body.length > 80 ? `${c.body.slice(0, 80)}…` : c.body) : undefined}
+          title={c.body || undefined}
+        />
+      ),
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: 140,
+      render: (v: number) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{statusText(CAMPAIGN_STATUS, v)}</Tag>,
+    },
     {
       title: '',
       key: '__actions',
@@ -160,20 +184,15 @@ export function MarketingPage() {
         ) : null}
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng chiến dịch', value: stats.data?.total ?? 0 },
-          { title: 'Nháp', value: stats.data?.draft ?? 0 },
-          { title: 'Đã gửi', value: stats.data?.sent ?? 0 },
-          { title: 'Tin đã gửi', value: stats.data?.messages ?? 0 },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={12} lg={6} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Tổng chiến dịch', value: stats.data?.total ?? 0 },
+          { label: 'Nháp', value: stats.data?.draft ?? 0 },
+          { label: 'Đã gửi', value: stats.data?.sent ?? 0 },
+          { label: 'Tin đã gửi', value: stats.data?.messages ?? 0 },
+        ]}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -201,14 +220,16 @@ export function MarketingPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
-      />
+      <DataCard title="Danh sách chiến dịch">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          scroll={{ x: 1080 }}
+          pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
+        />
+      </DataCard>
 
       {creating || editing ? (
         <CrudFormModal

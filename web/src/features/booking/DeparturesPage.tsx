@@ -1,5 +1,6 @@
-import { App, Card, Col, DatePicker, Input, Row, Select, Space, Statistic, Table, Tag } from '../../shared/ui/antd';
+import { App, Card, Col, DatePicker, Input, Row, Select, Space, Table, Tag } from '../../shared/ui/antd';
 import { Button, DataCard, SegmentTabs } from '../../shared/ui';
+import { StatGrid } from '../../ui/kit';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -13,6 +14,7 @@ import { PageHeader } from '../../shared/ui/PageHeader';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, NumberField, TextField } from '../../shared/ui/Field';
 import { useAuth } from '../auth/AuthContext';
+import { CellEntity, CellDate, CellText } from '../../shared/ui/TableCells';
 import { departuresCrud } from './departuresApi';
 import { BatchDepartureButton } from './BatchDepartureButton';
 import { departureFormSchema, departureSchema } from './departureTypes';
@@ -111,22 +113,46 @@ export function DeparturesPage() {
     {
       title: 'STT',
       key: '__stt',
-      width: 60,
+      width: 56,
       fixed: 'left',
       align: 'center',
       render: (_: unknown, __: Departure, index: number) => (page.page - 1) * page.size + index + 1,
     },
-    { title: 'Mã chuyến', dataIndex: 'code', key: 'code', fixed: 'left', width: 140 },
-    { title: 'Tên chuyến', dataIndex: 'title', key: 'title', width: 220, ellipsis: true },
-    { title: 'Loại tour', dataIndex: 'tourType', key: 'tourType', width: 120, render: (v?: string | null) => v ?? '—' },
-    { title: 'Ngày khởi hành', dataIndex: 'departureDate', key: 'departureDate', width: 130, render: (v: string | null) => dateText(v) },
-    { title: 'Tổng chỗ', dataIndex: 'totalSlots', key: 'totalSlots', width: 100, align: 'right' },
     {
-      title: 'NV điều hành',
+      title: 'Tour / LKH',
+      key: 'tour',
+      width: 340,
+      fixed: 'left',
+      render: (_: unknown, item: Departure) => (
+        <CellEntity name={item.title} code={item.code} meta={item.tourType ?? undefined} />
+      ),
+    },
+    {
+      title: 'Ngày đi / về',
+      key: 'dates',
+      width: 160,
+      render: (_: unknown, item: Departure) => (
+        <CellDate value={dateText(item.departureDate)} sub={item.endDate ? `→ ${dateText(item.endDate)}` : undefined} />
+      ),
+    },
+    {
+      title: 'Tổng chỗ',
+      dataIndex: 'totalSlots',
+      key: 'totalSlots',
+      width: 100,
+      align: 'right',
+      render: (v: number) => (
+        <CellText tone="accent" mono strong>
+          {v}
+        </CellText>
+      ),
+    },
+    {
+      title: 'Điều hành',
       dataIndex: 'assignedToUserId',
       key: 'assignedToUserId',
-      width: 160,
-      render: (v?: string | null) => (v ? userName.get(v) ?? '—' : '—'),
+      width: 190,
+      render: (v?: string | null) => <CellText>{v ? userName.get(v) ?? '—' : '—'}</CellText>,
     },
     {
       title: 'Trạng thái',
@@ -138,7 +164,7 @@ export function DeparturesPage() {
     {
       title: '',
       key: '__open',
-      width: 120,
+      width: 130,
       fixed: 'right',
       render: (_: unknown, item: Departure) => (
         <Button variant="ghost" size="small" onClick={() => navigate(`/departures/${item.id}`)}>
@@ -150,10 +176,10 @@ export function DeparturesPage() {
 
   const s = stats.data;
   const statCards = [
-    { title: 'Tổng chuyến', value: s?.total ?? 0 },
-    { title: 'Sắp khởi hành', value: s?.upcoming ?? 0 },
-    { title: 'Đã đóng', value: s?.closed ?? 0 },
-    { title: 'Tổng chỗ', value: s?.totalSlots ?? 0 },
+    { label: 'Tổng chuyến', value: s?.total ?? 0 },
+    { label: 'Sắp khởi hành', value: s?.upcoming ?? 0 },
+    { label: 'Đã đóng', value: s?.closed ?? 0 },
+    { label: 'Tổng chỗ', value: s?.totalSlots ?? 0 },
   ];
 
   return (
@@ -172,15 +198,7 @@ export function DeparturesPage() {
         }
       />
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={12} lg={6} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid items={statCards} style={{ marginBottom: 16 }} />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -231,7 +249,7 @@ export function DeparturesPage() {
         columns={columns}
         dataSource={list.data?.items ?? []}
         loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 1080 }}
         pagination={{
           current: page.page,
           pageSize: page.size,

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { errorMessage } from '../../shared/api/problem';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { useAuth } from '../auth/AuthContext';
+import { DataCard } from '../../shared/ui';
 import { useCreateWorkflow, useDeleteWorkflow, useWorkflows } from './api';
 import type { Workflow } from './types';
 
@@ -83,7 +84,9 @@ export function WorkflowsPage() {
           ) : null
         }
       />
-      <Table rowKey="id" columns={columns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      <DataCard title="Danh sách dự án">
+        <Table rowKey="id" columns={columns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      </DataCard>
       <Modal
         open={open}
         title="Thêm board"

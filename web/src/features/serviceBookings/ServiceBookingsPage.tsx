@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag } from '../../shared/ui/antd';
+import { App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Select, Space, Table, Tag } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -8,14 +8,18 @@ import { httpClient } from '../../shared/api/httpClient';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { dateText, money, statusText } from '../../shared/format';
 import { errorMessage } from '../../shared/api/problem';
+import { CellStack, CellMoney, CellDate, CellText } from '../../shared/ui/TableCells';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { DatePickerField, NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
+import { StatGrid } from '../../ui/kit';
+import { DataCard } from '../../shared/ui';
 import { useAuth } from '../auth/AuthContext';
 import { roomClassSchema } from '../roomClasses/types';
 import { providersCrud } from '../providers/providersCrud';
 import { ordersCrud } from '../booking/bookingApi';
 import { serviceBookingsCrud } from './serviceBookingsCrud';
+import { PaymentScheduleDrawer } from './PaymentScheduleDrawer';
 import { SERVICE_BOOKING_TYPE, serviceBookingFormSchema, serviceBookingSchema } from './types';
 import type { ServiceBooking, ServiceBookingForm } from './types';
 
@@ -77,6 +81,7 @@ export function ServiceBookingsPage() {
   const [range, setRange] = useState<{ from?: string; to?: string }>({});
   const [rangeApplied, setRangeApplied] = useState<{ from?: string; to?: string }>({});
   const [editing, setEditing] = useState<ServiceBooking | 'new' | null>(null);
+  const [scheduleFor, setScheduleFor] = useState<ServiceBooking | null>(null);
 
   const applyFilters = () => {
     setQ(search);
@@ -139,44 +144,86 @@ export function ServiceBookingsPage() {
   }
 
   const columns: ColumnsType<ServiceBooking> = [
-    { title: 'Mã', dataIndex: 'code', key: 'code', fixed: 'left', width: 120 },
-    { title: 'Loại', dataIndex: 'type', key: 'type', width: 110, render: (v: number) => <Tag color="blue">{statusText(SERVICE_BOOKING_TYPE, v)}</Tag> },
-    { title: 'Mô tả', dataIndex: 'description', key: 'description', width: 220, ellipsis: true },
-    { title: 'Nhà cung cấp', dataIndex: 'providerId', key: 'providerId', width: 170, render: (v: string | null) => (v ? providerName.get(v) ?? '—' : '—') },
-    { title: 'Từ ngày', dataIndex: 'startDate', key: 'startDate', width: 110, render: (v: string | null) => dateText(v) },
-    { title: 'Đến ngày', dataIndex: 'endDate', key: 'endDate', width: 110, render: (v: string | null) => dateText(v) },
-    { title: 'SL', dataIndex: 'quantity', key: 'quantity', width: 70, align: 'center' },
-    { title: 'Đơn giá', dataIndex: 'unitPrice', key: 'unitPrice', width: 120, align: 'right', render: (v: number) => money(v) },
-    { title: 'Thành tiền', dataIndex: 'totalAmount', key: 'totalAmount', width: 140, align: 'right', render: (v: number) => money(v) },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 100, align: 'center', render: (v: number) => <Tag>{v}</Tag> },
-    ...(canManage
-      ? [
-          {
-            title: '',
-            key: '__actions',
-            width: 150,
-            fixed: 'right' as const,
-            render: (_: unknown, r: ServiceBooking) => (
-              <Space>
-                <Button size="small" onClick={() => setEditing(r)}>Sửa</Button>
-                <Popconfirm title="Xoá dịch vụ này?" onConfirm={() => onDelete(r.id)}>
-                  <Button size="small" danger>Xoá</Button>
-                </Popconfirm>
-              </Space>
-            ),
-          } as ColumnsType<ServiceBooking>[number],
-        ]
-      : []),
+    {
+      title: 'Mã',
+      dataIndex: 'code',
+      key: 'code',
+      fixed: 'left',
+      width: 130,
+      render: (v: string) => <CellText mono strong>{v}</CellText>,
+    },
+    {
+      title: 'Loại',
+      dataIndex: 'type',
+      key: 'type',
+      width: 110,
+      render: (v: number) => <Tag color="blue">{statusText(SERVICE_BOOKING_TYPE, v)}</Tag>,
+    },
+    {
+      title: 'Dịch vụ / NCC',
+      dataIndex: 'description',
+      key: 'service',
+      width: 250,
+      render: (v: string, r: ServiceBooking) => (
+        <CellStack main={v} sub={r.providerId ? providerName.get(r.providerId) ?? '—' : '—'} />
+      ),
+    },
+    {
+      title: 'Thời gian sử dụng',
+      dataIndex: 'startDate',
+      key: 'period',
+      width: 160,
+      render: (_: unknown, r: ServiceBooking) => (
+        <CellDate value={dateText(r.startDate)} sub={r.endDate ? `→ ${dateText(r.endDate)}` : undefined} />
+      ),
+    },
+    {
+      title: 'Giá trị',
+      dataIndex: 'totalAmount',
+      key: 'totalAmount',
+      width: 170,
+      align: 'right',
+      render: (v: number, r: ServiceBooking) => (
+        <CellMoney value={v} sub={`${r.quantity} × ${money(r.unitPrice)}`} />
+      ),
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: 110,
+      align: 'center',
+      render: (v: number) => <Tag>{v}</Tag>,
+    },
+    {
+      title: '',
+      key: '__actions',
+      width: canManage ? 250 : 130,
+      fixed: 'right' as const,
+      render: (_: unknown, r: ServiceBooking) => (
+        <Space>
+          <Button size="small" onClick={() => setScheduleFor(r)}>Lịch thanh toán</Button>
+          {canManage ? (
+            <>
+              <Button size="small" onClick={() => setEditing(r)}>Sửa</Button>
+              <Popconfirm title="Xoá dịch vụ này?" onConfirm={() => onDelete(r.id)}>
+                <Button size="small" danger>Xoá</Button>
+              </Popconfirm>
+            </>
+          ) : null}
+        </Space>
+      ),
+    } as ColumnsType<ServiceBooking>[number],
   ];
 
   const s = stats.data;
-  const statCards = [
-    { title: 'Tổng dịch vụ', value: s?.total ?? 0, money: false },
-    { title: 'Tổng tiền', value: s?.totalAmount ?? 0, money: true },
-    { title: 'Khách sạn', value: s?.hotel ?? 0, money: false },
-    { title: 'Vé máy bay', value: s?.flight ?? 0, money: false },
-    { title: 'Visa', value: s?.visa ?? 0, money: false },
-    { title: 'Vé / Khác', value: (s?.ticket ?? 0) + (s?.other ?? 0), money: false },
+  const statItems = [
+    { label: 'Tổng dịch vụ', value: s?.total ?? 0 },
+    { label: 'Tổng tiền', value: money(s?.totalAmount ?? 0) },
+    { label: 'Khách sạn', value: s?.hotel ?? 0 },
+    { label: 'Vé máy bay', value: s?.flight ?? 0 },
+    { label: 'Visa', value: s?.visa ?? 0 },
+    { label: 'Vé / Khác', value: (s?.ticket ?? 0) + (s?.other ?? 0) },
   ];
 
   const defaultValues: ServiceBookingForm =
@@ -196,15 +243,7 @@ export function ServiceBookingsPage() {
         extra={canManage ? <Button type="primary" onClick={() => setEditing('new')}>Thêm dịch vụ</Button> : undefined}
       />
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} formatter={c.money ? (v) => money(Number(v)) : undefined} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid items={statItems} style={{ marginBottom: 16 }} />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -245,20 +284,22 @@ export function ServiceBookingsPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{
-          current: page.page,
-          pageSize: page.size,
-          total: list.data?.total ?? 0,
-          showSizeChanger: true,
-          onChange: (p, sz) => setPage({ page: p, size: sz }),
-        }}
-      />
+      <DataCard title="Danh sách booking dịch vụ">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          scroll={{ x: 1080 }}
+          pagination={{
+            current: page.page,
+            pageSize: page.size,
+            total: list.data?.total ?? 0,
+            showSizeChanger: true,
+            onChange: (p, sz) => setPage({ page: p, size: sz }),
+          }}
+        />
+      </DataCard>
 
       {editing && (
         <CrudFormModal
@@ -283,6 +324,14 @@ export function ServiceBookingsPage() {
           <RoomClassField />
           <TextAreaField name="note" label="Ghi chú" />
         </CrudFormModal>
+      )}
+
+      {scheduleFor && (
+        <PaymentScheduleDrawer
+          bookingId={scheduleFor.id}
+          bookingLabel={scheduleFor.code}
+          onClose={() => setScheduleFor(null)}
+        />
       )}
     </>
   );

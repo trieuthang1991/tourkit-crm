@@ -1,5 +1,7 @@
-import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Space, Statistic, Table, Tag } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Space, Table, Tag } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
+import { StatGrid } from '../../ui/kit';
+import { DataCard } from '../../shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { z } from 'zod';
@@ -11,6 +13,7 @@ import { PageHeader } from '../../shared/ui/PageHeader';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, TextField } from '../../shared/ui/Field';
 import { useAuth } from '../auth/AuthContext';
+import { CellEntity, CellMoney, CellStack, CellText } from '../../shared/ui/TableCells';
 import { agentsCrud } from './agentsCrud';
 import { agentFormSchema, agentSchema } from './types';
 import type { Agent, AgentForm } from './types';
@@ -88,12 +91,50 @@ export function AgentsPage() {
   }
 
   const columns: ColumnsType<Agent> = [
-    { title: 'Mã', dataIndex: 'code', key: 'code', fixed: 'left', width: 120 },
-    { title: 'Tên đại lý', dataIndex: 'name', key: 'name', width: 200 },
-    { title: 'Liên hệ', dataIndex: 'contactPerson', key: 'contactPerson', width: 150, render: (v: string | null) => v ?? '—' },
-    { title: 'Điện thoại', dataIndex: 'phone', key: 'phone', width: 130, render: (v: string | null) => v ?? '—' },
-    { title: 'MST', dataIndex: 'taxCode', key: 'taxCode', width: 120, render: (v: string | null) => v ?? '—' },
-    { title: 'Hạn mức', dataIndex: 'creditLimit', key: 'creditLimit', width: 140, align: 'right', render: (v: number) => money(v) },
+    {
+      title: 'Đại lý',
+      key: 'agent',
+      width: 250,
+      render: (_: unknown, r: Agent) => <CellEntity name={r.name} code={r.code} />,
+    },
+    {
+      title: 'Liên hệ',
+      key: 'contact',
+      width: 240,
+      render: (_: unknown, r: Agent) => (
+        <CellStack
+          main={r.contactPerson ?? '—'}
+          sub={
+            r.phone || r.email ? (
+              <>
+                {r.phone}
+                {r.phone && r.email ? ' · ' : ''}
+                {r.email}
+              </>
+            ) : undefined
+          }
+        />
+      ),
+    },
+    {
+      title: 'MST',
+      key: 'taxCode',
+      width: 130,
+      render: (_: unknown, r: Agent) => <CellText mono>{r.taxCode}</CellText>,
+    },
+    {
+      title: 'Địa chỉ',
+      key: 'address',
+      width: 260,
+      render: (_: unknown, r: Agent) => <CellText title={r.address ?? undefined}>{r.address}</CellText>,
+    },
+    {
+      title: 'Hạn mức',
+      key: 'creditLimit',
+      width: 150,
+      align: 'right',
+      render: (_: unknown, r: Agent) => <CellMoney value={r.creditLimit} />,
+    },
     { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: (v: number) => <Tag color={v === 1 ? 'green' : 'default'}>{v === 1 ? 'Hoạt động' : 'Ngừng'}</Tag> },
     ...(canManage
       ? [
@@ -116,12 +157,6 @@ export function AgentsPage() {
   ];
 
   const s = stats.data;
-  const statCards = [
-    { title: 'Tổng đại lý', value: s?.total ?? 0, money: false },
-    { title: 'Đang hoạt động', value: s?.active ?? 0, money: false },
-    { title: 'Ngừng', value: s?.inactive ?? 0, money: false },
-    { title: 'Tổng hạn mức', value: s?.totalCreditLimit ?? 0, money: true },
-  ];
 
   const isEdit = editing && editing !== 'new';
   const defaultValues: AgentForm = isEdit
@@ -135,15 +170,15 @@ export function AgentsPage() {
         extra={canManage ? <Button type="primary" onClick={() => setEditing('new')}>Thêm đại lý</Button> : undefined}
       />
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={12} lg={6} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} formatter={c.money ? (v) => money(Number(v)) : undefined} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        items={[
+          { label: 'Tổng đại lý', value: s?.total ?? 0 },
+          { label: 'Đang hoạt động', value: s?.active ?? 0 },
+          { label: 'Ngừng', value: s?.inactive ?? 0 },
+          { label: 'Tổng hạn mức', value: money(s?.totalCreditLimit ?? 0) },
+        ]}
+        style={{ marginBottom: 16 }}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -170,20 +205,22 @@ export function AgentsPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{
-          current: page.page,
-          pageSize: page.size,
-          total: list.data?.total ?? 0,
-          showSizeChanger: true,
-          onChange: (p, sz) => setPage({ page: p, size: sz }),
-        }}
-      />
+      <DataCard title="Danh sách đại lý">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          scroll={{ x: 1080 }}
+          pagination={{
+            current: page.page,
+            pageSize: page.size,
+            total: list.data?.total ?? 0,
+            showSizeChanger: true,
+            onChange: (p, sz) => setPage({ page: p, size: sz }),
+          }}
+        />
+      </DataCard>
 
       {editing && (
         <CrudFormModal

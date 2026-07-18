@@ -12,11 +12,11 @@ import { Drawer } from './overlay';
 function Labeled({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: ReactNode }) {
   return (
     <div className="mb-4">
-      <label className="mb-1.5 block text-[12.5px] font-medium text-[#5e5873]">
-        {label} {required ? <span className="text-[#d1494a]">*</span> : null}
+      <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--tk-heading)]">
+        {label} {required ? <span className="text-[var(--tk-danger)]">*</span> : null}
       </label>
       {children}
-      {error ? <div className="mt-1.5 text-[12px] text-[#d1494a]">{error}</div> : null}
+      {error ? <div className="mt-1.5 text-[12px] text-[var(--tk-danger)]">{error}</div> : null}
     </div>
   );
 }
@@ -135,8 +135,8 @@ export function CheckboxField({ name, label }: { name: string; label: string }) 
       name={name}
       control={control}
       render={({ field }) => (
-        <label className="mb-4 flex cursor-pointer items-center gap-2 text-[14px] text-[#5e5873]">
-          <input type="checkbox" checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} className="h-4 w-4 accent-[#eb5324]" />
+        <label className="mb-4 flex cursor-pointer items-center gap-2 text-[14px] text-[var(--tk-heading)]">
+          <input type="checkbox" checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} className="h-4 w-4 accent-[var(--tk-accent)]" />
           {label}
         </label>
       )}

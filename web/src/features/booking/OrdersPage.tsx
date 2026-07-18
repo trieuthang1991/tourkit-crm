@@ -5,7 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { httpClient } from '../../shared/api/httpClient';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { money, statusText } from '../../shared/format';
-import { Button, DataCard, FilterChip, Icon, SeatTags, SegmentTabs, StatCard, StatCardIcon } from '../../ui/kit';
+import { exportRowsToCsv } from '../../shared/exportCsv';
+import { ExportButton } from '../../shared/ui';
+import { Button, DataCard, FilterChip, Icon, SeatTags, SegmentTabs, StatCardIcon, StatGrid } from '../../ui/kit';
 import { DateRangeInput, SearchInput, Select } from '../../ui/inputs';
 import { Tag as Pill, Text } from '../../ui/primitives';
 import { Pagination, Table } from '../../ui/Table';
@@ -212,6 +214,30 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
 
   const rows = list.data?.items ?? [];
 
+  // Xuất CSV trang hiện tại (phẳng hoá seat/tiền về số & text).
+  const exportCsv = () =>
+    exportRowsToCsv(
+      'don-hang.csv',
+      ['STT', 'Mã đơn', 'Khách hàng', 'Tour', 'Tổng chỗ', 'Giữ', 'Bán', 'Còn', 'Ngày đi', 'Tổng thu', 'Thực thu', 'Tổng chi', 'Thực chi', 'Lợi nhuận', 'Trạng thái'],
+      rows.map((o, i) => [
+        (page.page - 1) * page.size + i + 1,
+        o.code,
+        o.customerName ?? '',
+        o.tourTitle ?? '',
+        o.seatTotal ?? 0,
+        o.seatHeld ?? 0,
+        o.seatSold ?? 0,
+        o.seatRemaining ?? 0,
+        o.departureDate ? new Date(o.departureDate).toLocaleDateString('vi-VN') : '',
+        o.totalRevenue,
+        o.amountPaid ?? 0,
+        o.totalCost,
+        o.actualCost ?? 0,
+        o.totalRevenue - o.totalCost,
+        statusText(ORDER_STATUS, o.status),
+      ]),
+    );
+
   const columns: Column<Order>[] = [
     { key: '__stt', title: '#', width: 46, align: 'center', mono: true, render: (_r, i) => (page.page - 1) * page.size + i + 1 },
     { key: 'code', title: 'Mã đơn', width: 132, render: (o) => <span style={{ font: '600 12.5px var(--tk-font-mono)', color: 'var(--tk-accent)' }}>{o.code}</span> },
@@ -316,30 +342,24 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
   );
 
   const s = stats.data;
-  const statCards = [
-    { title: 'Tổng số đơn', value: s?.total ?? 0, money: false, tone: undefined },
-    { title: 'Doanh thu', value: s?.totalRevenue ?? 0, money: true, tone: 'accent' as const },
-    { title: 'Đã thu', value: s?.totalPaid ?? 0, money: true, tone: 'success' as const },
-    { title: 'Còn nợ', value: s?.totalOutstanding ?? 0, money: true, tone: 'danger' as const },
-    { title: 'Đã chốt', value: s?.confirmed ?? 0, money: false, tone: 'info' as const },
-    { title: 'Đã huỷ', value: s?.cancelled ?? 0, money: false, tone: undefined },
+  const kpiItems = [
+    { label: 'Tổng số đơn', value: (s?.total ?? 0).toLocaleString('vi-VN') },
+    { label: 'Doanh thu', value: money(s?.totalRevenue ?? 0) },
+    { label: 'Đã thu', value: money(s?.totalPaid ?? 0) },
+    { label: 'Còn nợ', value: money(s?.totalOutstanding ?? 0) },
+    { label: 'Đã chốt', value: (s?.confirmed ?? 0).toLocaleString('vi-VN') },
+    { label: 'Đã huỷ', value: (s?.cancelled ?? 0).toLocaleString('vi-VN') },
   ];
 
   return (
     <>
-      <div className="rf-crumb">
-        <span>Đơn hàng / LKH</span>
-        <Icon name="chevron_right" size={14} className="rf-crumb__sep" />
-        <span className="rf-crumb__cur">{title}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <h1 className="rf-page__title" style={{ margin: 0 }}>{title}</h1>
+        <ExportButton filename="don-hang.csv" onExport={exportCsv} />
       </div>
-      <h1 className="rf-page__title">{title}</h1>
 
       {/* Thẻ thống kê (bám hệ cũ) */}
-      <div className="rf-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginTop: 16 }}>
-        {statCards.map((c) => (
-          <StatCard key={c.title} label={c.title} tone={c.tone} value={c.money ? money(Number(c.value)) : Number(c.value).toLocaleString('vi-VN')} />
-        ))}
-      </div>
+      <StatGrid items={kpiItems} min={180} style={{ marginTop: 16 }} />
 
       {/* Thanh lọc (bám staging /all-orders) — 4 lọc chính + panel nâng cao giữ đủ 17 bộ lọc */}
       <div className="rf-card" style={{ padding: 12, marginTop: 16 }}>

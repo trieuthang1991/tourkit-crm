@@ -5,10 +5,12 @@ import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
-import { Button, DataCard, FilterChip, Icon, SegmentTabs, StatCardIcon } from '../../ui/kit';
+import { Button, DataCard, FilterChip, SegmentTabs, StatCardIcon } from '../../ui/kit';
+import { ExportButton } from '../../shared/ui';
+import { exportRowsToCsv } from '../../shared/exportCsv';
 import { DateRangeInput, NumberInput, SearchInput, Select } from '../../ui/inputs';
-import { Tag } from '../../ui/primitives';
 import { Popconfirm } from '../../ui/overlay';
+import { CellEntity, CellStack, CellMoney } from '../../shared/ui/TableCells';
 import { useToast } from '../../ui/message';
 import { Pagination, Table } from '../../ui/Table';
 import type { Column } from '../../ui/Table';
@@ -55,7 +57,6 @@ const statsSchema = z.object({
   repeatBuyers: z.number(),
 });
 
-const dash = (v: string | null | undefined) => (v ? v : '—');
 const dateVi = (v: string | null | undefined) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—');
 const arr = (v: string[] | undefined | null) => (Array.isArray(v) ? v : []);
 
@@ -102,23 +103,6 @@ function AssignedToField() {
   });
   const options = (list.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
   return <SelectField name="assignedTo" label="NV phụ trách" options={options} mode="multiple" />;
-}
-
-/** Danh sách Tag rút gọn cho ô bảng (nhiều giá trị -> +N). */
-function TagList({ items, color, max = 2 }: { items: string[]; color?: string; max?: number }) {
-  if (!items.length) return <>—</>;
-  const shown = items.slice(0, max);
-  const rest = items.length - shown.length;
-  return (
-    <span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>
-      {shown.map((s) => (
-        <Tag key={s} color={color}>
-          {s}
-        </Tag>
-      ))}
-      {rest > 0 ? <Tag title={items.join(', ')}>+{rest}</Tag> : null}
-    </span>
-  );
 }
 
 export function CustomersPage() {
@@ -232,27 +216,36 @@ export function CustomersPage() {
 
   const rows = list.data?.items ?? [];
 
+  // Xuất CSV trang hiện tại (phẳng hoá các ô "giàu" về text thuần).
+  const exportCsv = () =>
+    exportRowsToCsv(
+      'khach-hang.csv',
+      ['STT', 'Mã KH', 'Khách hàng', 'Loại KH', 'Điện thoại', 'Email', 'Tỉnh thành', 'Phân nhóm', 'CSKH gần nhất', 'Phụ trách', 'Doanh thu', 'Số lần mua'],
+      rows.map((c, i) => [
+        (page.page - 1) * page.size + i + 1,
+        c.code,
+        c.fullName,
+        customerTypeLabel(c.customerType),
+        c.phone ?? '',
+        c.email ?? '',
+        c.city ?? '',
+        arr(c.segments).join(' · '),
+        c.lastCareAt ? new Date(c.lastCareAt).toLocaleDateString('vi-VN') : '',
+        arr(c.assignedToNames).join(', '),
+        c.revenue ?? 0,
+        c.purchaseCount ?? 0,
+      ]),
+    );
+
+  // Gom 20 cột phẳng -> 7 ô "giàu" (dùng chung CellStack/CellEntity/CellMoney) để KHÔNG scroll ngang.
   const columns: Column<Customer>[] = [
-    { key: '__stt', title: '#', width: 46, align: 'center', mono: true, render: (_c, i) => (page.page - 1) * page.size + i + 1 },
-    { key: 'code', title: 'Mã KH', width: 124, mono: true, render: (c) => dash(c.code) },
-    { key: 'fullName', title: 'Họ và tên', width: 178, render: (c) => <span style={{ fontWeight: 600, color: 'var(--tk-heading)' }}>{c.fullName}</span> },
-    { key: 'phone', title: 'Số điện thoại', width: 120, mono: true, render: (c) => dash(c.phone) },
-    { key: 'email', title: 'Email', width: 170, render: (c) => dash(c.email) },
-    { key: 'city', title: 'Tỉnh thành', width: 118, render: (c) => dash(c.city) },
-    { key: 'segments', title: 'Phân nhóm', width: 190, render: (c) => <TagList items={arr(c.segments)} /> },
-    { key: 'dateOfBirth', title: 'Ngày sinh', width: 108, mono: true, render: (c) => dateVi(c.dateOfBirth) },
-    { key: 'createdAt', title: 'Ngày tạo', width: 108, mono: true, render: (c) => dateVi(c.createdAt) },
-    { key: 'lastCareAt', title: 'Ngày CSKH gần nhất', width: 148, mono: true, render: (c) => dateVi(c.lastCareAt) },
-    { key: 'lastCareContent', title: 'Nội dung CSKH mới nhất', width: 200, render: (c) => dash(c.lastCareContent) },
-    { key: 'initialNeed', title: 'Nhu cầu ban đầu', width: 190, render: (c) => dash(c.initialNeed) },
-    { key: 'purchaseCount', title: 'Số lần mua', width: 96, align: 'center', mono: true, render: (c) => c.purchaseCount ?? 0 },
-    { key: 'revenue', title: 'Doanh thu', width: 128, align: 'right', mono: true, render: (c) => money(c.revenue ?? 0) },
-    { key: 'customerType', title: 'Loại KH', width: 108, render: (c) => customerTypeLabel(c.customerType) },
-    { key: 'createdBy', title: 'Người tạo', width: 138, render: (c) => c.createdByName ?? dash(c.createdBy) },
-    { key: 'collaboratorName', title: 'CTV', width: 136, render: (c) => dash(c.collaboratorName) },
-    { key: 'campaign', title: 'Chiến dịch', width: 148, render: (c) => dash(c.campaign) },
-    { key: 'assignedTo', title: 'NV phụ trách', width: 158, render: (c) => <TagList items={arr(c.assignedToNames)} /> },
-    { key: 'tags', title: 'Thẻ', width: 136, render: (c) => <TagList items={arr(c.tags)} color="blue" /> },
+    { key: '__stt', title: '#', width: 44, align: 'center', mono: true, render: (_c, i) => (page.page - 1) * page.size + i + 1 },
+    { key: 'customer', title: 'Khách hàng', width: 208, render: (c) => <CellEntity name={c.fullName} code={c.code} meta={customerTypeLabel(c.customerType)} /> },
+    { key: 'contact', title: 'Liên hệ', width: 176, render: (c) => <CellStack main={c.phone ?? '—'} sub={c.email} mono /> },
+    { key: 'area', title: 'Khu vực & nhóm', width: 176, render: (c) => <CellStack main={c.city ?? '—'} sub={arr(c.segments).join(' · ')} /> },
+    { key: 'care', title: 'CSKH gần nhất', width: 196, render: (c) => <CellStack main={dateVi(c.lastCareAt)} sub={c.lastCareContent} /> },
+    { key: 'owner', title: 'Phụ trách', width: 158, render: (c) => <CellStack main={arr(c.assignedToNames).join(', ') || '—'} sub={c.collaboratorName ? `CTV: ${c.collaboratorName}` : (c.createdByName ?? undefined)} /> },
+    { key: 'revenue', title: 'Doanh thu', width: 132, align: 'right', render: (c) => <CellMoney value={c.revenue ?? 0} sub={`${(c.purchaseCount ?? 0).toLocaleString('vi-VN')} lần mua`} tone={(c.revenue ?? 0) > 0 ? 'success' : 'heading'} /> },
     ...(canUpdate || canRemove
       ? [
           {
@@ -362,21 +355,19 @@ export function CustomersPage() {
 
   return (
     <>
-      <div className="rf-crumb">
-        <span>CRM</span>
-        <Icon name="chevron_right" size={14} className="rf-crumb__sep" />
-        <span className="rf-crumb__cur">Data khách hàng</span>
-      </div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div>
           <h1 className="rf-page__title">Data khách hàng</h1>
           <div className="rf-page__sub">Quản lý toàn bộ hồ sơ khách hàng, phân nhóm và lịch chăm sóc.</div>
         </div>
-        {canCreate ? (
-          <Button variant="primary" icon="add" onClick={() => setEditing({ mode: 'create', item: null })}>
-            Thêm khách hàng
-          </Button>
-        ) : null}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <ExportButton filename="khach-hang.csv" onExport={exportCsv} />
+          {canCreate ? (
+            <Button variant="primary" icon="add" onClick={() => setEditing({ mode: 'create', item: null })}>
+              Thêm khách hàng
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {/* Thẻ thống kê (icon-chip + số) — bộ handoff */}
@@ -465,7 +456,7 @@ export function CustomersPage() {
 
       <div style={{ marginTop: 14 }}>
         <DataCard title="Danh sách khách hàng" bodyless>
-          <Table columns={columns} data={rows} rowKey={(c) => c.id} loading={list.isLoading} minWidth={2400} summary={rows.length ? summary : undefined} empty="Không có khách hàng" />
+          <Table columns={columns} data={rows} rowKey={(c) => c.id} loading={list.isLoading} minWidth={1080} summary={rows.length ? summary : undefined} empty="Không có khách hàng" />
           <div style={{ padding: '10px 16px' }}>
             <Pagination page={page.page} pageSize={page.size} total={list.data?.total ?? 0} unit="khách hàng" onChange={(p) => setPage({ ...page, page: p })} />
           </div>

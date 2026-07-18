@@ -2,10 +2,10 @@ import type { ReactNode } from 'react';
 
 // Bảng gradient rực rỡ (phối hài hoà quanh accent cam thương hiệu).
 export const STAT_GRADIENTS = {
-  orange: 'linear-gradient(135deg, #eb5324 0%, #ff7a45 100%)',
-  blue: 'linear-gradient(135deg, #4e7bff 0%, #7c5cff 100%)',
-  green: 'linear-gradient(135deg, #22c55e 0%, #0ea5a5 100%)',
-  purple: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
+  orange: 'linear-gradient(135deg, var(--tk-accent) 0%, var(--tk-accent-hover) 100%)',
+  blue: 'linear-gradient(135deg, var(--tk-accent) 0%, #9c93f5 100%)',
+  green: 'linear-gradient(135deg, var(--tk-success) 0%, var(--tk-info) 100%)',
+  purple: 'linear-gradient(135deg, var(--tk-accent) 0%, var(--tk-danger) 100%)',
 } as const;
 
 export type StatGradient = keyof typeof STAT_GRADIENTS;

@@ -36,7 +36,7 @@ export function NotificationsPage() {
         locale={{ emptyText: 'Chưa có thông báo' }}
         renderItem={(n) => (
           <List.Item
-            style={{ cursor: 'pointer', background: n.isRead ? undefined : '#e6f4ff' }}
+            style={{ cursor: 'pointer', background: n.isRead ? undefined : 'var(--tk-info-soft-2)' }}
             onClick={() => open(n.id, n.linkUrl, n.isRead)}
             actions={n.isRead ? [] : [<Tag key="new" color="blue">Mới</Tag>]}
           >
@@ -45,7 +45,7 @@ export function NotificationsPage() {
               description={
                 <>
                   {n.message ? <div>{n.message}</div> : null}
-                  <div style={{ color: '#999', fontSize: 12 }}>{new Date(n.createdAt).toLocaleString('vi-VN')}</div>
+                  <div style={{ color: 'var(--tk-muted)', fontSize: 12 }}>{new Date(n.createdAt).toLocaleString('vi-VN')}</div>
                 </>
               }
             />

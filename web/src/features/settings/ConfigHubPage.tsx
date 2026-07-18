@@ -64,7 +64,7 @@ export function ConfigHubPage() {
                     <Icon name={i.icon} size={22} style={{ color: 'var(--tk-accent)' }} />
                     <span>
                       <div style={{ fontWeight: 600 }}>{i.title}</div>
-                      <div style={{ fontSize: 12, color: '#888' }}>{i.desc}</div>
+                      <div style={{ fontSize: 12, color: 'var(--tk-muted)' }}>{i.desc}</div>
                     </span>
                   </Card>
                 </Col>

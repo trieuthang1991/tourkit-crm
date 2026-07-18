@@ -1,9 +1,12 @@
-import { App, Button, Card, Col, Input, Progress, Row, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Input, Progress, Row, Space, Table, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
+import { StatGrid } from '../../ui/kit';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { errorMessage } from '../../shared/api/problem';
 import { statusText } from '../../shared/format';
+import { DataCard } from '../../shared/ui';
+import { CellStack, CellDate, CellEntity } from '../../shared/ui/TableCells';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { TextAreaField, TextField } from '../../shared/ui/Field';
 import { z } from 'zod';
@@ -55,20 +58,34 @@ export function LeadCampaignsPage() {
   }
 
   const columns: ColumnsType<LeadCampaign> = [
-    { title: 'Chiến dịch', dataIndex: 'name', key: 'name' },
-    { title: 'Người tạo', dataIndex: 'createdByName', key: 'createdByName', width: 160, render: (v: string | null) => v ?? '—' },
-    { title: 'Ngày tạo', dataIndex: 'createdAt', key: 'createdAt', width: 120, render: (v: string) => new Date(v).toLocaleDateString('vi-VN') },
-    { title: 'Leads', dataIndex: 'totalLeads', key: 'totalLeads', width: 90, align: 'right' },
+    {
+      title: 'Chiến dịch',
+      key: 'name',
+      render: (_: unknown, r: LeadCampaign) => (
+        <CellEntity name={r.name} meta={r.createdByName ? `Tạo bởi ${r.createdByName}` : undefined} />
+      ),
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 130,
+      render: (v: string) => <CellDate value={new Date(v).toLocaleDateString('vi-VN')} />,
+    },
+    {
+      title: 'Số liệu',
+      key: 'leads',
+      width: 160,
+      align: 'right',
+      render: (_: unknown, r: LeadCampaign) => (
+        <CellStack align="right" main={`${r.totalLeads} leads`} sub={`Chăm sóc ${r.caredCount}/${r.totalLeads}`} />
+      ),
+    },
     {
       title: 'Tiến độ',
       key: 'progress',
-      width: 160,
-      render: (_: unknown, r: LeadCampaign) => (
-        <div>
-          <Progress percent={Number(r.progress)} size="small" />
-          <span style={{ fontSize: 12, color: '#888' }}>Chăm sóc {r.caredCount}/{r.totalLeads}</span>
-        </div>
-      ),
+      width: 180,
+      render: (_: unknown, r: LeadCampaign) => <Progress percent={Number(r.progress)} size="small" />,
     },
     {
       title: 'Đơn chốt',
@@ -76,13 +93,10 @@ export function LeadCampaignsPage() {
       width: 130,
       align: 'right',
       render: (_: unknown, r: LeadCampaign) => (
-        <div>
-          <b style={{ color: '#3f8600' }}>{r.closedCount}</b>
-          <div style={{ fontSize: 12, color: '#888' }}>{r.closeRate}%</div>
-        </div>
+        <CellStack align="right" main={r.closedCount} sub={`${r.closeRate}%`} tone="success" />
       ),
     },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: (v: number) => <Tag color={STATUS_COLOR[v]}>{statusText(LEAD_CAMPAIGN_STATUS, v)}</Tag> },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 130, render: (v: number) => <Tag color={STATUS_COLOR[v]}>{statusText(LEAD_CAMPAIGN_STATUS, v)}</Tag> },
   ];
 
   return (
@@ -92,20 +106,16 @@ export function LeadCampaignsPage() {
         {canManage ? <Button type="primary" onClick={() => setCreating(true)}>Tạo chiến dịch mới</Button> : null}
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng chiến dịch', value: stats.data?.totalCampaigns ?? 0, suffix: '' },
-          { title: 'Tổng Leads', value: stats.data?.totalLeads ?? 0, suffix: '' },
-          { title: 'Tỷ lệ chốt TB', value: stats.data?.avgCloseRate ?? 0, suffix: '%' },
-          { title: 'Hoàn thành', value: stats.data?.completed ?? 0, suffix: '' },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={12} lg={6} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} suffix={c.suffix} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Tổng chiến dịch', value: stats.data?.totalCampaigns ?? 0 },
+          { label: 'Tổng Leads', value: stats.data?.totalLeads ?? 0 },
+          { label: 'Tỷ lệ chốt TB', value: `${stats.data?.avgCloseRate ?? 0}%` },
+          { label: 'Hoàn thành', value: stats.data?.completed ?? 0 },
+        ]}
+      />
+
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -121,14 +131,15 @@ export function LeadCampaignsPage() {
         </Row>
       </Card>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
-      />
+      <DataCard title="Danh sách chiến dịch">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
+        />
+      </DataCard>
 
       {creating ? (
         <CrudFormModal

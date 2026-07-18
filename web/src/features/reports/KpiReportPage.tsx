@@ -1,4 +1,5 @@
 import { Card, Col, Row, Statistic, Typography } from '../../shared/ui/antd';
+import { PageHeader } from '../../shared/ui/PageHeader';
 import { money } from '../../shared/format';
 import { useKpiSummary } from './kpiApi';
 
@@ -10,7 +11,7 @@ export function KpiReportPage() {
 
   return (
     <>
-      <Typography.Title level={3}>KPI phễu kinh doanh</Typography.Title>
+      <PageHeader title="KPI phễu kinh doanh" />
       <Typography.Paragraph type="secondary">
         Báo giá → chấp nhận → chuyển đơn → thu tiền.
       </Typography.Paragraph>

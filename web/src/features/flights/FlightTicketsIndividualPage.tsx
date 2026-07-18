@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Input, Popconfirm, Row, Segmented, Select, Space, Table, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -25,6 +25,9 @@ import {
   flightIndividualFormSchema,
 } from './individualTypes';
 import type { FlightIndividual, FlightIndividualForm } from './individualTypes';
+import { CellEntity, CellMoney, CellStack } from '../../shared/ui/TableCells';
+import { DataCard } from '../../shared/ui';
+import { StatGrid } from '../../ui/kit';
 
 const vnDate = (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—');
 
@@ -134,61 +137,47 @@ export function FlightTicketsIndividualPage() {
 
   const columns: ColumnsType<FlightIndividual> = [
     {
-      title: 'Mã / Vé',
+      title: 'Vé / Khách',
       key: 'code',
-      width: 150,
-      fixed: 'left',
-      render: (_: unknown, r: FlightIndividual) => (
-        <div style={{ lineHeight: 1.4 }}>
-          <div><b>{r.code}</b></div>
-          <div style={{ fontSize: 12, color: '#888' }}>{r.ticketCode ?? '—'}</div>
-          <div style={{ fontSize: 12, color: '#888' }}>PNR: {r.pnr || '—'}</div>
-        </div>
-      ),
+      width: 210,
+      render: (_: unknown, r: FlightIndividual) => {
+        const bits = [r.ticketCode ? `Vé ${r.ticketCode}` : null, r.pnr ? `PNR ${r.pnr}` : null].filter(Boolean).join(' · ');
+        return <CellEntity name={r.customerName} code={r.code} meta={bits || undefined} />;
+      },
     },
-    { title: 'Khách', dataIndex: 'customerName', key: 'customerName', width: 150 },
-    { title: 'Đơn hàng', dataIndex: 'orderCode', key: 'orderCode', width: 120, render: (v: string | null) => v ?? '—' },
-    { title: 'NCC', dataIndex: 'providerName', key: 'providerName', width: 130, render: (v: string | null) => v ?? '—' },
     {
-      title: 'Loại vé',
-      dataIndex: 'tripType',
-      key: 'tripType',
-      width: 95,
-      render: (v: number) => <Tag>{TRIP_TYPE_LABEL[v] ?? v}</Tag>,
+      title: 'NCC / Đơn hàng',
+      key: 'provider',
+      width: 170,
+      render: (_: unknown, r: FlightIndividual) => <CellEntity name={r.providerName} meta={r.orderCode} />,
     },
     {
       title: 'Hành trình',
       key: 'route',
-      width: 160,
+      width: 210,
       render: (_: unknown, r: FlightIndividual) => (
-        <div style={{ lineHeight: 1.4 }}>
-          <div>{r.route ?? '—'}</div>
-          <div style={{ fontSize: 12, color: '#888' }}>CI {vnDate(r.departDate)} · CO {vnDate(r.returnDate)}</div>
-        </div>
+        <CellStack
+          main={r.route}
+          sub={`${TRIP_TYPE_LABEL[r.tripType] ?? r.tripType} · CI ${vnDate(r.departDate)} · CO ${vnDate(r.returnDate)}`}
+        />
       ),
     },
     {
-      title: 'Thu (tổng / còn nợ)',
+      title: 'Thu / còn nợ',
       key: 'sell',
-      width: 160,
+      width: 150,
       align: 'right',
       render: (_: unknown, r: FlightIndividual) => (
-        <div style={{ lineHeight: 1.4 }}>
-          <div>{money(r.sellAmount)}</div>
-          <div style={{ fontSize: 12, color: r.receivableRemaining > 0 ? '#cf1322' : '#888' }}>còn {money(r.receivableRemaining)}</div>
-        </div>
+        <CellMoney value={r.sellAmount} sub={r.receivableRemaining} subLabel="còn" subTone={r.receivableRemaining > 0 ? 'danger' : 'muted'} />
       ),
     },
     {
-      title: 'Chi (tổng / phải chi)',
+      title: 'Chi / phải chi',
       key: 'cost',
-      width: 160,
+      width: 150,
       align: 'right',
       render: (_: unknown, r: FlightIndividual) => (
-        <div style={{ lineHeight: 1.4 }}>
-          <div>{money(r.totalCost)}</div>
-          <div style={{ fontSize: 12, color: r.payableRemaining > 0 ? '#cf1322' : '#888' }}>phải chi {money(r.payableRemaining)}</div>
-        </div>
+        <CellMoney value={r.totalCost} sub={r.payableRemaining} subLabel="phải chi" subTone={r.payableRemaining > 0 ? 'danger' : 'muted'} />
       ),
     },
     {
@@ -197,27 +186,24 @@ export function FlightTicketsIndividualPage() {
       key: 'profit',
       width: 130,
       align: 'right',
-      render: (v: number) => <span style={{ color: v < 0 ? '#cf1322' : '#3f8600' }}>{money(v)}</span>,
-    },
-    {
-      title: 'Hạn chi',
-      dataIndex: 'paymentDueDate',
-      key: 'paymentDueDate',
-      width: 105,
-      render: (v: string | null) => vnDate(v),
+      render: (v: number) => <CellMoney value={v} tone={v < 0 ? 'danger' : 'success'} />,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 115,
-      render: (v: number) => <Tag color={FI_STATUS_COLOR[v]}>{FI_STATUS_LABEL[v] ?? v}</Tag>,
+      width: 150,
+      render: (_: unknown, r: FlightIndividual) => (
+        <CellStack
+          main={<Tag color={FI_STATUS_COLOR[r.status]}>{FI_STATUS_LABEL[r.status] ?? r.status}</Tag>}
+          sub={r.paymentDueDate ? `Hạn chi ${vnDate(r.paymentDueDate)}` : undefined}
+        />
+      ),
     },
     {
       title: '',
       key: '__actions',
-      width: 130,
-      fixed: 'right',
+      width: 120,
       render: (_: unknown, r: FlightIndividual) =>
         canManage ? (
           <Space>
@@ -238,27 +224,22 @@ export function FlightTicketsIndividualPage() {
         <Typography.Title level={3} style={{ margin: 0 }}>
           Vé máy bay lẻ
         </Typography.Title>
-        {canManage ? <Button type="primary" onClick={() => setEditingId('new')}>Tạo mới</Button> : null}
+        {canManage ? <Button type="primary" onClick={() => setEditingId('new')}>Thêm vé lẻ</Button> : null}
       </div>
 
       {/* Footer P/L đưa lên thẻ thống kê */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng thu', value: s?.totalSell ?? 0 },
-          { title: 'Thực thu', value: s?.totalReceived ?? 0 },
-          { title: 'Còn nợ thu', value: s?.totalReceivable ?? 0 },
-          { title: 'Tổng chi', value: s?.totalCost ?? 0 },
-          { title: 'Thực chi', value: s?.totalPaid ?? 0 },
-          { title: 'Phải chi', value: s?.totalPayable ?? 0 },
-          { title: 'Lợi nhuận', value: s?.totalProfit ?? 0 },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={3} flex="1">
-            <Card styles={{ body: { padding: 12 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} valueStyle={{ fontSize: 18 }} formatter={(v) => money(Number(v))} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Tổng thu', value: money(s?.totalSell ?? 0) },
+          { label: 'Thực thu', value: money(s?.totalReceived ?? 0) },
+          { label: 'Còn nợ thu', value: money(s?.totalReceivable ?? 0) },
+          { label: 'Tổng chi', value: money(s?.totalCost ?? 0) },
+          { label: 'Thực chi', value: money(s?.totalPaid ?? 0) },
+          { label: 'Phải chi', value: money(s?.totalPayable ?? 0) },
+          { label: 'Lợi nhuận', value: money(s?.totalProfit ?? 0) },
+        ]}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -294,14 +275,15 @@ export function FlightTicketsIndividualPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
-      />
+      <DataCard title="Danh sách vé máy bay lẻ">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
+        />
+      </DataCard>
 
       {editingId !== null ? (
         <CrudFormModal

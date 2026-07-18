@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
 import { Icon } from './kit';
 
 /* =========================================================================
@@ -104,26 +106,135 @@ export function DateInput({ value, onChange }: { value: string | null; onChange:
   );
 }
 
-/** Khoảng ngày (thay DatePicker.RangePicker). Trả về ISO đầu/cuối ngày. */
+const RF_WD = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+/** Date-range picker THẬT: 1 field + lịch popover chọn khoảng ngày. Trả về ISO đầu/cuối ngày. */
 export function DateRangeInput({
   from,
   to,
   onChange,
   placeholder = ['Từ ngày', 'đến'],
+  alignRight = false,
 }: {
   from: string | null | undefined;
   to: string | null | undefined;
   onChange: (from: string | undefined, to: string | undefined) => void;
   placeholder?: [string, string];
+  alignRight?: boolean;
 }) {
-  const d = (v: string | null | undefined) => (v ? new Date(v).toISOString().slice(0, 10) : '');
-  const startIso = (v: string) => (v ? new Date(v + 'T00:00:00').toISOString() : undefined);
-  const endIso = (v: string) => (v ? new Date(v + 'T23:59:59').toISOString() : undefined);
+  const fromD = from ? dayjs(from) : null;
+  const toD = to ? dayjs(to) : null;
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<Dayjs>(() => (fromD ?? dayjs()).startOf('month'));
+  const [start, setStart] = useState<Dayjs | null>(fromD);
+  const [end, setEnd] = useState<Dayjs | null>(toD);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setStart(from ? dayjs(from) : null);
+    setEnd(to ? dayjs(to) : null);
+    setView((from ? dayjs(from) : dayjs()).startOf('month'));
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const firstDow = (view.day() + 6) % 7;
+  const gridStart = view.subtract(firstDow, 'day');
+  const cells = Array.from({ length: 42 }, (_, i) => gridStart.add(i, 'day'));
+  const today = dayjs();
+  const label = fromD && toD ? `${fromD.format('DD/MM/YYYY')} → ${toD.format('DD/MM/YYYY')}` : '';
+
+  const clickDay = (dd: Dayjs) => {
+    if (!start || (start && end)) {
+      setStart(dd);
+      setEnd(null);
+      return;
+    }
+    const [s, e] = dd.isBefore(start, 'day') ? [dd, start] : [start, dd];
+    setStart(s);
+    setEnd(e);
+    onChange(s.startOf('day').toISOString(), e.endOf('day').toISOString());
+    setOpen(false);
+  };
+  const clearAll = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setStart(null);
+    setEnd(null);
+    onChange(undefined, undefined);
+  };
+
   return (
-    <div className="rf-field" style={{ gap: 4 }}>
-      <input type="date" title={placeholder[0]} style={{ fontFamily: 'var(--tk-font-mono)' }} value={d(from)} onChange={(e) => onChange(startIso(e.target.value), to ?? undefined)} />
-      <span style={{ color: 'var(--tk-muted)', flexShrink: 0 }}>–</span>
-      <input type="date" title={placeholder[1]} style={{ fontFamily: 'var(--tk-font-mono)' }} value={d(to)} onChange={(e) => onChange(from ?? undefined, endIso(e.target.value))} />
+    <div className={`rf-dp ${open ? 'rf-dp--open' : ''}`} ref={ref}>
+      <button type="button" className="rf-dp__trigger" onClick={() => setOpen((o) => !o)}>
+        <Icon name="calendar_month" size={18} className="rf-daterange__ic" />
+        {label ? (
+          <span className="rf-dp__label">{label}</span>
+        ) : (
+          <span className="rf-dp__label rf-dp__label--ph">{`${placeholder[0]} → ${placeholder[1]}`}</span>
+        )}
+        {label ? (
+          <span className="rf-dp__clear" onClick={clearAll} title="Xoá">
+            <Icon name="close" size={16} />
+          </span>
+        ) : (
+          <Icon name="expand_more" size={18} style={{ color: 'var(--tk-muted)' }} />
+        )}
+      </button>
+      {open ? (
+        <div className={`rf-dp__pop ${alignRight ? 'rf-dp__pop--right' : ''}`}>
+          <div className="rf-dp__head">
+            <button type="button" className="rf-dp__nav" onClick={() => setView((v) => v.subtract(1, 'month'))} aria-label="Tháng trước">
+              <Icon name="chevron_left" size={18} />
+            </button>
+            <span className="rf-dp__title">{`Tháng ${view.month() + 1}, ${view.year()}`}</span>
+            <button type="button" className="rf-dp__nav" onClick={() => setView((v) => v.add(1, 'month'))} aria-label="Tháng sau">
+              <Icon name="chevron_right" size={18} />
+            </button>
+          </div>
+          <div className="rf-dp__wd">
+            {RF_WD.map((w) => (
+              <span key={w}>{w}</span>
+            ))}
+          </div>
+          <div className="rf-dp__grid">
+            {cells.map((dd) => {
+              const out = dd.month() !== view.month();
+              const isStart = !!start && dd.isSame(start, 'day');
+              const isEnd = !!end && dd.isSame(end, 'day');
+              const inRange = !!start && !!end && dd.isAfter(start, 'day') && dd.isBefore(end, 'day');
+              const cls = ['rf-dp__day'];
+              if (out) cls.push('rf-dp__day--out');
+              if (dd.isSame(today, 'day')) cls.push('rf-dp__day--today');
+              if (inRange) cls.push('rf-dp__day--in');
+              if (isStart) cls.push('rf-dp__day--edge', 'rf-dp__day--start');
+              if (isEnd) cls.push('rf-dp__day--edge', 'rf-dp__day--end');
+              return (
+                <button type="button" key={dd.format('YYYY-MM-DD')} className={cls.join(' ')} onClick={() => clickDay(dd)}>
+                  {dd.date()}
+                </button>
+              );
+            })}
+          </div>
+          <div className="rf-dp__foot">
+            <span className="rf-dp__hint">{start && !end ? 'Chọn ngày kết thúc' : 'Chọn khoảng ngày'}</span>
+            <button
+              type="button"
+              className="rf-btn rf-btn--text rf-btn--sm"
+              onClick={() => {
+                clearAll();
+                setOpen(false);
+              }}
+            >
+              Xoá
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

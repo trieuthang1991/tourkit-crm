@@ -1,5 +1,6 @@
-import { App, Card, Col, Input, Popconfirm, Row, Select, Space, Statistic, Table, Tag } from '../../shared/ui/antd';
+import { App, Card, Col, Input, Popconfirm, Row, Select, Space, Table, Tag } from '../../shared/ui/antd';
 import { Button, DataCard, SegmentTabs, StatusTag } from '../../shared/ui';
+import { StatGrid } from '../../ui/kit';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -123,9 +124,9 @@ export function TicketFundsPage() {
 
   const s = stats.data;
   const statCards = [
-    { title: 'Tổng quỹ vé', value: s?.total ?? 0 },
-    { title: 'Đã đóng', value: s?.closed ?? 0 },
-    { title: 'Chưa đóng', value: s?.open ?? 0 },
+    { label: 'Tổng quỹ vé', value: s?.total ?? 0 },
+    { label: 'Đã đóng', value: s?.closed ?? 0 },
+    { label: 'Chưa đóng', value: s?.open ?? 0 },
   ];
 
   const isEdit = editing && editing !== 'new';
@@ -140,15 +141,7 @@ export function TicketFundsPage() {
         extra={canManage ? <Button variant="primary" onClick={() => setEditing('new')}>Thêm quỹ vé</Button> : undefined}
       />
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid items={statCards} style={{ marginBottom: 16 }} />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>

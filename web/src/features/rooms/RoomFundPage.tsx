@@ -1,4 +1,5 @@
-import { App, Button, Card, Col, DatePicker, Input, Row, Segmented, Select, Space, Statistic, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, DatePicker, Input, Row, Segmented, Select, Space, Tag, Typography } from '../../shared/ui/antd';
+import { StatGrid } from '../../ui/kit';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
@@ -195,7 +196,7 @@ export function RoomFundPage() {
       : { ...EMPTY_FORM, ...prefill };
 
   const s = stats.data;
-  const th: React.CSSProperties = { padding: '6px 8px', borderBottom: '1px solid #f0f0f0', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' };
+  const th: React.CSSProperties = { padding: '6px 8px', borderBottom: '1px solid var(--tk-line)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' };
   const stickyLeft: React.CSSProperties = { position: 'sticky', left: 0, background: '#fff', zIndex: 2, boxShadow: '2px 0 4px -2px rgba(0,0,0,0.12)' };
 
   return (
@@ -208,35 +209,29 @@ export function RoomFundPage() {
           <Typography.Text type="secondary">Lịch tồn (allotment) + giá NET theo ngày — mỗi ô tô màu theo loại ngày.</Typography.Text>
         </div>
         {canManage ? (
-          <Button type="primary" onClick={() => { setPrefill(null); setEditingId('new'); }}>Tạo mới</Button>
+          <Button type="primary" onClick={() => { setPrefill(null); setEditingId('new'); }}>Thêm quỹ phòng</Button>
         ) : null}
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Số ô lịch', value: s?.cells ?? 0 },
-          { title: 'Số NCC', value: s?.providers ?? 0 },
-          { title: 'Tổng tồn', value: s?.totalQuota ?? 0 },
-          { title: 'Đã đặt', value: s?.totalBooked ?? 0 },
-          { title: 'Còn lại', value: s?.totalAvailable ?? 0 },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 12 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} valueStyle={{ fontSize: 20 }} />
-            </Card>
-          </Col>
-        ))}
-        <Col xs={24} lg={4} flex="1">
-          <Card styles={{ body: { padding: 12 } }}>
-            <div style={{ fontSize: 12, color: '#888', marginBottom: 6 }}>Loại ngày</div>
-            <Space size={[4, 4]} wrap>
-              {DAY_TYPE_OPTIONS.map((o) => (
-                <Tag key={o.value} color={DAY_TYPE_TAG_COLOR[o.value]} style={{ marginInlineEnd: 0 }}>{o.label}</Tag>
-              ))}
-            </Space>
-          </Card>
-        </Col>
-      </Row>
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Số ô lịch', value: s?.cells ?? 0 },
+          { label: 'Số NCC', value: s?.providers ?? 0 },
+          { label: 'Tổng tồn', value: s?.totalQuota ?? 0 },
+          { label: 'Đã đặt', value: s?.totalBooked ?? 0 },
+          { label: 'Còn lại', value: s?.totalAvailable ?? 0 },
+        ]}
+      />
+
+      <Card styles={{ body: { padding: 12 } }} style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: 'var(--tk-muted)', marginBottom: 6 }}>Loại ngày</div>
+        <Space size={[4, 4]} wrap>
+          {DAY_TYPE_OPTIONS.map((o) => (
+            <Tag key={o.value} color={DAY_TYPE_TAG_COLOR[o.value]} style={{ marginInlineEnd: 0 }}>{o.label}</Tag>
+          ))}
+        </Space>
+      </Card>
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -279,7 +274,7 @@ export function RoomFundPage() {
       </Space>
 
       {mode === 'combo' ? (
-        <Card size="small" style={{ marginBottom: 12, background: '#fafafa' }}>
+        <Card size="small" style={{ marginBottom: 12, background: 'var(--tk-header-bg)' }}>
           <Space wrap align="center">
             <Typography.Text strong>Tính giá combo nhanh:</Typography.Text>
             <Typography.Text type="secondary">Bấm các ô để chọn dịch vụ → cộng giá NET.</Typography.Text>
@@ -290,7 +285,7 @@ export function RoomFundPage() {
         </Card>
       ) : null}
 
-      <div style={{ overflowX: 'auto', border: '1px solid #f0f0f0', borderRadius: 8, background: '#fff' }}>
+      <div style={{ overflowX: 'auto', border: '1px solid var(--tk-line)', borderRadius: 8, background: '#fff' }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 160 + days * 88 }}>
           <thead>
             <tr>
@@ -299,9 +294,9 @@ export function RoomFundPage() {
                 const weekend = d.day() === 0 || d.day() === 6;
                 const today = d.isSame(dayjs(), 'day');
                 return (
-                  <th key={DKEY(d)} style={{ ...th, textAlign: 'center', minWidth: 80, color: weekend ? '#cf1322' : undefined, background: today ? '#e6f4ff' : undefined }}>
+                  <th key={DKEY(d)} style={{ ...th, textAlign: 'center', minWidth: 80, color: weekend ? 'var(--tk-danger)' : undefined, background: today ? 'var(--tk-info-soft-2)' : undefined }}>
                     {d.format('DD/MM')}
-                    <div style={{ fontWeight: 400, color: '#999' }}>{['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.day()]}</div>
+                    <div style={{ fontWeight: 400, color: 'var(--tk-muted)' }}>{['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.day()]}</div>
                   </th>
                 );
               })}
@@ -310,7 +305,7 @@ export function RoomFundPage() {
           <tbody>
             {groups.length === 0 ? (
               <tr>
-                <td colSpan={days + 1} style={{ padding: 32, textAlign: 'center', color: '#999' }}>
+                <td colSpan={days + 1} style={{ padding: 32, textAlign: 'center', color: 'var(--tk-muted)' }}>
                   {list.isLoading ? 'Đang tải…' : 'Chưa có quỹ phòng trong khoảng ngày này.'}
                 </td>
               </tr>
@@ -319,8 +314,8 @@ export function RoomFundPage() {
                 <tr key={g.key}>
                   <td style={{ ...stickyLeft, ...th, textAlign: 'left', verticalAlign: 'top' }}>
                     <div style={{ fontWeight: 600 }}>{g.providerName}</div>
-                    <div style={{ fontSize: 12, color: '#888' }}>{g.serviceName}</div>
-                    {g.province ? <div style={{ fontSize: 11, color: '#aaa' }}>{g.province}{g.rating ? ` · ${g.rating}★` : ''}</div> : null}
+                    <div style={{ fontSize: 12, color: 'var(--tk-muted)' }}>{g.serviceName}</div>
+                    {g.province ? <div style={{ fontSize: 11, color: 'var(--tk-muted)' }}>{g.province}{g.rating ? ` · ${g.rating}★` : ''}</div> : null}
                   </td>
                   {dayList.map((d) => {
                     const cell = g.cells.get(DKEY(d));
@@ -330,14 +325,14 @@ export function RoomFundPage() {
                         key={DKEY(d)}
                         onClick={() => openCell(g, d, cell)}
                         style={{
-                          borderBottom: '1px solid #f0f0f0',
-                          borderLeft: '1px solid #f5f5f5',
+                          borderBottom: '1px solid var(--tk-line)',
+                          borderLeft: '1px solid var(--tk-header-bg)',
                           padding: 4,
                           textAlign: 'center',
                           verticalAlign: 'top',
                           cursor: cell ? 'pointer' : canManage && mode === 'ops' ? 'pointer' : 'default',
                           background: cell ? DAY_TYPE_BG[cell.dayType] : undefined,
-                          outline: selected ? '2px solid #1677ff' : undefined,
+                          outline: selected ? '2px solid var(--tk-accent)' : undefined,
                           outlineOffset: -2,
                         }}
                         title={cell ? `${DAY_TYPE_LABEL[cell.dayType]} · ${money(cell.price)} · còn ${cell.available}/${cell.quota}` : 'Trống — bấm để thêm'}
@@ -345,10 +340,10 @@ export function RoomFundPage() {
                         {cell ? (
                           <div style={{ borderLeft: `3px solid ${DAY_TYPE_BORDER[cell.dayType]}`, paddingLeft: 4, textAlign: 'left', lineHeight: 1.3 }}>
                             <div style={{ fontWeight: 600, fontSize: 12 }}>{shortMoney(cell.price)}</div>
-                            <div style={{ fontSize: 11, color: cell.available <= 0 ? '#cf1322' : '#389e0d' }}>còn {cell.available}/{cell.quota}</div>
+                            <div style={{ fontSize: 11, color: cell.available <= 0 ? 'var(--tk-danger)' : 'var(--tk-success)' }}>còn {cell.available}/{cell.quota}</div>
                           </div>
                         ) : (
-                          <span style={{ color: '#e0e0e0', fontSize: 12 }}>·</span>
+                          <span style={{ color: 'var(--tk-border)', fontSize: 12 }}>·</span>
                         )}
                       </td>
                     );

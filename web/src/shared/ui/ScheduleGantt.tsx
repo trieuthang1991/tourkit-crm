@@ -26,10 +26,10 @@ type Props = {
 };
 
 const TONE_BG: Record<NonNullable<GanttBar['tone']>, string> = {
-  blue: '#3b82f6',
-  green: '#22a06b',
-  gray: '#9ca3af',
-  orange: '#eb5324',
+  blue: 'var(--tk-info)',
+  green: 'var(--tk-success)',
+  gray: 'var(--tk-muted)',
+  orange: 'var(--tk-accent)',
 };
 
 // Lưới Gantt: cột trái = tài nguyên, cột phải = các ngày; bar chiếm ô ngày [start..end].
@@ -72,8 +72,8 @@ export function ScheduleGantt({
     <div style={{ overflowX: 'auto', border: '1px solid var(--tk-border, #ebe9f1)', borderRadius: 8, background: '#fff' }}>
       <div style={{ minWidth: labelWidth + gridWidth }}>
         {/* Header ngày */}
-        <div style={{ display: 'flex', position: 'sticky', top: 0, zIndex: 2, background: '#faf9fc', borderBottom: '1px solid #ebe9f1' }}>
-          <div style={{ width: labelWidth, flex: '0 0 auto', padding: '8px 12px', fontWeight: 600, fontSize: 13, color: '#5e5873' }}>
+        <div style={{ display: 'flex', position: 'sticky', top: 0, zIndex: 2, background: 'var(--tk-header-bg)', borderBottom: '1px solid var(--tk-border)' }}>
+          <div style={{ width: labelWidth, flex: '0 0 auto', padding: '8px 12px', fontWeight: 600, fontSize: 13, color: 'var(--tk-heading)' }}>
             Tài nguyên
           </div>
           <div style={{ display: 'flex' }}>
@@ -90,10 +90,10 @@ export function ScheduleGantt({
                     padding: '6px 0',
                     fontSize: 11,
                     lineHeight: 1.3,
-                    color: isToday ? '#eb5324' : weekend ? '#a8a5b5' : '#6e6b7b',
+                    color: isToday ? 'var(--tk-accent)' : weekend ? 'var(--tk-muted)' : 'var(--tk-body)',
                     fontWeight: isToday ? 700 : 500,
-                    background: isToday ? '#fff2ec' : weekend ? '#fafafa' : 'transparent',
-                    borderLeft: '1px solid #f3f2f5',
+                    background: isToday ? 'var(--tk-accent-soft)' : weekend ? 'var(--tk-header-bg)' : 'transparent',
+                    borderLeft: '1px solid var(--tk-line)',
                   }}
                 >
                   <div>{d.format('DD')}</div>
@@ -106,13 +106,13 @@ export function ScheduleGantt({
 
         {/* Hàng tài nguyên */}
         {rows.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center', color: '#a8a5b5' }}>{emptyText}</div>
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--tk-muted)' }}>{emptyText}</div>
         ) : (
           rows.map((r) => (
-            <div key={r.id} style={{ display: 'flex', borderBottom: '1px solid #f3f2f5', minHeight: rowHeight }}>
-              <div style={{ width: labelWidth, flex: '0 0 auto', padding: '8px 12px', borderRight: '1px solid #ebe9f1' }}>
-                <div style={{ fontWeight: 600, fontSize: 13, color: '#5e5873' }}>{r.label}</div>
-                {r.sub ? <div style={{ fontSize: 11, color: '#a8a5b5' }}>{r.sub}</div> : null}
+            <div key={r.id} style={{ display: 'flex', borderBottom: '1px solid var(--tk-line)', minHeight: rowHeight }}>
+              <div style={{ width: labelWidth, flex: '0 0 auto', padding: '8px 12px', borderRight: '1px solid var(--tk-border)' }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--tk-heading)' }}>{r.label}</div>
+                {r.sub ? <div style={{ fontSize: 11, color: 'var(--tk-muted)' }}>{r.sub}</div> : null}
               </div>
               <div style={{ position: 'relative', width: gridWidth, flex: '0 0 auto' }}>
                 {/* Lưới cột nền */}
@@ -126,8 +126,8 @@ export function ScheduleGantt({
                         style={{
                           width: colWidth,
                           flex: '0 0 auto',
-                          borderLeft: '1px solid #f3f2f5',
-                          background: isToday ? '#fff7f4' : weekend ? '#fbfbfc' : 'transparent',
+                          borderLeft: '1px solid var(--tk-line)',
+                          background: isToday ? 'var(--tk-accent-soft)' : weekend ? 'var(--tk-header-bg)' : 'transparent',
                         }}
                       />
                     );

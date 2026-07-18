@@ -1,6 +1,7 @@
 import {
-  App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography,
+  App, Button, Card, Col, DatePicker, Input, Popconfirm, Row, Segmented, Select, Space, Table, Tag, Typography,
 } from '../../shared/ui/antd';
+import { StatGrid } from '../../ui/kit';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -13,13 +14,17 @@ import { statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { SelectField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { DataCard } from '../../shared/ui';
 import { useAuth } from '../auth/AuthContext';
+import { CellEntity, CellStack, CellText } from '../../shared/ui/TableCells';
 import { leadsCrud } from './leadsCrud';
 import { LEAD_STATUS, leadCreateSchema, leadSchema, leadUpdateSchema } from './types';
 import type { Lead, LeadForm } from './types';
 
 const LEAD_STATUS_OPTIONS = Object.entries(LEAD_STATUS).map(([value, label]) => ({ value: Number(value), label }));
 const STATUS_COLOR: Record<number, string> = { 1: 'blue', 2: 'gold', 3: 'cyan', 4: 'green', 5: 'red' };
+// Màu chấm/accent kanban theo trạng thái (hệ token Vuexy)
+const KB_COLOR: Record<number, string> = { 1: '#7367f0', 2: '#ff9f43', 3: '#00bad1', 4: '#28c76f', 5: '#ff4c51' };
 const dash = (v: string | null | undefined) => (v ? v : '—');
 
 const userRowSchema = z.object({ id: z.string().uuid(), fullName: z.string() });
@@ -137,6 +142,8 @@ export function LeadsPage() {
   const sourceOpts = (filterOptions.data?.sources ?? []).map((s) => ({ label: s, value: s }));
   const userOpts = (users.data ?? []).map((u) => ({ label: u.fullName, value: u.id }));
   const branchOpts = (branches.data ?? []).map((b) => ({ label: b.name, value: b.id }));
+  const userName = (id: string | null) => (id ? users.data?.find((u) => u.id === id)?.fullName ?? null : null);
+  const branchName = (id: string | null) => (id ? branches.data?.find((b) => b.id === id)?.name ?? null : null);
 
   async function submit(values: LeadForm) {
     try {
@@ -174,10 +181,30 @@ export function LeadsPage() {
   ];
 
   const columns: ColumnsType<Lead> = [
-    { title: 'Họ tên', dataIndex: 'fullName', key: 'fullName', width: 180 },
-    { title: 'Điện thoại', dataIndex: 'phone', key: 'phone', width: 130, render: dash },
-    { title: 'Email', dataIndex: 'email', key: 'email', width: 180, render: dash },
-    { title: 'Nguồn', dataIndex: 'source', key: 'source', width: 150, render: dash },
+    {
+      title: 'Cơ hội',
+      key: 'lead',
+      width: 240,
+      render: (_: unknown, lead: Lead) => <CellEntity name={lead.fullName} meta={branchName(lead.branchId)} />,
+    },
+    {
+      title: 'Liên hệ',
+      key: 'contact',
+      width: 220,
+      render: (_: unknown, lead: Lead) => <CellStack main={lead.phone} sub={lead.email} tone="default" mono />,
+    },
+    {
+      title: 'Nguồn',
+      key: 'source',
+      width: 160,
+      render: (_: unknown, lead: Lead) => <CellText tone="default">{lead.source}</CellText>,
+    },
+    {
+      title: 'Phụ trách',
+      key: 'assignee',
+      width: 180,
+      render: (_: unknown, lead: Lead) => <CellText tone="default">{userName(lead.assignedToUserId)}</CellText>,
+    },
     { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 130, render: (v: number) => <Tag color={STATUS_COLOR[v]}>{statusText(LEAD_STATUS, v)}</Tag> },
     {
       title: '',
@@ -219,21 +246,16 @@ export function LeadsPage() {
               onChange={(v) => setView(v as 'kanban' | 'list')}
               options={[{ label: 'Kanban', value: 'kanban' }, { label: 'List', value: 'list' }]}
             />
-            {canCreate ? <Button type="primary" onClick={() => setEditing({ mode: 'create', item: null })}>Thêm mới</Button> : null}
+            {canCreate ? <Button type="primary" onClick={() => setEditing({ mode: 'create', item: null })}>Thêm cơ hội</Button> : null}
           </Space>
         }
       />
 
       {/* Thẻ pipeline */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={3} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        items={statCards.map((c) => ({ label: c.title, value: c.value }))}
+        style={{ marginBottom: 16 }}
+      />
 
       {/* Thanh lọc (bám staging: 9 ô) */}
       <Card size="small" style={{ marginBottom: 12 }}>
@@ -263,8 +285,8 @@ export function LeadsPage() {
               value={draft.createdFrom && draft.createdTo ? [dayjs(draft.createdFrom), dayjs(draft.createdTo)] : null}
               onChange={(d) => setD({ createdFrom: d?.[0]?.startOf('day').toISOString(), createdTo: d?.[1]?.endOf('day').toISOString() })} />
           </Col>
-          <Col xs={12} sm={8} lg={4}>
-            <DatePicker.RangePicker style={{ width: '100%' }} placeholder={['Ngày tạo đơn', '']} disabled />
+          <Col xs={24} sm={12} lg={6}>
+            <DatePicker.RangePicker style={{ width: '100%' }} placeholder={['Ngày tạo đơn', 'đến']} disabled />
           </Col>
           <Col xs={12} sm={8} lg={4}>
             <Select showSearch allowClear optionFilterProp="label" style={{ width: '100%' }} placeholder="Chi nhánh"
@@ -286,27 +308,30 @@ export function LeadsPage() {
       </Card>
 
       {view === 'kanban' ? (
-        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, alignItems: 'flex-start' }}>
+        <div className="rf-kb">
           {LEAD_STATUS_OPTIONS.map((col) => {
             const cards = leads.filter((l) => l.status === col.value);
+            const color = KB_COLOR[col.value] ?? 'var(--tk-accent)';
             return (
-              <Card
-                key={col.value}
-                size="small"
-                style={{ minWidth: 280, maxWidth: 280, flex: '0 0 auto' }}
-                title={<Space><Tag color={STATUS_COLOR[col.value]}>{col.label}</Tag><span>{cards.length}</span></Space>}
-                loading={list.isLoading}
-              >
-                <Space direction="vertical" style={{ width: '100%' }} size={8}>
+              <div className="rf-kb__col" key={col.value}>
+                <div className="rf-kb__head">
+                  <span className="rf-kb__dot" style={{ background: color }} />
+                  <span className="rf-kb__title">{col.label}</span>
+                  <span className="rf-kb__count">{cards.length}</span>
+                </div>
+                <div className="rf-kb__body">
                   {cards.map((lead) => (
-                    <Card key={lead.id} size="small" styles={{ body: { padding: 8 } }}>
-                      <Typography.Text strong>{lead.fullName}</Typography.Text>
-                      <div style={{ fontSize: 12, color: '#888' }}>{dash(lead.phone)}{lead.source ? ` · ${lead.source}` : ''}</div>
-                      <Space style={{ marginTop: 6 }} wrap>
+                    <div key={lead.id} className="rf-kb__card" style={{ ['--kb-accent' as string]: color }}>
+                      <div className="rf-kb__name">{lead.fullName}</div>
+                      <div className="rf-kb__meta">
+                        {dash(lead.phone)}
+                        {lead.source ? ` · ${lead.source}` : ''}
+                      </div>
+                      <div className="rf-kb__foot">
                         {canUpdate ? (
                           <Select
                             size="small"
-                            style={{ width: 120 }}
+                            style={{ width: 132 }}
                             value={lead.status}
                             options={LEAD_STATUS_OPTIONS}
                             onChange={(status) => { if (status !== lead.status) moveStage.mutate({ lead, status }); }}
@@ -315,24 +340,26 @@ export function LeadsPage() {
                         {canConvert && lead.convertedCustomerId === null ? (
                           <Button size="small" onClick={() => doConvert(lead)}>Tạo đơn</Button>
                         ) : null}
-                      </Space>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
-                  {cards.length === 0 && !list.isLoading ? <Typography.Text type="secondary">—</Typography.Text> : null}
-                </Space>
-              </Card>
+                  {cards.length === 0 && !list.isLoading ? <div className="rf-kb__empty">Chưa có cơ hội</div> : null}
+                </div>
+              </div>
             );
           })}
         </div>
       ) : (
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={leads}
-          loading={list.isLoading}
-          scroll={{ x: 'max-content' }}
-          pagination={{ pageSize: 20, showSizeChanger: true }}
-        />
+        <DataCard title="Danh sách cơ hội">
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={leads}
+            loading={list.isLoading}
+            scroll={{ x: 1080 }}
+            pagination={{ pageSize: 20, showSizeChanger: true }}
+          />
+        </DataCard>
       )}
 
       {editing ? (
@@ -349,7 +376,7 @@ export function LeadsPage() {
           <TextField name="phone" label="Điện thoại" />
           <TextField name="email" label="Email" />
           <TextField name="source" label="Nguồn" />
-          <TextField name="assignedToUserId" label="Người phụ trách (userId)" />
+          <SelectField name="assignedToUserId" label="Người phụ trách" options={userOpts} showSearch allowClear />
           <SelectField name="branchId" label="Chi nhánh" options={branchOpts} allowClear />
           {editing.mode === 'edit' ? (
             <SelectField name="status" label="Trạng thái" options={LEAD_STATUS_OPTIONS} required />

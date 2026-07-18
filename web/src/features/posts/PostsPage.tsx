@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
+import { DataCard } from '../../shared/ui';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, SelectField, TextAreaField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
@@ -189,7 +190,9 @@ export function PostsPage() {
           ) : null
         }
       />
-      <Table rowKey="id" columns={columns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      <DataCard title="Danh sách bài viết">
+        <Table rowKey="id" columns={columns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      </DataCard>
       {open ? (
         <CrudFormModal
           open={open}

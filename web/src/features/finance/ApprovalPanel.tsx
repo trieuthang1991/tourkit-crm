@@ -59,7 +59,7 @@ function StartApprovalForm({ receiptId }: { receiptId: string }) {
         <Space
           key={index}
           direction="vertical"
-          style={{ width: '100%', border: '1px solid #eee', padding: 8 }}
+          style={{ width: '100%', border: '1px solid var(--tk-border)', padding: 8 }}
         >
           <Typography.Text>Bước {step.stepOrder}</Typography.Text>
           <Select

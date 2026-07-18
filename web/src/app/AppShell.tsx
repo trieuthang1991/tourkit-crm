@@ -15,9 +15,9 @@ import { Dropdown } from '../ui/overlay';
 // key = ĐỊNH DANH menu (duy nhất); to = route local điều hướng; children = submenu lồng.
 // Bám CHÍNH XÁC menu hệ cũ (staging.tourkit.vn — HTML MenuLeft), map label/thứ tự/nhóm hệ cũ sang route local.
 // Tính năng đã hợp nhất ở local → nhiều mục legacy trỏ chung 1 màn (giữ nhãn để dò 1:1). NCC là danh sách động.
-type NavNode = { key: string; label: string; icon?: string; perm?: string; to?: string; children?: NavNode[] };
+export type NavNode = { key: string; label: string; icon?: string; perm?: string; to?: string; children?: NavNode[] };
 
-const MENU: NavNode[] = [
+export const MENU: NavNode[] = [
   {
     key: 'g-workspace', label: 'Workspace', icon: 'dashboard', children: [
       { key: 'w-social', label: 'Mạng Nội Bộ', to: '/posts', perm: 'post.view' },
@@ -127,6 +127,7 @@ const MENU: NavNode[] = [
   {
     key: 'g-commission', label: 'Hoa Hồng', icon: 'percent', children: [
       { key: 'hh-config', label: 'Thiết lập hoa hồng', to: '/commission-rules', perm: 'commission.view' },
+      { key: 'hh-campaign', label: 'Chính sách hoa hồng (bậc thang)', to: '/commission-campaigns', perm: 'commission.view' },
       { key: 'hh-customer', label: 'HH theo loại khách', to: '/customer-commission-rules', perm: 'commission.view' },
       { key: 'hh-source', label: 'Báo cáo theo nguồn', to: '/reports/commission-by-user', perm: 'report.commission.view' },
       { key: 'hh-milestone', label: 'Báo cáo theo cột mốc', to: '/reports/commission-by-user', perm: 'report.commission.view' },
@@ -176,6 +177,7 @@ const MENU: NavNode[] = [
   {
     key: 'g-system', label: 'Cài đặt hệ thống', icon: 'settings', children: [
       { key: 'sys-users', label: 'Thành viên', to: '/users', perm: 'user.view' },
+      { key: 'sys-roles', label: 'Vai trò & quyền', to: '/roles', perm: 'user.view' },
       { key: 'sys-config', label: 'Cấu hình', to: '/config-hub', perm: 'user.view' },
       { key: 'sys-billing', label: 'Gói dịch vụ', to: '/billing', perm: 'subscription.view' },
     ],
@@ -191,6 +193,27 @@ function flattenLeaves(nodes: NavNode[]): NavNode[] {
   return nodes.flatMap((n) => (n.children ? flattenLeaves(n.children) : [n]));
 }
 const LEAVES = flattenLeaves(MENU).filter((n) => n.to);
+
+// Breadcrumb "Nhóm › Trang" cho route hiện tại — render 1 lần ở shell cho MỌI trang.
+function crumbFor(pathname: string): { group: string; page: string } | null {
+  const leaf = findSelected(pathname);
+  if (!leaf) return null;
+  const trail = ancestorKeys(MENU, leaf.key) ?? [];
+  const group = MENU.find((g) => g.key === trail[0]);
+  return { group: group?.label ?? '', page: leaf.label };
+}
+
+function AutoBreadcrumb({ pathname }: { pathname: string }) {
+  const c = crumbFor(pathname);
+  if (!c || !c.group) return null;
+  return (
+    <div className="rf-crumb">
+      <span>{c.group}</span>
+      <Icon name="chevron_right" size={14} className="rf-crumb__sep" />
+      <span className="rf-crumb__cur">{c.page}</span>
+    </div>
+  );
+}
 
 function findSelected(pathname: string): NavNode | undefined {
   return LEAVES
@@ -346,6 +369,7 @@ export function AppShell() {
         <main className="rf-content">
           {/* Giới hạn bề rộng + căn giữa: tránh nội dung giãn thưa trên màn siêu rộng. */}
           <div className="rf-content__in">
+            <AutoBreadcrumb pathname={location.pathname} />
             <Outlet />
           </div>
         </main>

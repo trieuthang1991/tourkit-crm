@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, Input, InputNumber, Modal, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Input, InputNumber, Modal, Row, Segmented, Select, Space, Table, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -12,6 +12,12 @@ import {
   useServiceOperationStats,
 } from './serviceOperationsApi';
 import type { ServiceOperation, ServiceOperationFilter } from './serviceOperationsApi';
+import { useDueAlerts } from '../serviceBookings/paymentTermsApi';
+import { PaymentScheduleDrawer } from '../serviceBookings/PaymentScheduleDrawer';
+import { CellStack, CellMoney, CellDate } from '../../shared/ui/TableCells';
+import { DataCard } from '../../shared/ui';
+import { StatGrid } from '../../ui/kit';
+import dayjs from 'dayjs';
 
 const STATUS_COLOR: Record<number, string> = { 0: 'red', 1: 'orange', 2: 'green' };
 
@@ -48,6 +54,12 @@ export function ServiceOperationsPage() {
   const [payVal, setPayVal] = useState<number>(0);
   const pay = usePayServiceOperation();
 
+  const dueAlerts = useDueAlerts(7);
+  const alerts = dueAlerts.data ?? [];
+  const overdueCount = alerts.filter((a) => a.isOverdue).length;
+  const dueSoonCount = alerts.length - overdueCount;
+  const [scheduleFor, setScheduleFor] = useState<{ id: string; label: string } | null>(null);
+
   async function run(action: () => Promise<unknown>, ok: string) {
     try {
       await action();
@@ -58,19 +70,48 @@ export function ServiceOperationsPage() {
   }
 
   const columns: ColumnsType<ServiceOperation> = [
-    { title: 'Mã phiếu', dataIndex: 'code', key: 'code', width: 130, fixed: 'left' },
-    { title: 'Nhà cung cấp', dataIndex: 'providerName', key: 'providerName', width: 180, render: (v: string | null) => v ?? '—' },
-    { title: 'Tên dịch vụ', dataIndex: 'description', key: 'description' },
-    { title: 'Ngày sử dụng DV', dataIndex: 'usageDate', key: 'usageDate', width: 140, render: (v: string | null) => (v ? new Date(v).toLocaleDateString('vi-VN') : '—') },
-    { title: 'Tổng tiền chi', dataIndex: 'totalAmount', key: 'totalAmount', width: 140, align: 'right', render: (v: number) => money(v) },
-    { title: 'Đã thanh toán', dataIndex: 'paidAmount', key: 'paidAmount', width: 140, align: 'right', render: (v: number) => <span style={{ color: '#3f8600' }}>{money(v)}</span> },
-    { title: 'Còn thiếu', dataIndex: 'remainingAmount', key: 'remainingAmount', width: 140, align: 'right', render: (v: number) => <span style={{ color: v > 0 ? '#cf1322' : undefined }}>{money(v)}</span> },
-    { title: 'Trạng thái', dataIndex: 'paymentStatus', key: 'paymentStatus', width: 130, render: (v: number) => <Tag color={STATUS_COLOR[v]}>{statusText(PAYMENT_STATUS, v)}</Tag> },
+    {
+      title: 'Phiếu ĐH',
+      key: 'code',
+      width: 170,
+      render: (_: unknown, r: ServiceOperation) => (
+        <CellStack main={r.code} sub={r.usageDate ? new Date(r.usageDate).toLocaleDateString('vi-VN') : undefined} mono />
+      ),
+    },
+    {
+      title: 'Dịch vụ / NCC',
+      key: 'description',
+      render: (_: unknown, r: ServiceOperation) => (
+        <CellStack main={r.description} sub={r.providerName ?? undefined} />
+      ),
+    },
+    {
+      title: 'Tổng chi',
+      key: 'totalAmount',
+      width: 160,
+      align: 'right',
+      render: (_: unknown, r: ServiceOperation) => <CellMoney value={r.totalAmount} />,
+    },
+    {
+      title: 'Thanh toán',
+      key: 'paidAmount',
+      width: 190,
+      align: 'right',
+      render: (_: unknown, r: ServiceOperation) => (
+        <CellMoney value={r.paidAmount} tone="success" sub={r.remainingAmount > 0 ? r.remainingAmount : undefined} subLabel="Còn" subTone="danger" />
+      ),
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'paymentStatus',
+      key: 'paymentStatus',
+      width: 130,
+      render: (v: number) => <Tag color={STATUS_COLOR[v]}>{statusText(PAYMENT_STATUS, v)}</Tag>,
+    },
     {
       title: '',
       key: '__actions',
-      width: 100,
-      fixed: 'right',
+      width: 110,
       render: (_: unknown, r: ServiceOperation) =>
         canManage ? (
           <Button size="small" type="primary" onClick={() => { setPayRow(r); setPayVal(r.paidAmount); }}>
@@ -83,11 +124,14 @@ export function ServiceOperationsPage() {
   const summary = () => (
     <Table.Summary fixed>
       <Table.Summary.Row>
-        <Table.Summary.Cell index={0} colSpan={4}><b>Tổng cộng (trang này)</b></Table.Summary.Cell>
-        <Table.Summary.Cell index={4} align="right"><b>{money(stats.data?.totalCost ?? 0)}</b></Table.Summary.Cell>
-        <Table.Summary.Cell index={5} align="right"><b style={{ color: '#3f8600' }}>{money(stats.data?.totalPaid ?? 0)}</b></Table.Summary.Cell>
-        <Table.Summary.Cell index={6} align="right"><b style={{ color: '#cf1322' }}>{money(stats.data?.totalRemaining ?? 0)}</b></Table.Summary.Cell>
-        <Table.Summary.Cell index={7} colSpan={2} />
+        <Table.Summary.Cell index={0} colSpan={2}><b>Tổng cộng (trang này)</b></Table.Summary.Cell>
+        <Table.Summary.Cell index={2} align="right"><b>{money(stats.data?.totalCost ?? 0)}</b></Table.Summary.Cell>
+        <Table.Summary.Cell index={3} align="right">
+          <b style={{ color: 'var(--tk-success)' }}>{money(stats.data?.totalPaid ?? 0)}</b>
+          <br />
+          <b style={{ color: 'var(--tk-danger)' }}>Còn {money(stats.data?.totalRemaining ?? 0)}</b>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell index={4} colSpan={2} />
       </Table.Summary.Row>
     </Table.Summary>
   );
@@ -96,20 +140,78 @@ export function ServiceOperationsPage() {
     <>
       <Typography.Title level={3} style={{ marginTop: 0 }}>Danh sách phiếu điều hành dịch vụ</Typography.Title>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng đơn hàng', value: stats.data?.total ?? 0, money: false },
-          { title: 'Chưa thanh toán', value: stats.data?.unpaid ?? 0, money: false },
-          { title: 'Chưa chi hết', value: stats.data?.partial ?? 0, money: false },
-          { title: 'Hoàn thành', value: stats.data?.done ?? 0, money: false },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={12} lg={6} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      {alerts.length > 0 ? (
+        <div style={{ marginBottom: 16 }}>
+        <DataCard title="Đến hạn / Quá hạn thanh toán NCC">
+          <StatGrid
+            style={{ marginBottom: 12 }}
+            min={180}
+            items={[
+              { label: 'Quá hạn', value: overdueCount, tone: 'danger', icon: 'error' },
+              { label: 'Sắp đến hạn', value: dueSoonCount, tone: 'warning', icon: 'schedule' },
+            ]}
+          />
+          <Table
+            rowKey="id"
+            pagination={false}
+            dataSource={alerts}
+            columns={[
+              {
+                title: 'Dịch vụ / NCC',
+                key: 'service',
+                render: (_: unknown, r: (typeof alerts)[number]) => (
+                  <CellStack main={r.serviceCode} sub={r.providerName ?? undefined} mono />
+                ),
+              },
+              {
+                title: 'Còn lại',
+                key: 'remaining',
+                width: 150,
+                align: 'right',
+                render: (_: unknown, r: (typeof alerts)[number]) => <CellMoney value={r.remainingAmount} tone="danger" />,
+              },
+              {
+                title: 'Hạn',
+                key: 'due',
+                width: 130,
+                render: (_: unknown, r: (typeof alerts)[number]) => <CellDate value={dayjs(r.dueDate).format('DD/MM/YYYY')} />,
+              },
+              {
+                title: 'Cảnh báo',
+                key: 'flag',
+                width: 150,
+                render: (_: unknown, r: (typeof alerts)[number]) =>
+                  r.isOverdue ? (
+                    <Tag color="red">Quá hạn {Math.abs(r.daysUntilDue)} ngày</Tag>
+                  ) : (
+                    <Tag color="gold">Còn {r.daysUntilDue} ngày</Tag>
+                  ),
+              },
+              {
+                title: '',
+                key: '__actions',
+                width: 130,
+                render: (_: unknown, r: (typeof alerts)[number]) => (
+                  <Button size="small" onClick={() => setScheduleFor({ id: r.serviceBookingId, label: r.serviceCode })}>
+                    Lịch thanh toán
+                  </Button>
+                ),
+              },
+            ]}
+          />
+        </DataCard>
+        </div>
+      ) : null}
+
+      <StatGrid
+        style={{ marginBottom: 16 }}
+        items={[
+          { label: 'Tổng đơn hàng', value: stats.data?.total ?? 0 },
+          { label: 'Chưa thanh toán', value: stats.data?.unpaid ?? 0 },
+          { label: 'Chưa chi hết', value: stats.data?.partial ?? 0 },
+          { label: 'Hoàn thành', value: stats.data?.done ?? 0 },
+        ]}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -141,15 +243,17 @@ export function ServiceOperationsPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
-        summary={summary}
-      />
+      <DataCard title="Danh sách phiếu điều hành">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          scroll={{ x: 1080 }}
+          pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
+          summary={summary}
+        />
+      </DataCard>
 
       <Modal
         open={!!payRow}
@@ -176,6 +280,14 @@ export function ServiceOperationsPage() {
           parser={(v) => Number((v ?? '').replace(/,/g, ''))}
         />
       </Modal>
+
+      {scheduleFor && (
+        <PaymentScheduleDrawer
+          bookingId={scheduleFor.id}
+          bookingLabel={scheduleFor.label}
+          onClose={() => setScheduleFor(null)}
+        />
+      )}
     </>
   );
 }

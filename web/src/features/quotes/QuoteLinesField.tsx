@@ -28,7 +28,7 @@ export function QuoteLinesField() {
   return (
     <div>
       {fields.map((field, index) => (
-        <div key={field.id} style={{ borderBottom: '1px dashed #ddd', paddingBottom: 8, marginBottom: 8 }}>
+        <div key={field.id} style={{ borderBottom: '1px dashed var(--tk-border)', paddingBottom: 8, marginBottom: 8 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <div style={{ flex: 2 }}>
               <TextField name={`lines.${index}.description`} label={index === 0 ? 'Mô tả' : ' '} required />

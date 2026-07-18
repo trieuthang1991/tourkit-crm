@@ -1,5 +1,7 @@
-import { App, Button, Card, Col, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag, Typography } from '../../shared/ui/antd';
+import { App, Button, Card, Col, Popconfirm, Row, Segmented, Select, Space, Table, Tag, Typography } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
+import { StatGrid } from '../../ui/kit';
+import { DataCard } from '../../shared/ui';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { errorMessage } from '../../shared/api/problem';
@@ -118,20 +120,15 @@ export function CustomerCommissionRulesPage() {
         ) : null}
       </div>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {[
-          { title: 'Tổng quy tắc', value: stats.data?.total ?? 0, suffix: '' },
-          { title: 'Đang áp dụng', value: stats.data?.active ?? 0, suffix: '' },
-          { title: 'Tạm ngừng', value: stats.data?.inactive ?? 0, suffix: '' },
-          { title: 'Tỉ lệ TB', value: stats.data?.avgPercentage ?? 0, suffix: '%' },
-        ].map((c) => (
-          <Col key={c.title} xs={12} sm={12} lg={6} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} suffix={c.suffix} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid
+        items={[
+          { label: 'Tổng quy tắc', value: stats.data?.total ?? 0 },
+          { label: 'Đang áp dụng', value: stats.data?.active ?? 0 },
+          { label: 'Tạm ngừng', value: stats.data?.inactive ?? 0 },
+          { label: 'Tỉ lệ TB', value: `${stats.data?.avgPercentage ?? 0}%` },
+        ]}
+        style={{ marginBottom: 16 }}
+      />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -156,14 +153,16 @@ export function CustomerCommissionRulesPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
-      />
+      <DataCard title="Danh sách hoa hồng theo khách">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          scroll={{ x: 'max-content' }}
+          pagination={{ current: page, pageSize: size, total: list.data?.total ?? 0, onChange: setPage, showSizeChanger: false }}
+        />
+      </DataCard>
 
       {creating || editing ? (
         <CrudFormModal

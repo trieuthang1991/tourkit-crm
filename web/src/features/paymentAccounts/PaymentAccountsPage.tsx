@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
+import { DataCard } from '../../shared/ui';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { CheckboxField, NumberField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
@@ -179,7 +180,9 @@ export function PaymentAccountsPage() {
           ) : null
         }
       />
-      <Table rowKey="id" columns={tableColumns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      <DataCard title="Danh sách tài khoản thanh toán">
+        <Table rowKey="id" columns={tableColumns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      </DataCard>
       {open ? (
         <CrudFormModal
           open={open}

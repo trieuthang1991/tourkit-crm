@@ -18,7 +18,7 @@ import { workTaskSchema, priorityLabel, statusLabel } from '../workTasks/types';
 import type { WorkTask } from '../workTasks/types';
 import { TaskDonut } from './TaskDonut';
 import type { DonutSegment } from './TaskDonut';
-import { Button, Card, DataCard, Empty, Icon, Pill, StatCard, Tabs } from '../../ui/kit';
+import { Button, Card, DataCard, Empty, Icon, Pill, StatGrid, Tabs } from '../../ui/kit';
 import { Avatar, Divider } from '../../ui/primitives';
 import { Table } from '../../ui/Table';
 import type { Column } from '../../ui/Table';
@@ -31,10 +31,10 @@ type ReceiptListItem = z.infer<typeof receiptListItemSchema>;
 type PaymentListItem = z.infer<typeof paymentListItemSchema>;
 
 const TASK_STATUS_META: { status: number; label: string; color: string; tone: 'muted' | 'info' | 'success' | 'danger' }[] = [
-  { status: 0, label: 'Cần làm', color: '#a9aab0', tone: 'muted' },
-  { status: 1, label: 'Đang làm', color: '#2f6bd6', tone: 'info' },
-  { status: 2, label: 'Hoàn thành', color: '#1f9d57', tone: 'success' },
-  { status: 3, label: 'Huỷ', color: '#d1494a', tone: 'danger' },
+  { status: 0, label: 'Cần làm', color: 'var(--tk-muted)', tone: 'muted' },
+  { status: 1, label: 'Đang làm', color: 'var(--tk-info)', tone: 'info' },
+  { status: 2, label: 'Hoàn thành', color: 'var(--tk-success)', tone: 'success' },
+  { status: 3, label: 'Huỷ', color: 'var(--tk-danger)', tone: 'danger' },
 ];
 const toneOf = (s: number) => TASK_STATUS_META.find((m) => m.status === s)?.tone ?? 'muted';
 
@@ -177,12 +177,14 @@ export function WorkspacePage() {
 
       {/* KPI */}
       {has('report.dashboard.view') ? (
-        <div className="rf-grid rf-grid--4">
-          <StatCard label="Doanh thu (đã ghi nhận)" tone="success" value={money(s?.totalRevenue ?? 0)} />
-          <StatCard label="Đơn hàng" tone="info" value={(s?.orderCount ?? 0).toLocaleString('vi-VN')} />
-          <StatCard label="Khách hàng" tone="accent" value={(customers.data?.total ?? 0).toLocaleString('vi-VN')} />
-          <StatCard label="Công nợ phải thu" tone="danger" value={money(s?.receivableOutstanding ?? 0)} />
-        </div>
+        <StatGrid
+          items={[
+            { label: 'Doanh thu (đã ghi nhận)', value: money(s?.totalRevenue ?? 0) },
+            { label: 'Đơn hàng', value: (s?.orderCount ?? 0).toLocaleString('vi-VN') },
+            { label: 'Khách hàng', value: (customers.data?.total ?? 0).toLocaleString('vi-VN') },
+            { label: 'Công nợ phải thu', value: money(s?.receivableOutstanding ?? 0) },
+          ]}
+        />
       ) : null}
 
       {/* Hàng 1 */}

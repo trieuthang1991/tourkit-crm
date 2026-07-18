@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, DatePicker, Popconfirm, Row, Segmented, Select, Space, Statistic, Table, Tag } from '../../shared/ui/antd';
+import { App, Button, Card, Col, DatePicker, Popconfirm, Row, Segmented, Select, Space, Table, Tag } from '../../shared/ui/antd';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -19,6 +19,9 @@ import { GuideTransactionCell } from './GuideTransactionCell';
 import { GuideHandoverCell } from './GuideHandoverCell';
 import { guideAssignmentCreateSchema, guideAssignmentSchema, guideAssignmentUpdateSchema } from './guideAssignmentTypes';
 import type { GuideAssignment, GuideAssignmentForm } from './guideAssignmentTypes';
+import { CellDate, CellEntity, CellText } from '../../shared/ui/TableCells';
+import { DataCard } from '../../shared/ui';
+import { StatGrid } from '../../ui/kit';
 
 const GUIDE_STATUS: Record<number, string> = { 1: 'Mới', 2: 'Đang chạy', 4: 'Đã xoá' };
 const GUIDE_STATUS_COLOR: Record<number, string> = { 1: 'default', 2: 'blue', 4: 'red' };
@@ -113,16 +116,29 @@ export function GuideAssignmentsPage() {
     {
       title: 'Chuyến',
       key: '__dep',
-      width: 220,
-      ellipsis: true,
-      render: (_: unknown, r: GuideAssignment) => (r.departureCode ? `${r.departureCode} — ${r.departureTitle ?? ''}` : r.tourDepartureId.slice(0, 8)),
+      width: 300,
+      render: (_: unknown, r: GuideAssignment) => (
+        <CellEntity name={r.departureTitle ?? (r.departureCode ? '' : r.tourDepartureId.slice(0, 8))} code={r.departureCode ?? undefined} />
+      ),
     },
-    { title: 'HDV', dataIndex: 'providerName', key: 'providerName', width: 180, render: (v: string | null) => v ?? '—' },
-    { title: 'Giờ đi', dataIndex: 'timeGo', key: 'timeGo', width: 150, render: (v: string | null) => dateText(v) },
-    { title: 'Giờ về', dataIndex: 'timeCome', key: 'timeCome', width: 150, render: (v: string | null) => dateText(v) },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 110, render: (v: number) => <Tag color={GUIDE_STATUS_COLOR[v]}>{GUIDE_STATUS[v] ?? v}</Tag> },
-    { title: 'Thu-chi', key: '__tx', width: 100, render: (_: unknown, item: GuideAssignment) => <GuideTransactionCell assignmentId={item.id} /> },
-    { title: 'Bàn giao', key: '__handover', width: 110, render: (_: unknown, item: GuideAssignment) => <GuideHandoverCell item={item} /> },
+    {
+      title: 'HDV',
+      dataIndex: 'providerName',
+      key: 'providerName',
+      width: 190,
+      render: (v: string | null) => <CellText strong>{v ?? '—'}</CellText>,
+    },
+    {
+      title: 'Thời gian',
+      key: '__time',
+      width: 200,
+      render: (_: unknown, r: GuideAssignment) => (
+        <CellDate value={dateText(r.timeGo)} sub={r.timeCome ? `Về: ${dateText(r.timeCome)}` : undefined} />
+      ),
+    },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: (v: number) => <Tag color={GUIDE_STATUS_COLOR[v]}>{GUIDE_STATUS[v] ?? v}</Tag> },
+    { title: 'Thu-chi', key: '__tx', width: 110, render: (_: unknown, item: GuideAssignment) => <GuideTransactionCell assignmentId={item.id} /> },
+    { title: 'Bàn giao', key: '__handover', width: 120, render: (_: unknown, item: GuideAssignment) => <GuideHandoverCell item={item} /> },
     ...(canManage
       ? [
           {
@@ -145,10 +161,10 @@ export function GuideAssignmentsPage() {
 
   const s = stats.data;
   const statCards = [
-    { title: 'Tổng phân công', value: s?.total ?? 0 },
-    { title: 'Mới', value: s?.created ?? 0 },
-    { title: 'Đang chạy', value: s?.active ?? 0 },
-    { title: 'Số HDV', value: s?.guideCount ?? 0 },
+    { label: 'Tổng phân công', value: s?.total ?? 0 },
+    { label: 'Mới', value: s?.created ?? 0 },
+    { label: 'Đang chạy', value: s?.active ?? 0 },
+    { label: 'Số HDV', value: s?.guideCount ?? 0 },
   ];
 
   const isEdit = editing && editing !== 'new';
@@ -163,15 +179,7 @@ export function GuideAssignmentsPage() {
         extra={canManage ? <Button type="primary" onClick={() => setEditing('new')}>Thêm phân công</Button> : undefined}
       />
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={12} lg={6} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid items={statCards} style={{ marginBottom: 16 }} />
 
       <Card size="small" style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]}>
@@ -208,20 +216,22 @@ export function GuideAssignmentsPage() {
         />
       </div>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={list.data?.items ?? []}
-        loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
-        pagination={{
-          current: page.page,
-          pageSize: page.size,
-          total: list.data?.total ?? 0,
-          showSizeChanger: true,
-          onChange: (p, sz) => setPage({ page: p, size: sz }),
-        }}
-      />
+      <DataCard title="Danh sách phân công HDV">
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          scroll={{ x: 1080 }}
+          pagination={{
+            current: page.page,
+            pageSize: page.size,
+            total: list.data?.total ?? 0,
+            showSizeChanger: true,
+            onChange: (p, sz) => setPage({ page: p, size: sz }),
+          }}
+        />
+      </DataCard>
 
       {editing && (
         <CrudFormModal

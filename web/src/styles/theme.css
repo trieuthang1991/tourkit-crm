@@ -5,82 +5,83 @@
    ========================================================================= */
 
 :root {
-  /* --- Accent --- */
-  --tk-accent: #eb5324;
-  --tk-accent-hover: #d94a1e;
-  --tk-accent-press: #c73e17;
-  --tk-accent-soft: rgba(235, 83, 36, 0.1);
-  --tk-accent-grad: linear-gradient(135deg, #eb5324, #c73e17); /* logo */
+  /* --- Accent (Vuexy primary #7367f0) --- */
+  --tk-accent: #7367f0;
+  --tk-accent-hover: #675dd8; /* -10% */
+  --tk-accent-press: #5b52c0; /* -20% */
+  --tk-accent-soft: rgba(115, 103, 240, 0.16);
+  --tk-accent-grad: linear-gradient(135deg, #7367f0, #5b52c0); /* logo */
 
-  /* --- Nền / bề mặt --- */
-  --tk-canvas: #f6f6f7; /* nền vùng nội dung */
+  /* --- Nền / bề mặt (Vuexy) --- */
+  --tk-canvas: #f8f7fa; /* nền vùng nội dung */
   --tk-surface: #ffffff; /* card, sidebar, topbar */
-  --tk-header-bg: #fafafa; /* header bảng, tfoot */
-  --tk-fill: #f4f4f5; /* ô search filled */
-  --tk-hover: #fafafa; /* hover hàng bảng */
-  --tk-nav-hover: #f6f6f7; /* hover item nav */
+  --tk-header-bg: #fcfcfd; /* header bảng, tfoot */
+  --tk-fill: #f1f0f2; /* ô search filled */
+  --tk-hover: #f6f5f8; /* hover hàng bảng */
+  --tk-nav-hover: #f5f4f7; /* hover item nav */
 
-  /* --- Chữ --- */
-  --tk-heading: #17181c; /* tiêu đề trang, số lớn, tên */
-  --tk-text-strong: #33343a; /* ô bảng nhấn */
-  --tk-body: #56575f; /* chữ thường */
-  --tk-muted: #a9aab0; /* metadata, placeholder, header bảng */
-  --tk-muted-2: #8a8b93; /* nhãn phụ dưới số */
+  /* --- Chữ (Vuexy) --- */
+  --tk-heading: #444050; /* tiêu đề trang, số lớn, tên */
+  --tk-text-strong: #4b4762; /* ô bảng nhấn */
+  --tk-body: #6d6b77; /* chữ thường */
+  --tk-muted: #a5a3ae; /* metadata, placeholder, header bảng */
+  --tk-muted-2: #8a8894; /* nhãn phụ dưới số */
 
-  /* --- Viền / kẻ --- */
-  --tk-line: #f2f2f4; /* kẻ hàng bảng */
-  --tk-line-2: #f4f4f5;
-  --tk-border: #e2e2e5; /* viền input/nút ghost */
-  --tk-card-border: #ececee; /* viền card, viền phải sidebar */
+  /* --- Viền / kẻ (Vuexy) --- */
+  --tk-line: #eeedf0; /* kẻ hàng bảng */
+  --tk-line-2: #f1f0f2;
+  --tk-border: #dbdade; /* viền input/nút ghost */
+  --tk-card-border: #e6e6e8; /* viền card, viền phải sidebar */
 
-  /* --- Semantic --- */
-  --tk-success: #1f9d57;
-  --tk-success-soft: rgba(31, 157, 87, 0.13);
-  --tk-warning: #d9821f;
-  --tk-warning-soft: rgba(217, 130, 31, 0.14);
-  --tk-info: #2f6bd6;
-  --tk-info-soft: rgba(47, 107, 214, 0.12);
-  --tk-info-soft-2: #e8f0ff;
-  --tk-danger: #d1494a;
-  --tk-danger-soft: rgba(209, 73, 74, 0.13);
-  --tk-purple: #7a5af0;
-  --tk-purple-soft: rgba(122, 90, 240, 0.1);
+  /* --- Semantic (Vuexy) --- */
+  --tk-success: #28c76f;
+  --tk-success-soft: rgba(40, 199, 111, 0.16);
+  --tk-warning: #ff9f43;
+  --tk-warning-soft: rgba(255, 159, 67, 0.16);
+  --tk-info: #00bad1;
+  --tk-info-soft: rgba(0, 186, 209, 0.16);
+  --tk-info-soft-2: #e0f7fa;
+  --tk-danger: #ff4c51;
+  --tk-danger-soft: rgba(255, 76, 81, 0.16);
+  --tk-purple: #7367f0;
+  --tk-purple-soft: rgba(115, 103, 240, 0.16);
 
-  /* --- Seat pills (cột "Khách (chỗ)") --- */
-  --tk-seat-total: #2f6bd6;
-  --tk-seat-total-bg: #e8f0ff;
-  --tk-seat-hold: #b7791f;
-  --tk-seat-hold-bg: #fdf3e0;
-  --tk-seat-sold: #1f9d57;
-  --tk-seat-sold-bg: #e7f7ee;
-  --tk-seat-left: #d1494a;
-  --tk-seat-left-bg: #fbeae9;
+  /* --- Seat pills (cột "Khách (chỗ)") — theo semantic Vuexy --- */
+  --tk-seat-total: #00bad1;
+  --tk-seat-total-bg: rgba(0, 186, 209, 0.16);
+  --tk-seat-hold: #ff9f43;
+  --tk-seat-hold-bg: rgba(255, 159, 67, 0.16);
+  --tk-seat-sold: #28c76f;
+  --tk-seat-sold-bg: rgba(40, 199, 111, 0.16);
+  --tk-seat-left: #ff4c51;
+  --tk-seat-left-bg: rgba(255, 76, 81, 0.16);
 
-  /* --- Hình khối --- */
-  --tk-radius: 8px;
-  --tk-radius-lg: 10px;
-  --tk-radius-card: 12px;
-  --tk-radius-logo: 9px;
+  /* --- Hình khối (Vuexy: card 6px, control 6px, btn 4px) --- */
+  --tk-radius: 6px;
+  --tk-radius-lg: 8px;
+  --tk-radius-card: 6px;
+  --tk-radius-logo: 6px;
   --tk-radius-pill: 20px;
 
-  /* --- Bóng (hairline-first) --- */
-  --tk-shadow-card: 0 1px 2px rgba(20, 20, 40, 0.04);
-  --tk-shadow-pop: 0 10px 30px -8px rgba(20, 20, 40, 0.18);
-  --tk-shadow-accent: 0 6px 16px -6px rgba(235, 83, 36, 0.5);
+  /* --- Bóng (Vuexy: tint #2f2b3d, không đen thuần) --- */
+  --tk-shadow-card: 0 3px 12px 0 rgba(47, 43, 61, 0.14);
+  --tk-shadow-sm: 0 2px 8px 0 rgba(47, 43, 61, 0.12);
+  --tk-shadow-pop: 0 5px 22px 0 rgba(47, 43, 61, 0.18);
+  --tk-shadow-accent: 0 2px 6px 0 rgba(115, 103, 240, 0.3);
 
   /* --- Layout --- */
-  --tk-shell-h: 60px; /* topbar & sidebar brand */
-  --tk-sidebar-w: 252px;
+  --tk-shell-h: 62px; /* topbar & sidebar brand */
+  --tk-sidebar-w: 260px;
   --tk-content-max: 1520px;
 
-  /* --- Font --- */
-  --tk-font: 'Geist Variable', 'Geist', -apple-system, 'Segoe UI', Arial, sans-serif;
+  /* --- Font (Vuexy: Public Sans) --- */
+  --tk-font: 'Public Sans Variable', 'Public Sans', -apple-system, 'Segoe UI', Arial, sans-serif;
   --tk-font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
 
   /* --- COMPAT (tạm) — cho components.css + các màn AntD CHƯA migrate.
          Gỡ sau khi migrate xong toàn bộ màn sang hệ Refined. --- */
   --tk-radius-xl: var(--tk-radius-card);
-  --tk-sidebar: #2f2f34; /* AppShell cũ (dark) — bước 3 đổi sang rail sáng */
+  --tk-sidebar: #ffffff; /* rail sáng hệ Vuexy */
   --tk-accent-glow: var(--tk-shadow-accent);
 }
 
@@ -88,17 +89,18 @@
 body {
   margin: 0;
   font-family: var(--tk-font);
-  font-size: 13px;
+  font-size: 15px; /* Vuexy body 0.9375rem */
+  line-height: 1.47;
   color: var(--tk-body);
   background: var(--tk-canvas);
-  letter-spacing: -0.006em;
+  letter-spacing: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4, h5 {
-  letter-spacing: -0.02em;
+  letter-spacing: normal;
   color: var(--tk-heading);
 }
 

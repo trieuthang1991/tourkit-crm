@@ -21,6 +21,7 @@ import { LanguageTypesPage } from '../features/languageTypes/LanguageTypesPage';
 import { DepartmentsPage } from '../features/departments/DepartmentsPage';
 import { PositionsPage } from '../features/departments/PositionsPage';
 import { UsersPage } from '../features/users/UsersPage';
+import { RolesPage } from '../features/roles/RolesPage';
 import { WorkTasksPage } from '../features/workTasks/WorkTasksPage';
 import { WorkflowsPage } from '../features/workflows/WorkflowsPage';
 import { WorkflowBoardPage } from '../features/workflows/WorkflowBoardPage';
@@ -53,6 +54,7 @@ import { CommissionByUserReportPage } from '../features/reports/CommissionByUser
 import { TurnoverByDepartmentReportPage } from '../features/reports/TurnoverByDepartmentReportPage';
 import { KpiReportPage } from '../features/reports/KpiReportPage';
 import { CommissionRulesPage } from '../features/commission/CommissionRulesPage';
+import { CommissionCampaignsPage } from '../features/commission/CommissionCampaignsPage';
 import { RegistrationPage } from '../features/registration/RegistrationPage';
 import { CustomerCaresPage } from '../features/care/CustomerCaresPage';
 import { TourRatingsPage } from '../features/ratings/TourRatingsPage';
@@ -77,10 +79,12 @@ import { InvoicesPage } from '../features/invoices/InvoicesPage';
 import { AgentQuotesPage } from '../features/agentQuotes/AgentQuotesPage';
 import { TicketFundsPage } from '../features/ticketFunds/TicketFundsPage';
 import { AgentBookingsPage } from '../features/agentBookings/AgentBookingsPage';
+import { LandingPage } from '../features/marketing/LandingPage';
 
 export function AppRouter() {
   return (
     <Routes>
+      <Route path="/gioi-thieu" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegistrationPage />} />
       {/* Bản in báo giá: cần đăng nhập nhưng nằm NGOÀI AppShell để trang in sạch (không sidebar). */}
@@ -125,6 +129,7 @@ export function AppRouter() {
         <Route path="/car-types" element={<CarTypesPage />} />
         <Route path="/language-types" element={<LanguageTypesPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/roles" element={<RolesPage />} />
         <Route path="/work-tasks" element={<WorkTasksPage />} />
         <Route path="/workflows" element={<WorkflowsPage />} />
         <Route path="/workflows/:id" element={<WorkflowBoardPage />} />
@@ -168,6 +173,7 @@ export function AppRouter() {
         <Route path="/reports/turnover-by-department" element={<TurnoverByDepartmentReportPage />} />
         <Route path="/reports/kpi" element={<KpiReportPage />} />
         <Route path="/commission-rules" element={<CommissionRulesPage />} />
+        <Route path="/commission-campaigns" element={<CommissionCampaignsPage />} />
         <Route path="/customer-cares" element={<CustomerCaresPage />} />
         <Route path="/tour-ratings" element={<TourRatingsPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />

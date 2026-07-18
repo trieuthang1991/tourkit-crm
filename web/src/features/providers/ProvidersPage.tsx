@@ -1,5 +1,7 @@
-import { App, Card, Col, DatePicker, Input, Popconfirm, Row, Select, Space, Statistic, Table, Tag } from '../../shared/ui/antd';
+import { App, DatePicker, Input, Popconfirm, Select, Space, Table } from '../../shared/ui/antd';
 import { Button, DataCard, SegmentTabs } from '../../shared/ui';
+import { StatGrid } from '../../ui/kit';
+import { CellStack, CellEntity, CellMoney } from '../../shared/ui/TableCells';
 import type { ColumnsType } from '../../shared/ui/antd';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -8,7 +10,7 @@ import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { errorMessage } from '../../shared/api/problem';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
-import { money, statusText } from '../../shared/format';
+import { statusText } from '../../shared/format';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, SelectField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
@@ -24,7 +26,6 @@ const STATUS_OPTIONS = [
   { value: 0, label: 'Ngừng' },
 ];
 
-const dash = (v: string | null | undefined) => (v ? v : '—');
 const statsSchema = z.object({ total: z.number(), active: z.number(), inactive: z.number() });
 
 function clean(obj: Record<string, unknown>): Record<string, unknown> {
@@ -126,31 +127,56 @@ export function ProvidersPage() {
       align: 'center',
       render: (_: unknown, __: Provider, index: number) => (page.page - 1) * page.size + index + 1,
     },
-    { title: 'Mã', dataIndex: 'code', key: 'code', fixed: 'left', width: 110 },
-    { title: 'Tên NCC', dataIndex: 'name', key: 'name', fixed: 'left', width: 200 },
-    { title: 'Loại', dataIndex: 'type', key: 'type', width: 130, render: (type: number) => statusText(PROVIDER_TYPE, type) },
-    { title: 'Người liên hệ', dataIndex: 'contactPerson', key: 'contactPerson', width: 150, render: dash },
-    { title: 'Điện thoại', dataIndex: 'phone', key: 'phone', width: 120, render: dash },
-    { title: 'Email', dataIndex: 'email', key: 'email', width: 170, render: dash },
-    { title: 'Địa chỉ', dataIndex: 'address', key: 'address', width: 200, ellipsis: true, render: dash },
-    { title: 'MST', dataIndex: 'taxCode', key: 'taxCode', width: 120, render: dash },
-    { title: 'Tổng mua', dataIndex: 'totalCost', key: 'totalCost', width: 130, align: 'right', render: (v: number) => money(v ?? 0) },
-    { title: 'Đã trả', dataIndex: 'paid', key: 'paid', width: 130, align: 'right', render: (v: number) => money(v ?? 0) },
+    {
+      title: 'Nhà cung cấp',
+      key: 'provider',
+      fixed: 'left',
+      width: 240,
+      render: (_: unknown, p: Provider) => (
+        <CellEntity name={p.name} code={p.code} meta={statusText(PROVIDER_TYPE, p.type)} />
+      ),
+    },
+    {
+      title: 'Người liên hệ',
+      key: 'contact',
+      width: 180,
+      render: (_: unknown, p: Provider) => <CellStack main={p.contactPerson} sub={p.phone} subMono />,
+    },
+    {
+      title: 'Email & địa chỉ',
+      key: 'emailAddr',
+      width: 240,
+      render: (_: unknown, p: Provider) => (
+        <CellStack main={p.email} sub={p.address} title={p.address ?? undefined} />
+      ),
+    },
+    {
+      title: 'Tổng mua',
+      key: 'totalCost',
+      width: 170,
+      align: 'right',
+      render: (_: unknown, p: Provider) => <CellMoney value={p.totalCost ?? 0} sub={p.paid ?? 0} subLabel="Đã trả" />,
+    },
     {
       title: 'Còn nợ',
-      dataIndex: 'outstanding',
       key: 'outstanding',
-      width: 130,
+      width: 150,
       align: 'right',
-      render: (v: number) => <span style={{ color: (v ?? 0) > 0 ? '#cf1322' : undefined }}>{money(v ?? 0)}</span>,
+      render: (_: unknown, p: Provider) => (
+        <CellMoney value={p.outstanding ?? 0} tone={(p.outstanding ?? 0) > 0 ? 'danger' : 'heading'} />
+      ),
     },
-    { title: 'Đánh giá', dataIndex: 'rate', key: 'rate', width: 90, align: 'center' },
     {
-      title: 'Trạng thái',
-      dataIndex: 'status',
+      title: 'Đánh giá & TT',
       key: 'status',
-      width: 120,
-      render: (status: number) => (status === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag>Ngừng</Tag>),
+      width: 130,
+      render: (_: unknown, p: Provider) => (
+        <CellStack
+          main={p.status === 1 ? 'Hoạt động' : 'Ngừng'}
+          tone={p.status === 1 ? 'success' : 'muted'}
+          sub={`Đánh giá: ${p.rate ?? 0}`}
+        />
+      ),
     },
     ...(canUpdate || canRemove
       ? [
@@ -231,15 +257,8 @@ export function ProvidersPage() {
       />
 
       {/* Thẻ thống kê */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {statCards.map((c) => (
-          <Col key={c.title} xs={12} sm={8} lg={4} flex="1">
-            <Card styles={{ body: { padding: 16 } }}>
-              <Statistic title={c.title} value={c.value} loading={stats.isLoading} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <StatGrid items={statCards.map((c) => ({ label: c.title, value: c.value }))} />
+
 
       {/* Thanh tìm kiếm + lọc */}
       <Space wrap style={{ marginBottom: 12 }}>
@@ -319,7 +338,6 @@ export function ProvidersPage() {
         columns={columns}
         dataSource={list.data?.items ?? []}
         loading={list.isLoading}
-        scroll={{ x: 'max-content' }}
         pagination={{
           current: page.page,
           pageSize: page.size,

@@ -169,7 +169,7 @@ export function ApprovalProcessesPage() {
             locale={{ emptyText: 'Chưa có quy trình' }}
             renderItem={(p) => (
               <List.Item
-                style={{ padding: '8px 16px', cursor: 'pointer', background: selected === p.id ? '#e6f4ff' : undefined }}
+                style={{ padding: '8px 16px', cursor: 'pointer', background: selected === p.id ? 'var(--tk-info-soft-2)' : undefined }}
                 onClick={() => setSelected(p.id)}
                 actions={
                   canManage

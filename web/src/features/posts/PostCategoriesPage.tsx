@@ -8,6 +8,7 @@ import { errorMessage } from '../../shared/api/problem';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
 import { NumberField, TextField } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { DataCard } from '../../shared/ui';
 import { useAuth } from '../auth/AuthContext';
 import { postCategoryCreateSchema, postCategorySchema } from './types';
 import type { PostCategory, PostCategoryCreateForm } from './types';
@@ -138,7 +139,9 @@ export function PostCategoriesPage() {
           ) : null
         }
       />
-      <Table rowKey="id" columns={tableColumns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      <DataCard title="Danh sách chuyên mục bài viết">
+        <Table rowKey="id" columns={tableColumns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+      </DataCard>
       {open ? (
         <CrudFormModal
           open={open}
