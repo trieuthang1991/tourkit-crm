@@ -31,4 +31,13 @@ public interface IBookingService
 
     /// <summary>Gán (hoặc gỡ, khi SalesUserId = null) nhân viên sales phụ trách đơn.</summary>
     Task<OrderDto> AssignSalesAsync(Guid orderId, AssignSalesDto dto);
+
+    /// <summary>
+    /// Tất toán/chốt đơn (legacy ChotDon): gate tuần tự — đơn Confirmed + đã ghi nhận dòng tiền + hoa hồng đã
+    /// quyết → Status=Closed + audit. Vi phạm điều kiện ném ValidationAppException.
+    /// </summary>
+    Task<OrderDto> CloseOrderAsync(Guid orderId, Guid userId);
+
+    /// <summary>Mở lại đơn đã tất toán (sửa sai): Closed → Confirmed, xoá audit chốt.</summary>
+    Task<OrderDto> ReopenOrderAsync(Guid orderId);
 }

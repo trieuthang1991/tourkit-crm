@@ -33,4 +33,8 @@ public sealed class Order : BaseEntity, ITenantEntity
     public decimal ApprovedRevenue { get; set; }
 
     public bool IsPaymentRecognized { get; set; }
+
+    // Tất toán/chốt đơn (legacy ChotDon): audit ai/khi nào đóng đơn. Null khi chưa chốt (hoặc đã mở lại).
+    public DateTimeOffset? ClosedAt { get; set; }
+    public Guid? ClosedByUserId { get; set; }
 }

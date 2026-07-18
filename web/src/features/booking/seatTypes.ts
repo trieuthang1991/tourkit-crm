@@ -53,4 +53,5 @@ export const ORDER_STATUS: Record<number, string> = {
   1: 'Nháp',
   2: 'Chốt',
   3: 'Huỷ',
+  4: 'Tất toán',
 };

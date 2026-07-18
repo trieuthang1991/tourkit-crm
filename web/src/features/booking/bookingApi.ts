@@ -56,3 +56,27 @@ export function useAssignSales(orderId: string) {
     },
   });
 }
+
+// POST /api/v1/orders/{orderId}/close — tất toán/chốt đơn (gate: đã thu đủ + hoa hồng đã quyết).
+export function useCloseOrder(orderId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (): Promise<Order> => {
+      const { data } = await httpClient.post<unknown>(`/api/v1/orders/${orderId}/close`, {});
+      return orderSchema.parse(data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+  });
+}
+
+// POST /api/v1/orders/{orderId}/reopen — mở lại đơn đã tất toán.
+export function useReopenOrder(orderId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (): Promise<Order> => {
+      const { data } = await httpClient.post<unknown>(`/api/v1/orders/${orderId}/reopen`, {});
+      return orderSchema.parse(data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+  });
+}

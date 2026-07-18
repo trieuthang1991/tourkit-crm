@@ -395,11 +395,76 @@ public sealed class BookingService(
             throw new NotFoundException();
         }
 
+        EnsureNotClosed(order);
         order.SalesUserId = dto.SalesUserId;
         orderRepo.Update(order);
         await orderRepo.SaveChangesAsync();
 
         return MapOrder(order);
+    }
+
+    public async Task<OrderDto> CloseOrderAsync(Guid orderId, Guid userId)
+    {
+        var order = await orderRepo.GetByIdAsync(orderId);
+        if (order is null)
+        {
+            throw new NotFoundException();
+        }
+
+        // Gate tuần tự (legacy: duyệt booking → dòng tiền → hoa hồng → chốt). Thứ tự thông báo lỗi từ trên xuống.
+        if (order.Status != OrderStatus.Confirmed)
+        {
+            throw new ValidationAppException("Chỉ tất toán được đơn đã xác nhận (Chốt).");
+        }
+
+        if (!order.IsPaymentRecognized)
+        {
+            throw new ValidationAppException("Đơn chưa ghi nhận đủ dòng tiền — không thể tất toán.");
+        }
+
+        if (!order.IsCommissionSettled)
+        {
+            throw new ValidationAppException("Hoa hồng chưa quyết toán — không thể tất toán đơn.");
+        }
+
+        order.Status = OrderStatus.Closed;
+        order.ClosedAt = DateTimeOffset.UtcNow;
+        order.ClosedByUserId = userId;
+        orderRepo.Update(order);
+        await orderRepo.SaveChangesAsync();
+
+        return MapOrder(order);
+    }
+
+    public async Task<OrderDto> ReopenOrderAsync(Guid orderId)
+    {
+        var order = await orderRepo.GetByIdAsync(orderId);
+        if (order is null)
+        {
+            throw new NotFoundException();
+        }
+
+        if (order.Status != OrderStatus.Closed)
+        {
+            throw new ValidationAppException("Chỉ mở lại được đơn đã tất toán.");
+        }
+
+        order.Status = OrderStatus.Confirmed;
+        order.ClosedAt = null;
+        order.ClosedByUserId = null;
+        orderRepo.Update(order);
+        await orderRepo.SaveChangesAsync();
+
+        return MapOrder(order);
+    }
+
+    /// <summary>Chặn sửa đơn đã tất toán (khoá sau chốt). Đơn Closed chỉ có thể "Mở lại" để sửa tiếp.</summary>
+    private static void EnsureNotClosed(Order order)
+    {
+        if (order.Status == OrderStatus.Closed)
+        {
+            throw new ValidationAppException("Đơn đã tất toán — mở lại đơn trước khi sửa.");
+        }
     }
 
     /// <summary>

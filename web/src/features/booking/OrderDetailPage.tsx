@@ -11,7 +11,7 @@ import { ReceiptsPanel } from '../finance/ReceiptsPanel';
 import { OrderCostsPanel } from '../providers/OrderCostsPanel';
 import { OrderSurchargesPanel } from './OrderSurchargesPanel';
 import { OrderTransferPanel } from './OrderTransferPanel';
-import { ordersCrud, useAssignSales } from './bookingApi';
+import { ordersCrud, useAssignSales, useCloseOrder, useReopenOrder } from './bookingApi';
 import { useCancelSeat, useConfirmSeat, useDepositSeat, useOrderLines } from './orderLinesApi';
 import type { BookingLine } from './orderLinesApi';
 import { ORDER_STATUS } from './seatTypes';
@@ -151,6 +151,58 @@ function AssignSalesControl({ orderId, salesUserId }: { orderId: string; salesUs
   );
 }
 
+/** Tất toán/chốt đơn hoặc mở lại — theo trạng thái đơn. Gate thực thi ở backend (báo lỗi tiếng Việt nếu chưa đủ). */
+function CloseOrderControl({ orderId, status }: { orderId: string; status: number | undefined }) {
+  const { has } = useAuth();
+  const { message } = App.useApp();
+  const close = useCloseOrder(orderId);
+  const reopen = useReopenOrder(orderId);
+
+  if (!has('booking.create')) {
+    return null;
+  }
+
+  // 2 = Chốt (Confirmed) → cho tất toán; 4 = Tất toán (Closed) → cho mở lại.
+  if (status === 4) {
+    return (
+      <Button
+        loading={reopen.isPending}
+        onClick={async () => {
+          try {
+            await reopen.mutateAsync();
+            message.success('Đã mở lại đơn');
+          } catch (e) {
+            message.error(errorMessage(e));
+          }
+        }}
+      >
+        Mở lại đơn
+      </Button>
+    );
+  }
+
+  if (status === 2) {
+    return (
+      <Button
+        type="primary"
+        loading={close.isPending}
+        onClick={async () => {
+          try {
+            await close.mutateAsync();
+            message.success('Đã tất toán đơn');
+          } catch (e) {
+            message.error(errorMessage(e));
+          }
+        }}
+      >
+        Tất toán đơn
+      </Button>
+    );
+  }
+
+  return null;
+}
+
 function LineActions({ line, orderId }: { line: BookingLine; orderId: string }) {
   const { has } = useAuth();
   const { message } = App.useApp();
@@ -244,7 +296,10 @@ export function OrderDetailPage() {
           <Descriptions.Item label="Chi phí">{order ? money(order.totalCost) : ''}</Descriptions.Item>
           <Descriptions.Item label="Sales phụ trách">{order?.salesUserId ?? ''}</Descriptions.Item>
         </Descriptions>
-        <AssignSalesControl orderId={orderId} salesUserId={order?.salesUserId} />
+        <Space wrap>
+          <AssignSalesControl orderId={orderId} salesUserId={order?.salesUserId} />
+          <CloseOrderControl orderId={orderId} status={order?.status} />
+        </Space>
       </Card>
       <Card title="Dòng khách">
         <Table

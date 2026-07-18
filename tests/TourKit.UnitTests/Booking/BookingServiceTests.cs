@@ -501,4 +501,86 @@ public sealed class BookingServiceTests
 
         Assert.Equal("M", Assert.Single((await service.ListOrdersAsync(1, 20, new OrderListFilter(DepartmentId: deptA))).Items).Code);
     }
+
+    // ---- Item B: cổng tất toán/chốt đơn ----
+
+    private static async Task<(FakeRepository<Order> Repo, Order Order)> SeedOrderAsync(
+        OrderStatus status = OrderStatus.Confirmed, bool paymentRecognized = true, bool commissionSettled = true)
+    {
+        var repo = new FakeRepository<Order>();
+        var order = new Order
+        {
+            Code = "ORD-1", CustomerId = Guid.NewGuid(), TourDepartureId = Guid.NewGuid(),
+            Status = status, IsPaymentRecognized = paymentRecognized, IsCommissionSettled = commissionSettled,
+        };
+        await repo.AddAsync(order);
+        await repo.SaveChangesAsync();
+        return (repo, order);
+    }
+
+    [Fact]
+    public async Task CloseOrder_du_dieu_kien_thi_tat_toan()
+    {
+        var (repo, order) = await SeedOrderAsync();
+        var service = NewService(orderRepo: repo);
+        var userId = Guid.NewGuid();
+
+        var dto = await service.CloseOrderAsync(order.Id, userId);
+
+        Assert.Equal(OrderStatus.Closed, dto.Status);
+        var saved = await repo.GetByIdAsync(order.Id);
+        Assert.Equal(OrderStatus.Closed, saved!.Status);
+        Assert.NotNull(saved.ClosedAt);
+        Assert.Equal(userId, saved.ClosedByUserId);
+    }
+
+    [Fact]
+    public async Task CloseOrder_chan_khi_chua_xac_nhan()
+    {
+        var (repo, order) = await SeedOrderAsync(status: OrderStatus.Draft);
+        var service = NewService(orderRepo: repo);
+        await Assert.ThrowsAsync<ValidationAppException>(() => service.CloseOrderAsync(order.Id, Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task CloseOrder_chan_khi_chua_ghi_nhan_dong_tien()
+    {
+        var (repo, order) = await SeedOrderAsync(paymentRecognized: false);
+        var service = NewService(orderRepo: repo);
+        await Assert.ThrowsAsync<ValidationAppException>(() => service.CloseOrderAsync(order.Id, Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task CloseOrder_chan_khi_hoa_hong_chua_quyet()
+    {
+        var (repo, order) = await SeedOrderAsync(commissionSettled: false);
+        var service = NewService(orderRepo: repo);
+        await Assert.ThrowsAsync<ValidationAppException>(() => service.CloseOrderAsync(order.Id, Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task ReopenOrder_mo_lai_don_da_tat_toan()
+    {
+        var (repo, order) = await SeedOrderAsync(status: OrderStatus.Closed);
+        order.ClosedAt = DateTimeOffset.UtcNow;
+        order.ClosedByUserId = Guid.NewGuid();
+        await repo.SaveChangesAsync();
+        var service = NewService(orderRepo: repo);
+
+        var dto = await service.ReopenOrderAsync(order.Id);
+
+        Assert.Equal(OrderStatus.Confirmed, dto.Status);
+        var saved = await repo.GetByIdAsync(order.Id);
+        Assert.Null(saved!.ClosedAt);
+        Assert.Null(saved.ClosedByUserId);
+    }
+
+    [Fact]
+    public async Task AssignSales_chan_khi_don_da_tat_toan()
+    {
+        var (repo, order) = await SeedOrderAsync(status: OrderStatus.Closed);
+        var service = NewService(orderRepo: repo);
+        await Assert.ThrowsAsync<ValidationAppException>(
+            () => service.AssignSalesAsync(order.Id, new AssignSalesDto(Guid.NewGuid())));
+    }
 }

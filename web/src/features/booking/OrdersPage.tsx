@@ -296,7 +296,7 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
       key: 'status',
       title: 'Trạng thái',
       width: 108,
-      render: (o) => <Pill color={o.status === 2 ? 'green' : o.status === 3 ? 'red' : 'default'}>{statusText(ORDER_STATUS, o.status)}</Pill>,
+      render: (o) => <Pill color={o.status === 2 ? 'green' : o.status === 3 ? 'red' : o.status === 4 ? 'blue' : 'default'}>{statusText(ORDER_STATUS, o.status)}</Pill>,
     },
     {
       key: '__detail',

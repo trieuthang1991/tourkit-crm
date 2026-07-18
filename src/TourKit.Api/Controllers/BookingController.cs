@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Authz;
+using TourKit.Api.Auth;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
 
@@ -13,7 +14,7 @@ namespace TourKit.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1")]
-public sealed class BookingController(IBookingService service) : ControllerBase
+public sealed class BookingController(IBookingService service, ICurrentUser currentUser) : ControllerBase
 {
     // Đặt khách "chốt" ngay (không giữ chỗ): Order Confirmed, upfront = 0.
     [HttpPost("tour-departures/{departureId:guid}/bookings")]
@@ -101,6 +102,29 @@ public sealed class BookingController(IBookingService service) : ControllerBase
     public async Task<IActionResult> AssignSales(Guid orderId, [FromBody] AssignSalesDto dto)
     {
         var order = await service.AssignSalesAsync(orderId, dto);
+        return Ok(order);
+    }
+
+    // Tất toán/chốt đơn (legacy ChotDon): gate đơn Confirmed + dòng tiền + hoa hồng đã quyết. Acting user từ JWT.
+    [HttpPost("orders/{orderId:guid}/close")]
+    [Authorize(Permissions.BookingCreate)]
+    public async Task<IActionResult> CloseOrder(Guid orderId)
+    {
+        if (currentUser.UserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var order = await service.CloseOrderAsync(orderId, currentUser.UserId.Value);
+        return Ok(order);
+    }
+
+    // Mở lại đơn đã tất toán (sửa sai).
+    [HttpPost("orders/{orderId:guid}/reopen")]
+    [Authorize(Permissions.BookingCreate)]
+    public async Task<IActionResult> ReopenOrder(Guid orderId)
+    {
+        var order = await service.ReopenOrderAsync(orderId);
         return Ok(order);
     }
 }
