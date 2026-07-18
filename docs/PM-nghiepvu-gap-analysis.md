@@ -90,7 +90,9 @@ Zalo ZNS/UID + SMS thật · HĐĐT MiFi · CallCenter · Pancake · FeedBackTou
 
 - ✅ **Rà khách trùng** (Item E dedup): `GET /customers/duplicates` gom theo SĐT/email chuẩn hoá + UI/menu. *(auto-chia lead/import/360/merge = tách slice riêng.)*
 
-Còn lại **P1**: Excel export server-side (all-pages) · [E: auto-chia lead + import + 360 + merge] · [C2 notify-creator].
+- ✅ **Export server-side all-pages** (Item F): `CsvBuilder` (Application/Common) + `GET /customers/export` (mọi trang, cùng bộ lọc) + `downloadBlob` client; CustomersPage xuất toàn bộ. Mẫu tái dùng cho Orders/Leads…
+
+Còn lại **P1** (slice tách, PM quyết): [E: auto-chia lead + import + 360 + merge] · [C2 notify-creator] · [mở rộng export F sang Orders/Leads] · [wire tier hoa hồng vào order-commission lúc chốt] · [đối trừ/đối soát công nợ NCC — cần schema].
 
 ## 6.5) P2 (epic tích hợp ~3-4 tuần/cái): Zalo ZNS/UID · BankHub đối soát · HĐĐT MiFi · CallCenter · Pancake · FeedBackTour survey · KPI target-vs-actual · Tasking cộng tác · Workplace social feed.
 

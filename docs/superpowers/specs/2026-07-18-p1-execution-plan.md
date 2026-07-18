@@ -30,7 +30,7 @@
 | C | Notification typed/actionable (C1 ✅); notify-creator (C2) hoãn có kiểm soát | ✅ | M |
 | D | Báo cáo thu chi theo loại tour (FIT/GIT + hoàn/huỷ) | ✅ | M |
 | E | Customer dedup (rà khách trùng) ✅; auto-lead/import/360 tách slice | ✅ | M-L |
-| F | Excel export server-side (all-pages) | ⬜ | S-M |
+| F | Export server-side all-pages (CsvBuilder + Customers mẫu) | ✅ | S-M |
 | G | Đối trừ/đối soát công nợ NCC (cần schema mới) | ⬜ | M |
 
 Ký hiệu: ⬜ chưa làm · ⏳ đang làm · ✅ xong (build sạch, test pass, commit).

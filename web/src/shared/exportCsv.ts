@@ -45,3 +45,16 @@ export function exportRowsToCsv(
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// Tải một Blob (vd CSV từ endpoint server-side export) về máy qua thẻ <a download> tạm thời.
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}

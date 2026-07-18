@@ -7,7 +7,7 @@ import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { money } from '../../shared/format';
 import { Button, DataCard, FilterChip, SegmentTabs, StatCardIcon } from '../../ui/kit';
 import { ExportButton } from '../../shared/ui';
-import { exportRowsToCsv } from '../../shared/exportCsv';
+import { downloadBlob } from '../../shared/exportCsv';
 import { DateRangeInput, NumberInput, SearchInput, Select } from '../../ui/inputs';
 import { Popconfirm } from '../../ui/overlay';
 import { CellEntity, CellStack, CellMoney } from '../../shared/ui/TableCells';
@@ -216,26 +216,14 @@ export function CustomersPage() {
 
   const rows = list.data?.items ?? [];
 
-  // Xuất CSV trang hiện tại (phẳng hoá các ô "giàu" về text thuần).
-  const exportCsv = () =>
-    exportRowsToCsv(
-      'khach-hang.csv',
-      ['STT', 'Mã KH', 'Khách hàng', 'Loại KH', 'Điện thoại', 'Email', 'Tỉnh thành', 'Phân nhóm', 'CSKH gần nhất', 'Phụ trách', 'Doanh thu', 'Số lần mua'],
-      rows.map((c, i) => [
-        (page.page - 1) * page.size + i + 1,
-        c.code,
-        c.fullName,
-        customerTypeLabel(c.customerType),
-        c.phone ?? '',
-        c.email ?? '',
-        c.city ?? '',
-        arr(c.segments).join(' · '),
-        c.lastCareAt ? new Date(c.lastCareAt).toLocaleDateString('vi-VN') : '',
-        arr(c.assignedToNames).join(', '),
-        c.revenue ?? 0,
-        c.purchaseCount ?? 0,
-      ]),
-    );
+  // Xuất CSV TOÀN BỘ khách khớp bộ lọc (server-side, mọi trang) — không chỉ trang đang xem.
+  const exportCsv = async () => {
+    const res = await httpClient.get('/api/v1/customers/export', {
+      params: cleanParams({ q: q || undefined, customerType: typeFilter, ...adv }),
+      responseType: 'blob',
+    });
+    downloadBlob(res.data as Blob, 'khach-hang.csv');
+  };
 
   // Gom 20 cột phẳng -> 7 ô "giàu" (dùng chung CellStack/CellEntity/CellMoney) để KHÔNG scroll ngang.
   const columns: Column<Customer>[] = [

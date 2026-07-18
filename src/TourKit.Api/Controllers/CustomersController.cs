@@ -1,6 +1,8 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Authz;
+using TourKit.Application.Common;
 using TourKit.Application.Customers;
 using TourKit.Application.Customers.Dtos;
 
@@ -39,6 +41,24 @@ public sealed class CustomersController(ICustomerService service) : ControllerBa
     [HttpGet("duplicates")]
     [Authorize(Permissions.CustomerView)]
     public async Task<IActionResult> Duplicates() => Ok(await service.FindDuplicatesAsync());
+
+    // Xuất CSV TOÀN BỘ khách khớp bộ lọc (server-side, không giới hạn trang) — khác export client chỉ trang hiện tại.
+    [HttpGet("export")]
+    [Authorize(Permissions.CustomerView)]
+    public async Task<IActionResult> Export([FromQuery] CustomerListFilter? filter = null)
+    {
+        var all = await service.ListAsync(1, int.MaxValue, filter);
+        var headers = new[] { "Mã KH", "Họ tên", "SĐT", "Email", "Nguồn", "Số lần mua", "Doanh thu", "Ngày tạo" };
+        var rows = all.Items.Select(c => (IReadOnlyList<string?>)new[]
+        {
+            c.Code, c.FullName, c.Phone, c.Email, c.Source,
+            c.PurchaseCount.ToString(CultureInfo.InvariantCulture),
+            c.Revenue.ToString(CultureInfo.InvariantCulture),
+            c.CreatedAt.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+        });
+        var bytes = CsvBuilder.Build(headers, rows);
+        return File(bytes, "text/csv", "khach-hang.csv");
+    }
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.CustomerView)]
