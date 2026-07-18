@@ -27,6 +27,9 @@ public interface IBookingService
     Task<OrderStatsDto> GetOrderStatsAsync();
     Task<OrderFilterOptionsDto> GetOrderFilterOptionsAsync();
 
+    /// <summary>Lấy 1 đơn (đã làm giàu: tên KH/tour, đã thu/còn nợ, pax) — cho màn chi tiết đơn (không tải cả danh sách).</summary>
+    Task<OrderDto> GetOrderAsync(Guid orderId);
+
     Task<IReadOnlyList<BookingLineDto>> ListOrderLinesAsync(Guid orderId);
 
     /// <summary>Gán (hoặc gỡ, khi SalesUserId = null) nhân viên sales phụ trách đơn.</summary>

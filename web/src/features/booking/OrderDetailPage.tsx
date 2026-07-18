@@ -12,7 +12,7 @@ import { ReceiptsPanel } from '../finance/ReceiptsPanel';
 import { OrderCostsPanel } from '../providers/OrderCostsPanel';
 import { OrderSurchargesPanel } from './OrderSurchargesPanel';
 import { OrderTransferPanel } from './OrderTransferPanel';
-import { ordersCrud, useAssignSales, useCloseOrder, useReopenOrder } from './bookingApi';
+import { useOrder, useAssignSales, useCloseOrder, useReopenOrder } from './bookingApi';
 import { useCancelSeat, useConfirmSeat, useDepositSeat, useOrderLines } from './orderLinesApi';
 import type { BookingLine } from './orderLinesApi';
 import { ORDER_STATUS } from './seatTypes';
@@ -260,11 +260,13 @@ export function OrderDetailPage() {
   const location = useLocation();
   const stateOrder = (location.state as { order?: Order } | null)?.order;
 
-  // Backend không có GET /api/v1/orders/{id} đơn lẻ — header dùng Order truyền qua navigation
-  // state từ OrdersPage (điều hướng bình thường). Nếu vào thẳng URL (F5, mở link), fallback lấy
-  // trang danh sách lớn (size=200, giới hạn tối đa của API) rồi tìm theo id.
-  const ordersFallback = ordersCrud.useList({ page: 1, size: 200 });
-  const order = stateOrder ?? ordersFallback.data?.items.find((o) => o.id === orderId);
+  // Lấy đơn qua GET /orders/{id} (đơn lẻ) — mở thẳng URL / F5 vẫn hoạt động. Order truyền qua navigation
+  // state (nếu có) hiển thị ngay lập tức trong lúc query nền cập nhật.
+  const order = useOrder(orderId, stateOrder).data;
+  const users = useUserOptions();
+  const salesName = order?.salesUserId
+    ? (users.data ?? []).find((u) => u.id === order.salesUserId)?.fullName ?? '—'
+    : '—';
 
   const lines = useOrderLines(orderId);
 
@@ -291,8 +293,8 @@ export function OrderDetailPage() {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Title level={3}>Đơn hàng {order?.code ?? ''}</Typography.Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+        <Typography.Title level={3} style={{ margin: 0 }}>Đơn hàng {order?.code ?? ''}</Typography.Title>
         <Button onClick={() => window.open(`/orders/${orderId}/contract`, '_blank')}>In hợp đồng</Button>
       </div>
       <Card loading={!order} style={{ marginBottom: 16 }}>
@@ -303,12 +305,12 @@ export function OrderDetailPage() {
           </Descriptions.Item>
           <Descriptions.Item label="Doanh thu">{order ? money(order.totalRevenue) : ''}</Descriptions.Item>
           <Descriptions.Item label="Chi phí">{order ? money(order.totalCost) : ''}</Descriptions.Item>
-          <Descriptions.Item label="Sales phụ trách">{order?.salesUserId ?? ''}</Descriptions.Item>
+          <Descriptions.Item label="Sales phụ trách">{salesName}</Descriptions.Item>
         </Descriptions>
-        <Space wrap>
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--tk-line)', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           <AssignSalesControl orderId={orderId} salesUserId={order?.salesUserId} />
           <CloseOrderControl orderId={orderId} status={order?.status} />
-        </Space>
+        </div>
       </Card>
       <Card title="Dòng khách">
         <Table

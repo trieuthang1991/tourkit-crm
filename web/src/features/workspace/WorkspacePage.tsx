@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
 import { pagedSchema } from '../../shared/api/paged';
-import { money } from '../../shared/format';
+import { money, moneyCompact } from '../../shared/format';
 import { useAuth } from '../auth/AuthContext';
 import { customersCrud } from '../customers/customersCrud';
 import { useNotifications } from '../notifications/api';
@@ -198,10 +198,10 @@ export function WorkspacePage() {
       {has('report.dashboard.view') ? (
         <StatGrid
           items={[
-            { label: 'Doanh thu (đã ghi nhận)', value: money(s?.totalRevenue ?? 0) },
+            { label: 'Doanh thu (đã ghi nhận)', value: moneyCompact(s?.totalRevenue ?? 0) },
             { label: 'Đơn hàng', value: (s?.orderCount ?? 0).toLocaleString('vi-VN') },
             { label: 'Khách hàng', value: (customers.data?.total ?? 0).toLocaleString('vi-VN') },
-            { label: 'Công nợ phải thu', value: money(s?.receivableOutstanding ?? 0) },
+            { label: 'Công nợ phải thu', value: moneyCompact(s?.receivableOutstanding ?? 0) },
           ]}
         />
       ) : null}

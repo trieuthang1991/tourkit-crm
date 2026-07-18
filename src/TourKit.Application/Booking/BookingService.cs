@@ -387,6 +387,40 @@ public sealed class BookingService(
         return lines.OrderBy(l => l.CreatedAt).Select(MapLine).ToList();
     }
 
+    public async Task<OrderDto> GetOrderAsync(Guid orderId)
+    {
+        var o = await orderRepo.GetByIdAsync(orderId) ?? throw new NotFoundException();
+        var customer = await customerRepo.GetByIdAsync(o.CustomerId);
+        var dep = await departureRepo.GetByIdAsync(o.TourDepartureId);
+        var paid = (await receiptRepo.ListAsync(r => r.OrderId == orderId && r.IsRecognized)).Sum(r => r.Amount);
+        var actualCost = (await paymentRepo.ListAsync(p => p.OrderId == orderId && p.IsRecognized)).Sum(p => p.Amount);
+        var totalCost = (await orderCostRepo.ListAsync(c => c.OrderId == orderId)).Sum(c => c.ActualAmount);
+
+        int total = 0, held = 0, sold = 0;
+        foreach (var s in await seatRepo.ListAsync(s => s.OrderId == orderId))
+        {
+            var status = BookingMath.DeriveSeatStatus(s);
+            if (status == SeatStatus.Cancelled)
+            {
+                continue;
+            }
+
+            var pax = s.Quantity + s.AmountChildren + s.AmountChildrenSmall + s.QuantityBaby;
+            total += pax;
+            if (status == SeatStatus.Held)
+            {
+                held += pax;
+            }
+            else if (status is SeatStatus.Deposited or SeatStatus.Paid)
+            {
+                sold += pax;
+            }
+        }
+
+        return MapOrder(o, customer?.FullName, dep?.Title, dep?.DepartureDate, paid, actualCost, totalCost,
+            (total, held, sold, total - held - sold));
+    }
+
     public async Task<OrderDto> AssignSalesAsync(Guid orderId, AssignSalesDto dto)
     {
         var order = await orderRepo.GetByIdAsync(orderId);

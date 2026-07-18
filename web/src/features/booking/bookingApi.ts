@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { httpClient } from '../../shared/api/httpClient';
 import { makeCrud } from '../../shared/ui/useCrudResource';
 import { orderSchema, seatSchema } from './seatTypes';
@@ -11,6 +11,19 @@ export const ordersCrud = makeCrud<Order, object, object>({
   itemSchema: orderSchema,
   getId: (o) => o.id,
 });
+
+// GET /api/v1/orders/{id} — chi tiết 1 đơn (đã làm giàu). initial: Order truyền qua navigation state để hiển thị ngay.
+export function useOrder(orderId: string, initial?: Order) {
+  return useQuery({
+    queryKey: ['orders', 'detail', orderId],
+    enabled: !!orderId,
+    initialData: initial,
+    queryFn: async () => {
+      const { data } = await httpClient.get<unknown>(`/api/v1/orders/${orderId}`);
+      return orderSchema.parse(data);
+    },
+  });
+}
 
 function bookingsPath(departureId: string) {
   return `/api/v1/tour-departures/${departureId}/bookings`;

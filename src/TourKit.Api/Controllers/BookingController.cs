@@ -88,6 +88,11 @@ public sealed class BookingController(IBookingService service, ICurrentUser curr
     [Authorize(Permissions.BookingView)]
     public async Task<IActionResult> OrderFilterOptions() => Ok(await service.GetOrderFilterOptionsAsync());
 
+    // Chi tiết 1 đơn — để màn chi tiết không phải tải cả danh sách rồi tìm theo id.
+    [HttpGet("orders/{orderId:guid}")]
+    [Authorize(Permissions.BookingView)]
+    public async Task<IActionResult> GetOrder(Guid orderId) => Ok(await service.GetOrderAsync(orderId));
+
     [HttpGet("orders/{orderId:guid}/lines")]
     [Authorize(Permissions.BookingView)]
     public async Task<IActionResult> ListOrderLines(Guid orderId)

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { httpClient } from '../../shared/api/httpClient';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
-import { money, statusText } from '../../shared/format';
+import { money, moneyCompact, statusText } from '../../shared/format';
 import { exportRowsToCsv } from '../../shared/exportCsv';
 import { ExportButton } from '../../shared/ui';
 import { Button, DataCard, FilterChip, Icon, SeatTags, SegmentTabs, StatCardIcon, StatGrid } from '../../ui/kit';
@@ -344,9 +344,9 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
   const s = stats.data;
   const kpiItems = [
     { label: 'Tổng số đơn', value: (s?.total ?? 0).toLocaleString('vi-VN') },
-    { label: 'Doanh thu', value: money(s?.totalRevenue ?? 0) },
-    { label: 'Đã thu', value: money(s?.totalPaid ?? 0) },
-    { label: 'Còn nợ', value: money(s?.totalOutstanding ?? 0) },
+    { label: 'Doanh thu', value: moneyCompact(s?.totalRevenue ?? 0) },
+    { label: 'Đã thu', value: moneyCompact(s?.totalPaid ?? 0) },
+    { label: 'Còn nợ', value: moneyCompact(s?.totalOutstanding ?? 0) },
     { label: 'Đã chốt', value: (s?.confirmed ?? 0).toLocaleString('vi-VN') },
     { label: 'Đã huỷ', value: (s?.cancelled ?? 0).toLocaleString('vi-VN') },
   ];
