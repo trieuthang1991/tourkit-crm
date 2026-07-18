@@ -341,7 +341,8 @@ export function Select({
       {open ? (
         <div className="rf-select__menu">
           {showSearch ? (
-            <div style={{ padding: 8, borderBottom: '1px solid var(--tk-line)' }}>
+            <div className="rf-select__search">
+              <Icon name="search" size={16} />
               <input
                 autoFocus
                 placeholder={tags ? 'Tìm hoặc nhập giá trị mới…' : 'Tìm…'}
@@ -352,14 +353,6 @@ export function Select({
                     e.preventDefault();
                     addTag();
                   }
-                }}
-                style={{
-                  width: '100%',
-                  padding: '6px 8px',
-                  borderRadius: 6,
-                  border: '1px solid var(--tk-border)',
-                  outline: 'none',
-                  font: '400 13px var(--tk-font)',
                 }}
               />
             </div>
