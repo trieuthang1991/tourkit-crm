@@ -229,7 +229,7 @@ export function WorkspacePage() {
 
         {/* Thông báo */}
         <DataCard title="Thông báo bạn cần quan tâm" bodyless>
-          <div style={{ height: 340, overflow: 'auto' }}>
+          <div style={{ height: 340, overflowY: 'auto', overflowX: 'hidden' }}>
             {notifications.data?.length ? (
               notifications.data.slice(0, 10).map((n) => (
                 <Row
@@ -253,7 +253,7 @@ export function WorkspacePage() {
 
         {/* Công nợ khách hàng */}
         <DataCard title="Công nợ khách hàng" bodyless>
-          <div style={{ height: 340, overflow: 'auto' }}>
+          <div style={{ height: 340, overflowY: 'auto', overflowX: 'hidden' }}>
             {topDebt.length ? (
               topDebt.map((d, i) => (
                 <Row
@@ -323,7 +323,7 @@ export function WorkspacePage() {
             </Button>
           }
         >
-          <div style={{ height: 300, overflow: 'auto' }}>
+          <div style={{ height: 300, overflowY: 'auto', overflowX: 'hidden' }}>
             {posts.data?.length ? (
               posts.data.slice(0, 8).map((p) => (
                 <Row
@@ -401,7 +401,7 @@ function PendingVouchers({
 }) {
   const list = (rows: { code: string; sub: string; amount: number }[], tone: 'success' | 'danger', tag: string, onClick: () => void) =>
     rows.length ? (
-      <div style={{ maxHeight: 280, overflow: 'auto' }}>
+      <div style={{ maxHeight: 280, overflowY: 'auto', overflowX: 'hidden' }}>
         {rows.map((r) => (
           <div key={r.code} onClick={onClick} className="rf-row rf-row--click">
             <div className="rf-row__body">

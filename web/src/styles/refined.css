@@ -574,7 +574,7 @@
 .rf-row {
   display: flex; align-items: center; gap: 11px;
   padding: 10px 16px; border-bottom: 1px solid var(--tk-line);
-  text-align: left; width: 100%; background: transparent; border-left: none; border-right: none; border-top: none;
+  text-align: left; width: 100%; box-sizing: border-box; background: transparent; border-left: none; border-right: none; border-top: none;
 }
 .rf-row:last-child { border-bottom: none; }
 .rf-row--click { cursor: pointer; }
