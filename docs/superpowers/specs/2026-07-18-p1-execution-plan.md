@@ -31,9 +31,20 @@
 | D | Báo cáo thu chi theo loại tour (FIT/GIT + hoàn/huỷ) | ✅ | M |
 | E | Customer dedup (rà khách trùng) ✅; auto-lead/import/360 tách slice | ✅ | M-L |
 | F | Export server-side all-pages (CsvBuilder + Customers mẫu) | ✅ | S-M |
-| G | Đối trừ/đối soát công nợ NCC (cần schema mới) | ⬜ | M |
+| G | Đối trừ/đối soát công nợ NCC (cần schema mới) | ⏸️ hoãn | M |
 
-Ký hiệu: ⬜ chưa làm · ⏳ đang làm · ✅ xong (build sạch, test pass, commit).
+Ký hiệu: ⬜ chưa làm · ⏳ đang làm · ✅ xong (build sạch, test pass, commit) · ⏸️ hoãn có kiểm soát.
+
+## Chốt phiên 2026-07-18 (chạy tự động, PM tự quyết)
+**Xong A–F** (6 hạng mục, mỗi cái build sạch + test + commit riêng). Tổng test: **582 PASS** (467 unit + 115 integration), tsc 0, vite OK.
+- A báo cáo hoa hồng theo mốc · B cổng tất toán đơn · C1 notification typed · D thu chi theo loại tour · E rà khách trùng · F export server-side.
+
+**Hoãn có kiểm soát (cần PM quyết / slice riêng):**
+- C2 notify người tạo phiếu khi duyệt xong (đụng state machine duyệt — cần StartedByUserId).
+- E còn lại: auto-chia lead round-robin · import CSV khách · customer-360 · merge bản ghi trùng.
+- G đối trừ/đối soát công nợ NCC (cần schema đối trừ riêng).
+- Wire tier hoa hồng vào order-commission lúc chốt đơn.
+- Mở rộng export server-side sang Orders/Leads/Providers (đã có mẫu CsvBuilder).
 
 ---
 
