@@ -12,8 +12,9 @@ public sealed class PostsController(IPostService service) : ControllerBase
 {
     [HttpGet]
     [Authorize(Permissions.PostView)]
-    public async Task<IActionResult> List([FromQuery] Guid? categoryId, [FromQuery] int? status)
-        => Ok(await service.ListAsync(categoryId, status));
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1, [FromQuery] int size = 20, [FromQuery] Guid? categoryId = null, [FromQuery] int? status = null)
+        => Ok(await service.ListAsync(page, size, categoryId, status));
 
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.PostView)]

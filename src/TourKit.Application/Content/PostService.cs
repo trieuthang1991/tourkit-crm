@@ -16,13 +16,15 @@ public sealed class PostService(
 {
     private const int Published = 1;
 
-    public async Task<IReadOnlyList<PostDto>> ListAsync(Guid? categoryId, int? status)
+    public async Task<PagedResult<PostDto>> ListAsync(int page, int size, Guid? categoryId, int? status)
     {
         var items = await repo.ListAsync(p =>
             (categoryId == null || p.CategoryId == categoryId) &&
             (status == null || p.Status == status));
         var names = await LoadCategoryNamesAsync();
-        return items.OrderByDescending(p => p.PublishedAt ?? p.CreatedAt).Select(p => Map(p, names)).ToList();
+        var ordered = items.OrderByDescending(p => p.PublishedAt ?? p.CreatedAt).ToList();
+        var pageItems = ordered.Skip((page - 1) * size).Take(size).Select(p => Map(p, names)).ToList();
+        return new PagedResult<PostDto>(pageItems, ordered.Count, page, size);
     }
 
     public async Task<PostDto> GetAsync(Guid id)

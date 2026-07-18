@@ -129,7 +129,10 @@ export function WorkspacePage() {
   });
   const posts = useQuery({
     queryKey: ['posts', 'workspace'],
-    queryFn: async () => z.array(postSchema).parse((await httpClient.get<unknown>('/api/v1/posts')).data),
+    queryFn: async () =>
+      pagedSchema(postSchema).parse(
+        (await httpClient.get<unknown>('/api/v1/posts', { params: { page: 1, size: 8 } })).data,
+      ).items,
     enabled: has('post.view'),
   });
 

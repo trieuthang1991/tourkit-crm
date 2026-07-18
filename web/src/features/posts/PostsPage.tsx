@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { z } from 'zod';
 import { httpClient } from '../../shared/api/httpClient';
+import { pagedSchema } from '../../shared/api/paged';
 import { errorMessage } from '../../shared/api/problem';
 import { DataCard } from '../../shared/ui';
 import { CrudFormModal } from '../../shared/ui/CrudFormModal';
@@ -22,12 +23,12 @@ import type { Post, PostForm } from './types';
 
 const KEY = ['posts'];
 
-function usePosts() {
+function usePosts(page: number, size: number) {
   return useQuery({
-    queryKey: KEY,
+    queryKey: [...KEY, page, size],
     queryFn: async () => {
-      const { data } = await httpClient.get<unknown>('/api/v1/posts');
-      return z.array(postSchema).parse(data);
+      const { data } = await httpClient.get<unknown>('/api/v1/posts', { params: { page, size } });
+      return pagedSchema(postSchema).parse(data);
     },
   });
 }
@@ -82,7 +83,9 @@ export function PostsPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Post | null>(null);
   const [commentsFor, setCommentsFor] = useState<Post | null>(null);
-  const list = usePosts();
+  const [page, setPage] = useState(1);
+  const SIZE = 12;
+  const list = usePosts(page, SIZE);
   const categories = useCategoryOptions();
   const create = useCreate();
   const update = useUpdate();
@@ -191,7 +194,20 @@ export function PostsPage() {
         }
       />
       <DataCard title="Danh sách bài viết">
-        <Table rowKey="id" columns={columns} dataSource={list.data ?? []} loading={list.isLoading} pagination={false} />
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list.data?.items ?? []}
+          loading={list.isLoading}
+          pagination={{
+            current: page,
+            pageSize: SIZE,
+            total: list.data?.total ?? 0,
+            showSizeChanger: false,
+            showTotal: (t) => `${t.toLocaleString('vi-VN')} bài viết`,
+            onChange: setPage,
+          }}
+        />
       </DataCard>
       {open ? (
         <CrudFormModal

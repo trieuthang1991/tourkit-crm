@@ -90,8 +90,9 @@ public class PostServiceTests
         await service.CreateAsync(NewDto(slug: "a", status: 1));
         await service.CreateAsync(NewDto(slug: "b", status: 0));
 
-        var published = await service.ListAsync(null, 1);
-        Assert.Single(published);
+        var published = await service.ListAsync(1, 20, null, 1);
+        Assert.Equal(1, published.Total);
+        Assert.Single(published.Items);
     }
 
     [Fact]
