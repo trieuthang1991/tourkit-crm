@@ -17,6 +17,7 @@ import { CellStack, CellEntity, CellMoney } from '../../shared/ui/TableCells';
 import { useAuth } from '../auth/AuthContext';
 import { receiptListItemSchema, VOUCHER_STATUS } from './listTypes';
 import type { ReceiptListItem } from './listTypes';
+import { ReceiptDetailModal } from './ReceiptDetailModal';
 
 /* Màn "Phiếu thu" (/receipts) — hệ Refined. KHÔNG antd.
    Dữ liệu/bộ lọc/quyền duyệt giữ NGUYÊN; chỉ đổi lớp trình bày. */
@@ -39,6 +40,7 @@ export function ReceiptsListPage() {
   const { has } = useAuth();
   const canApprove = has('receipt.approve');
   const qc = useQueryClient();
+  const [detail, setDetail] = useState<ReceiptListItem | null>(null); // phiếu đang xem chi tiết (kích dòng)
   const [page, setPage] = useState(DEFAULT_PAGE);
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
@@ -163,7 +165,7 @@ export function ReceiptsListPage() {
             width: 164,
             render: (r: ReceiptListItem) =>
               r.status === 0 ? (
-                <span style={{ display: 'inline-flex', gap: 6 }}>
+                <span style={{ display: 'inline-flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
                   <Popconfirm title="Duyệt phiếu thu này?" okText="Duyệt" onConfirm={() => run(r.id, 'approve')}>
                     <Button variant="primary" size="sm" icon="check">
                       Duyệt
@@ -245,12 +247,19 @@ export function ReceiptsListPage() {
 
       <div style={{ marginTop: 14 }}>
         <DataCard title="Danh sách phiếu thu" bodyless>
-          <Table columns={columns} data={rows} rowKey={(r) => r.id} loading={list.isLoading} minWidth={1060} summary={rows.length ? summary : undefined} empty="Không có phiếu thu" />
+          <Table columns={columns} data={rows} rowKey={(r) => r.id} loading={list.isLoading} minWidth={1060} summary={rows.length ? summary : undefined} empty="Không có phiếu thu" onRowClick={setDetail} />
           <div style={{ padding: '10px 16px' }}>
             <Pagination page={page.page} pageSize={page.size} total={list.data?.total ?? 0} unit="phiếu" onChange={(p) => setPage({ ...page, page: p })} />
           </div>
         </DataCard>
       </div>
+
+      <ReceiptDetailModal
+        receipt={detail}
+        onClose={() => setDetail(null)}
+        canApprove={canApprove}
+        onAct={run}
+      />
     </>
   );
 }
