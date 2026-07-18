@@ -68,11 +68,11 @@ export const MENU: NavNode[] = [
     key: 'g-order', label: 'Đơn hàng/LKH', icon: 'shopping_cart', children: [
       { key: 'o-all', label: 'Tất cả đơn hàng', to: '/orders', perm: 'booking.view' },
       { key: 'o-tours', label: 'Tất cả Tour/LKH', to: '/departures', perm: 'departure.view' },
-      { key: 'o-fit', label: 'Tour FIT', to: '/departures', perm: 'departure.view' },
-      { key: 'o-git', label: 'Tour GIT/Combo', to: '/departures', perm: 'departure.view' },
-      { key: 'o-landtour', label: 'LandTour', to: '/departures', perm: 'departure.view' },
-      { key: 'o-visa', label: 'Visa', to: '/orders', perm: 'booking.view' },
-      { key: 'o-service', label: 'Dịch vụ lẻ', to: '/orders', perm: 'booking.view' },
+      { key: 'o-fit', label: 'Tour FIT', to: '/orders?bookingType=0', perm: 'booking.view' },
+      { key: 'o-git', label: 'Tour GIT/Combo', to: '/orders?bookingType=1', perm: 'booking.view' },
+      { key: 'o-landtour', label: 'LandTour', to: '/orders?bookingType=2', perm: 'booking.view' },
+      { key: 'o-visa', label: 'Visa', to: '/orders?bookingType=5', perm: 'booking.view' },
+      { key: 'o-service', label: 'Dịch vụ lẻ', to: '/orders?bookingType=4', perm: 'booking.view' },
     ],
   },
   {
@@ -198,16 +198,16 @@ function flattenLeaves(nodes: NavNode[]): NavNode[] {
 const LEAVES = flattenLeaves(MENU).filter((n) => n.to);
 
 // Breadcrumb "Nhóm › Trang" cho route hiện tại — render 1 lần ở shell cho MỌI trang.
-function crumbFor(pathname: string): { group: string; page: string } | null {
-  const leaf = findSelected(pathname);
+function crumbFor(pathname: string, fullPath: string): { group: string; page: string } | null {
+  const leaf = findSelected(pathname, fullPath);
   if (!leaf) return null;
   const trail = ancestorKeys(MENU, leaf.key) ?? [];
   const group = MENU.find((g) => g.key === trail[0]);
   return { group: group?.label ?? '', page: leaf.label };
 }
 
-function AutoBreadcrumb({ pathname }: { pathname: string }) {
-  const c = crumbFor(pathname);
+function AutoBreadcrumb({ pathname, fullPath }: { pathname: string; fullPath: string }) {
+  const c = crumbFor(pathname, fullPath);
   if (!c || !c.group) return null;
   return (
     <div className="rf-crumb">
@@ -218,9 +218,12 @@ function AutoBreadcrumb({ pathname }: { pathname: string }) {
   );
 }
 
-function findSelected(pathname: string): NavNode | undefined {
+function findSelected(pathname: string, fullPath: string = pathname): NavNode | undefined {
   return LEAVES
-    .filter((l) => pathname === l.to || pathname.startsWith(l.to + '/') || pathname.startsWith(l.to!))
+    .filter((l) =>
+      l.to!.includes('?')
+        ? fullPath === l.to // leaf có query (?bookingType=) → khớp cả query
+        : pathname === l.to || pathname.startsWith(l.to + '/'))
     .sort((a, b) => b.to!.length - a.to!.length)[0];
 }
 
@@ -310,7 +313,7 @@ export function AppShell() {
 
   const menu = useMemo(() => filterByPerm(MENU, has), [has]);
 
-  const selected = findSelected(location.pathname);
+  const selected = findSelected(location.pathname, location.pathname + location.search);
   const initialOpen = selected ? ancestorKeys(MENU, selected.key) ?? [] : ['g-workspace'];
   const [openKeys, setOpenKeys] = useState<string[]>(initialOpen);
   const toggle = (k: string) => setOpenKeys((ks) => (ks.includes(k) ? ks.filter((x) => x !== k) : [...ks, k]));
@@ -372,7 +375,7 @@ export function AppShell() {
         <main className="rf-content">
           {/* Giới hạn bề rộng + căn giữa: tránh nội dung giãn thưa trên màn siêu rộng. */}
           <div className="rf-content__in">
-            <AutoBreadcrumb pathname={location.pathname} />
+            <AutoBreadcrumb pathname={location.pathname} fullPath={location.pathname + location.search} />
             <ErrorBoundary key={location.pathname}>
               <Outlet />
             </ErrorBoundary>

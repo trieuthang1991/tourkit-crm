@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { httpClient } from '../../shared/api/httpClient';
 import { DEFAULT_PAGE, pagedSchema } from '../../shared/api/paged';
 import { money, moneyCompact, statusText } from '../../shared/format';
@@ -107,6 +107,20 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
   const [payStatus, setPayStatus] = useState<number | undefined>();
   const [draft, setDraft] = useState<OrderAdv>({});
   const [adv, setAdv] = useState<OrderAdv>({});
+
+  // Lọc theo loại tour từ URL (?bookingType=) — menu Tour FIT/GIT/LandTour/Visa/Dịch vụ lẻ trỏ vào đây.
+  const [searchParams] = useSearchParams();
+  const urlBt = searchParams.get('bookingType');
+  const btNum = urlBt != null && urlBt !== '' ? Number(urlBt) : undefined;
+  useEffect(() => {
+    setAdv((a) => ({ ...a, bookingType: btNum }));
+    setDraft((d) => ({ ...d, bookingType: btNum }));
+    setPage((p) => ({ ...p, page: 1 }));
+  }, [btNum]);
+  const pageTitle =
+    btNum !== undefined
+      ? `Đơn hàng — ${BOOKING_TYPE_OPTIONS.find((o) => o.value === btNum)?.label ?? ''}`
+      : title;
   const [showAdv, setShowAdv] = useState(false);
 
   const setD = (patch: Partial<OrderAdv>) => setDraft((d) => ({ ...d, ...patch }));
@@ -354,7 +368,7 @@ export function OrdersPage({ title = 'Đơn hàng' }: { title?: string } = {}) {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-        <h1 className="rf-page__title" style={{ margin: 0 }}>{title}</h1>
+        <h1 className="rf-page__title" style={{ margin: 0 }}>{pageTitle}</h1>
         <ExportButton filename="don-hang.csv" onExport={exportCsv} />
       </div>
 
