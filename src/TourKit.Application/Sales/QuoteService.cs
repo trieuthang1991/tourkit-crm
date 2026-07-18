@@ -191,6 +191,10 @@ public sealed class QuoteService(
         MarginPercent = line.MarginPercent,
         // Giá bán đơn vị: có vốn → vốn×(1+%LN); vốn=0 → giữ giá gõ tay (báo giá nhanh cũ).
         UnitPrice = QuoteMath.UnitSellPrice(line.UnitCost, line.MarginPercent, line.UnitPrice),
+        // VAT/phụ thu/tỉ giá (P0-3): tỉ giá ≤ 0 coi như 1 để không phá thành tiền dòng cũ.
+        VatPercent = line.VatPercent,
+        Surcharge = line.Surcharge,
+        ExchangeRate = line.ExchangeRate > 0 ? line.ExchangeRate : 1m,
     };
 
     private static async Task Validate<T>(IValidator<T> validator, T dto)
@@ -207,8 +211,9 @@ public sealed class QuoteService(
         var lines = (await lineRepo.ListAsync(l => l.QuoteId == quote.Id)).OrderBy(l => l.CreatedAt).ToList();
         var lineDtos = lines
             .Select(l => new QuoteLineDto(
-                l.Id, l.Description, l.Quantity, l.UnitPrice, l.Quantity * l.UnitPrice,
-                l.ServiceType, l.Scope, l.ProviderServiceId, l.UnitCost, l.MarginPercent))
+                l.Id, l.Description, l.Quantity, l.UnitPrice, QuoteMath.LineSellTotal(l),
+                l.ServiceType, l.Scope, l.ProviderServiceId, l.UnitCost, l.MarginPercent,
+                l.VatPercent, l.Surcharge, l.ExchangeRate))
             .ToArray();
 
         var pricing = QuoteMath.Price(

@@ -25,6 +25,16 @@ public static class QuoteMath
     public static decimal PaxEquivalent(int adults, int children, int infants, decimal childPercent, decimal infantPercent)
         => adults + children * childPercent / 100m + infants * infantPercent / 100m;
 
+    /// <summary>Tỉ giá hiệu dụng của dòng: ≤ 0 (chưa set) coi như 1 (tiền tệ gốc) để tương thích ngược.</summary>
+    private static decimal Rate(QuoteLine l) => l.ExchangeRate > 0 ? l.ExchangeRate : 1m;
+
+    /// <summary>
+    /// THÀNH TIỀN BÁN một dòng báo giá (legacy): SoLuong × ĐơnGiá × TiGiá × (1 + VAT/100) + PhụThu.
+    /// VAT/phụ thu = 0 và tỉ giá = 1 (mặc định) → = SoLuong × ĐơnGiá (giữ nguyên hành vi cũ).
+    /// </summary>
+    public static decimal LineSellTotal(QuoteLine l)
+        => l.Quantity * l.UnitPrice * Rate(l) * (1 + l.VatPercent / 100m) + l.Surcharge;
+
     /// <summary>Tính toàn bộ giá dự trù từ các dòng đã có UnitPrice (giá bán đơn vị) chốt.</summary>
     public static QuotePricing Price(
         IEnumerable<QuoteLine> lines, int adults, int children, int infants,
@@ -33,8 +43,9 @@ public static class QuoteMath
         decimal perPaxCost = 0, perPaxSell = 0, groupCost = 0, groupSell = 0;
         foreach (var l in lines)
         {
-            var cost = l.Quantity * l.UnitCost;
-            var sell = l.Quantity * l.UnitPrice;
+            // Giá vốn cũng quy đổi theo tỉ giá (vốn cùng tiền tệ với giá bán); VAT/phụ thu chỉ áp bên bán.
+            var cost = l.Quantity * l.UnitCost * Rate(l);
+            var sell = LineSellTotal(l);
             if (l.Scope == (int)QuoteLineScope.PerPerson)
             {
                 perPaxCost += cost;

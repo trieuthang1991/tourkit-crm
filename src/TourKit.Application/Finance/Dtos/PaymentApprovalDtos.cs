@@ -8,4 +8,4 @@ namespace TourKit.Application.Finance.Dtos;
 /// </summary>
 public sealed record PaymentApprovalDto(
     Guid Id, Guid PaymentVoucherId, ApprovalMethod Method, int CurrentStepOrder, ApprovalStatus Status,
-    ApprovalStepUserDto[] Steps);
+    ApprovalStepUserDto[] Steps, Guid? ApprovalProcessId = null);

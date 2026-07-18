@@ -15,4 +15,10 @@ public sealed class QuoteLine : BaseEntity, ITenantEntity
     public Guid? ProviderServiceId { get; set; }          // tham chiếu bảng giá NCC (tuỳ chọn)
     public decimal UnitCost { get; set; }                 // giá vốn đơn vị; 0 = báo giá nhanh gõ tay
     public decimal MarginPercent { get; set; }            // %LN dòng → UnitPrice = UnitCost×(1+%/100)
+
+    // --- Hoá đơn VAT + phụ thu + tỉ giá (P0-3): công thức báo giá hệ cũ
+    //     Thành tiền = SoLuong × ĐơnGiá × TiGia × (1 + VAT/100) + PhụThu ---
+    public decimal VatPercent { get; set; }               // % VAT dòng (default 0 = không VAT)
+    public decimal Surcharge { get; set; }                // phụ thu cộng thẳng vào dòng (default 0)
+    public decimal ExchangeRate { get; set; } = 1m;       // tỉ giá quy đổi (default 1 = tiền tệ gốc)
 }

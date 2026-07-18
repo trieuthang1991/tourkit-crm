@@ -1,9 +1,14 @@
 namespace TourKit.Application.Booking.Dtos;
 
-/// <summary>Phiếu điều hành dịch vụ (legacy "Phiếu điều hành dịch vụ") — 1 dòng = 1 ServiceBooking, theo dõi chi NCC.</summary>
+/// <summary>
+/// Phiếu điều hành dịch vụ (legacy "Phiếu điều hành dịch vụ") — 1 dòng = 1 ServiceBooking, theo dõi chi NCC.
+/// PaidAmount = số chi denormalized trên booking; RecognizedPaidAmount = Σ phiếu chi NCC ĐÃ DUYỆT (IsRecognized)
+/// khớp đơn+NCC của booking; PaymentStatus/RemainingAmount tính trên số chi hiệu lực = max(2 nguồn).
+/// </summary>
 public sealed record ServiceOperationDto(
     Guid Id, string Code, string? ProviderName, string Description, DateTimeOffset? UsageDate,
-    decimal TotalAmount, decimal PaidAmount, decimal RemainingAmount, int PaymentStatus);
+    decimal TotalAmount, decimal PaidAmount, decimal RemainingAmount, int PaymentStatus,
+    decimal RecognizedPaidAmount);
 
 /// <summary>Bộ lọc: Mã phiếu/NCC/tên DV · NCC · trạng thái chi (0 chờ chi, 1 chưa chi hết, 2 thành công).</summary>
 public sealed record ServiceOperationListFilter(string? Q = null, Guid? ProviderId = null, int? PaymentStatus = null);

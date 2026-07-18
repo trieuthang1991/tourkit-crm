@@ -11,6 +11,10 @@ public sealed class ReceiptApproval : BaseEntity, ITenantEntity
 {
     public Guid TenantId { get; set; }
     public Guid ReceiptVoucherId { get; set; }
+
+    /// <summary>Template <see cref="ApprovalProcess"/> đã được SNAPSHOT để dựng luồng này (null nếu dựng trực tiếp từ dto.Steps).</summary>
+    public Guid? ApprovalProcessId { get; set; }
+
     public ApprovalMethod Method { get; set; }
     public int CurrentStepOrder { get; set; }
     public ApprovalStatus Status { get; set; }

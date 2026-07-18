@@ -106,6 +106,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Custome
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 // Repo riêng cho query phức tạp/nhiều bảng (báo cáo GROUP BY) — không dịch được bằng IRepository<T> generic.
 builder.Services.AddScoped<IReportQueries, ReportQueries>();
+// Ghi bảng nối RBAC bằng hard-delete (thay tập quyền/vai trò) — repo generic chỉ soft-delete.
+builder.Services.AddScoped<TourKit.Application.Admin.IRbacStore, TourKit.Infrastructure.Admin.RbacStore>();
 // File storage: local ở dev (conventions §8) — đổi provider (S3/Azure) bằng cấu hình, không sửa code gọi.
 builder.Services.AddScoped<TourKit.Application.Files.IFileStorage>(sp =>
     new TourKit.Infrastructure.Storage.LocalFileStorage(
@@ -123,6 +125,7 @@ builder.Services.AddHangfire(cfg => cfg.UseInMemoryStorage());
 builder.Services.AddScoped<TourKit.Api.BackgroundJobs.HeartbeatJob>();
 builder.Services.AddScoped<TourKit.Api.BackgroundJobs.CareReminderJob>();
 builder.Services.AddScoped<TourKit.Api.BackgroundJobs.HoldReminderJob>();
+builder.Services.AddScoped<TourKit.Api.BackgroundJobs.HoldReleaseJob>();
 var enableBackgroundJobs =
     System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name?.Contains("testhost", StringComparison.OrdinalIgnoreCase) != true
     && builder.Configuration.GetValue("BackgroundJobs:Enabled", true);
@@ -172,11 +175,20 @@ using (var scope = app.Services.CreateScope())
     // Chỉ Development: seed bộ data mẫu vào DB để kiểm tra trực quan các thanh lọc.
     if (app.Environment.IsDevelopment() && db.Database.IsRelational())
     {
+        var ambient = scope.ServiceProvider.GetRequiredService<TourKit.Api.Tenancy.AmbientTenantContext>();
         await TourKit.Api.DevData.DemoDataSeeder.SeedAsync(
             db,
-            scope.ServiceProvider.GetRequiredService<TourKit.Api.Tenancy.AmbientTenantContext>(),
+            ambient,
             scope.ServiceProvider.GetRequiredService<TourKit.Api.Provisioning.IProvisioningService>(),
             scope.ServiceProvider.GetRequiredService<TourKit.Api.Auth.IPasswordHasher>());
+
+        // DEV-ONLY: bơm KHỐI LƯỢNG LỚN (hàng nghìn dòng/bảng) để test hiệu năng lưới/phân trang.
+        // Chỉ chạy khi đặt biến môi trường SEED_PERF_COUNT>0 (vd SEED_PERF_COUNT=3000). Idempotent.
+        var perfCountStr = Environment.GetEnvironmentVariable("SEED_PERF_COUNT");
+        if (app.Environment.IsDevelopment() && int.TryParse(perfCountStr, out var perfCount) && perfCount > 0)
+        {
+            await TourKit.Api.DevData.PerfDataSeeder.SeedAsync(db, ambient, perfCount);
+        }
     }
 }
 
@@ -205,6 +217,9 @@ if (enableBackgroundJobs)
     // Nhắc hạn giữ chỗ (Đợt 7): chỗ giữ sắp hết hạn (≤24h) → email sales phụ trách; lệch 15' tránh trùng giờ.
     RecurringJob.AddOrUpdate<TourKit.Api.BackgroundJobs.HoldReminderJob>(
         "hold-reminders", j => j.RunAsync(CancellationToken.None), "15 * * * *");
+    // Tự động nhả chỗ giữ hết hạn (P0-1): quét mỗi 10' các chỗ giữ quá hạn HoldExpiresAt → huỷ để giải phóng slot.
+    RecurringJob.AddOrUpdate<TourKit.Api.BackgroundJobs.HoldReleaseJob>(
+        "hold-releases", j => j.RunAsync(CancellationToken.None), "*/10 * * * *");
 }
 
 app.MapControllers();   // Customers, Providers, Crm (kiến trúc phân tầng)

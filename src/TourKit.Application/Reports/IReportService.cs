@@ -6,6 +6,7 @@ public interface IReportService
 {
     Task<IReadOnlyList<OrderDebtRowDto>> GetOrderDebtAsync();
     Task<IReadOnlyList<ProviderDebtRowDto>> GetProviderDebtAsync();
+    Task<ProviderTxnHistoryDto> GetProviderTransactionsAsync(Guid providerId);
     Task<DashboardSummaryDto> GetDashboardAsync();
     Task<IReadOnlyList<CashFlowRowDto>> GetCashFlowAsync();
     Task<IReadOnlyList<TurnoverRowDto>> GetTurnoverAsync();

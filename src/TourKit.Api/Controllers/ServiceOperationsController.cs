@@ -9,7 +9,9 @@ namespace TourKit.Api.Controllers;
 /// <summary>Phiếu điều hành dịch vụ (legacy "Phiếu điều hành dịch vụ") dưới /api/v1/service-operations — theo dõi chi NCC.</summary>
 [ApiController]
 [Route("api/v1/service-operations")]
-public sealed class ServiceOperationsController(IServiceOperationService service) : ControllerBase
+public sealed class ServiceOperationsController(
+    IServiceOperationService service,
+    IServicePaymentTermService termService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Permissions.ServiceBookingView)]
@@ -25,4 +27,10 @@ public sealed class ServiceOperationsController(IServiceOperationService service
     [Authorize(Permissions.ServiceBookingManage)]
     public async Task<IActionResult> Pay(Guid id, [FromBody] PayServiceOperationDto dto)
         => Ok(await service.PayAsync(id, dto));
+
+    /// <summary>Cảnh báo hạn chi NCC: đợt sắp đến hạn (trong withinDays ngày) + đã quá hạn, còn chờ chi.</summary>
+    [HttpGet("due-alerts")]
+    [Authorize(Permissions.ServiceBookingView)]
+    public async Task<IActionResult> DueAlerts([FromQuery] int withinDays = 7)
+        => Ok(await termService.GetDueAlertsAsync(withinDays));
 }

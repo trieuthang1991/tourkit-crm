@@ -152,6 +152,30 @@ public class ReceiptApprovalServiceTests
     }
 
     [Fact]
+    public async Task ActAsync_MethodAll_one_reject_does_not_terminate_until_step_fully_voted()
+    {
+        var service = NewService(out var receiptRepo, out _, out _);
+        var receipt = await SeedReceiptAsync(receiptRepo);
+        var user1 = Guid.NewGuid();
+        var user2 = Guid.NewGuid();
+        await service.StartAsync(receipt.Id, new StartApprovalDto(ApprovalMethod.All,
+        [
+            new ApprovalStepDto(1, [user1, user2]),
+        ]));
+
+        // BUG cũ: 1 phiếu K.duyệt là từ chối cả voucher ngay. Legacy: bước là lá phiếu tập thể → còn Pending thì chờ.
+        var afterReject = await service.ActAsync(receipt.Id, user1, new ActApprovalDto(false, "nghi ngờ"));
+        Assert.Equal(ApprovalStatus.InProgress, afterReject.Status);
+
+        // Người còn lại vẫn bỏ phiếu được; khi bước bỏ phiếu hết mà có K.duyệt → voucher Rejected.
+        var afterSecond = await service.ActAsync(receipt.Id, user2, new ActApprovalDto(true, "ok"));
+        Assert.Equal(ApprovalStatus.Rejected, afterSecond.Status);
+
+        var stored = await receiptRepo.GetByIdAsync(receipt.Id);
+        Assert.False(stored!.IsRecognized);
+    }
+
+    [Fact]
     public async Task ActAsync_reject_at_first_step_terminates_without_recognizing_receipt()
     {
         var service = NewService(out var receiptRepo, out _, out _);

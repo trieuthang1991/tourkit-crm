@@ -46,6 +46,9 @@ public class AppDbContext : DbContext
     public DbSet<ProviderService> ProviderServices => Set<ProviderService>();
     public DbSet<ProfitShare> ProfitShares => Set<ProfitShare>();
     public DbSet<CommissionRule> CommissionRules => Set<CommissionRule>();
+    public DbSet<CommissionCampaign> CommissionCampaigns => Set<CommissionCampaign>();
+    public DbSet<CommissionCampaignUser> CommissionCampaignUsers => Set<CommissionCampaignUser>();
+    public DbSet<CommissionTier> CommissionTiers => Set<CommissionTier>();
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<MarketingCampaign> MarketingCampaigns => Set<MarketingCampaign>();
@@ -99,6 +102,7 @@ public class AppDbContext : DbContext
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<InvoiceLine> InvoiceLines => Set<InvoiceLine>();
     public DbSet<ServiceBooking> ServiceBookings => Set<ServiceBooking>();
+    public DbSet<ServicePaymentTerm> ServicePaymentTerms => Set<ServicePaymentTerm>();
     public DbSet<Agent> Agents => Set<Agent>();
     public DbSet<AgentQuoteRequest> AgentQuoteRequests => Set<AgentQuoteRequest>();
     public DbSet<AgentBooking> AgentBookings => Set<AgentBooking>();

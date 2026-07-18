@@ -63,6 +63,7 @@ public sealed class VehicleAssignmentService(
         await Validate(createValidator, dto);
         await EnsureDepartureExists(dto.TourDepartureId);
         await EnsureVehicleExists(dto.VehicleId);
+        await EnsureNoScheduleConflict(dto.VehicleId, dto.TourDepartureId, excludeId: null);
 
         var assignment = new VehicleAssignment
         {
@@ -87,6 +88,8 @@ public sealed class VehicleAssignmentService(
         await EnsureVehicleExists(dto.VehicleId);
 
         var assignment = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+        // Chuyến của phân công không đổi khi sửa (UpdateDto không mang TourDepartureId) → lấy từ bản ghi.
+        await EnsureNoScheduleConflict(dto.VehicleId, assignment.TourDepartureId, excludeId: id);
 
         assignment.VehicleId = dto.VehicleId;
         assignment.DriverName = dto.DriverName;
@@ -111,6 +114,53 @@ public sealed class VehicleAssignmentService(
         if (!await departureRepo.AnyAsync(d => d.Id == departureId))
         {
             throw new ValidationAppException("Chuyến (departure) không tồn tại.");
+        }
+    }
+
+    /// <summary>
+    /// Chống trùng lịch xe (song song HDV, legacy CarManagementAction): CÙNG một xe không được gán vào
+    /// hai chuyến có khoảng ngày (DepartureDate..EndDate) GIAO NHAU. Bỏ qua bản ghi đã xoá (Status = 4)
+    /// và bản ghi đang sửa (excludeId). Không xác định được khoảng ngày → bỏ kiểm tra.
+    /// Ghi chú: tài xế chỉ là văn bản (DriverName/DriverPhone), không phải danh mục → không kiểm trùng theo tài xế.
+    /// </summary>
+    private async Task EnsureNoScheduleConflict(Guid vehicleId, Guid departureId, Guid? excludeId)
+    {
+        var target = await departureRepo.GetByIdAsync(departureId);
+        if (target?.DepartureDate is null)
+        {
+            return; // chuyến chưa có ngày đi → không có căn cứ xác định trùng
+        }
+
+        var targetStart = target.DepartureDate.Value;
+        var targetEnd = target.EndDate ?? targetStart;
+
+        // Các phân công đang hiệu lực của CÙNG XE (Status != 4 = chưa xoá), trừ bản ghi đang sửa.
+        var others = (await repo.ListAsync(a => a.VehicleId == vehicleId && a.Status != 4))
+            .Where(a => excludeId == null || a.Id != excludeId)
+            .ToList();
+        if (others.Count == 0)
+        {
+            return;
+        }
+
+        var depIds = others.Select(a => a.TourDepartureId).ToHashSet();
+        var deps = (await departureRepo.ListAsync(d => depIds.Contains(d.Id)))
+            .ToDictionary(d => d.Id, d => d);
+
+        foreach (var other in others)
+        {
+            if (!deps.TryGetValue(other.TourDepartureId, out var dep) || dep.DepartureDate is null)
+            {
+                continue;
+            }
+
+            var otherStart = dep.DepartureDate.Value;
+            var otherEnd = dep.EndDate ?? otherStart;
+            // Hai khoảng [s1,e1] và [s2,e2] giao nhau ⇔ s1 <= e2 && s2 <= e1.
+            if (targetStart <= otherEnd && otherStart <= targetEnd)
+            {
+                throw new ValidationAppException("Xe đã có lịch trùng trong khoảng thời gian này.");
+            }
         }
     }
 

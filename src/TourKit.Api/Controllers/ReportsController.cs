@@ -26,6 +26,15 @@ public sealed class ReportsController(IReportService service) : ControllerBase
         return Ok(rows);
     }
 
+    /// <summary>Sổ cái công nợ (drill-down) của 1 NCC: chi phí (ghi Nợ) + phiếu chi đã ghi nhận (ghi Có) + tổng hợp.</summary>
+    [HttpGet("provider-debt/{providerId:guid}/transactions")]
+    [Authorize(Permissions.ReportProviderDebtView)]
+    public async Task<IActionResult> ProviderDebtTransactions(Guid providerId)
+    {
+        var history = await service.GetProviderTransactionsAsync(providerId);
+        return Ok(history);
+    }
+
     [HttpGet("dashboard")]
     [Authorize(Permissions.ReportDashboardView)]
     public async Task<IActionResult> Dashboard()

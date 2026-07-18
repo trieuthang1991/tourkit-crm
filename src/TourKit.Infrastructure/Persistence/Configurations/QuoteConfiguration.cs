@@ -23,6 +23,12 @@ public sealed class QuoteLineConfiguration : IEntityTypeConfiguration<QuoteLine>
     {
         builder.Property(x => x.Description).IsRequired().HasMaxLength(500);
 
+        // VAT/phụ thu/tỉ giá (P0-3): default DB đảm bảo dòng cũ tương thích ngược
+        // (tỉ giá = 1 → không đổi kết quả; VAT/phụ thu = 0 → giữ nguyên thành tiền).
+        builder.Property(x => x.ExchangeRate).HasDefaultValue(1m);
+        builder.Property(x => x.VatPercent).HasDefaultValue(0m);
+        builder.Property(x => x.Surcharge).HasDefaultValue(0m);
+
         builder.HasIndex(x => new { x.TenantId, x.QuoteId });
     }
 }

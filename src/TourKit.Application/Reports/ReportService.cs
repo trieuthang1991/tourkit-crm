@@ -9,6 +9,8 @@ public sealed class ReportService(IReportQueries queries) : IReportService
 
     public Task<IReadOnlyList<ProviderDebtRowDto>> GetProviderDebtAsync() => queries.GetProviderDebtAsync();
 
+    public Task<ProviderTxnHistoryDto> GetProviderTransactionsAsync(Guid providerId) => queries.GetProviderTransactionsAsync(providerId);
+
     public Task<DashboardSummaryDto> GetDashboardAsync() => queries.GetDashboardAsync();
 
     public Task<IReadOnlyList<CashFlowRowDto>> GetCashFlowAsync() => queries.GetCashFlowAsync();

@@ -5,8 +5,13 @@ namespace TourKit.Application.Finance.Dtos;
 /// <summary>Một bước của luồng duyệt nhiều cấp — người duyệt được phân công tại bước này.</summary>
 public sealed record ApprovalStepDto(int StepOrder, Guid[] UserIds);
 
-/// <summary>DTO khởi tạo luồng duyệt nhiều cấp cho một phiếu thu.</summary>
-public sealed record StartApprovalDto(ApprovalMethod Method, ApprovalStepDto[] Steps);
+/// <summary>
+/// DTO khởi tạo luồng duyệt nhiều cấp cho một phiếu thu. Hai cách dựng luồng:
+///  - Từ TEMPLATE đã lưu: truyền <paramref name="ApprovalProcessId"/> — server SNAPSHOT bước + người duyệt
+///    của <see cref="TourKit.Shared.Entities.ApprovalProcess"/> (bỏ qua <paramref name="Method"/>/<paramref name="Steps"/>).
+///  - Trực tiếp (fallback tương thích): bỏ trống <paramref name="ApprovalProcessId"/>, gửi <paramref name="Steps"/>.
+/// </summary>
+public sealed record StartApprovalDto(ApprovalMethod Method, ApprovalStepDto[] Steps, Guid? ApprovalProcessId = null);
 
 /// <summary>DTO duyệt/từ chối 1 bước của luồng duyệt nhiều cấp.</summary>
 public sealed record ActApprovalDto(bool Approve, string? Note);
@@ -18,4 +23,4 @@ public sealed record ApprovalStepUserDto(
 /// <summary>DTO luồng duyệt (approval + toàn bộ step users) trả ra cho client.</summary>
 public sealed record ApprovalDto(
     Guid Id, Guid ReceiptVoucherId, ApprovalMethod Method, int CurrentStepOrder, ApprovalStatus Status,
-    ApprovalStepUserDto[] Steps);
+    ApprovalStepUserDto[] Steps, Guid? ApprovalProcessId = null);

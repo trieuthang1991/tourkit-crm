@@ -4,9 +4,29 @@ namespace TourKit.Application.Reports.Dtos;
 public sealed record OrderDebtRowDto(
     Guid OrderId, string OrderCode, Guid CustomerId, decimal Total, decimal Paid, decimal Outstanding);
 
-/// <summary>Một dòng công nợ nhà cung cấp: tổng chi phí, đã chi (phiếu đã duyệt), còn phải trả.</summary>
+/// <summary>
+/// Một dòng công nợ nhà cung cấp: tổng chi phí, đã chi (phiếu đã duyệt), còn phải trả + phân tuổi nợ (aging).
+/// Aging = phần CÒN NỢ chia theo tuổi (ngày) của dòng chi phí gốc: <c>Current</c> 0–30 ngày, <c>D30</c> 31–60,
+/// <c>D60</c> 61–90, <c>D90Plus</c> &gt;90. Tuổi tính từ <c>OrderCost.CreatedAt</c> so với hiện tại; tiền đã trả
+/// phân bổ FIFO cho dòng cũ nhất trước, phần chưa trả của mỗi dòng rơi vào bucket theo tuổi của nó.
+/// Tổng 4 bucket = max(0, Outstanding). Các trường aging THÊM (additive) — không phá contract cũ.
+/// </summary>
 public sealed record ProviderDebtRowDto(
-    Guid ProviderId, string ProviderName, decimal TotalCost, decimal Paid, decimal Outstanding);
+    Guid ProviderId, string ProviderName, decimal TotalCost, decimal Paid, decimal Outstanding,
+    decimal Current, decimal D30, decimal D60, decimal D90Plus);
+
+/// <summary>Một dòng sổ cái công nợ NCC: chi phí (ghi Nợ) hoặc phiếu chi đã ghi nhận (ghi Có), kèm số dư luỹ kế.</summary>
+public sealed record ProviderTxnDto(
+    DateTimeOffset Date, string Type, string RefCode, string? Description,
+    decimal Debit, decimal Credit, decimal RunningRemaining);
+
+/// <summary>Tổng hợp sổ cái công nợ 1 NCC: tổng chi phí, đã trả (đã ghi nhận), còn lại.</summary>
+public sealed record ProviderTxnSummaryDto(decimal TotalCost, decimal TotalPaid, decimal Remaining);
+
+/// <summary>Lịch sử giao dịch (drill-down) của 1 NCC: sổ cái theo thời gian + tổng hợp.</summary>
+public sealed record ProviderTxnHistoryDto(
+    Guid ProviderId, string ProviderName,
+    ProviderTxnSummaryDto Summary, IReadOnlyList<ProviderTxnDto> Transactions);
 
 /// <summary>Tổng quan hoạt động kinh doanh (legacy BusinessActivity/HomePage): doanh thu/thu/chi/công nợ/lợi nhuận.</summary>
 public sealed record DashboardSummaryDto(

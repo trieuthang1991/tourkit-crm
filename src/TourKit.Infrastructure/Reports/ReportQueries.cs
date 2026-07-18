@@ -44,15 +44,17 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
 
     /// <summary>
     /// Báo cáo công nợ phải trả NCC (đối xứng OrderDebt): gom theo ProviderId. TotalCost = Σ OrderCost.ActualAmount;
-    /// Paid = Σ PaymentVoucher.Amount đã ghi nhận (IsRecognized).
+    /// Paid = Σ PaymentVoucher.Amount đã ghi nhận (IsRecognized). Bổ sung PHÂN TUỔI NỢ (aging) của phần còn nợ:
+    /// tiền đã trả phân bổ FIFO cho dòng chi phí cũ nhất trước (theo <see cref="Shared.Entities.BaseEntity.CreatedAt"/>),
+    /// phần chưa trả của mỗi dòng rơi vào bucket theo tuổi (ngày) của dòng: Current 0–30, D30 31–60, D60 61–90, D90Plus &gt;90.
     /// </summary>
     public async Task<IReadOnlyList<ProviderDebtRowDto>> GetProviderDebtAsync()
     {
-        // 3 truy vấn top-level rồi ghép ở memory — tránh subquery tương quan (không dịch được extension,
-        // và tránh ORDER BY decimal trên SQLite).
+        var now = DateTimeOffset.UtcNow;
+
+        // Kéo TỪNG dòng chi phí (kèm ngày) để phân tuổi nợ FIFO ở memory — không GROUP ở SQL nữa vì aging cần ngày.
         var costs = await db.OrderCosts.AsNoTracking()
-            .GroupBy(c => c.ProviderId)
-            .Select(g => new { ProviderId = g.Key, Total = g.Sum(x => x.ActualAmount) })
+            .Select(c => new { c.ProviderId, c.ActualAmount, c.CreatedAt })
             .ToListAsync();
 
         var paid = await db.PaymentVouchers.AsNoTracking()
@@ -65,21 +67,121 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
             .Select(p => new { p.Id, p.Name })
             .ToListAsync();
 
-        var ids = costs.Select(c => c.ProviderId).Union(paid.Select(p => p.ProviderId)).Distinct();
+        var costsByProvider = costs.GroupBy(c => c.ProviderId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(c => c.CreatedAt).ToList());
+        var paidByProvider = paid.ToDictionary(p => p.ProviderId, p => p.Paid);
+
+        var ids = costsByProvider.Keys.Union(paidByProvider.Keys).Distinct();
 
         IReadOnlyList<ProviderDebtRowDto> rows = ids
             .Select(id =>
             {
-                var total = costs.FirstOrDefault(c => c.ProviderId == id)?.Total ?? 0m;
-                var pd = paid.FirstOrDefault(p => p.ProviderId == id)?.Paid ?? 0m;
+                var providerCosts = costsByProvider.GetValueOrDefault(id) ?? [];
+                var total = providerCosts.Sum(c => c.ActualAmount);
+                var pd = paidByProvider.GetValueOrDefault(id, 0m);
                 var name = providers.FirstOrDefault(p => p.Id == id)?.Name ?? id.ToString();
-                return new ProviderDebtRowDto(id, name, total, pd, OrderMath.Outstanding(total, pd));
+
+                // Aging FIFO: trừ tiền đã trả vào các dòng chi phí cũ nhất trước; phần chưa trả → bucket theo tuổi dòng.
+                decimal current = 0m, d30 = 0m, d60 = 0m, d90plus = 0m;
+                var remainingPay = pd;
+                foreach (var c in providerCosts)
+                {
+                    var applied = Math.Min(remainingPay, c.ActualAmount);
+                    remainingPay -= applied;
+                    var unpaid = c.ActualAmount - applied;
+                    if (unpaid <= 0m)
+                    {
+                        continue;
+                    }
+
+                    var ageDays = (now - c.CreatedAt).TotalDays;
+                    if (ageDays <= 30)
+                    {
+                        current += unpaid;
+                    }
+                    else if (ageDays <= 60)
+                    {
+                        d30 += unpaid;
+                    }
+                    else if (ageDays <= 90)
+                    {
+                        d60 += unpaid;
+                    }
+                    else
+                    {
+                        d90plus += unpaid;
+                    }
+                }
+
+                return new ProviderDebtRowDto(
+                    id, name, total, pd, OrderMath.Outstanding(total, pd),
+                    current, d30, d60, d90plus);
             })
             .Where(r => r.TotalCost > 0 || r.Paid > 0)
             .OrderByDescending(r => r.Outstanding)
             .ToList();
 
         return rows;
+    }
+
+    /// <summary>
+    /// Sổ cái công nợ (drill-down) của 1 NCC: mỗi dòng chi phí (OrderCost — ghi Nợ = ActualAmount) và mỗi phiếu chi
+    /// ĐÃ ghi nhận (PaymentVoucher — ghi Có = Amount), xếp theo thời gian, kèm số dư còn lại luỹ kế. Tenant-scoped
+    /// tự động qua global query filter của AppDbContext. Ném NotFoundException nếu NCC không thuộc tenant.
+    /// </summary>
+    public async Task<ProviderTxnHistoryDto> GetProviderTransactionsAsync(Guid providerId)
+    {
+        var provider = await db.Providers.AsNoTracking()
+            .Where(p => p.Id == providerId)
+            .Select(p => new { p.Id, p.Name })
+            .FirstOrDefaultAsync()
+            ?? throw new TourKit.Application.Common.NotFoundException("Nhà cung cấp không tồn tại.");
+
+        var costs = await db.OrderCosts.AsNoTracking()
+            .Where(c => c.ProviderId == providerId)
+            .Select(c => new { c.OrderId, c.ServiceName, c.ActualAmount, c.CreatedAt })
+            .ToListAsync();
+
+        var orderIds = costs.Select(c => c.OrderId).Distinct().ToList();
+        var orderCodes = (await db.Orders.AsNoTracking()
+                .Where(o => orderIds.Contains(o.Id))
+                .Select(o => new { o.Id, o.Code })
+                .ToListAsync())
+            .ToDictionary(o => o.Id, o => o.Code);
+
+        var payments = await db.PaymentVouchers.AsNoTracking()
+            .Where(p => p.IsRecognized && p.ProviderId == providerId)
+            .Select(p => new { p.Code, p.Amount, p.IssuedAt, p.ReceiverName, p.Note })
+            .ToListAsync();
+
+        // Gộp chi phí (Nợ) + phiếu chi (Có) rồi sắp theo thời gian; số dư còn lại luỹ kế = Σ(Nợ − Có) tới dòng đó.
+        var entries = new List<(DateTimeOffset Date, string Type, string RefCode, string? Desc, decimal Debit, decimal Credit)>();
+        foreach (var c in costs)
+        {
+            entries.Add((c.CreatedAt, "cost", orderCodes.GetValueOrDefault(c.OrderId, c.OrderId.ToString()),
+                c.ServiceName, c.ActualAmount, 0m));
+        }
+
+        foreach (var p in payments)
+        {
+            entries.Add((p.IssuedAt, "payment", p.Code, p.Note ?? p.ReceiverName, 0m, p.Amount));
+        }
+
+        decimal running = 0m;
+        var txns = entries
+            .OrderBy(e => e.Date)
+            .Select(e =>
+            {
+                running += e.Debit - e.Credit;
+                return new ProviderTxnDto(e.Date, e.Type, e.RefCode, e.Desc, e.Debit, e.Credit, running);
+            })
+            .ToList();
+
+        var totalCost = costs.Sum(c => c.ActualAmount);
+        var totalPaid = payments.Sum(p => p.Amount);
+        var summary = new ProviderTxnSummaryDto(totalCost, totalPaid, OrderMath.Outstanding(totalCost, totalPaid));
+
+        return new ProviderTxnHistoryDto(provider.Id, provider.Name, summary, txns);
     }
 
     /// <summary>

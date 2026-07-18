@@ -14,7 +14,19 @@ public class UserAdminServiceTests
         users = new FakeRepository<User>();
         departments = new FakeRepository<Department>();
         positions = new FakeRepository<Position>();
-        return new UserAdminService(users, departments, positions);
+        return new UserAdminService(
+            users, departments, positions,
+            new FakeRepository<Role>(), new FakeRepository<UserRole>(), new FakeRbacStore());
+    }
+
+    /// <summary>Fake <see cref="IRbacStore"/> áp thẳng thay-tập vào fake UserRole/RolePermission repo.</summary>
+    private sealed class FakeRbacStore : IRbacStore
+    {
+        public Task ReplaceRolePermissionsAsync(Guid roleId, IReadOnlyCollection<Guid> permissionIds)
+            => Task.CompletedTask;
+        public Task ReplaceUserRolesAsync(Guid userId, IReadOnlyCollection<Guid> roleIds)
+            => Task.CompletedTask;
+        public Task DeleteRoleCascadeAsync(Guid roleId) => Task.CompletedTask;
     }
 
     [Fact]

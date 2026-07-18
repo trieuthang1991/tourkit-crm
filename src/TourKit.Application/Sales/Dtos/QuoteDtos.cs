@@ -2,7 +2,8 @@ namespace TourKit.Application.Sales.Dtos;
 
 public sealed record QuoteLineDto(
     Guid Id, string Description, int Quantity, decimal UnitPrice, decimal Amount,
-    int ServiceType, int Scope, Guid? ProviderServiceId, decimal UnitCost, decimal MarginPercent);
+    int ServiceType, int Scope, Guid? ProviderServiceId, decimal UnitCost, decimal MarginPercent,
+    decimal VatPercent = 0, decimal Surcharge = 0, decimal ExchangeRate = 1);
 
 public sealed record QuoteDto(
     Guid Id, string Code, Guid? CustomerId, string CustomerName, string Title,
@@ -31,7 +32,8 @@ public sealed record QuoteStatsDto(
 public sealed record CreateQuoteLineDto(
     string Description, int Quantity, decimal UnitPrice,
     int ServiceType = 0, int Scope = 0, Guid? ProviderServiceId = null,
-    decimal UnitCost = 0, decimal MarginPercent = 0);
+    decimal UnitCost = 0, decimal MarginPercent = 0,
+    decimal VatPercent = 0, decimal Surcharge = 0, decimal ExchangeRate = 1);
 
 public sealed record CreateQuoteDto(
     string Code, Guid? CustomerId, string CustomerName, string Title,
