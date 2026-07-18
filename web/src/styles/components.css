@@ -22,7 +22,7 @@
 
 .tk-navbar {
   height: 60px; background: var(--tk-surface); display: flex; align-items: center;
-  gap: 14px; padding: 0 22px; border-bottom: 1px solid #f0eef4;
+  gap: 14px; padding: 0 22px; border-bottom: 1px solid var(--tk-line);
   position: sticky; top: 0; z-index: 10;
 }
 .tk-search {
@@ -112,10 +112,10 @@
 
 /* Icon chip nền theo semantic (tint 12–16%) */
 .tk-chip--accent { background: var(--tk-accent-soft); color: var(--tk-accent); }
-.tk-chip--success { background: var(--tk-success-soft); color: #1f9d57; }
-.tk-chip--warning { background: var(--tk-warning-soft); color: #d9821f; }
-.tk-chip--info { background: var(--tk-info-soft); color: #00b8d4; }
-.tk-chip--danger { background: var(--tk-danger-soft); color: #d1494a; }
+.tk-chip--success { background: var(--tk-success-soft); color: var(--tk-success); }
+.tk-chip--warning { background: var(--tk-warning-soft); color: var(--tk-warning); }
+.tk-chip--info { background: var(--tk-info-soft); color: var(--tk-info); }
+.tk-chip--danger { background: var(--tk-danger-soft); color: var(--tk-danger); }
 
 /* ---- Table (bám DESIGN.md: header IN HOA, cột đóng băng, hover) ---- */
 .tk-table { border-collapse: separate; border-spacing: 0; width: 100%; }
@@ -129,16 +129,16 @@
 /* Cột đóng băng: viền dọc mảnh (KHÔNG đổ bóng tứ phía) */
 .tk-col-freeze-l { position: sticky; z-index: 2; background: var(--tk-surface); border-right: 1px solid var(--tk-line); }
 .tk-col-freeze-r { position: sticky; right: 0; z-index: 2; background: var(--tk-surface); border-left: 1px solid var(--tk-line); }
-.tk-table thead .tk-col-freeze-l, .tk-table thead .tk-col-freeze-r { z-index: 3; background: var(--tk-line); border-color: #eceaf1; }
+.tk-table thead .tk-col-freeze-l, .tk-table thead .tk-col-freeze-r { z-index: 3; background: var(--tk-line); border-color: var(--tk-card-border); }
 .tk-cell-code { font-family: var(--tk-font-mono); font-weight: 600; color: var(--tk-accent); }
 
 /* ---- Status pill ---- */
 .tk-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
 .tk-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.tk-pill--success { color: #1f9d57; background: var(--tk-success-soft); }
-.tk-pill--warning { color: #d9821f; background: var(--tk-warning-soft); }
-.tk-pill--danger { color: #d1494a; background: var(--tk-danger-soft); }
-.tk-pill--muted { color: var(--tk-body); background: #f0eef4; }
+.tk-pill--success { color: var(--tk-success); background: var(--tk-success-soft); }
+.tk-pill--warning { color: var(--tk-warning); background: var(--tk-warning-soft); }
+.tk-pill--danger { color: var(--tk-danger); background: var(--tk-danger-soft); }
+.tk-pill--muted { color: var(--tk-body); background: var(--tk-fill); }
 
 /* ---- Avatar chữ cái tròn màu accent ---- */
 .tk-avatar { border-radius: 50%; background: var(--tk-accent-soft); color: var(--tk-accent); display: flex; align-items: center; justify-content: center; font-weight: 600; flex: 0 0 auto; }
@@ -175,7 +175,7 @@
   border-radius: 7px; border: 1px solid var(--tk-border); background: var(--tk-surface);
   color: var(--tk-body); font: 500 13px var(--tk-font); cursor: pointer;
 }
-.tk-btn-ghost:hover { border-color: #d3cfe0; color: var(--tk-heading); }
+.tk-btn-ghost:hover { border-color: var(--tk-border-strong); color: var(--tk-heading); }
 
 /* ---- Segment tabs (tab loại / trạng thái) ---- */
 .tk-segtabs {

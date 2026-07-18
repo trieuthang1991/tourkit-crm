@@ -31,6 +31,7 @@
   --tk-line: #eeedf0; /* kẻ hàng bảng */
   --tk-line-2: #f1f0f2;
   --tk-border: #dbdade; /* viền input/nút ghost */
+  --tk-border-strong: #c9c8ce; /* viền đậm hơn khi hover input/nút/trang */
   --tk-card-border: #e6e6e8; /* viền card, viền phải sidebar */
 
   /* --- Semantic (Vuexy) --- */
