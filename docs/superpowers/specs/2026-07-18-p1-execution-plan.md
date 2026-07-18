@@ -27,7 +27,7 @@
 |---|----------|-----------|--------|
 | A | Hoàn tất Hoa hồng bậc thang (finish UI + wire tier vào order-commission/report) | ✅ | S-M |
 | B | Cổng chốt/tất toán đơn (OrderStatus.Closed + gate + khoá sửa) | ✅ | M |
-| C | Notification typed/actionable + notify creator (thêm `CreatedByUserId`) | ⬜ | M |
+| C | Notification typed/actionable (C1 ✅); notify-creator (C2) hoãn có kiểm soát | ✅ | M |
 | D | MoneyReport nhánh FIT + hoàn/huỷ chỗ | ⬜ | M |
 | E | Customer dedup + auto-chia lead + import | ⬜ | M-L |
 | F | Excel export server-side (all-pages) | ⬜ | S-M |

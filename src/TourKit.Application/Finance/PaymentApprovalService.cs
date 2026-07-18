@@ -307,7 +307,7 @@ public sealed class PaymentApprovalService(
             {
                 try
                 {
-                    await notifications.PushAsync(uid, title, message, linkUrl);
+                    await notifications.PushAsync(uid, title, message, linkUrl, "approval");
                 }
                 catch
                 {

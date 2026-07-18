@@ -324,7 +324,7 @@ public sealed class ReceiptApprovalService(
             {
                 try
                 {
-                    await notifications.PushAsync(uid, title, message, linkUrl);
+                    await notifications.PushAsync(uid, title, message, linkUrl, "approval");
                 }
                 catch
                 {

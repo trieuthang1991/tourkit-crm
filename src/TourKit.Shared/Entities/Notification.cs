@@ -11,5 +11,6 @@ public sealed class Notification : BaseEntity, ITenantEntity
     public string Title { get; set; } = string.Empty;
     public string? Message { get; set; }
     public string? LinkUrl { get; set; }               // deep-link trong app (tuỳ chọn)
+    public string Type { get; set; } = "system";       // phân loại (approval/task/marketing/system) → FE icon/lọc
     public bool IsRead { get; set; }
 }

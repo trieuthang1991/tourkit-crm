@@ -59,7 +59,7 @@ public sealed class NotificationService(
         }
     }
 
-    public async Task PushAsync(Guid userId, string title, string? message, string? linkUrl = null)
+    public async Task PushAsync(Guid userId, string title, string? message, string? linkUrl = null, string type = "system")
     {
         await repo.AddAsync(new Notification
         {
@@ -67,6 +67,7 @@ public sealed class NotificationService(
             Title = title.Trim(),
             Message = message?.Trim(),
             LinkUrl = linkUrl,
+            Type = string.IsNullOrWhiteSpace(type) ? "system" : type.Trim(),
             IsRead = false,
         });
         await repo.SaveChangesAsync();
@@ -75,5 +76,5 @@ public sealed class NotificationService(
     private Guid RequireUser() =>
         currentUser.UserId ?? throw new ValidationAppException("Không xác định được người dùng hiện tại.");
 
-    private static NotificationDto Map(Notification n) => new(n.Id, n.Title, n.Message, n.LinkUrl, n.IsRead, n.CreatedAt);
+    private static NotificationDto Map(Notification n) => new(n.Id, n.Title, n.Message, n.LinkUrl, n.Type, n.IsRead, n.CreatedAt);
 }

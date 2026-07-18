@@ -31,7 +31,20 @@ public class NotificationServiceTests
         var mine = await service.ListMineAsync(unreadOnly: false);
         Assert.Single(mine);
         Assert.Equal("Việc mới", mine[0].Title);
+        Assert.Equal("system", mine[0].Type); // mặc định khi không truyền type
         Assert.Equal(1, await service.UnreadCountAsync());
+    }
+
+    [Fact]
+    public async Task Push_luu_type_da_truyen()
+    {
+        var me = Guid.NewGuid();
+        var service = NewService(me, out _);
+
+        await service.PushAsync(me, "Phiếu chờ duyệt", null, "/receipts", "approval");
+
+        var mine = await service.ListMineAsync(unreadOnly: false);
+        Assert.Equal("approval", Assert.Single(mine).Type);
     }
 
     [Fact]

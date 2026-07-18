@@ -113,7 +113,7 @@ public sealed class WorkTaskService(
     {
         if (task.AssigneeUserId is { } uid)
         {
-            await notifications.PushAsync(uid, "Bạn được giao công việc", task.Title, "/work-tasks");
+            await notifications.PushAsync(uid, "Bạn được giao công việc", task.Title, "/work-tasks", "task");
         }
     }
 

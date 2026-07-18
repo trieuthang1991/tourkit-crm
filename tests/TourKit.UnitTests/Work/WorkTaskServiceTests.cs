@@ -13,10 +13,10 @@ public class WorkTaskServiceTests
 {
     private sealed class CapturingNotifications : INotificationService
     {
-        public List<(Guid UserId, string Title)> Pushed { get; } = [];
-        public Task PushAsync(Guid userId, string title, string? message, string? linkUrl = null)
+        public List<(Guid UserId, string Title, string Type)> Pushed { get; } = [];
+        public Task PushAsync(Guid userId, string title, string? message, string? linkUrl = null, string type = "system")
         {
-            Pushed.Add((userId, title));
+            Pushed.Add((userId, title, type));
             return Task.CompletedTask;
         }
 

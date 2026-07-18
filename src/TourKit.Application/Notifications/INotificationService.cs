@@ -7,6 +7,7 @@ public interface INotificationService
     Task MarkReadAsync(Guid id);
     Task MarkAllReadAsync();
 
-    /// <summary>Đẩy thông báo cho 1 user (dùng bởi hệ — vd khi giao việc). Không phụ thuộc user hiện tại.</summary>
-    Task PushAsync(Guid userId, string title, string? message, string? linkUrl = null);
+    /// <summary>Đẩy thông báo cho 1 user (dùng bởi hệ — vd khi giao việc). Không phụ thuộc user hiện tại.
+    /// <paramref name="type"/>: phân loại (approval/task/marketing/system) để FE hiển thị icon/lọc.</summary>
+    Task PushAsync(Guid userId, string title, string? message, string? linkUrl = null, string type = "system");
 }

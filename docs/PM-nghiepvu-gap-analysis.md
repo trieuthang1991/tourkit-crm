@@ -84,7 +84,9 @@ Zalo ZNS/UID + SMS thật · HĐĐT MiFi · CallCenter · Pancake · FeedBackTou
 
 - ✅ **Cổng chốt/tất toán đơn** (Item B): `OrderStatus.Closed` + `POST /orders/{id}/close|reopen`, gate tuần tự (Confirmed + IsPaymentRecognized + IsCommissionSettled), audit ClosedAt/ClosedByUserId, khoá AssignSales khi Closed; UI nút Tất toán/Mở lại ở OrderDetail + nhãn/màu. *(workflow duyệt đơn đa cấp = hoãn theo quyết định PM; khoá mutation cấp chỗ = follow-up.)*
 
-Còn lại **P1**: dedup + auto-chia lead + import · notification typed/actionable · MoneyReport nhánh FIT/hoàn huỷ · Excel export server-side (all-pages).
+- ✅ **Notification typed/actionable** (Item C1): `Notification.Type` + migration, `PushAsync(type)`, gán type tại emit (task/approval), FE icon+nhãn theo loại. *(C2 notify-creator = hoãn có kiểm soát: cần StartedByUserId trên approval + đụng state machine duyệt.)*
+
+Còn lại **P1**: dedup + auto-chia lead + import · MoneyReport nhánh FIT/hoàn huỷ · Excel export server-side (all-pages) · [C2 notify-creator].
 
 ## 6.5) P2 (epic tích hợp ~3-4 tuần/cái): Zalo ZNS/UID · BankHub đối soát · HĐĐT MiFi · CallCenter · Pancake · FeedBackTour survey · KPI target-vs-actual · Tasking cộng tác · Workplace social feed.
 

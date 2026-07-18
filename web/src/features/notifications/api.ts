@@ -7,6 +7,7 @@ export const notificationSchema = z.object({
   title: z.string(),
   message: z.string().nullable(),
   linkUrl: z.string().nullable(),
+  type: z.string().default('system'),
   isRead: z.boolean(),
   createdAt: z.string(),
 });
