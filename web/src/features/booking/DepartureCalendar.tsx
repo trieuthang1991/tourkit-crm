@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { IconButton } from '../../ui/kit';
-import { departuresCrud } from './departuresApi';
+import { httpClient } from '../../shared/api/httpClient';
+import { pagedSchema } from '../../shared/api/paged';
+import { departureSchema } from './departureTypes';
 import type { Departure } from './departureTypes';
 
 /**
@@ -15,20 +18,7 @@ const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 export function DepartureCalendar({ fullscreen = true }: { fullscreen?: boolean }) {
   const navigate = useNavigate();
-  const list = departuresCrud.useList({ page: 1, size: 500 });
   const [month, setMonth] = useState<Dayjs>(() => dayjs().startOf('month'));
-
-  const byDate = useMemo(() => {
-    const map = new Map<string, Departure[]>();
-    for (const d of list.data?.items ?? []) {
-      if (!d.departureDate) continue;
-      const key = dayjs(d.departureDate).format('YYYY-MM-DD');
-      const arr = map.get(key) ?? [];
-      arr.push(d);
-      map.set(key, arr);
-    }
-    return map;
-  }, [list.data]);
 
   // Lưới 6 tuần bắt đầu từ Thứ 2 của tuần chứa ngày 1.
   const gridStart = useMemo(() => {
@@ -37,6 +27,27 @@ export function DepartureCalendar({ fullscreen = true }: { fullscreen?: boolean 
     return first.subtract(dow, 'day');
   }, [month]);
   const days = useMemo(() => Array.from({ length: 42 }, (_, i) => gridStart.add(i, 'day')), [gridStart]);
+
+  // Lịch cần dữ liệu nhiều tháng để điều hướng; tổng số chuyến nhỏ nên tải 1 trang gọn (không phân trang lịch).
+  const list = useQuery({
+    queryKey: ['tour-departures', 'calendar'],
+    queryFn: async () =>
+      pagedSchema(departureSchema).parse(
+        (await httpClient.get<unknown>('/api/v1/tour-departures', { params: { page: 1, size: 500 } })).data,
+      ).items,
+  });
+
+  const byDate = useMemo(() => {
+    const map = new Map<string, Departure[]>();
+    for (const d of list.data ?? []) {
+      if (!d.departureDate) continue;
+      const key = dayjs(d.departureDate).format('YYYY-MM-DD');
+      const arr = map.get(key) ?? [];
+      arr.push(d);
+      map.set(key, arr);
+    }
+    return map;
+  }, [list.data]);
 
   const today = dayjs().format('YYYY-MM-DD');
   const max = fullscreen ? 3 : 2;

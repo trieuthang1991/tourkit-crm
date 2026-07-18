@@ -22,7 +22,7 @@ import { Button, Card, DataCard, Empty, Icon, Pill, StatGrid, Tabs } from '../..
 import { Avatar, Divider } from '../../ui/primitives';
 import { Table } from '../../ui/Table';
 import type { Column } from '../../ui/Table';
-import { DepartureCalendarLite } from '../../ui/DepartureCalendarLite';
+import { DepartureCalendar } from '../booking/DepartureCalendar';
 
 /* Màn "Bàn làm việc" (/workspace) — hệ Refined. KHÔNG antd, KHÔNG gradient.
    Màn RIÊNG với /dashboard (CEO Analytics). Dữ liệu/section giữ NGUYÊN. */
@@ -380,7 +380,7 @@ export function WorkspacePage() {
             </Button>
           }
         >
-          <DepartureCalendarLite />
+          <DepartureCalendar />
         </DataCard>
       ) : null}
 

@@ -7,4 +7,3 @@ export * from './overlay';
 export * from './message';
 export * from './Table';
 export * from './form';
-export { DepartureCalendarLite } from './DepartureCalendarLite';
