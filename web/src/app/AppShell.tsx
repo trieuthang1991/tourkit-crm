@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ErrorBoundary } from './ErrorBoundary';
 import { useAuth } from '../features/auth/AuthContext';
 import { useUnreadCount } from '../features/notifications/api';
 import { Button, Icon, IconButton } from '../ui/kit';
@@ -372,7 +373,9 @@ export function AppShell() {
           {/* Giới hạn bề rộng + căn giữa: tránh nội dung giãn thưa trên màn siêu rộng. */}
           <div className="rf-content__in">
             <AutoBreadcrumb pathname={location.pathname} />
-            <Outlet />
+            <ErrorBoundary key={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
       </div>

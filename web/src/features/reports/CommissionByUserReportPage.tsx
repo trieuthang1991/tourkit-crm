@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Table } from '../../shared/ui/antd';
 import { DataCard, ExportButton } from '../../shared/ui';
 import { PageHeader } from '../../shared/ui/PageHeader';
@@ -6,19 +7,27 @@ import { money } from '../../shared/format';
 import { exportRowsToCsv } from '../../shared/exportCsv';
 import { useCommissionByUser } from './commissionByUserApi';
 import type { CommissionByUserRow } from './commissionByUserApi';
+import { useUserOptions } from '../commission/commissionRulesApi';
 
 export function CommissionByUserReportPage() {
   const report = useCommissionByUser();
+  const users = useUserOptions();
+  const nameById = useMemo(() => {
+    const m = new Map<string, string>();
+    (users.data ?? []).forEach((u) => m.set(u.id, u.fullName || u.email));
+    return m;
+  }, [users.data]);
+  const userName = (id: string) => nameById.get(id) ?? id;
 
   const exportCsv = () =>
     exportRowsToCsv(
       'bao-cao-hoa-hong.csv',
-      ['ID người dùng', 'Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỉ lệ hoa hồng (%)', 'Hoa hồng'],
-      (report.data ?? []).map((r) => [r.userId, r.turnover, r.cost, r.profit, r.commissionRate, r.commissionAmount]),
+      ['Nhân viên', 'Doanh thu', 'Chi phí', 'Lợi nhuận', 'Tỉ lệ hoa hồng (%)', 'Hoa hồng'],
+      (report.data ?? []).map((r) => [userName(r.userId), r.turnover, r.cost, r.profit, r.commissionRate, r.commissionAmount]),
     );
 
   const columns: ColumnsType<CommissionByUserRow> = [
-    { title: 'ID người dùng', dataIndex: 'userId', key: 'userId' },
+    { title: 'Nhân viên', dataIndex: 'userId', key: 'userId', render: (v: string) => userName(v) },
     { title: 'Doanh thu', dataIndex: 'turnover', key: 'turnover', render: (v: number) => money(v) },
     { title: 'Chi phí', dataIndex: 'cost', key: 'cost', render: (v: number) => money(v) },
     { title: 'Lợi nhuận', dataIndex: 'profit', key: 'profit', render: (v: number) => money(v) },

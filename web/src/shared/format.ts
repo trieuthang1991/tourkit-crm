@@ -1,12 +1,15 @@
-export function money(value: number): string {
-  return value.toLocaleString('vi-VN');
+export function money(value: number | null | undefined): string {
+  // An toàn null/NaN: tránh crash cả app khi 1 giá trị bất ngờ undefined (không có error boundary).
+  return Number.isFinite(value as number) ? (value as number).toLocaleString('vi-VN') : '0';
 }
 
 /**
  * Rút gọn tiền VND cho thẻ KPI (tránh số quá dài làm vỡ card): ≥1 tỷ → "x,y tỷ", ≥1 triệu → "x,y tr",
  * ≥1 nghìn → "x,y k", còn lại giữ nguyên. Giữ dấu âm. Dùng cho stat/KPI; bảng vẫn dùng money() đầy đủ.
  */
-export function moneyCompact(value: number): string {
+export function moneyCompact(value: number | null | undefined): string {
+  if (!Number.isFinite(value as number)) return '0';
+  value = value as number;
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
   const fmt = (n: number, unit: string) => {
