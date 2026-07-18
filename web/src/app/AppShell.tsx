@@ -130,7 +130,7 @@ export const MENU: NavNode[] = [
       { key: 'hh-campaign', label: 'Chính sách hoa hồng (bậc thang)', to: '/commission-campaigns', perm: 'commission.view' },
       { key: 'hh-customer', label: 'HH theo loại khách', to: '/customer-commission-rules', perm: 'commission.view' },
       { key: 'hh-source', label: 'Báo cáo theo nguồn', to: '/reports/commission-by-user', perm: 'report.commission.view' },
-      { key: 'hh-milestone', label: 'Báo cáo theo cột mốc', to: '/reports/commission-by-user', perm: 'report.commission.view' },
+      { key: 'hh-milestone', label: 'Báo cáo theo cột mốc', to: '/reports/commission-by-milestone', perm: 'report.commission.view' },
     ],
   },
   {

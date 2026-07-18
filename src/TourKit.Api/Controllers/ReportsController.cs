@@ -67,6 +67,14 @@ public sealed class ReportsController(IReportService service) : ControllerBase
         return Ok(rows);
     }
 
+    [HttpGet("commission-by-milestone")]
+    [Authorize(Permissions.ReportCommissionView)]
+    public async Task<IActionResult> CommissionByMilestone([FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to)
+    {
+        var rows = await service.GetCommissionByMilestoneAsync(from, to);
+        return Ok(rows);
+    }
+
     [HttpGet("turnover-by-department")]
     [Authorize(Permissions.ReportTurnoverView)]
     public async Task<IActionResult> TurnoverByDepartment()

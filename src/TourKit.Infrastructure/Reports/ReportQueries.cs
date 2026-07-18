@@ -3,6 +3,7 @@ using TourKit.Application.Reports;
 using TourKit.Application.Reports.Dtos;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Domain;
+using TourKit.Shared.Entities;
 
 namespace TourKit.Infrastructure.Reports;
 
@@ -296,6 +297,91 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
                 var rate = rules.GetValueOrDefault(g.Key, 0m);
                 var amount = CommissionMath.ShareAmount(profit, rate);
                 return new CommissionByUserRowDto(g.Key, turnover, cost, profit, rate, amount);
+            })
+            .OrderByDescending(r => r.Profit)
+            .ToList();
+
+        return rows;
+    }
+
+    /// <summary>
+    /// Báo cáo hoa hồng theo mốc (legacy ReportCommissionByMilestone / uspSearchReportCommissionMilestone): gom đơn
+    /// theo sales trong khoảng ngày TẠO đơn, % lấy từ bậc lợi nhuận của <see cref="CommissionCampaign"/> đang áp
+    /// dụng cho user tại refDate (= <paramref name="to"/> hoặc hiện tại nếu bỏ trống). Xuất hoa hồng theo lợi nhuận
+    /// (profit×%) LẪN theo doanh thu (turnover×%). Không có campaign phủ refDate cho user → 0 (vẫn xuất dòng).
+    /// SQLite-safe: nạp campaign/nhân viên/bậc về memory rồi ghép (bậc thang không dịch được sang SQL).
+    /// </summary>
+    public async Task<IReadOnlyList<CommissionByMilestoneRowDto>> GetCommissionByMilestoneAsync(
+        DateTimeOffset? from, DateTimeOffset? to)
+    {
+        var q = db.Orders.AsNoTracking().Where(o => o.SalesUserId != null);
+        if (from is not null)
+        {
+            q = q.Where(o => o.CreatedAt >= from.Value);
+        }
+
+        if (to is not null)
+        {
+            q = q.Where(o => o.CreatedAt <= to.Value);
+        }
+
+        var orders = await q
+            .Select(o => new { o.Id, o.TotalRevenue, UserId = o.SalesUserId!.Value })
+            .ToListAsync();
+
+        var costByOrder = (await db.OrderCosts.AsNoTracking()
+                .GroupBy(c => c.OrderId)
+                .Select(g => new { OrderId = g.Key, Cost = g.Sum(x => x.ActualAmount) })
+                .ToListAsync())
+            .ToDictionary(x => x.OrderId, x => x.Cost);
+
+        var refDate = to ?? DateTimeOffset.Now;
+
+        // Campaign ĐANG ÁP DỤNG (Status 0) phủ refDate + nhân viên + bậc — nạp về memory rồi ghép.
+        var campaigns = await db.CommissionCampaigns.AsNoTracking()
+            .Where(c => c.Status == 0 && c.StartDate <= refDate && refDate <= c.EndDate)
+            .ToListAsync();
+        var campaignIds = campaigns.Select(c => c.Id).ToHashSet();
+        var campaignsByUser = (await db.CommissionCampaignUsers.AsNoTracking()
+                .Where(m => campaignIds.Contains(m.CommissionCampaignId))
+                .ToListAsync())
+            .GroupBy(m => m.UserId)
+            .ToDictionary(g => g.Key, g => g.Select(m => m.CommissionCampaignId).ToHashSet());
+        var tiersByCampaign = (await db.CommissionTiers.AsNoTracking()
+                .Where(t => campaignIds.Contains(t.CommissionCampaignId))
+                .ToListAsync())
+            .GroupBy(t => t.CommissionCampaignId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<CommissionTier>)g.ToList());
+
+        IReadOnlyList<CommissionByMilestoneRowDto> rows = orders
+            .GroupBy(o => o.UserId)
+            .Select(g =>
+            {
+                var turnover = g.Sum(x => x.TotalRevenue);
+                var cost = g.Sum(x => costByOrder.GetValueOrDefault(x.Id, 0m));
+                var profit = OrderMath.Profit(turnover, cost);
+
+                // Campaign áp cho user: có membership + phủ refDate; nhiều thì lấy StartDate mới nhất.
+                CommissionCampaign? campaign = null;
+                if (campaignsByUser.TryGetValue(g.Key, out var userCampaignIds))
+                {
+                    campaign = campaigns
+                        .Where(c => userCampaignIds.Contains(c.Id))
+                        .OrderByDescending(c => c.StartDate)
+                        .FirstOrDefault();
+                }
+
+                if (campaign is null)
+                {
+                    return new CommissionByMilestoneRowDto(g.Key, turnover, cost, profit, 0m, 0m, 0m, null);
+                }
+
+                var tiers = tiersByCampaign.GetValueOrDefault(campaign.Id, Array.Empty<CommissionTier>());
+                var rate = TieredCommissionMath.TieredRate(tiers, profit);
+                var byProfit = TieredCommissionMath.TieredCommission(profit, tiers);
+                var byRevenue = profit <= 0m ? 0m : Math.Round(turnover * rate / 100m, 2);
+                return new CommissionByMilestoneRowDto(
+                    g.Key, turnover, cost, profit, rate, byProfit, byRevenue, campaign.Name);
             })
             .OrderByDescending(r => r.Profit)
             .ToList();

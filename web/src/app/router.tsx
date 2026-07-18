@@ -51,6 +51,7 @@ import { WorkspacePage } from '../features/workspace/WorkspacePage';
 import { CashFlowReportPage } from '../features/reports/CashFlowReportPage';
 import { TurnoverReportPage } from '../features/reports/TurnoverReportPage';
 import { CommissionByUserReportPage } from '../features/reports/CommissionByUserReportPage';
+import { CommissionByMilestoneReportPage } from '../features/reports/CommissionByMilestoneReportPage';
 import { TurnoverByDepartmentReportPage } from '../features/reports/TurnoverByDepartmentReportPage';
 import { KpiReportPage } from '../features/reports/KpiReportPage';
 import { CommissionRulesPage } from '../features/commission/CommissionRulesPage';
@@ -170,6 +171,7 @@ export function AppRouter() {
         <Route path="/reports/cash-flow" element={<CashFlowReportPage />} />
         <Route path="/reports/turnover" element={<TurnoverReportPage />} />
         <Route path="/reports/commission-by-user" element={<CommissionByUserReportPage />} />
+        <Route path="/reports/commission-by-milestone" element={<CommissionByMilestoneReportPage />} />
         <Route path="/reports/turnover-by-department" element={<TurnoverByDepartmentReportPage />} />
         <Route path="/reports/kpi" element={<KpiReportPage />} />
         <Route path="/commission-rules" element={<CommissionRulesPage />} />

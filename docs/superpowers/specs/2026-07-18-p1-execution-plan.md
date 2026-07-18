@@ -25,7 +25,7 @@
 
 | # | Hạng mục | Trạng thái | Effort |
 |---|----------|-----------|--------|
-| A | Hoàn tất Hoa hồng bậc thang (finish UI + wire tier vào order-commission/report) | ⏳ | S-M |
+| A | Hoàn tất Hoa hồng bậc thang (finish UI + wire tier vào order-commission/report) | ✅ | S-M |
 | B | Chốt đơn + chuỗi duyệt cấp đơn (status 108/109) | ⬜ | L |
 | C | Notification typed/actionable + notify creator (thêm `CreatedByUserId`) | ⬜ | M |
 | D | MoneyReport nhánh FIT + hoàn/huỷ chỗ | ⬜ | M |

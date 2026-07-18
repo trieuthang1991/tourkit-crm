@@ -45,6 +45,14 @@ public sealed record TurnoverRowDto(Guid OrderId, string OrderCode, decimal Reve
 public sealed record CommissionByUserRowDto(
     Guid UserId, decimal Turnover, decimal Cost, decimal Profit, decimal CommissionRate, decimal CommissionAmount);
 
+/// <summary>
+/// Một dòng báo cáo hoa hồng theo mốc/bậc thang (legacy ReportCommissionByMilestone): % lấy từ bậc lợi nhuận
+/// của <c>CommissionCampaign</c> áp cho user; xuất cả hoa hồng theo lợi nhuận lẫn theo doanh thu.
+/// </summary>
+public sealed record CommissionByMilestoneRowDto(
+    Guid UserId, decimal Turnover, decimal Cost, decimal Profit, decimal CommissionRate,
+    decimal CommissionByProfit, decimal CommissionByRevenue, string? CampaignName);
+
 /// <summary>Một dòng doanh thu/lợi nhuận theo phòng ban (gom đơn theo phòng ban của sales phụ trách).</summary>
 public sealed record TurnoverByDepartmentRowDto(
     Guid? DepartmentId, string DepartmentName, int OrderCount, decimal Turnover, decimal Cost, decimal Profit);

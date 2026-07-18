@@ -19,6 +19,9 @@ public sealed class ReportService(IReportQueries queries) : IReportService
 
     public Task<IReadOnlyList<CommissionByUserRowDto>> GetCommissionByUserAsync() => queries.GetCommissionByUserAsync();
 
+    public Task<IReadOnlyList<CommissionByMilestoneRowDto>> GetCommissionByMilestoneAsync(DateTimeOffset? from, DateTimeOffset? to) =>
+        queries.GetCommissionByMilestoneAsync(from, to);
+
     public Task<IReadOnlyList<TurnoverByDepartmentRowDto>> GetTurnoverByDepartmentAsync() => queries.GetTurnoverByDepartmentAsync();
 
     public Task<IReadOnlyList<TurnoverByBranchRowDto>> GetTurnoverByBranchAsync() => queries.GetTurnoverByBranchAsync();

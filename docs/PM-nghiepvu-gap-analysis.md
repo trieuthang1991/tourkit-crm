@@ -80,7 +80,7 @@ Zalo ZNS/UID + SMS thật · HĐĐT MiFi · CallCenter · Pancake · FeedBackTou
 - ✅ **Xuất Excel/CSV** dùng chung (`shared/exportCsv` + `ExportButton`) wire 12 trang danh sách + báo cáo.
 - ✅ **Payment-term NCC** (lịch thanh toán NCC): entity+migration+CRUD+due-alerts endpoint; trạng thái điều hành DV tính từ phiếu chi thật; UI drawer lịch thanh toán + widget đến hạn/quá hạn.
 - ✅ **Công nợ NCC**: aging FIFO 0-30/30/60/90+ + endpoint lịch sử giao dịch/NCC; UI cột aging + modal drill-down. *(đối trừ/đối soát công nợ = hoãn, cần schema riêng.)*
-- ✅ **Hoa hồng bậc thang**: CommissionCampaign+Tier+CampaignUser (migration), overlap validation, `/resolve` rate; UI đang hoàn thiện. *(chờ: wire bậc thang vào report/order-commission — đổi có kiểm soát riêng.)*
+- ✅ **Hoa hồng bậc thang**: CommissionCampaign+Tier+CampaignUser (migration), overlap validation, `/resolve` rate; UI CRUD đầy đủ. **Report "Hoa hồng theo mốc"** (`GET /reports/commission-by-milestone`) bám legacy `ReportCommissionByMilestone`: % từ bậc lợi nhuận, xuất HH theo lợi nhuận LẪN doanh thu, lọc khoảng ngày + Excel/CSV + route/menu. ✅ (Item A) *(chờ: wire tier vào order-commission lúc chốt đơn — gộp Item B.)*
 
 Còn lại **P1**: dedup + auto-chia lead + import · chốt đơn + chuỗi duyệt cấp đơn · notification typed/actionable · MoneyReport nhánh FIT/hoàn huỷ · Excel export server-side (all-pages).
 
