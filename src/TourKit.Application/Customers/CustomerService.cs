@@ -340,4 +340,51 @@ public sealed class CustomerService(
             p.Segments, p.Tags, p.AssignedTo, assignedNames,
             c.CreatedAt, purchaseCount, revenue, lastCareAt, lastCareContent);
     }
+
+    public async Task<IReadOnlyList<DuplicateGroupDto>> FindDuplicatesAsync()
+    {
+        var all = await repo.ListAsync();
+
+        // Gom theo SĐT chuẩn hoá (chỉ số, +84/84→0) và email (thường + trim). Chỉ nhóm ≥2 khách mới là "trùng".
+        var byPhone = all
+            .Select(c => (Customer: c, Key: NormalizePhone(c.Phone)))
+            .Where(x => x.Key.Length > 0)
+            .GroupBy(x => x.Key)
+            .Where(g => g.Count() > 1)
+            .Select(g => new DuplicateGroupDto("phone", g.Key,
+                g.Select(x => MapDuplicate(x.Customer)).OrderBy(d => d.CreatedAt).ToList()));
+
+        var byEmail = all
+            .Select(c => (Customer: c, Key: (c.Email ?? string.Empty).Trim().ToLowerInvariant()))
+            .Where(x => x.Key.Length > 0)
+            .GroupBy(x => x.Key)
+            .Where(g => g.Count() > 1)
+            .Select(g => new DuplicateGroupDto("email", g.Key,
+                g.Select(x => MapDuplicate(x.Customer)).OrderBy(d => d.CreatedAt).ToList()));
+
+        return byPhone.Concat(byEmail)
+            .OrderByDescending(g => g.Customers.Count)
+            .ThenBy(g => g.MatchType)
+            .ToList();
+    }
+
+    /// <summary>Chuẩn hoá SĐT VN: bỏ ký tự không phải số; tiền tố quốc tế 84 → 0 (bắt trùng 0901… vs +84901…).</summary>
+    private static string NormalizePhone(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return string.Empty;
+        }
+
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+        if (digits.StartsWith("84", StringComparison.Ordinal) && digits.Length > 9)
+        {
+            digits = "0" + digits[2..];
+        }
+
+        return digits;
+    }
+
+    private static DuplicateCustomerDto MapDuplicate(Customer c) =>
+        new(c.Id, c.Code, c.FullName, c.Phone, c.Email, c.CreatedAt);
 }

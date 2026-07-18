@@ -394,4 +394,40 @@ public class CustomerServiceTests
         Assert.Equal(["Đà Nẵng", "Hà Nội"], opts.Cities);      // bỏ chuỗi rỗng, sort
         Assert.Equal(["Tiềm năng"], opts.Segments);
     }
+
+    [Fact]
+    public async Task FindDuplicates_gom_theo_sdt_chuan_hoa_va_email()
+    {
+        var service = NewService(out var repo);
+        // Trùng SĐT dạng khác nhau (0901 vs +84 901) → cùng nhóm.
+        await repo.AddAsync(NewCustomer("A", phone: "0901234567"));
+        await repo.AddAsync(NewCustomer("B", phone: "+84 901 234 567"));
+        // Trùng email (hoa/thường).
+        await repo.AddAsync(NewCustomer("C", email: "x@Mail.com"));
+        await repo.AddAsync(NewCustomer("D", email: "x@mail.com"));
+        // Không trùng.
+        await repo.AddAsync(NewCustomer("E", phone: "0988888888", email: "solo@mail.com"));
+        await repo.SaveChangesAsync();
+
+        var groups = await service.FindDuplicatesAsync();
+
+        Assert.Equal(2, groups.Count);
+        var phone = Assert.Single(groups, g => g.MatchType == "phone");
+        Assert.Equal("0901234567", phone.MatchKey);
+        Assert.Equal(2, phone.Customers.Count);
+        var email = Assert.Single(groups, g => g.MatchType == "email");
+        Assert.Equal("x@mail.com", email.MatchKey);
+        Assert.Equal(2, email.Customers.Count);
+    }
+
+    [Fact]
+    public async Task FindDuplicates_bo_qua_khach_khong_co_sdt_email()
+    {
+        var service = NewService(out var repo);
+        await repo.AddAsync(NewCustomer("A"));
+        await repo.AddAsync(NewCustomer("B"));
+        await repo.SaveChangesAsync();
+
+        Assert.Empty(await service.FindDuplicatesAsync());
+    }
 }

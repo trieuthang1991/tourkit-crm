@@ -29,7 +29,7 @@
 | B | Cổng chốt/tất toán đơn (OrderStatus.Closed + gate + khoá sửa) | ✅ | M |
 | C | Notification typed/actionable (C1 ✅); notify-creator (C2) hoãn có kiểm soát | ✅ | M |
 | D | Báo cáo thu chi theo loại tour (FIT/GIT + hoàn/huỷ) | ✅ | M |
-| E | Customer dedup + auto-chia lead + import | ⬜ | M-L |
+| E | Customer dedup (rà khách trùng) ✅; auto-lead/import/360 tách slice | ✅ | M-L |
 | F | Excel export server-side (all-pages) | ⬜ | S-M |
 | G | Đối trừ/đối soát công nợ NCC (cần schema mới) | ⬜ | M |
 

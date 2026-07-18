@@ -13,4 +13,7 @@ public interface ICustomerService
     Task<CustomerDto> CreateAsync(CreateCustomerDto dto);
     Task UpdateAsync(Guid id, UpdateCustomerDto dto);
     Task DeleteAsync(Guid id);
+
+    /// <summary>Rà khách nghi trùng: gom theo SĐT/email đã chuẩn hoá, chỉ trả nhóm có ≥2 khách.</summary>
+    Task<IReadOnlyList<DuplicateGroupDto>> FindDuplicatesAsync();
 }

@@ -40,6 +40,7 @@ export const MENU: NavNode[] = [
       { key: 'crm-share', label: 'Chia số Sale', to: '/lead-campaigns', perm: 'lead.view' },
       { key: 'crm-opp', label: 'Cơ hội bán hàng', to: '/leads', perm: 'lead.view' },
       { key: 'crm-data', label: 'Data khách hàng', to: '/customers', perm: 'customer.view' },
+      { key: 'crm-dedup', label: 'Rà khách trùng', to: '/customers/duplicates', perm: 'customer.view' },
       { key: 'crm-care', label: 'Quản lý lịch hẹn', to: '/customer-cares', perm: 'care.view' },
       {
         key: 'crm-feedback', label: 'Feedback', children: [

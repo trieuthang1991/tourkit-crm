@@ -5,6 +5,7 @@ import { AppShell } from './AppShell';
 import { TourTemplateListPage } from '../features/tourTemplates/TourTemplateListPage';
 import { TourTemplateDetailPage } from '../features/tourTemplates/TourTemplateDetailPage';
 import { CustomersPage } from '../features/customers/CustomersPage';
+import { CustomerDuplicatesPage } from '../features/customers/CustomerDuplicatesPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
 import { LeadCampaignsPage } from '../features/leadCampaigns/LeadCampaignsPage';
 import { ProvidersPage } from '../features/providers/ProvidersPage';
@@ -117,6 +118,7 @@ export function AppRouter() {
         <Route path="/workspace" element={<WorkspacePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/customers" element={<CustomersPage />} />
+        <Route path="/customers/duplicates" element={<CustomerDuplicatesPage />} />
         <Route path="/leads" element={<LeadsPage />} />
         <Route path="/lead-campaigns" element={<LeadCampaignsPage />} />
         <Route path="/providers" element={<ProvidersPage />} />

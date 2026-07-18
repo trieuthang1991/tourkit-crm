@@ -67,3 +67,14 @@ public sealed record UpdateCustomerDto(
     string? CollaboratorName = null, string? Campaign = null,
     string? Branch = null, string? Group = null, string? Department = null,
     IReadOnlyList<string>? Segments = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<string>? AssignedTo = null);
+
+/// <summary>Một khách trong nhóm trùng (dedup) — đủ để nhận diện và quyết định gộp.</summary>
+public sealed record DuplicateCustomerDto(
+    Guid Id, string? Code, string FullName, string? Phone, string? Email, DateTimeOffset CreatedAt);
+
+/// <summary>
+/// Nhóm khách nghi trùng theo một khoá (SĐT hoặc email đã chuẩn hoá). MatchType: "phone" | "email".
+/// Nhiều khách cùng khoá ⇒ 1 nhóm để rà soát/gộp thủ công.
+/// </summary>
+public sealed record DuplicateGroupDto(
+    string MatchType, string MatchKey, IReadOnlyList<DuplicateCustomerDto> Customers);

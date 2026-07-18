@@ -35,6 +35,11 @@ public sealed class CustomersController(ICustomerService service) : ControllerBa
     [Authorize(Permissions.CustomerView)]
     public async Task<IActionResult> Funnel() => Ok(await service.GetFunnelAsync());
 
+    // Rà khách nghi trùng (theo SĐT/email chuẩn hoá) để gộp thủ công.
+    [HttpGet("duplicates")]
+    [Authorize(Permissions.CustomerView)]
+    public async Task<IActionResult> Duplicates() => Ok(await service.FindDuplicatesAsync());
+
     [HttpGet("{id:guid}")]
     [Authorize(Permissions.CustomerView)]
     public async Task<IActionResult> Get(Guid id)
