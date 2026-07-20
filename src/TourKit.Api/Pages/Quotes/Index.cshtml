@@ -16,8 +16,8 @@
 
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Danh sách báo giá</h5>
-    <a href="/Quotes/Edit" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Tạo báo giá</a>
+    <h5 class="mb-0">Danh sách báo giá — @Model.TypeLabel</h5>
+    <a href="/Quotes/Edit@(Model.QuoteType is int t ? $"?type={t}" : "")" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Tạo báo giá</a>
   </div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">

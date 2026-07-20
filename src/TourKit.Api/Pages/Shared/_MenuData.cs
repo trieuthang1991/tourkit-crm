@@ -43,12 +43,12 @@ public static class MenuData
         new("g-quote", "Báo Giá", "ti ti-calculator", Children: new List<MenuNode>
         {
             new("q-tour", "Tính giá Tour", To: "/Quotes", Perm: "quote.view"),
-            new("q-combo", "Tính giá Combo", To: "#", Perm: "quote.view"),
-            new("q-git", "Tour GIT/Combo", To: "#", Perm: "quote.view"),
-            new("q-landtour", "Landtour", To: "#", Perm: "quote.view"),
-            new("q-booking", "Booking Phòng", To: "#", Perm: "quote.view"),
-            new("q-service", "Dịch vụ lẻ", To: "#", Perm: "quote.view"),
-            new("q-visa", "Visa", To: "#", Perm: "quote.view"),
+            new("q-combo", "Tính giá Combo", To: "/Quotes?type=1", Perm: "quote.view"),
+            new("q-git", "Tour GIT/Combo", To: "/Quotes?type=2", Perm: "quote.view"),
+            new("q-landtour", "Landtour", To: "/Quotes?type=3", Perm: "quote.view"),
+            new("q-booking", "Booking Phòng", To: "/Quotes?type=4", Perm: "quote.view"),
+            new("q-service", "Dịch vụ lẻ", To: "/Quotes?type=5", Perm: "quote.view"),
+            new("q-visa", "Visa", To: "/Quotes?type=6", Perm: "quote.view"),
             new("q-agent", "Báo giá Đại lý (B2B)", To: "/AgentQuotes", Perm: "agentquote.view"),
         }),
         new("g-order", "Đơn hàng/LKH", "ti ti-shopping-cart", Children: new List<MenuNode>

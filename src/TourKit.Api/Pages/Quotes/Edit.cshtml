@@ -197,6 +197,8 @@
       // prefill status/quoteType selects
       @if (q != null) {
         <text>$('select[name="Input.Status"]').val('@q!.Status'); $('select[name="Input.QuoteType"]').val('@q!.QuoteType');</text>
+      } else if (Model.PresetType is int pt) {
+        <text>$('select[name="Input.QuoteType"]').val('@pt');</text>
       }
 
       $('#frm').validate({ rules:{ 'Input.CustomerName':{required:true}, 'Input.Title':{required:true} },

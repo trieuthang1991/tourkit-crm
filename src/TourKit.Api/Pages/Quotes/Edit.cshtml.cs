@@ -26,6 +26,8 @@ public class EditModel : PageModel
 
     public QuoteDto? Quote { get; private set; }
 
+    [BindProperty(SupportsGet = true, Name = "type")] public int? PresetType { get; set; }
+
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
     [BindProperty] public string LinesJson { get; set; } = "[]";
