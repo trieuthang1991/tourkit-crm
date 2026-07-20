@@ -22,6 +22,7 @@ public class LoginModel : PageModel
         [Required] public string TenantSlug { get; set; } = "demo-tour";
         [Required, EmailAddress] public string Email { get; set; } = "";
         [Required] public string Password { get; set; } = "";
+        public bool RememberMe { get; set; }
     }
 
     public void OnGet() { }
@@ -40,7 +41,8 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
+            new AuthenticationProperties { IsPersistent = Input.RememberMe });
         return LocalRedirect(returnUrl ?? "/Dashboard");
     }
 }
