@@ -6,31 +6,37 @@
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
 }
 
+@{
+    (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+    {
+        ("Tổng khách", Model.Stats.Total.ToString("#,##0"), "ti ti-users", "primary", "toàn bộ data"),
+        ("Mới hôm nay", Model.Stats.NewToday.ToString("#,##0"), "ti ti-user-plus", "success", "khách vừa thêm"),
+        ("Mới tháng này", Model.Stats.NewThisMonth.ToString("#,##0"), "ti ti-calendar-stats", "info", "trong tháng"),
+        ("Mua lại", Model.Stats.RepeatBuyers.ToString("#,##0"), "ti ti-refresh", "warning", "khách quay lại"),
+    };
+}
 <div class="row g-4 mb-4">
-  <div class="col-6 col-md-3">
-    <div class="card"><div class="card-body py-3">
-      <span class="text-muted small">Tổng khách</span>
-      <h4 class="mb-0">@Model.Stats.Total</h4>
-    </div></div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card"><div class="card-body py-3">
-      <span class="text-muted small">Mới hôm nay</span>
-      <h4 class="mb-0">@Model.Stats.NewToday</h4>
-    </div></div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card"><div class="card-body py-3">
-      <span class="text-muted small">Mới tháng này</span>
-      <h4 class="mb-0">@Model.Stats.NewThisMonth</h4>
-    </div></div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card"><div class="card-body py-3">
-      <span class="text-muted small">Mua lại</span>
-      <h4 class="mb-0">@Model.Stats.RepeatBuyers</h4>
-    </div></div>
-  </div>
+  @foreach (var s in statCards)
+  {
+    <div class="col-sm-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar flex-shrink-0 me-3">
+              <span class="avatar-initial rounded-3 bg-label-@s.Color">
+                <i class="@s.Icon ti-md"></i>
+              </span>
+            </div>
+            <div>
+              <span class="d-block text-muted small">@s.Label</span>
+              <h4 class="mb-0">@s.Value</h4>
+            </div>
+          </div>
+          <div class="text-muted small mt-2">@s.Sub</div>
+        </div>
+      </div>
+    </div>
+  }
 </div>
 
 <div class="card">
