@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using TourKit.Api.Pages.Shared;
 using TourKit.Application.Admin;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
@@ -8,8 +8,9 @@ using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Pages.Orders;
 
+// Danh sách đơn: DataTables SERVER-SIDE (không get-all) — mỗi lần chỉ tải đúng 1 trang.
 [Authorize(Policy = "booking.view")]
-public class IndexModel : PageModel
+public class IndexModel : TkListPageModel
 {
     private readonly IBookingService _svc;
     private readonly IUserAdminService _users;
@@ -19,9 +20,7 @@ public class IndexModel : PageModel
         _users = users;
     }
 
-    public IReadOnlyList<OrderDto> Items { get; private set; } = [];
     public OrderStatsDto Stats { get; private set; } = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    public Dictionary<Guid, string> SalesNames { get; private set; } = [];
 
     [BindProperty(SupportsGet = true, Name = "bookingType")] public int? BookingType { get; set; }
 
@@ -46,13 +45,40 @@ public class IndexModel : PageModel
         _ => "warning",
     };
 
-    public async Task OnGetAsync()
-    {
-        Stats = await _svc.GetOrderStatsAsync();
-        var filter = BookingType is int bt ? new OrderListFilter(BookingType: bt) : null;
-        Items = (await _svc.ListOrdersAsync(1, 1000, filter)).Items;
-        SalesNames = (await _users.ListAsync()).ToDictionary(u => u.Id, u => u.FullName);
-    }
+    public async Task OnGetAsync() => Stats = await _svc.GetOrderStatsAsync();
 
-    public string SalesName(Guid? id) => id is Guid g && SalesNames.TryGetValue(g, out var n) ? n : "—";
+    /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang dữ liệu.</summary>
+    public async Task<IActionResult> OnGetDataAsync()
+    {
+        var dt = ParseDataTables();
+        var status = int.TryParse(Request.Query["status"], out var st) ? st : (int?)null;
+
+        var filter = new OrderListFilter(Q: dt.Keyword, Status: status, BookingType: BookingType);
+        var result = await _svc.ListOrdersAsync(dt.Page, dt.Size, filter);
+
+        // Tên sales: chỉ tra cho các user xuất hiện trong TRANG hiện tại.
+        var salesIds = result.Items.Where(o => o.SalesUserId is not null).Select(o => o.SalesUserId!.Value).ToHashSet();
+        var names = salesIds.Count == 0
+            ? []
+            : (await _users.ListAsync()).Where(u => salesIds.Contains(u.Id)).ToDictionary(u => u.Id, u => u.FullName);
+
+        var stats = await _svc.GetOrderStatsAsync();
+        var data = result.Items.Select(o => new
+        {
+            id = o.Id,
+            code = o.Code,
+            customerName = o.CustomerName ?? "—",
+            tourTitle = o.TourTitle ?? "—",
+            departureDate = o.DepartureDate?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "—",
+            totalRevenue = o.TotalRevenue,
+            amountPaid = o.AmountPaid,
+            outstanding = o.Outstanding,
+            seats = $"{o.SeatSold}/{o.SeatTotal}",
+            salesName = o.SalesUserId is Guid g && names.TryGetValue(g, out var n) ? n : "—",
+            statusLabel = StatusLabel(o.Status),
+            statusColor = StatusColor(o.Status),
+        });
+
+        return DtJson(dt.Draw, stats.Total, result.Total, data);
+    }
 }

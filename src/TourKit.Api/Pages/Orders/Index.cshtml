@@ -1,5 +1,4 @@
 @page
-@using TourKit.Shared.Enums
 @model TourKit.Api.Pages.Orders.IndexModel
 @{ ViewData["Title"] = "Đơn hàng"; }
 
@@ -35,32 +34,15 @@
     <h5 class="mb-0">Danh sách đơn hàng — @Model.TypeLabel</h5>
     <select id="f-status" class="form-select form-select-sm" style="width:auto">
       <option value="">Tất cả trạng thái</option>
-      <option value="Nháp/Giữ chỗ">Nháp/Giữ chỗ</option>
-      <option value="Đã xác nhận">Đã xác nhận</option>
-      <option value="Đã huỷ">Đã huỷ</option>
-      <option value="Đã tất toán">Đã tất toán</option>
+      <option value="1">Nháp/Giữ chỗ</option>
+      <option value="2">Đã xác nhận</option>
+      <option value="3">Đã huỷ</option>
+      <option value="4">Đã tất toán</option>
     </select>
   </div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
       <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Tour</th><th>Ngày đi</th><th class="text-end">Doanh thu</th><th class="text-end">Đã thu</th><th class="text-end">Còn nợ</th><th class="text-center">Khách</th><th>Sales</th><th>Trạng thái</th></tr></thead>
-      <tbody>
-      @foreach (var o in Model.Items)
-      {
-        <tr>
-          <td><a href="/Orders/Detail/@o.Id" class="fw-medium">@o.Code</a></td>
-          <td>@(o.CustomerName ?? "—")</td>
-          <td>@(o.TourTitle ?? "—")</td>
-          <td data-order="@(o.DepartureDate?.ToUnixTimeSeconds() ?? 0)">@(o.DepartureDate?.ToString("dd/MM/yyyy") ?? "—")</td>
-          <td class="text-end">@o.TotalRevenue.ToString("#,##0")</td>
-          <td class="text-end">@o.AmountPaid.ToString("#,##0")</td>
-          <td class="text-end @(o.Outstanding > 0 ? "text-danger" : "")">@o.Outstanding.ToString("#,##0")</td>
-          <td class="text-center">@o.SeatSold/@o.SeatTotal</td>
-          <td>@Model.SalesName(o.SalesUserId)</td>
-          <td><span class="badge bg-label-@TourKit.Api.Pages.Orders.IndexModel.StatusColor(o.Status)">@TourKit.Api.Pages.Orders.IndexModel.StatusLabel(o.Status)</span></td>
-        </tr>
-      }
-      </tbody>
     </table>
   </div>
 </div>
@@ -72,11 +54,24 @@
 @section PageScripts {
   <script>
     $(function () {
-      var dt = tk.tableClient('#tbl', { order: [[3, 'desc']] });
-      $('#f-status').on('change', function () {
-        var v = this.value;
-        dt.column(9).search(v ? '^' + $.fn.dataTable.util.escapeRegex(v) + '$' : '', true, false).draw();
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      var dt = tk.table('#tbl', {
+        url: '?handler=Data@(Model.BookingType is int bt ? "&bookingType=" + bt : "")',
+        extraData: function (d) { d.status = $('#f-status').val(); },
+        columns: [
+          { data: 'code', render: function (v, t, r) { return '<a href="/Orders/Detail/' + r.id + '" class="fw-medium">' + tk.escape(v) + '</a>'; } },
+          { data: 'customerName', render: function (v) { return tk.trunc(v, 180); } },
+          { data: 'tourTitle', render: function (v) { return tk.trunc(v, 200); } },
+          { data: 'departureDate' },
+          { data: 'totalRevenue', className: 'text-end', render: function (v) { return tk.money(v); } },
+          { data: 'amountPaid', className: 'text-end', render: function (v) { return tk.money(v); } },
+          { data: 'outstanding', className: 'text-end', render: function (v) { return v > 0 ? '<span class="text-danger">' + tk.money(v) + '</span>' : tk.money(v); } },
+          { data: 'seats', className: 'text-center' },
+          { data: 'salesName' },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } }
+        ]
       });
+      $('#f-status').on('change', function () { dt.ajax.reload(); });
     });
   </script>
 }
