@@ -3,6 +3,7 @@ using TourKit.Application.Common;
 using TourKit.Application.Customers.Dtos;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Security;
+using TourKit.Shared.Text;
 
 namespace TourKit.Application.Customers;
 
@@ -257,6 +258,8 @@ public sealed class CustomerService(
             PassportNumber = dto.PassportNumber,
             PassportExpiry = dto.PassportExpiry?.ToUniversalTime(),
             Nationality = dto.Nationality,
+            SearchName = VietnameseText.NormalizeSearch(dto.FullName),
+            PhoneNormalized = NormalizedPhoneOrNull(dto.Phone),
             CrmProfileJson = profile.ToJsonOrNull(),
         };
         await repo.AddAsync(entity);
@@ -294,6 +297,8 @@ public sealed class CustomerService(
 
         entity.FullName = dto.FullName.Trim();
         entity.Phone = dto.Phone;
+        entity.SearchName = VietnameseText.NormalizeSearch(dto.FullName);
+        entity.PhoneNormalized = NormalizedPhoneOrNull(dto.Phone);
         entity.CustomerType = dto.CustomerType;
         entity.Source = dto.Source;
         entity.Tag = dto.Tag;
@@ -355,7 +360,7 @@ public sealed class CustomerService(
 
         // Gom theo SĐT chuẩn hoá (chỉ số, +84/84→0) và email (thường + trim). Chỉ nhóm ≥2 khách mới là "trùng".
         var byPhone = all
-            .Select(c => (Customer: c, Key: NormalizePhone(c.Phone)))
+            .Select(c => (Customer: c, Key: VietnameseText.NormalizePhone(c.Phone)))
             .Where(x => x.Key.Length > 0)
             .GroupBy(x => x.Key)
             .Where(g => g.Count() > 1)
@@ -378,7 +383,7 @@ public sealed class CustomerService(
 
     public async Task<DuplicateCustomerDto?> FindByPhoneAsync(string? phone, Guid? excludeId = null)
     {
-        var norm = NormalizePhone(phone);
+        var norm = VietnameseText.NormalizePhone(phone);
         if (norm.Length < 8)
         {
             return null;
@@ -388,26 +393,13 @@ public sealed class CustomerService(
         var tail = norm[^8..];
         var candidates = await repo.ListAsync(c => c.Phone != null && c.Phone.EndsWith(tail));
         var match = candidates.FirstOrDefault(c =>
-            (excludeId == null || c.Id != excludeId.Value) && NormalizePhone(c.Phone) == norm);
+            (excludeId == null || c.Id != excludeId.Value) && VietnameseText.NormalizePhone(c.Phone) == norm);
         return match is null ? null : MapDuplicate(match);
     }
 
-    /// <summary>Chuẩn hoá SĐT VN: bỏ ký tự không phải số; tiền tố quốc tế 84 → 0 (bắt trùng 0901… vs +84901…).</summary>
-    private static string NormalizePhone(string? phone)
-    {
-        if (string.IsNullOrWhiteSpace(phone))
-        {
-            return string.Empty;
-        }
-
-        var digits = new string(phone.Where(char.IsDigit).ToArray());
-        if (digits.StartsWith("84", StringComparison.Ordinal) && digits.Length > 9)
-        {
-            digits = "0" + digits[2..];
-        }
-
-        return digits;
-    }
+    /// <summary>SĐT chuẩn hoá cho cột PhoneNormalized — null nếu không có số.</summary>
+    private static string? NormalizedPhoneOrNull(string? phone) =>
+        VietnameseText.NormalizePhone(phone) is { Length: > 0 } pn ? pn : null;
 
     private static DuplicateCustomerDto MapDuplicate(Customer c) =>
         new(c.Id, c.Code, c.FullName, c.Phone, c.Email, c.CreatedAt);

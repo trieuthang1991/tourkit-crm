@@ -25,4 +25,8 @@ public class Customer : BaseEntity, ITenantEntity
     public string? PassportNumber { get; set; }
     public DateTimeOffset? PassportExpiry { get; set; }
     public string? Nationality { get; set; }
+
+    // --- Cột search (C# set khi Create/Update; Postgres index GIN trigram cho SearchName, B-tree cho PhoneNormalized). ---
+    public string? SearchName { get; set; }        // lower + không dấu của FullName (search không dấu)
+    public string? PhoneNormalized { get; set; }   // SĐT chỉ số, +84→0 (search + dò trùng)
 }
