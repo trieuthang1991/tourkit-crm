@@ -94,9 +94,9 @@ public static class MenuData
         new("g-finance", "Tài chính/Kế toán", "ti ti-building-bank", Children: new List<MenuNode>
         {
             new("fi-waiting", "Phiếu thu chờ", To: "#", Perm: "receipt.view"),
-            new("fi-receipt", "Phiếu thu", To: "#", Perm: "receipt.view"),
-            new("fi-payment", "Phiếu chi", To: "#", Perm: "payment.view"),
-            new("fi-invoice", "Danh sách hoá đơn (VAT)", To: "#", Perm: "invoice.view"),
+            new("fi-receipt", "Phiếu thu", To: "/Receipts", Perm: "receipt.view"),
+            new("fi-payment", "Phiếu chi", To: "/Payments", Perm: "payment.view"),
+            new("fi-invoice", "Danh sách hoá đơn (VAT)", To: "/Invoices", Perm: "invoice.view"),
             new("fi-cashflow", "Thống kê dòng tiền", To: "/CashFlowReport", Perm: "report.cashflow.view"),
             new("fi-debt-c", "Công nợ khách", To: "/CustomerDebtReport", Perm: "report.debt.view"),
             new("fi-debt-p", "Công nợ NCC", To: "/ProviderDebtReport", Perm: "report.providerdebt.view"),

@@ -1,0 +1,54 @@
+@page
+@model TourKit.Api.Pages.Invoices.IndexModel
+@{ ViewData["Title"] = "Danh sách hoá đơn (VAT)"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Danh sách hoá đơn (VAT)</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead>
+        <tr>
+          <th>Ký hiệu</th>
+          <th>Số hoá đơn</th>
+          <th>Ngày HĐ</th>
+          <th>Người mua</th>
+          <th>Mã số thuế</th>
+          <th class="text-end">Tiền thuế (VAT)</th>
+          <th class="text-end">Tổng tiền</th>
+          <th class="text-end">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr>
+          <td class="fw-medium">@x.Series</td>
+          <td>@x.Number</td>
+          <td>@x.InvoiceDate.ToString("dd/MM/yyyy")</td>
+          <td>@(string.IsNullOrEmpty(x.BuyerName) ? "—" : x.BuyerName)</td>
+          <td>@(string.IsNullOrEmpty(x.BuyerTaxCode) ? "—" : x.BuyerTaxCode)</td>
+          <td class="text-end">@x.VatAmount.ToString("#,##0")</td>
+          <td class="text-end">@x.TotalAmount.ToString("#,##0")</td>
+          <td class="text-end"><span class="badge bg-label-@TourKit.Api.Pages.Invoices.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.Invoices.IndexModel.StatusLabel(x.Status)</span></td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () { tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [7] }] }); });
+  </script>
+}
