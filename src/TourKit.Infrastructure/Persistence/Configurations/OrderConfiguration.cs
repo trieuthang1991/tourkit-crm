@@ -17,5 +17,6 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(x => new { x.TenantId, x.TourDepartureId });
         builder.HasIndex(x => new { x.TenantId, x.CustomerId });
         builder.HasIndex(x => new { x.TenantId, x.Status });
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();   // H3: mã đơn duy nhất
     }
 }

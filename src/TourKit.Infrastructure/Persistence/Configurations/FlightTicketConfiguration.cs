@@ -18,6 +18,6 @@ public sealed class FlightTicketConfiguration : IEntityTypeConfiguration<FlightT
         // Hành trình các chặng lưu jsonb (Postgres). Provider khác (InMemory test) bỏ qua HasColumnType.
         builder.Property(x => x.ItineraryJson).HasColumnType("jsonb");
 
-        builder.HasIndex(x => new { x.TenantId, x.Pnr });
+        builder.HasIndex(x => new { x.TenantId, x.Pnr }).IsUnique();   // H3: PNR duy nhất
     }
 }

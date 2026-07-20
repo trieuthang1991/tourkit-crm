@@ -18,6 +18,6 @@ public sealed class FlightTicketIndividualConfiguration : IEntityTypeConfigurati
         builder.Property(x => x.AssigneeRef).HasMaxLength(100);
         builder.Property(x => x.Note).HasMaxLength(1000);
 
-        builder.HasIndex(x => new { x.TenantId, x.Code });
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();   // H3: mã vé lẻ duy nhất
     }
 }

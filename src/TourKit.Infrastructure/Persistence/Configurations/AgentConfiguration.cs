@@ -16,7 +16,7 @@ public sealed class AgentConfiguration : IEntityTypeConfiguration<Agent>
         builder.Property(x => x.TaxCode).HasMaxLength(20);
         builder.Property(x => x.Address).HasMaxLength(300);
 
-        builder.HasIndex(x => new { x.TenantId, x.Code });
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();   // H3: mã đại lý duy nhất
     }
 }
 

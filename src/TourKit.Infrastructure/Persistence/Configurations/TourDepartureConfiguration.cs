@@ -14,6 +14,7 @@ public sealed class TourDepartureConfiguration : IEntityTypeConfiguration<TourDe
         // còn IsClosed ở "TourDepartureFields" — EF cấm index bắc ngang 2 bảng không giao nhau
         // (IndexPropertiesMappedToNonOverlappingTables). Lọc theo tenant đã có ở index gốc
         // (TenantId, Kind, Status) trên Tours; index này chỉ tăng tốc lọc IsClosed trong phạm vi departure.
+        // M4 (Master Plan): KHÔNG prefix TenantId được vì TPT — TenantId ở bảng Tours, IsClosed ở TourDepartureFields.
         builder.HasIndex(x => x.IsClosed);
     }
 }
