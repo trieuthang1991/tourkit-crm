@@ -29,6 +29,7 @@ builder.Host.UseSerilog((context, config) => config
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
+builder.Services.AddRazorPages();
 
 // CORS cho SPA (Vite dev mặc định 5173/4173; prod cấu hình qua Cors:Origins).
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
@@ -198,6 +199,8 @@ app.UseStatusCodePages();
 
 app.UseCors("web");   // trước Authentication để preflight OPTIONS không cần token
 
+app.UseStaticFiles();   // phục vụ wwwroot (assets Vuexy)
+
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();   // sau Authentication để đọc được claim
 app.UseMiddleware<SubscriptionGuardMiddleware>();  // chặn nếu subscription hết hạn (miễn trừ auth/đăng ký/billing)
@@ -223,6 +226,7 @@ if (enableBackgroundJobs)
 }
 
 app.MapControllers();   // Customers, Providers, Crm (kiến trúc phân tầng)
+app.MapRazorPages();    // UI Razor Pages (Vuexy) — cùng process với REST
 
 
 app.Run();
