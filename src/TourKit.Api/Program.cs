@@ -137,7 +137,25 @@ if (enableBackgroundJobs)
 }
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(options =>
+    {
+        // "smart": chọn scheme theo request — API gửi Bearer → JWT; trang HTML (không Bearer) → Cookie.
+        options.DefaultScheme = "smart";
+        options.DefaultChallengeScheme = "smart";
+    })
+    .AddPolicyScheme("smart", "smart", options =>
+    {
+        options.ForwardDefaultSelector = ctx =>
+        {
+            // API (/api/*) hoặc có header Bearer → JWT (challenge = 401, không redirect).
+            // Còn lại (trang HTML) → Cookie (challenge = redirect /Auth/Login).
+            string? auth = ctx.Request.Headers.Authorization;
+            var isApi = ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
+            return isApi || auth?.StartsWith("Bearer ", StringComparison.Ordinal) == true
+                ? JwtBearerDefaults.AuthenticationScheme
+                : Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme;
+        };
+    })
     .AddJwtBearer(options =>
     {
         // Giữ nguyên tên claim gốc ("sub" thay vì bị remap sang ClaimTypes.NameIdentifier) —
@@ -153,6 +171,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret)),
             ValidateLifetime = true,
         };
+    })
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Auth/Login";
+        options.LogoutPath = "/Auth/Logout";
+        options.AccessDeniedPath = "/Auth/Login";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.Name = "tourkit_auth";
     });
 builder.Services.AddAuthorization(options =>
 {
