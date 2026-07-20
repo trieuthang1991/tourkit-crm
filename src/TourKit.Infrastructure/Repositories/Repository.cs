@@ -37,4 +37,6 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
     }
     public Task<int> SaveChangesAsync() => db.SaveChangesAsync();
     public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate) => Set.AnyAsync(predicate);
+    public Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+        => (predicate is null ? Set : Set.Where(predicate)).CountAsync();
 }

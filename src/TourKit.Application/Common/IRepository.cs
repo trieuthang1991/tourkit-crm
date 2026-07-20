@@ -14,4 +14,7 @@ public interface IRepository<T> where T : BaseEntity
     void Remove(T entity);
     Task<int> SaveChangesAsync();
     Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
+
+    /// <summary>Đếm ở SQL (COUNT) — KHÔNG materialize bảng.</summary>
+    Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
 }

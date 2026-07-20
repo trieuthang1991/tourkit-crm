@@ -58,4 +58,8 @@ public sealed class FakeRepository<T> : IRepository<T> where T : BaseEntity
 
     public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
         => Task.FromResult(_items.AsQueryable().Any(predicate));
+
+    public Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+        => Task.FromResult(predicate is null ? _items.Count : _items.AsQueryable().Count(predicate));
+
 }

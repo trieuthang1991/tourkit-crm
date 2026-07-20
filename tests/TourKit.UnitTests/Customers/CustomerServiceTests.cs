@@ -57,6 +57,9 @@ public class CustomerServiceTests
 
         public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
             => Task.FromResult(_items.AsQueryable().Any(predicate));
+
+        public Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+            => Task.FromResult(predicate is null ? _items.Count : _items.AsQueryable().Count(predicate));
     }
 
     private sealed class FakeCurrentUser : ICurrentUserContext
@@ -64,12 +67,18 @@ public class CustomerServiceTests
         public Guid? UserId => null;
     }
 
+    // Không test buyer counts ở đây (endpoint test lo) → trả (0,0).
+    private sealed class FakeCustomerQueries : ICustomerQueries
+    {
+        public Task<(int FirstTime, int Repeat)> BuyerCountsAsync() => Task.FromResult((0, 0));
+    }
+
     private static CustomerService NewService(out FakeRepository<Customer> repo)
     {
         repo = new FakeRepository<Customer>();
         return new CustomerService(
             repo, new FakeRepository<Order>(), new FakeRepository<CustomerCare>(), new FakeRepository<User>(),
-            new FakeCurrentUser(), new CreateCustomerValidator(), new UpdateCustomerValidator());
+            new FakeCurrentUser(), new FakeCustomerQueries(), new CreateCustomerValidator(), new UpdateCustomerValidator());
     }
 
     private static CustomerService NewServiceFull(
@@ -80,7 +89,7 @@ public class CustomerServiceTests
         cares = new FakeRepository<CustomerCare>();
         return new CustomerService(
             customers, orders, cares, new FakeRepository<User>(),
-            new FakeCurrentUser(), new CreateCustomerValidator(), new UpdateCustomerValidator());
+            new FakeCurrentUser(), new FakeCustomerQueries(), new CreateCustomerValidator(), new UpdateCustomerValidator());
     }
 
     private static Customer NewCustomer(

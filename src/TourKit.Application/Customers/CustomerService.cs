@@ -13,6 +13,7 @@ public sealed class CustomerService(
     IRepository<CustomerCare> careRepo,
     IRepository<User> userRepo,
     ICurrentUserContext currentUser,
+    ICustomerQueries customerQueries,
     IValidator<CreateCustomerDto> createValidator,
     IValidator<UpdateCustomerDto> updateValidator) : ICustomerService
 {
@@ -167,21 +168,19 @@ public sealed class CustomerService(
 
     public async Task<CustomerStatsDto> GetStatsAsync()
     {
-        var customers = await repo.ListAsync();
         var now = DateTimeOffset.UtcNow;
         var todayStart = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, TimeSpan.Zero);
         var monthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
 
-        // Số lần mua theo KH (đơn hàng) → mua lần đầu (đúng 1 đơn) / mua lại (>1 đơn).
-        var orders = await orderRepo.ListAsync();
-        var orderCountByCustomer = orders.GroupBy(o => o.CustomerId).ToDictionary(g => g.Key, g => g.Count());
+        // C1: đếm ở SQL thay vì load toàn bảng. Mua lần đầu/mua lại đếm qua CustomerQueries (GROUP BY).
+        var (firstTime, repeat) = await customerQueries.BuyerCountsAsync();
 
         return new CustomerStatsDto(
-            Total: customers.Count,
-            NewToday: customers.Count(c => c.CreatedAt >= todayStart),
-            NewThisMonth: customers.Count(c => c.CreatedAt >= monthStart),
-            FirstTimeBuyers: orderCountByCustomer.Count(kv => kv.Value == 1),
-            RepeatBuyers: orderCountByCustomer.Count(kv => kv.Value > 1));
+            Total: await repo.CountAsync(),
+            NewToday: await repo.CountAsync(c => c.CreatedAt >= todayStart),
+            NewThisMonth: await repo.CountAsync(c => c.CreatedAt >= monthStart),
+            FirstTimeBuyers: firstTime,
+            RepeatBuyers: repeat);
     }
 
     public async Task<CustomerFilterOptionsDto> GetFilterOptionsAsync()

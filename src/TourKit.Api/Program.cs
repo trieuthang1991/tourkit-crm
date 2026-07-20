@@ -113,6 +113,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Custome
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 // Repo riêng cho query phức tạp/nhiều bảng (báo cáo GROUP BY) — không dịch được bằng IRepository<T> generic.
 builder.Services.AddScoped<IReportQueries, ReportQueries>();
+builder.Services.AddScoped<TourKit.Application.Customers.ICustomerQueries, TourKit.Infrastructure.Customers.CustomerQueries>();
 // Ghi bảng nối RBAC bằng hard-delete (thay tập quyền/vai trò) — repo generic chỉ soft-delete.
 builder.Services.AddScoped<TourKit.Application.Admin.IRbacStore, TourKit.Infrastructure.Admin.RbacStore>();
 // File storage: local ở dev (conventions §8) — đổi provider (S3/Azure) bằng cấu hình, không sửa code gọi.
