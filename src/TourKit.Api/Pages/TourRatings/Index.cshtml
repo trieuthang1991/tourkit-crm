@@ -1,0 +1,87 @@
+@page
+@model TourKit.Api.Pages.TourRatings.IndexModel
+@{ ViewData["Title"] = "Đánh giá tour"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Đánh giá tour</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th style="width:25%">Khách</th><th style="width:20%">SĐT</th><th class="text-end" style="width:10%">Sao</th><th style="width:35%">Nhận xét</th><th style="width:10%"></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, customerName = x.CustomerName, customerPhone = x.CustomerPhone, stars = x.Stars, comment = x.Comment, status = x.Status })'>
+          <td class="fw-medium">@x.CustomerName</td>
+          <td>@x.CustomerPhone</td>
+          <td class="text-end">@x.Stars</td>
+          <td>@x.Comment</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">đánh giá tour</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3"><label class="form-label">Tên khách</label><input type="text" name="Input.CustomerName" class="form-control" placeholder="Nhập tên khách" /></div>
+      <div class="mb-3"><label class="form-label">SĐT</label><input type="text" name="Input.CustomerPhone" class="form-control" placeholder="Nhập số điện thoại" /></div>
+      <div class="mb-3">
+        <label class="form-label">Số sao <span class="text-danger">*</span></label>
+        <select name="Input.Stars" class="form-select tk-s2" data-placeholder="Chọn số sao">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5" selected>5</option>
+        </select>
+      </div>
+      <div class="mb-3"><label class="form-label">Nhận xét</label><textarea name="Input.Comment" class="form-control" rows="3" placeholder="Nhập nhận xét"></textarea></div>
+      <div class="mb-3"><label class="form-label">Trạng thái</label><input type="number" name="Input.Status" class="form-control" value="1" /></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [4] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'đánh giá tour',
+        rules: { 'Input.Stars': { required: true } }, messages: { 'Input.Stars': { required: 'Bắt buộc chọn số sao' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá đánh giá tour?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}

@@ -1,0 +1,112 @@
+@page
+@model TourKit.Api.Pages.Leads.IndexModel
+@using TourKit.Shared.Enums
+@{ ViewData["Title"] = "Cơ hội bán hàng"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Cơ hội bán hàng</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm cơ hội</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Họ tên</th><th>SĐT</th><th>Nguồn</th><th>Trạng thái</th><th>NV phụ trách</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, fullName = x.FullName, phone = x.Phone, email = x.Email, source = x.Source, status = (int)x.Status, assignedToUserId = x.AssignedToUserId, branchId = x.BranchId })'>
+          <td class="fw-medium">@x.FullName</td>
+          <td>@x.Phone</td>
+          <td>@x.Source</td>
+          <td><span class="badge bg-label-@TourKit.Api.Pages.Leads.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.Leads.IndexModel.StatusLabel(x.Status)</span></td>
+          <td>@Model.UserName(x.AssignedToUserId)</td>
+          <td class="text-end">
+            @if (x.ConvertedCustomerId is null)
+            {
+              <form method="post" asp-page-handler="Convert" asp-route-id="@x.Id" class="d-inline js-convert">
+                <button type="submit" class="btn btn-icon btn-sm text-success" title="Chuyển thành khách"><i class="ti ti-user-check"></i></button>
+              </form>
+            }
+            else
+            {
+              <a href="/Customers/Details/@x.ConvertedCustomerId" class="btn btn-icon btn-sm" title="Xem khách"><i class="ti ti-user"></i></a>
+            }
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">cơ hội</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3"><label class="form-label">Họ tên <span class="text-danger">*</span></label><input type="text" name="Input.FullName" class="form-control" placeholder="Nhập họ tên" /></div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" /></div>
+      </div>
+      <div class="mb-3"><label class="form-label">Nguồn</label><input type="text" name="Input.Source" class="form-control" placeholder="Facebook, Hotline…" /></div>
+      <div class="mb-3">
+        <label class="form-label">Trạng thái</label>
+        <select name="Input.Status" class="form-select">
+          <option value="1">Mới</option><option value="2">Đã liên hệ</option><option value="3">Tiềm năng</option>
+          <option value="4">Đã chốt</option><option value="5">Thất bại</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">NV phụ trách</label>
+        <select name="Input.AssignedToUserId" class="form-select tk-s2" data-placeholder="Chọn NV">
+          <option value="">— Chưa gán —</option>
+          @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Chi nhánh</label>
+        <select name="Input.BranchId" class="form-select tk-s2" data-placeholder="Chọn chi nhánh">
+          <option value="">— Không —</option>
+          @foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [5] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'cơ hội',
+        rules: { 'Input.FullName': { required: true } }, messages: { 'Input.FullName': { required: 'Bắt buộc nhập họ tên' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá cơ hội?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}

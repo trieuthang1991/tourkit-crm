@@ -1,0 +1,82 @@
+@page
+@model TourKit.Api.Pages.CustomerCommissionRules.IndexModel
+@{ ViewData["Title"] = "HH theo loại khách"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">HH theo loại khách</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th style="width:55%">Loại khách</th><th class="text-end" style="width:30%">%</th><th style="width:15%"></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, customerType = x.CustomerType, percentage = x.Percentage, status = x.Status })'>
+          <td class="fw-medium">@(x.CustomerTypeName ?? x.CustomerType.ToString())</td>
+          <td class="text-end">@x.Percentage.ToString("0.##")</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">hoa hồng theo loại khách</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3">
+        <label class="form-label">Loại khách <span class="text-danger">*</span></label>
+        <select name="Input.CustomerType" class="form-select tk-s2" data-placeholder="Chọn loại khách">
+          @foreach (var t in Model.Types)
+          {
+            <option value="@t.Code">@t.Name</option>
+          }
+        </select>
+      </div>
+      <div class="mb-3"><label class="form-label">% hoa hồng</label><input type="number" step="any" name="Input.Percentage" class="form-control" placeholder="Nhập % hoa hồng" /></div>
+      <div class="mb-3"><label class="form-label">Trạng thái</label><input type="number" name="Input.Status" class="form-control" value="1" /></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [2] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'hoa hồng theo loại khách',
+        rules: { 'Input.CustomerType': { required: true } }, messages: { 'Input.CustomerType': { required: 'Bắt buộc chọn loại khách' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá hoa hồng theo loại khách?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}

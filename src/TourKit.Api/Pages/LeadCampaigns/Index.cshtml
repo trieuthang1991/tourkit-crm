@@ -1,0 +1,62 @@
+@page
+@model TourKit.Api.Pages.LeadCampaigns.IndexModel
+@{ ViewData["Title"] = "Chiến dịch chia số"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Chiến dịch chia số</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th style="width:55%">Tên</th><th class="text-end" style="width:15%">Tổng lead</th><th class="text-end" style="width:15%">Đã chốt</th><th class="text-end" style="width:15%">Tỉ lệ chốt</th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, name = x.Name })'>
+          <td class="fw-medium">@x.Name</td>
+          <td class="text-end">@x.TotalLeads</td>
+          <td class="text-end">@x.ClosedCount</td>
+          <td class="text-end">@x.CloseRate.ToString("0.#")%</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">chiến dịch chia số</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên chiến dịch" /></div>
+      <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="3" placeholder="Nhập ghi chú"></textarea></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl');
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'chiến dịch chia số',
+        rules: { 'Input.Name': { required: true } }, messages: { 'Input.Name': { required: 'Bắt buộc nhập tên' } } });
+    });
+  </script>
+}

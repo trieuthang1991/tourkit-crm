@@ -28,8 +28,8 @@ public static class MenuData
         }),
         new("g-crm", "CRM", "ti ti-users", Children: new List<MenuNode>
         {
-            new("crm-share", "Chia số Sale", To: "#", Perm: "lead.view"),
-            new("crm-opp", "Cơ hội bán hàng", To: "#", Perm: "lead.view"),
+            new("crm-share", "Chia số Sale", To: "/LeadCampaigns", Perm: "lead.view"),
+            new("crm-opp", "Cơ hội bán hàng", To: "/Leads", Perm: "lead.view"),
             new("crm-data", "Data khách hàng", To: "/Customers", Perm: "customer.view"),
             new("crm-dedup", "Rà khách trùng", To: "/Customers/Duplicates", Perm: "customer.view"),
             new("crm-care", "Quản lý lịch hẹn", To: "#", Perm: "care.view"),
