@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using FluentValidation;
 using TourKit.Application.Common;
 using TourKit.Application.Customers.Dtos;
@@ -22,35 +23,52 @@ public sealed class CustomerService(
         var f = filter ?? new CustomerListFilter();
         var kw = Norm(f.Q);
         var src = Norm(f.Source);
+        // Search thông minh: gõ toàn SỐ → khớp SĐT chuẩn hoá (0901 ~ +84901); có chữ → SearchName không dấu + mã + email.
+        var kwSearch = VietnameseText.NormalizeSearch(kw);
+        var kwPhone = VietnameseText.NormalizePhone(kw);
+        var phoneMode = kw is not null && kwPhone.Length >= 4 && kw.All(ch => !char.IsLetter(ch));
 
-        // B1: lọc tại DB các field là CỘT thật (nhanh). Field mềm trong jsonb + aggregate lọc ở bộ nhớ (B3).
-        // Prod scale (nhiều KH) có thể đẩy filter jsonb xuống Postgres (CrmProfileJson ->> ...); dev đủ dùng.
-        var candidates = await repo.ListAsync(c =>
+        // Predicate CỘT thật (dịch xuống SQL). Field mềm jsonb + aggregate lọc ở bộ nhớ (slow-path).
+        Expression<Func<Customer, bool>> predicate = c =>
             (f.CustomerType == null || c.CustomerType == f.CustomerType) &&
             (kw == null ||
-                c.FullName.Contains(kw) ||
-                (c.Code != null && c.Code.Contains(kw)) ||
-                (c.Phone != null && c.Phone.Contains(kw)) ||
-                (c.Email != null && c.Email.Contains(kw))) &&
+                (phoneMode
+                    ? (c.PhoneNormalized != null && c.PhoneNormalized.Contains(kwPhone))
+                    : ((c.SearchName != null && c.SearchName.Contains(kwSearch!)) ||
+                       (c.Code != null && c.Code.Contains(kw)) ||
+                       (c.Email != null && c.Email.Contains(kw))))) &&
             (src == null || (c.Source != null && c.Source.Contains(src))) &&
             (f.CreatedFrom == null || c.CreatedAt >= f.CreatedFrom) &&
-            (f.CreatedTo == null || c.CreatedAt <= f.CreatedTo));
+            (f.CreatedTo == null || c.CreatedAt <= f.CreatedTo);
 
-        var ids = candidates.Select(c => c.Id).ToHashSet();
+        // Có filter nhóm 2 (jsonb/aggregate) → buộc lọc in-memory (slow-path). Không thì phân trang thẳng ở SQL.
+        var hasSoftFilter = f.City != null || f.Gender != null || f.MarketGroup != null || f.Collaborator != null ||
+            f.Campaign != null || f.Branch != null || f.Group != null || f.Department != null ||
+            f.Segment != null || f.Tag != null || f.AssignedTo != null || f.CreatedBy != null ||
+            f.RevenueFrom != null || f.RevenueTo != null || f.CareFrom != null || f.CareTo != null ||
+            f.BirthdayMonth != null || f.PurchaseBucket != null || f.NotContactedBucket != null;
 
         // Map id(string) → tên NV để hiển thị người tạo / NV phụ trách. ID legacy không khớp sẽ giữ nguyên chuỗi.
         var userNames = (await userRepo.ListAsync()).ToDictionary(u => u.Id.ToString(), u => u.FullName);
 
-        // Aggregate bám danh sách hệ cũ: số lần mua + doanh thu (Order), chăm sóc gần nhất (CustomerCare).
-        var orders = await orderRepo.ListAsync(o => ids.Contains(o.CustomerId));
-        var ordersByCustomer = orders
-            .GroupBy(o => o.CustomerId)
-            .ToDictionary(g => g.Key, g => (Count: g.Count(), Sum: g.Sum(o => o.TotalRevenue)));
+        if (!hasSoftFilter)
+        {
+            // FAST-PATH (C2): Count + Skip/Take + OrderBy CreatedAt desc ở SQL; aggregate CHỈ cho ≤size dòng.
+            var (pageEntities, total) = await repo.PageAsync(page, size, predicate);
+            var (ordersFast, caresFast) = await LoadAggregatesAsync(pageEntities.Select(c => c.Id).ToHashSet());
+            var fastDtos = pageEntities.Select(c =>
+            {
+                ordersFast.TryGetValue(c.Id, out var agg);
+                caresFast.TryGetValue(c.Id, out var lastCare);
+                return Map(c, userNames, agg.Count, agg.Sum, lastCare?.CreatedAt, lastCare?.Title);
+            }).ToList();
+            return new PagedResult<CustomerDto>(fastDtos, total, page, size);
+        }
 
-        var cares = await careRepo.ListAsync(c => ids.Contains(c.CustomerId));
-        var lastCareByCustomer = cares
-            .GroupBy(c => c.CustomerId)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.CreatedAt).First());
+        // SLOW-PATH: cần aggregate cho MỌI candidate để lọc nhóm 2 → giữ nguyên logic cũ.
+        var candidates = await repo.ListAsync(predicate);
+        var ids = candidates.Select(c => c.Id).ToHashSet();
+        var (ordersByCustomer, lastCareByCustomer) = await LoadAggregatesAsync(ids);
 
         // B3: lọc field mềm (jsonb) + aggregate ở bộ nhớ; sắp theo ngày tạo giảm dần (bám hệ cũ) rồi phân trang.
         var now = DateTimeOffset.UtcNow;
@@ -92,6 +110,24 @@ public sealed class CustomerService(
             .ToList();
 
         return new PagedResult<CustomerDto>(dtos, ordered.Count, page, size);
+    }
+
+    // Aggregate bám danh sách hệ cũ: số lần mua + doanh thu (Order), chăm sóc gần nhất (CustomerCare) — theo tập id.
+    private async Task<(
+        Dictionary<Guid, (int Count, decimal Sum)> Orders,
+        Dictionary<Guid, CustomerCare> LastCare)> LoadAggregatesAsync(HashSet<Guid> ids)
+    {
+        var orders = await orderRepo.ListAsync(o => ids.Contains(o.CustomerId));
+        var ordersByCustomer = orders
+            .GroupBy(o => o.CustomerId)
+            .ToDictionary(g => g.Key, g => (Count: g.Count(), Sum: g.Sum(o => o.TotalRevenue)));
+
+        var cares = await careRepo.ListAsync(c => ids.Contains(c.CustomerId));
+        var lastCareByCustomer = cares
+            .GroupBy(c => c.CustomerId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.CreatedAt).First());
+
+        return (ordersByCustomer, lastCareByCustomer);
     }
 
     private static string? Norm(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

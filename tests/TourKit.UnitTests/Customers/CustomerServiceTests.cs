@@ -5,6 +5,7 @@ using TourKit.Application.Customers.Dtos;
 using TourKit.Application.Customers.Validators;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Security;
+using TourKit.Shared.Text;
 
 namespace TourKit.UnitTests.Customers;
 
@@ -32,7 +33,8 @@ public class CustomerServiceTests
         {
             var query = predicate is null ? _items.AsEnumerable() : _items.AsQueryable().Where(predicate);
             var list = query.ToList();
-            var pageItems = list.Skip((page - 1) * size).Take(size).ToList();
+            // Mirror Repository.PageAsync: sắp CreatedAt giảm dần trước khi phân trang.
+            var pageItems = list.OrderByDescending(e => e.CreatedAt).Skip((page - 1) * size).Take(size).ToList();
             return Task.FromResult<(IReadOnlyList<T> Items, int Total)>((pageItems, list.Count));
         }
 
@@ -106,6 +108,9 @@ public class CustomerServiceTests
             CreatedAt = createdAt ?? DateTimeOffset.UtcNow,
             DateOfBirth = dob,
             CrmProfileJson = profile?.ToJsonOrNull(),
+            // Mirror CreateAsync: cột search phải được set (service search dựa trên SearchName/PhoneNormalized).
+            SearchName = VietnameseText.NormalizeSearch(name),
+            PhoneNormalized = VietnameseText.NormalizePhone(phone) is { Length: > 0 } pn ? pn : null,
         };
 
     private static async Task SeedAsync(FakeRepository<Customer> repo, params Customer[] items)
