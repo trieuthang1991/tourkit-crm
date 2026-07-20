@@ -1,0 +1,126 @@
+@page
+@model TourKit.Api.Pages.Customers.IndexModel
+@{ ViewData["Title"] = "Data khách hàng"; }
+
+<div class="row g-4 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card"><div class="card-body py-3">
+      <span class="text-muted small">Tổng khách</span>
+      <h4 class="mb-0">@Model.Stats.Total</h4>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card"><div class="card-body py-3">
+      <span class="text-muted small">Mới hôm nay</span>
+      <h4 class="mb-0">@Model.Stats.NewToday</h4>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card"><div class="card-body py-3">
+      <span class="text-muted small">Mới tháng này</span>
+      <h4 class="mb-0">@Model.Stats.NewThisMonth</h4>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card"><div class="card-body py-3">
+      <span class="text-muted small">Mua lại</span>
+      <h4 class="mb-0">@Model.Stats.RepeatBuyers</h4>
+    </div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Data khách hàng</h5>
+    <a asp-page="Create" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Thêm khách</a>
+  </div>
+  <div class="card-body border-bottom">
+    <form method="get" class="row g-2">
+      <div class="col-md-4">
+        <input name="q" value="@Model.Q" class="form-control" placeholder="Tên / SĐT / email" />
+      </div>
+      <div class="col-md-3">
+        <select name="source" class="form-select">
+          <option value="">— Nguồn —</option>
+          @foreach (var s in Model.Options.Sources)
+          {
+              <option value="@s" selected="@(Model.Source == s)">@s</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select name="city" class="form-select">
+          <option value="">— Tỉnh/TP —</option>
+          @foreach (var c in Model.Options.Cities)
+          {
+              <option value="@c" selected="@(Model.City == c)">@c</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-outline-primary w-100"><i class="ti ti-filter me-1"></i> Lọc</button>
+      </div>
+    </form>
+  </div>
+  <div class="table-responsive text-nowrap">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Mã</th><th>Họ tên</th><th>SĐT</th><th>Nguồn</th><th>Tag</th>
+          <th class="text-end">Doanh thu</th><th>Ngày tạo</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+      @foreach (var c in Model.Result.Items)
+      {
+        <tr>
+          <td>@c.Code</td>
+          <td class="fw-medium">@c.FullName</td>
+          <td>@c.Phone</td>
+          <td>@c.Source</td>
+          <td>@c.Tag</td>
+          <td class="text-end">@c.Revenue.ToString("#,##0")</td>
+          <td>@c.CreatedAt.ToString("dd/MM/yyyy")</td>
+          <td class="text-end">
+            <a asp-page="Edit" asp-route-id="@c.Id" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>
+            <form method="post" asp-page-handler="Delete" asp-route-id="@c.Id" class="d-inline js-delete">
+              <button type="submit" class="btn btn-icon btn-sm text-danger" title="Xoá"><i class="ti ti-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+      }
+      @if (Model.Result.Items.Count == 0)
+      {
+        <tr><td colspan="8" class="text-center text-muted py-4">Không có khách hàng.</td></tr>
+      }
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <span class="text-muted small">Tổng @Model.Result.Total khách</span>
+    @if (Model.TotalPages > 1)
+    {
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          @for (var p = 1; p <= Model.TotalPages; p++)
+          {
+            <li class="page-item @(p == Model.PageNo ? "active" : "")">
+              <a class="page-link" asp-route-page="@p" asp-route-q="@Model.Q"
+                 asp-route-source="@Model.Source" asp-route-city="@Model.City">@p</a>
+            </li>
+          }
+        </ul>
+      </nav>
+    }
+  </div>
+</div>
+
+@section PageScripts {
+  <script>
+    document.querySelectorAll('.js-delete').forEach(function (f) {
+      f.addEventListener('submit', function (e) {
+        if (!confirm('Xoá khách hàng này?')) { e.preventDefault(); }
+      });
+    });
+  </script>
+}
