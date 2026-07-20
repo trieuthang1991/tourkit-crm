@@ -1,0 +1,79 @@
+@page
+@model TourKit.Api.Pages.PaymentAccounts.IndexModel
+@{ ViewData["Title"] = "Tài khoản thanh toán"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Tài khoản thanh toán</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th style="width:35%">Tên</th><th style="width:25%">Ngân hàng</th><th style="width:20%">Số TK</th><th class="text-center" style="width:10%">Mặc định</th><th style="width:10%"></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, name = x.Name, bankName = x.BankName, accountNumber = x.AccountNumber, accountHolder = x.AccountHolder, branch = x.Branch, transferNote = x.TransferNote, isDefault = x.IsDefault, sortOrder = x.SortOrder })'>
+          <td class="fw-medium">@x.Name</td>
+          <td>@x.BankName</td>
+          <td>@x.AccountNumber</td>
+          <td class="text-center">@(x.IsDefault ? "✓" : "")</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">tài khoản</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3"><label class="form-label">Tên tài khoản <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên tài khoản" /></div>
+      <div class="mb-3"><label class="form-label">Ngân hàng</label><input type="text" name="Input.BankName" class="form-control" placeholder="Nhập tên ngân hàng" /></div>
+      <div class="mb-3"><label class="form-label">Số TK</label><input type="text" name="Input.AccountNumber" class="form-control" placeholder="Nhập số tài khoản" /></div>
+      <div class="mb-3"><label class="form-label">Chủ TK</label><input type="text" name="Input.AccountHolder" class="form-control" placeholder="Nhập chủ tài khoản" /></div>
+      <div class="mb-3"><label class="form-label">Chi nhánh</label><input type="text" name="Input.Branch" class="form-control" placeholder="Nhập chi nhánh" /></div>
+      <div class="mb-3"><label class="form-label">Nội dung CK</label><input type="text" name="Input.TransferNote" class="form-control" placeholder="Nhập nội dung chuyển khoản" /></div>
+      <div class="mb-3 form-check"><input type="checkbox" name="Input.IsDefault" value="true" class="form-check-input" id="chk-default" /><label class="form-check-label" for="chk-default">Mặc định</label></div>
+      <div class="mb-3"><label class="form-label">Thứ tự</label><input type="number" name="Input.SortOrder" class="form-control" value="0" /></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [4] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'tài khoản',
+        rules: { 'Input.Name': { required: true } }, messages: { 'Input.Name': { required: 'Bắt buộc nhập tên tài khoản' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá tài khoản?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}

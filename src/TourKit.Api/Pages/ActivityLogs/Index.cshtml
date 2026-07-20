@@ -1,0 +1,37 @@
+@page
+@model TourKit.Api.Pages.ActivityLogs.IndexModel
+@{ ViewData["Title"] = "Log hệ thống"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Log hệ thống</h5></div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Hành động</th><th>Đối tượng</th><th>Mã ĐT</th><th>Thời gian</th></tr></thead>
+      <tbody>
+      @foreach (var l in Model.Items)
+      {
+        <tr>
+          <td><span class="badge bg-label-@(l.Action == "Insert" ? "success" : l.Action == "Delete" ? "danger" : "info")">@l.Action</span></td>
+          <td class="fw-medium">@l.EntityName</td>
+          <td class="text-muted">@l.EntityId</td>
+          <td>@l.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () { tk.tableClient('#tbl', { ordering: true, pageLength: 50 }); });
+  </script>
+}

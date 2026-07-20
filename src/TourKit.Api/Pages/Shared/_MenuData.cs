@@ -16,7 +16,7 @@ public static class MenuData
             new("w-social", "Mạng Nội Bộ", To: "#", Perm: "post.view"),
             new("w-workspace", "Bàn làm việc", To: "#", Perm: "report.dashboard.view"),
             new("w-dashboard", "Tổng quan", To: "/Dashboard", Perm: "report.dashboard.view"),
-            new("w-noti", "Thông báo", To: "#", Perm: "report.dashboard.view"),
+            new("w-noti", "Thông báo", To: "/Notifications", Perm: "report.dashboard.view"),
         }),
         new("g-provider", "Nhà cung cấp", "ti ti-building-store", Children: new List<MenuNode>
         {
@@ -81,7 +81,7 @@ public static class MenuData
         }),
         new("g-vehicle", "Quản lý xe", "ti ti-car", Children: new List<MenuNode>
         {
-            new("v-store", "Kho xe", To: "#", Perm: "vehicle.view"),
+            new("v-store", "Kho xe", To: "/Vehicles", Perm: "vehicle.view"),
             new("v-waiting", "Lịch xe chờ duyệt", To: "#", Perm: "vehicle.view"),
             new("v-manage", "Lịch điều xe", To: "#", Perm: "vehicle.view"),
             new("v-report", "Báo cáo", To: "#", Perm: "vehicle.view"),
@@ -125,7 +125,7 @@ public static class MenuData
             new("mkt-email", "Email Marketing", Children: new List<MenuNode>
             {
                 new("mkt-campaign", "Chiến dịch", To: "#", Perm: "marketing.view"),
-                new("mkt-store", "Kho Email Mẫu", To: "#", Perm: "marketing.view"),
+                new("mkt-store", "Kho Email Mẫu", To: "/MessageTemplates", Perm: "marketing.view"),
             }),
             new("mkt-zalo", "Zalo OA/ZBS", Children: new List<MenuNode>
             {
@@ -134,7 +134,7 @@ public static class MenuData
                 new("zalo-uid", "Zalo UID (Tin follow OA)", To: "#", Perm: "marketing.view"),
             }),
             new("mkt-posts", "Bài viết", To: "#", Perm: "post.view"),
-            new("mkt-postcat", "Chuyên mục bài viết", To: "#", Perm: "post.view"),
+            new("mkt-postcat", "Chuyên mục bài viết", To: "/PostCategories", Perm: "post.view"),
         }),
         new("g-report", "Báo cáo", "ti ti-chart-bar", Children: new List<MenuNode>
         {
@@ -158,7 +158,7 @@ public static class MenuData
         }),
         new("g-log", "Log hệ thống", "ti ti-history", Children: new List<MenuNode>
         {
-            new("log-system", "Log hệ thống", To: "#", Perm: "activitylog.view"),
+            new("log-system", "Log hệ thống", To: "/ActivityLogs", Perm: "activitylog.view"),
         }),
     };
 
