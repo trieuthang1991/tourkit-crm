@@ -32,15 +32,17 @@ public sealed class PasswordResetService : IPasswordResetService
     private readonly IPasswordHasher _hasher;
     private readonly IEmailSender _email;
     private readonly AmbientTenantContext _tenant;
+    private readonly ILogger<PasswordResetService> _logger;
     private readonly ITimeLimitedDataProtector _protector;
 
     public PasswordResetService(AppDbContext db, IPasswordHasher hasher, IEmailSender email,
-        AmbientTenantContext tenant, IDataProtectionProvider dp)
+        AmbientTenantContext tenant, ILogger<PasswordResetService> logger, IDataProtectionProvider dp)
     {
         _db = db;
         _hasher = hasher;
         _email = email;
         _tenant = tenant;
+        _logger = logger;
         _protector = dp.CreateProtector(Purpose).ToTimeLimitedDataProtector();
     }
 
@@ -72,7 +74,16 @@ public sealed class PasswordResetService : IPasswordResetService
             <p><a href="{url}">Bấm vào đây để đặt mật khẩu mới</a></p>
             <p>Liên kết có hiệu lực trong 2 giờ. Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
             """;
-        await _email.SendAsync(user.Email, "TourKit — Đặt lại mật khẩu", body, ct);
+        // SMTP hỏng (SES từ chối/timeout) KHÔNG được làm trang 500: nuốt lỗi + ghi log để quản trị soi,
+        // người dùng vẫn thấy đúng một thông điệp trung lập như mọi trường hợp khác.
+        try
+        {
+            await _email.SendAsync(user.Email, "TourKit — Đặt lại mật khẩu", body, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Gửi email đặt lại mật khẩu thất bại cho {Email}", user.Email);
+        }
     }
 
     public async Task<string?> ResetAsync(string token, string newPassword, CancellationToken ct = default)
