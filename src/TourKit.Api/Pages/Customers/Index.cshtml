@@ -1,4 +1,5 @@
 @page
+@using TourKit.Api.Pages.Shared
 @model TourKit.Api.Pages.Customers.IndexModel
 @{ ViewData["Title"] = "Data khách hàng"; }
 
@@ -40,24 +41,30 @@
 </div>
 
 <div class="card">
-  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-    <h5 class="mb-0">Data khách hàng</h5>
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      <select id="f-source" class="form-select form-select-sm" style="min-width:150px">
-        <option value="">— Nguồn —</option>
-        @foreach (var s in Model.Options.Sources)
-        {
-            <option value="@s">@s</option>
-        }
-      </select>
-      <select id="f-city" class="form-select form-select-sm" style="min-width:150px">
-        <option value="">— Tỉnh/TP —</option>
-        @foreach (var c in Model.Options.Cities)
-        {
-            <option value="@c">@c</option>
-        }
-      </select>
+  <div class="card-header border-bottom">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Data khách hàng</h5>
       <a asp-page="Create" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Thêm khách</a>
+    </div>
+    <div class="row g-2">
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <select id="f-source" class="form-select form-select-sm">
+          <option value="">— Nguồn —</option>
+          @foreach (var s in Model.Options.Sources)
+          {
+              <option value="@s">@s</option>
+          }
+        </select>
+      </div>
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <select id="f-city" class="form-select form-select-sm">
+          <option value="">— Tỉnh/Thành —</option>
+          @foreach (var c in VietnamProvinces.All)
+          {
+              <option value="@c">@c</option>
+          }
+        </select>
+      </div>
     </div>
   </div>
   <div class="card-datatable table-responsive">
@@ -113,6 +120,7 @@
         ],
         lengthMenu: [10, 20, 50, 100],
         pageLength: 20,
+        dom: '<"row mx-2 mt-2"<"col-md-6 d-flex align-items-center"l><"col-md-6 d-flex align-items-center justify-content-md-end"f>>t<"row mx-2 my-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-md-end"p>>',
         language: {
           processing: 'Đang tải...',
           search: 'Tìm:',

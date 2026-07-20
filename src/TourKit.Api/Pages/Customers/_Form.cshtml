@@ -1,3 +1,4 @@
+@using TourKit.Api.Pages.Shared
 @model TourKit.Api.Pages.Customers.CustomerFormInput
 <div class="row g-3">
   <div class="col-md-6">
@@ -26,8 +27,14 @@
     <input asp-for="Source" class="form-control" />
   </div>
   <div class="col-md-6">
-    <label class="form-label">Tỉnh/TP</label>
-    <input asp-for="City" class="form-control" />
+    <label class="form-label">Tỉnh/Thành</label>
+    <select asp-for="City" class="form-select">
+      <option value="">— Chọn tỉnh/thành —</option>
+      @foreach (var p in VietnamProvinces.All)
+      {
+          <option value="@p">@p</option>
+      }
+    </select>
   </div>
   <div class="col-12">
     <label class="form-label">Địa chỉ</label>

@@ -60,7 +60,12 @@
 
         <!-- Content -->
         <div class='@ViewData["container"] @(Convert.ToBoolean(@ViewData["isFlex"]) ? "d-flex align-items-stretch flex-grow-1 p-0" : "flex-grow-1 container-p-y")'>
-          @if (TempData["ok"] is string okMsg)
+          @{
+            // Đọc rồi XOÁ hẳn: layout Vuexy gọi TempData.Keep() nên nếu không Remove, toast dính mãi.
+            var okMsg = TempData["ok"] as string;
+            TempData.Remove("ok");
+          }
+          @if (okMsg != null)
           {
             <div class="alert alert-success alert-dismissible" role="alert">
               @okMsg
