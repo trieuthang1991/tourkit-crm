@@ -1,16 +1,258 @@
 @page
 @model TourKit.Api.Pages.Dashboard.IndexModel
 @{ ViewData["Title"] = "Tổng quan"; }
-<div class="row g-4">
-  <div class="col-12">
-    <div class="card">
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.css" />
+}
+
+@section VendorScripts {
+  <script src="~/vendor/libs/apex-charts/apexcharts.js"></script>
+}
+
+@* Bám bố cục Dashboards/CRM (docs/vuexy-reference) — số liệu thật từ PageModel. *@
+
+<div class="row">
+  <!-- 4 thẻ số liệu (khuôn "Total Profit" card của CRM dashboard) -->
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100">
       <div class="card-body">
-        <h5 class="card-title mb-1">Chào mừng tới TourKit</h5>
-        <p class="mb-3 text-muted">Giao diện quản trị nền Vuexy, chạy trực tiếp trên ASP.NET Core.</p>
-        <a asp-page="/Customers/Index" class="btn btn-primary">
-          <i class="ti ti-users me-1"></i> Data khách hàng
-        </a>
+        <div class="badge p-2 bg-label-primary mb-2 rounded"><i class="ti ti-cash ti-md"></i></div>
+        <h5 class="card-title mb-1 pt-2">Doanh thu</h5>
+        <small class="text-muted">Toàn bộ đơn hàng</small>
+        <p class="mb-0 mt-1 fw-medium">@Model.Summary.TotalRevenue.ToString("#,##0")</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="badge p-2 bg-label-success mb-2 rounded"><i class="ti ti-wallet ti-md"></i></div>
+        <h5 class="card-title mb-1 pt-2">Đã thu</h5>
+        <small class="text-muted">Phiếu thu đã ghi nhận</small>
+        <p class="mb-0 mt-1 fw-medium">@Model.Summary.TotalReceived.ToString("#,##0")</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="badge p-2 bg-label-warning mb-2 rounded"><i class="ti ti-alert-triangle ti-md"></i></div>
+        <h5 class="card-title mb-1 pt-2">Còn phải thu</h5>
+        <small class="text-muted">Công nợ khách</small>
+        <p class="mb-0 mt-1 fw-medium">@Model.Summary.ReceivableOutstanding.ToString("#,##0")</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="badge p-2 bg-label-info mb-2 rounded"><i class="ti ti-trending-up ti-md"></i></div>
+        <h5 class="card-title mb-1 pt-2">Lợi nhuận gộp</h5>
+        <small class="text-muted">Doanh thu − chi phí</small>
+        <p class="mb-0 mt-1 fw-medium @(Model.Summary.GrossProfit < 0 ? "text-danger" : "")">@Model.Summary.GrossProfit.ToString("#,##0")</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Doanh thu theo phòng ban (bar) -->
+  <div class="col-12 col-xl-8 mb-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <div class="card-title mb-0">
+          <h5 class="mb-0">Doanh thu theo phòng ban</h5>
+          <small class="text-muted">Doanh thu và lợi nhuận từng phòng</small>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="deptChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dòng tiền theo phương thức (donut) -->
+  <div class="col-12 col-xl-4 mb-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <div class="card-title mb-0">
+          <h5 class="mb-0">Tiền thu theo phương thức</h5>
+          <small class="text-muted">Phiếu thu đã ghi nhận</small>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="cashDonut"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Đơn hàng (khuôn "Statistics" card của Ecommerce dashboard) -->
+  <div class="col-12 col-xl-4 mb-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Đơn hàng</h5>
+        <small class="text-muted">Theo trạng thái và thanh toán</small>
+      </div>
+      <div class="card-body">
+        <div class="row gy-3">
+          <div class="col-6">
+            <div class="d-flex align-items-center">
+              <div class="badge rounded-pill bg-label-primary me-3 p-2"><i class="ti ti-shopping-cart ti-sm"></i></div>
+              <div class="card-info"><h5 class="mb-0">@Model.Orders.Total</h5><small>Tổng đơn</small></div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="d-flex align-items-center">
+              <div class="badge rounded-pill bg-label-info me-3 p-2"><i class="ti ti-check ti-sm"></i></div>
+              <div class="card-info"><h5 class="mb-0">@Model.Orders.Confirmed</h5><small>Đã xác nhận</small></div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="d-flex align-items-center">
+              <div class="badge rounded-pill bg-label-warning me-3 p-2"><i class="ti ti-clock ti-sm"></i></div>
+              <div class="card-info"><h5 class="mb-0">@Model.Orders.Draft</h5><small>Nháp/Giữ chỗ</small></div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="d-flex align-items-center">
+              <div class="badge rounded-pill bg-label-secondary me-3 p-2"><i class="ti ti-x ti-sm"></i></div>
+              <div class="card-info"><h5 class="mb-0">@Model.Orders.Cancelled</h5><small>Đã huỷ</small></div>
+            </div>
+          </div>
+        </div>
+        <hr class="my-3" />
+        <div class="row gy-3">
+          <div class="col-4 text-center">
+            <span class="badge bg-label-danger mb-1">@Model.Orders.Unpaid</span>
+            <small class="d-block">Chưa TT</small>
+          </div>
+          <div class="col-4 text-center">
+            <span class="badge bg-label-warning mb-1">@Model.Orders.Deposit</span>
+            <small class="d-block">Đã cọc</small>
+          </div>
+          <div class="col-4 text-center">
+            <span class="badge bg-label-success mb-1">@Model.Orders.Paid</span>
+            <small class="d-block">TT đủ</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phễu báo giá (KPI) -->
+  <div class="col-12 col-xl-4 mb-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Phễu báo giá</h5>
+        <small class="text-muted">Báo giá → chấp nhận → chuyển đơn</small>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-0">
+          <li class="d-flex justify-content-between align-items-center mb-3">
+            <span><i class="ti ti-file-text text-primary me-2"></i>Báo giá đã tạo</span>
+            <h5 class="mb-0">@Model.Kpi.QuoteCount</h5>
+          </li>
+          <li class="d-flex justify-content-between align-items-center mb-3">
+            <span><i class="ti ti-thumb-up text-success me-2"></i>Được chấp nhận</span>
+            <h5 class="mb-0">@Model.Kpi.QuoteAcceptedCount</h5>
+          </li>
+          <li class="d-flex justify-content-between align-items-center mb-3">
+            <span><i class="ti ti-transform text-info me-2"></i>Đã chuyển đơn</span>
+            <h5 class="mb-0">@Model.Kpi.QuoteConvertedCount</h5>
+          </li>
+        </ul>
+        <hr class="my-3" />
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1"><small>Tỉ lệ chấp nhận</small><small class="fw-medium">@((Model.Kpi.AcceptanceRate * 100).ToString("0.#"))%</small></div>
+          <div class="progress" style="height:6px"><div class="progress-bar bg-success" style="width:@Math.Min(100, Model.Kpi.AcceptanceRate * 100)%"></div></div>
+        </div>
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1"><small>Tỉ lệ chuyển đơn</small><small class="fw-medium">@((Model.Kpi.ConversionRate * 100).ToString("0.#"))%</small></div>
+          <div class="progress" style="height:6px"><div class="progress-bar bg-info" style="width:@Math.Min(100, Model.Kpi.ConversionRate * 100)%"></div></div>
+        </div>
+        <div>
+          <div class="d-flex justify-content-between mb-1"><small>Tỉ lệ thu tiền</small><small class="fw-medium">@((Model.Kpi.CollectionRate * 100).ToString("0.#"))%</small></div>
+          <div class="progress" style="height:6px"><div class="progress-bar bg-primary" style="width:@Math.Min(100, Model.Kpi.CollectionRate * 100)%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top khách hàng -->
+  <div class="col-12 col-xl-4 mb-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <div class="card-title mb-0">
+          <h5 class="mb-0">Top khách hàng</h5>
+          <small class="text-muted">Theo doanh thu</small>
+        </div>
+        <a href="/Customers" class="btn btn-sm btn-label-primary">Tất cả</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Khách hàng</th><th class="text-end">Doanh thu</th><th class="text-end">Đã thu</th></tr></thead>
+          <tbody>
+          @if (Model.TopCustomers.Count == 0)
+          {
+            <tr><td colspan="3" class="text-center text-muted py-4">Chưa có dữ liệu.</td></tr>
+          }
+          @foreach (var c in Model.TopCustomers)
+          {
+            <tr>
+              <td><a href="/Customers/Details/@c.CustomerId" class="fw-medium">@c.CustomerName</a></td>
+              <td class="text-end">@c.Revenue.ToString("#,##0")</td>
+              <td class="text-end">@c.Received.ToString("#,##0")</td>
+            </tr>
+          }
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 </div>
+
+@section PageScripts {
+  <script>
+    // Data thật serialize từ PageModel — option/style bám dashboards-crm.js của template.
+    var DEPT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByDepartment.Select(d => new { name = d.DepartmentName, turnover = d.Turnover, profit = d.Profit })));
+    var CASH = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CashFlow.Where(c => c.Inflow > 0).Select(c => new { method = c.PaymentMethod, inflow = c.Inflow })));
+
+    $(function () {
+      var label = '#a8aaae', border = '#dbdade';
+
+      if (DEPT.length) {
+        new ApexCharts(document.querySelector('#deptChart'), {
+          chart: { type: 'bar', height: 320, toolbar: { show: false } },
+          series: [
+            { name: 'Doanh thu', data: DEPT.map(function (d) { return d.turnover; }) },
+            { name: 'Lợi nhuận', data: DEPT.map(function (d) { return d.profit; }) }
+          ],
+          colors: ['#7367f0', '#28c76f'],
+          plotOptions: { bar: { columnWidth: '40%', borderRadius: 4 } },
+          dataLabels: { enabled: false },
+          legend: { labels: { colors: label } },
+          xaxis: { categories: DEPT.map(function (d) { return d.name; }), labels: { style: { colors: label } }, axisBorder: { show: false } },
+          yaxis: { labels: { style: { colors: label }, formatter: function (v) { return tk.money(v); } } },
+          grid: { borderColor: border, strokeDashArray: 6 },
+          tooltip: { y: { formatter: function (v) { return tk.money(v); } } }
+        }).render();
+      } else {
+        $('#deptChart').html('<p class="text-muted text-center py-5 mb-0">Chưa có dữ liệu doanh thu.</p>');
+      }
+
+      if (CASH.length) {
+        new ApexCharts(document.querySelector('#cashDonut'), {
+          chart: { type: 'donut', height: 320 },
+          series: CASH.map(function (c) { return c.inflow; }),
+          labels: CASH.map(function (c) { return c.method; }),
+          colors: ['#7367f0', '#28c76f', '#00cfe8', '#ff9f43', '#ea5455', '#a8aaae'],
+          legend: { position: 'bottom', labels: { colors: label } },
+          dataLabels: { enabled: false },
+          stroke: { width: 0 },
+          tooltip: { y: { formatter: function (v) { return tk.money(v); } } }
+        }).render();
+      } else {
+        $('#cashDonut').html('<p class="text-muted text-center py-5 mb-0">Chưa có phiếu thu nào.</p>');
+      }
+    });
+  </script>
+}

@@ -121,8 +121,9 @@ if (document.getElementById('layout-menu')) {
       }
       switchImage('dark');
     }
-  } else {
+  } else if (styleSwitcherToggleEl) {
     // Removed style switcher element if not using template customizer
+    // (guard null: TourKit đã gỡ Template Customizer nên nút switcher không tồn tại)
     styleSwitcherToggleEl.parentElement.remove();
   }
 
