@@ -1,0 +1,98 @@
+@page
+@model TourKit.Api.Pages.ProviderServices.IndexModel
+@{ ViewData["Title"] = "Bảng giá NCC"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Bảng giá NCC</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm giá</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>NCC</th><th>Tên giá</th><th class="text-end">Giá vốn</th><th class="text-end">Giá bán</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, providerId = x.ProviderId, serviceItemId = x.ServiceItemId, priceName = x.PriceName, contractPrice = x.ContractPrice, publicPrice = x.PublicPrice, currencyCode = x.CurrencyCode, amountOfPeople = x.AmountOfPeople, note = x.Note, status = x.Status })'>
+          <td class="fw-medium">@Model.ProviderName(x.ProviderId)</td>
+          <td>@x.PriceName</td>
+          <td class="text-end">@x.ContractPrice.ToString("#,##0")</td>
+          <td class="text-end">@x.PublicPrice.ToString("#,##0")</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">bảng giá NCC</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3">
+        <label class="form-label">Nhà cung cấp <span class="text-danger">*</span></label>
+        <select name="Input.ProviderId" class="form-select tk-s2" data-placeholder="Chọn NCC">
+          <option value=""></option>
+          @foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Dịch vụ</label>
+        <select name="Input.ServiceItemId" class="form-select tk-s2" data-placeholder="Chọn dịch vụ">
+          <option value="">— Không —</option>
+          @foreach (var s in Model.ServiceItems) { <option value="@s.Id">@s.Name</option> }
+        </select>
+      </div>
+      <div class="mb-3"><label class="form-label">Tên giá</label><input type="text" name="Input.PriceName" class="form-control" placeholder="Nhập tên giá" /></div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Giá vốn</label><input type="number" step="any" name="Input.ContractPrice" class="form-control" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Giá bán</label><input type="number" step="any" name="Input.PublicPrice" class="form-control" value="0" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Tiền tệ</label><input type="text" name="Input.CurrencyCode" class="form-control" placeholder="VND" value="VND" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Số khách</label><input type="number" name="Input.AmountOfPeople" class="form-control" value="1" /></div>
+      </div>
+      <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Nhập ghi chú"></textarea></div>
+      <div class="mb-3"><label class="form-label">Trạng thái</label><input type="number" name="Input.Status" class="form-control" value="1" /></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [4] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'bảng giá NCC',
+        rules: { 'Input.ProviderId': { required: true } }, messages: { 'Input.ProviderId': { required: 'Bắt buộc chọn NCC' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá bảng giá NCC?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}

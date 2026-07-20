@@ -1,0 +1,128 @@
+@page
+@model TourKit.Api.Pages.Providers.IndexModel
+@using TourKit.Shared.Enums
+@{ ViewData["Title"] = "Nhà cung cấp"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Nhà cung cấp</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm NCC</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Mã</th><th>Tên</th><th>Loại</th><th>SĐT</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, code = x.Code, name = x.Name, type = (int)x.Type, phone = x.Phone, email = x.Email, address = x.Address, taxCode = x.TaxCode, contactPerson = x.ContactPerson, bankName = x.BankName, bankAccount = x.BankAccount, paymentTermId = x.PaymentTermId, branchId = x.BranchId, marketTypeId = x.MarketTypeId, rate = x.Rate, status = x.Status })'>
+          <td class="fw-medium">@x.Code</td>
+          <td>@x.Name</td>
+          <td>@TourKit.Api.Pages.Providers.IndexModel.TypeLabel(x.Type)</td>
+          <td>@x.Phone</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:560px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">nhà cung cấp</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Mã <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã NCC" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên NCC" /></div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Loại</label>
+        <select name="Input.Type" class="form-select">
+          <option value="1">Khách sạn</option>
+          <option value="2">Vận chuyển</option>
+          <option value="3">Nhà hàng</option>
+          <option value="4">Hướng dẫn viên</option>
+          <option value="5">Hàng không</option>
+          <option value="6">Khác</option>
+        </select>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" placeholder="Nhập số điện thoại" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" placeholder="Nhập email" /></div>
+      </div>
+      <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.Address" class="form-control" placeholder="Nhập địa chỉ" /></div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Mã số thuế</label><input type="text" name="Input.TaxCode" class="form-control" placeholder="Nhập MST" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Người liên hệ</label><input type="text" name="Input.ContactPerson" class="form-control" placeholder="Nhập người liên hệ" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Ngân hàng</label><input type="text" name="Input.BankName" class="form-control" placeholder="Nhập ngân hàng" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Số TK</label><input type="text" name="Input.BankAccount" class="form-control" placeholder="Nhập số tài khoản" /></div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Điều khoản thanh toán</label>
+        <select name="Input.PaymentTermId" class="form-select tk-s2" data-placeholder="Chọn điều khoản">
+          <option value="">— Không —</option>
+          @foreach (var p in Model.PaymentTerms) { <option value="@p.Id">@p.Name</option> }
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Chi nhánh</label>
+        <select name="Input.BranchId" class="form-select tk-s2" data-placeholder="Chọn chi nhánh">
+          <option value="">— Không —</option>
+          @foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Nhóm/Thị trường</label>
+        <select name="Input.MarketTypeId" class="form-select tk-s2" data-placeholder="Chọn nhóm/thị trường">
+          <option value="">— Không —</option>
+          @foreach (var m in Model.MarketTypes) { <option value="@m.Id">@m.Name</option> }
+        </select>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Đánh giá</label><input type="number" name="Input.Rate" class="form-control" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Trạng thái</label><input type="number" name="Input.Status" class="form-control" value="1" /></div>
+      </div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [4] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'nhà cung cấp',
+        rules: { 'Input.Code': { required: true }, 'Input.Name': { required: true } },
+        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã' }, 'Input.Name': { required: 'Bắt buộc nhập tên' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá nhà cung cấp?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}

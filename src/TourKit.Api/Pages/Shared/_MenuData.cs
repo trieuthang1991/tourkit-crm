@@ -20,9 +20,9 @@ public static class MenuData
         }),
         new("g-provider", "Nhà cung cấp", "ti ti-building-store", Children: new List<MenuNode>
         {
-            new("p-all", "Tất cả Nhà cung cấp", To: "#", Perm: "provider.view"),
-            new("p-services", "Danh mục dịch vụ", To: "#", Perm: "service.view"),
-            new("p-pricing", "Bảng giá NCC", To: "#", Perm: "service.view"),
+            new("p-all", "Tất cả Nhà cung cấp", To: "/Providers", Perm: "provider.view"),
+            new("p-services", "Danh mục dịch vụ", To: "/ServiceItems", Perm: "service.view"),
+            new("p-pricing", "Bảng giá NCC", To: "/ProviderServices", Perm: "service.view"),
             new("p-terms", "Điều khoản TT NCC", To: "/PaymentTerms", Perm: "provider.view"),
             new("p-series", "Series Vé / Quỹ vé", To: "#", Perm: "ticketfund.view"),
         }),
@@ -69,13 +69,13 @@ public static class MenuData
         }),
         new("g-flight", "Vé Máy Bay", "ti ti-plane", Children: new List<MenuNode>
         {
-            new("f-provider", "Nhà cung cấp vé", To: "#", Perm: "provider.view"),
+            new("f-provider", "Nhà cung cấp vé", To: "/Providers", Perm: "provider.view"),
             new("f-group", "Vé máy bay đoàn", To: "#", Perm: "ticketfund.view"),
             new("f-individual", "Vé máy bay lẻ", To: "#", Perm: "ticketfund.view"),
         }),
         new("g-guide", "Hướng dẫn viên", "ti ti-id-badge-2", Children: new List<MenuNode>
         {
-            new("gd-provider", "Hướng dẫn viên", To: "#", Perm: "guide.view"),
+            new("gd-provider", "Hướng dẫn viên", To: "/Providers", Perm: "guide.view"),
             new("gd-calendar", "Lịch điều Hướng dẫn viên", To: "#", Perm: "guide.view"),
             new("gd-report", "Báo cáo", To: "#", Perm: "guide.view"),
         }),
@@ -146,7 +146,7 @@ public static class MenuData
         }),
         new("g-agent", "Đại lý (B2B)", "ti ti-heart-handshake", Children: new List<MenuNode>
         {
-            new("ag-list", "Danh sách đại lý", To: "#", Perm: "agent.view"),
+            new("ag-list", "Danh sách đại lý", To: "/Agents", Perm: "agent.view"),
             new("ag-booking", "Đặt chỗ đại lý", To: "#", Perm: "agentquote.view"),
         }),
         new("g-system", "Cài đặt hệ thống", "ti ti-settings", Children: new List<MenuNode>
