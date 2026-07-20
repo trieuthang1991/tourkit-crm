@@ -1,0 +1,154 @@
+@using TourKit.Api.Pages.Shared
+@using TourKit.Application.Catalog.Dtos
+@{
+    var saveUrl = ViewData["SaveUrl"] as string ?? "?handler=Save";
+    var types = ViewData["CustomerTypes"] as IReadOnlyList<CustomerTypeDto> ?? new List<CustomerTypeDto>();
+    var sourceList = ViewData["Sources"] as IReadOnlyList<string> ?? new List<string>();
+    var tagList = ViewData["Tags"] as IReadOnlyList<string> ?? new List<string>();
+    var marketList = ViewData["Markets"] as IReadOnlyList<string> ?? new List<string>();
+    // "Doanh nghiệp"/"Đại lý" là khách tổ chức → hiện section thông tin đơn vị.
+    static bool IsOrg(string name) => name.Contains("Doanh nghiệp", StringComparison.OrdinalIgnoreCase)
+        || name.Contains("Đại lý", StringComparison.OrdinalIgnoreCase)
+        || name.Contains("đơn vị", StringComparison.OrdinalIgnoreCase);
+}
+@Html.AntiForgeryToken()
+
+<!-- Offcanvas thêm/sửa khách hàng (trượt phải) — bám form hệ cũ, section Doanh nghiệp hiện động -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="ocEditCustomer" aria-labelledby="ocEditLabel" style="width: 640px; max-width: 100%;">
+  <div class="offcanvas-header border-bottom">
+    <h5 id="ocEditLabel" class="offcanvas-title">Khách hàng</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <form id="customerForm" data-action="@saveUrl" onsubmit="return false">
+      <input type="hidden" name="Id" />
+
+      <div class="mb-3">
+        <label class="form-label">Loại khách</label>
+        <select name="Input.CustomerType" id="oc-type" class="form-select">
+          @if (types.Count == 0)
+          {
+            <option value="0">Khách lẻ</option>
+          }
+          @foreach (var t in types.OrderBy(t => t.SortOrder))
+          {
+            <option value="@t.Code" data-business="@(IsOrg(t.Name) ? "true" : "false")">@t.Name</option>
+          }
+        </select>
+      </div>
+
+      <!-- Thông tin doanh nghiệp (động) -->
+      <div id="oc-business" class="border rounded p-3 mb-3 bg-lighter d-none">
+        <p class="fw-semibold mb-2"><i class="ti ti-building me-1"></i> Thông tin doanh nghiệp</p>
+        <div class="mb-3">
+          <label class="form-label">Tên đơn vị <span class="text-danger">*</span></label>
+          <input type="text" name="Input.UnitName" id="oc-unitname" class="form-control" placeholder="Công ty TNHH…" />
+        </div>
+        <div class="mb-0">
+          <label class="form-label">Mã số thuế</label>
+          <input type="text" name="Input.TaxCode" class="form-control" placeholder="Nhập mã số thuế" />
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Họ tên <span class="text-danger">*</span></label>
+        <input type="text" name="Input.FullName" class="form-control" placeholder="Nguyễn Văn A" required />
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Số điện thoại</label>
+          <input type="text" name="Input.Phone" class="form-control" placeholder="09xxxxxxxx" />
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Email</label>
+          <input type="text" name="Input.Email" class="form-control" placeholder="email@vidu.vn" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Giới tính</label>
+          <select name="Input.Gender" class="form-select">
+            <option value="">—</option>
+            <option value="Nam">Nam</option>
+            <option value="Nữ">Nữ</option>
+            <option value="Khác">Khác</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Ngày sinh</label>
+          <input type="date" name="Input.DateOfBirth" class="form-control" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Nguồn</label>
+          <select name="Input.Source" class="form-select oc-select2" data-placeholder="Chọn nguồn">
+            <option value="">— Chọn nguồn —</option>
+            @foreach (var s in sourceList)
+            {
+                <option value="@s">@s</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Thẻ (Tags)</label>
+          <select name="Input.Tags" multiple class="form-select oc-select2-tags" data-placeholder="Chọn thẻ">
+            @foreach (var t in tagList)
+            {
+                <option value="@t">@t</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Nhóm/Thị trường</label>
+          <select name="Input.MarketGroup" class="form-select oc-select2" data-placeholder="Chọn thị trường">
+            <option value="">— Chọn thị trường —</option>
+            @foreach (var m in marketList)
+            {
+                <option value="@m">@m</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">CTV</label>
+          <input type="text" name="Input.CollaboratorName" class="form-control" placeholder="Tên cộng tác viên" />
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Tỉnh/Thành</label>
+        <select name="Input.City" class="form-select oc-select2" data-placeholder="Chọn tỉnh/thành">
+          <option value="">— Chọn tỉnh/thành —</option>
+          @foreach (var p in VietnamProvinces.All)
+          {
+              <option value="@p">@p</option>
+          }
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Địa chỉ</label>
+        <input type="text" name="Input.Address" class="form-control" />
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">CMT/Hộ chiếu</label>
+          <input type="text" name="Input.IdCardNumber" class="form-control" />
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Ngày hết hạn</label>
+          <input type="date" name="Input.PassportExpiry" class="form-control" />
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Ghi chú</label>
+        <textarea name="Input.Note" class="form-control" rows="2"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary me-sm-3 me-1">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+<div id="js-toast" class="bs-toast-container position-fixed top-0 end-0 p-3" style="z-index:1090"></div>

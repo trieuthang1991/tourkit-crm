@@ -18,6 +18,7 @@ public sealed record CustomerDto(
     // CRM bám hệ cũ (từ CrmProfileJson)
     string? Gender, string? City, string? MarketGroup, string? InitialNeed, string? CollaboratorName, string? Campaign,
     string? Branch, string? Group, string? Department,
+    string? UnitName, string? TaxCode, string? Note,
     string? CreatedBy, string? CreatedByName,
     IReadOnlyList<string> Segments, IReadOnlyList<string> Tags,
     IReadOnlyList<string> AssignedTo, IReadOnlyList<string> AssignedToNames,
@@ -34,7 +35,8 @@ public sealed record CreateCustomerDto(
     string? Gender = null, string? City = null, string? MarketGroup = null, string? InitialNeed = null,
     string? CollaboratorName = null, string? Campaign = null,
     string? Branch = null, string? Group = null, string? Department = null,
-    IReadOnlyList<string>? Segments = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<string>? AssignedTo = null);
+    IReadOnlyList<string>? Segments = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<string>? AssignedTo = null,
+    string? UnitName = null, string? TaxCode = null, string? Note = null);
 
 /// <summary>Bộ lọc màn Data khách hàng (bám thanh lọc mở rộng hệ cũ). Tất cả optional.</summary>
 public sealed record CustomerListFilter(
@@ -66,7 +68,8 @@ public sealed record UpdateCustomerDto(
     string? Gender = null, string? City = null, string? MarketGroup = null, string? InitialNeed = null,
     string? CollaboratorName = null, string? Campaign = null,
     string? Branch = null, string? Group = null, string? Department = null,
-    IReadOnlyList<string>? Segments = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<string>? AssignedTo = null);
+    IReadOnlyList<string>? Segments = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<string>? AssignedTo = null,
+    string? UnitName = null, string? TaxCode = null, string? Note = null);
 
 /// <summary>Một khách trong nhóm trùng (dedup) — đủ để nhận diện và quyết định gộp.</summary>
 public sealed record DuplicateCustomerDto(

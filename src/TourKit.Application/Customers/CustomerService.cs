@@ -231,6 +231,9 @@ public sealed class CustomerService(
             Branch = dto.Branch,
             Group = dto.Group,
             Department = dto.Department,
+            UnitName = dto.UnitName,
+            TaxCode = dto.TaxCode,
+            Note = dto.Note,
             CreatedBy = currentUser.UserId?.ToString(),
             Segments = dto.Segments ?? [],
             Tags = dto.Tags ?? [],
@@ -279,6 +282,9 @@ public sealed class CustomerService(
             Branch = dto.Branch,
             Group = dto.Group,
             Department = dto.Department,
+            UnitName = dto.UnitName,
+            TaxCode = dto.TaxCode,
+            Note = dto.Note,
             CreatedBy = existing.CreatedBy, // giữ nguyên người tạo gốc
             Segments = dto.Segments ?? [],
             Tags = dto.Tags ?? [],
@@ -336,6 +342,7 @@ public sealed class CustomerService(
             c.Email, c.Address, c.DateOfBirth, c.IdCardNumber, c.PassportNumber, c.PassportExpiry, c.Nationality,
             p.Gender, p.City, p.MarketGroup, p.InitialNeed, p.CollaboratorName, p.Campaign,
             p.Branch, p.Group, p.Department,
+            p.UnitName, p.TaxCode, p.Note,
             p.CreatedBy, NameOf(p.CreatedBy),
             p.Segments, p.Tags, p.AssignedTo, assignedNames,
             c.CreatedAt, purchaseCount, revenue, lastCareAt, lastCareContent);

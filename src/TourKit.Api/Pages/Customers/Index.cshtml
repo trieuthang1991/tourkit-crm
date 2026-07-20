@@ -1,10 +1,14 @@
 @page
 @using TourKit.Api.Pages.Shared
 @model TourKit.Api.Pages.Customers.IndexModel
-@{ ViewData["Title"] = "Data khách hàng"; }
+@{
+    ViewData["Title"] = "Data khách hàng";
+    ViewData["SaveUrl"] = "?handler=Save";
+}
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
 }
 
 @{
@@ -44,7 +48,9 @@
   <div class="card-header border-bottom">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h5 class="mb-0">Data khách hàng</h5>
-      <a asp-page="Create" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Thêm khách</a>
+      <button type="button" class="btn btn-primary btn-sm" onclick="openCustomerOffcanvas(null)">
+        <i class="ti ti-plus me-1"></i> Thêm khách
+      </button>
     </div>
     <div class="row g-2">
       <div class="col-sm-6 col-md-4 col-lg-3">
@@ -84,11 +90,15 @@
   <input type="hidden" name="id" />
 </form>
 
+<partial name="_EditOffcanvas" />
+
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/customer-form.js"></script>
   <script>
     $(function () {
       var table = $('#tbl-customers').DataTable({
@@ -103,8 +113,8 @@
           }
         },
         columns: [
-          { data: 'code' },
-          { data: 'fullName', render: function (d) { return '<span class="fw-medium">' + (d || '') + '</span>'; } },
+          { data: 'code', render: function (d, t, row) { return '<a href="/Customers/Details/' + row.id + '" class="fw-medium">' + (d || '') + '</a>'; } },
+          { data: 'fullName', render: function (d, t, row) { return '<a href="/Customers/Details/' + row.id + '" class="fw-medium text-heading">' + (d || '') + '</a>'; } },
           { data: 'phone' },
           { data: 'source' },
           { data: 'tag' },
@@ -113,7 +123,7 @@
           {
             data: 'id', orderable: false, searchable: false, className: 'text-end',
             render: function (id) {
-              return '<a href="/Customers/Edit/' + id + '" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>' +
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
                      '<button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="' + id + '" title="Xoá"><i class="ti ti-trash"></i></button>';
             }
           }
@@ -135,6 +145,12 @@
       });
 
       $('#f-source, #f-city').on('change', function () { table.ajax.reload(); });
+
+      // Sửa: mở offcanvas, điền từ dữ liệu dòng (đã có đủ field trong JSON).
+      $('#tbl-customers tbody').on('click', '.js-edit', function () {
+        var row = table.row($(this).closest('tr')).data();
+        if (row) { openCustomerOffcanvas(row); }
+      });
 
       $('#tbl-customers tbody').on('click', '.js-del', function () {
         if (confirm('Xoá khách hàng này?')) {

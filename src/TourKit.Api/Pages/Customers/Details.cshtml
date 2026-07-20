@@ -1,0 +1,186 @@
+@page "{id:guid}"
+@model TourKit.Api.Pages.Customers.DetailsModel
+@{
+    ViewData["Title"] = "Chi tiết khách hàng";
+    ViewData["SaveUrl"] = Url.Page("/Customers/Index", "Save");
+    var c = Model.Customer;
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+}
+@section VendorScripts {
+  <script src="~/vendor/libs/select2/select2.js"></script>
+}
+@section PageStyles {
+  <link rel="stylesheet" href="~/vendor/css/pages/page-user-view.css" />
+}
+
+<h4 class="fw-bold py-3 mb-4">
+  <a asp-page="Index" class="text-muted fw-light text-decoration-none">Data khách hàng /</a> @c.FullName
+</h4>
+
+<div class="row">
+  <!-- Sidebar hồ sơ (trái) -->
+  <div class="col-xl-4 col-lg-5 col-md-5 order-1 order-md-0">
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="user-avatar-section">
+          <div class="d-flex align-items-center flex-column">
+            <div class="avatar avatar-xl mb-3 mt-4">
+              <span class="avatar-initial rounded-circle bg-label-primary" style="font-size:1.75rem">@TourKit.Api.Pages.Customers.DetailsModel.Initials(c.FullName)</span>
+            </div>
+            <div class="user-info text-center">
+              <h4 class="mb-2">@c.FullName</h4>
+              <span class="badge bg-label-secondary mt-1">@Model.TypeName</span>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-around flex-wrap mt-3 pt-3 pb-4 border-bottom">
+          <div class="d-flex align-items-start me-4 mt-3 gap-2">
+            <span class="badge bg-label-primary p-2 rounded"><i class="ti ti-shopping-cart ti-sm"></i></span>
+            <div>
+              <p class="mb-0 fw-semibold">@c.PurchaseCount</p>
+              <small>Số đơn</small>
+            </div>
+          </div>
+          <div class="d-flex align-items-start mt-3 gap-2">
+            <span class="badge bg-label-primary p-2 rounded"><i class="ti ti-cash ti-sm"></i></span>
+            <div>
+              <p class="mb-0 fw-semibold">@c.Revenue.ToString("#,##0")</p>
+              <small>Doanh thu</small>
+            </div>
+          </div>
+        </div>
+        <p class="mt-4 small text-uppercase text-muted">Thông tin</p>
+        <div class="info-container">
+          <ul class="list-unstyled">
+            <li class="mb-2"><span class="fw-semibold me-1">Mã:</span><span>@c.Code</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">SĐT:</span><span>@c.Phone</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Email:</span><span>@c.Email</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Nguồn:</span><span>@c.Source</span></li>
+            @if (!string.IsNullOrWhiteSpace(c.Tag))
+            {
+              <li class="mb-2 pt-1"><span class="fw-semibold me-1">Tag:</span><span class="badge bg-label-info">@c.Tag</span></li>
+            }
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Tỉnh/Thành:</span><span>@c.City</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Địa chỉ:</span><span>@c.Address</span></li>
+            @if (c.AssignedToNames.Count > 0)
+            {
+              <li class="mb-2 pt-1"><span class="fw-semibold me-1">Phụ trách:</span><span>@string.Join(", ", c.AssignedToNames)</span></li>
+            }
+            <li class="pt-1"><span class="fw-semibold me-1">Ngày tạo:</span><span>@c.CreatedAt.ToString("dd/MM/yyyy")</span></li>
+          </ul>
+          <div class="d-flex justify-content-center pt-2">
+            <button type="button" class="btn btn-primary me-3" onclick="openCustomerOffcanvas(CUSTOMER)">
+              <i class="ti ti-edit me-1"></i> Sửa
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nội dung (phải) -->
+  <div class="col-xl-8 col-lg-7 col-md-7 order-0 order-md-1">
+    <ul class="nav nav-pills flex-column flex-md-row mb-4">
+      <li class="nav-item"><a class="nav-link active" href="javascript:void(0);"><i class="ti ti-user-check ti-xs me-1"></i>Tổng quan</a></li>
+      <li class="nav-item"><a class="nav-link" href="javascript:void(0);"><i class="ti ti-shopping-cart ti-xs me-1"></i>Đơn hàng</a></li>
+      <li class="nav-item"><a class="nav-link" href="javascript:void(0);"><i class="ti ti-headset ti-xs me-1"></i>Chăm sóc</a></li>
+    </ul>
+
+    @if (!string.IsNullOrWhiteSpace(c.UnitName) || !string.IsNullOrWhiteSpace(c.TaxCode))
+    {
+      <div class="card mb-4 border-primary">
+        <h5 class="card-header d-flex align-items-center"><i class="ti ti-building me-2"></i>Thông tin doanh nghiệp</h5>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6"><span class="fw-semibold me-1">Tên đơn vị:</span><span>@(c.UnitName ?? "—")</span></div>
+            <div class="col-md-6"><span class="fw-semibold me-1">Mã số thuế:</span><span>@(c.TaxCode ?? "—")</span></div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <div class="card mb-4">
+      <h5 class="card-header">Thông tin bổ sung</h5>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6"><span class="fw-semibold me-1">Giới tính:</span><span>@(c.Gender ?? "—")</span></div>
+          <div class="col-md-6"><span class="fw-semibold me-1">Ngày sinh:</span><span>@(c.DateOfBirth?.ToString("dd/MM/yyyy") ?? "—")</span></div>
+          <div class="col-md-6"><span class="fw-semibold me-1">Thị trường:</span><span>@(c.MarketGroup ?? "—")</span></div>
+          <div class="col-md-6"><span class="fw-semibold me-1">Nhu cầu ban đầu:</span><span>@(c.InitialNeed ?? "—")</span></div>
+          <div class="col-md-6"><span class="fw-semibold me-1">CTV:</span><span>@(c.CollaboratorName ?? "—")</span></div>
+          <div class="col-md-6"><span class="fw-semibold me-1">Chiến dịch:</span><span>@(c.Campaign ?? "—")</span></div>
+          <div class="col-md-6"><span class="fw-semibold me-1">Quốc tịch:</span><span>@(c.Nationality ?? "—")</span></div>
+          <div class="col-md-6"><span class="fw-semibold me-1">Tạm ứng:</span><span>@c.TempBalance.ToString("#,##0")</span></div>
+          <div class="col-md-6"><span class="fw-semibold me-1">CMT/Hộ chiếu:</span><span>@(c.IdCardNumber ?? "—")</span></div>
+          <div class="col-md-6"><span class="fw-semibold me-1">CTV:</span><span>@(c.CollaboratorName ?? "—")</span></div>
+          @if (!string.IsNullOrWhiteSpace(c.Note))
+          {
+            <div class="col-12"><span class="fw-semibold me-1">Ghi chú:</span><span>@c.Note</span></div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <h5 class="card-header">Dòng thời gian</h5>
+      <div class="card-body pb-0">
+        <ul class="timeline mb-0">
+          @if (c.LastCareAt is not null)
+          {
+            <li class="timeline-item timeline-item-transparent">
+              <span class="timeline-point timeline-point-warning"></span>
+              <div class="timeline-event">
+                <div class="timeline-header mb-1">
+                  <h6 class="mb-0">Chăm sóc gần nhất</h6>
+                  <small class="text-muted">@c.LastCareAt.Value.ToString("dd/MM/yyyy")</small>
+                </div>
+                <p class="mb-2">@(c.LastCareContent ?? "")</p>
+              </div>
+            </li>
+          }
+          <li class="timeline-item timeline-item-transparent border-0">
+            <span class="timeline-point timeline-point-primary"></span>
+            <div class="timeline-event">
+              <div class="timeline-header mb-1">
+                <h6 class="mb-0">Tạo khách hàng</h6>
+                <small class="text-muted">@c.CreatedAt.ToString("dd/MM/yyyy")</small>
+              </div>
+              <p class="mb-2">@(string.IsNullOrWhiteSpace(c.CreatedByName) ? "Hệ thống" : c.CreatedByName) đã thêm khách vào hệ thống.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<partial name="_EditOffcanvas" />
+
+@section PageScripts {
+  <script src="~/js/customer-form.js"></script>
+  <script>
+    var CUSTOMER = @Json.Serialize(new {
+      id = c.Id,
+      fullName = c.FullName,
+      phone = c.Phone,
+      email = c.Email,
+      customerType = c.CustomerType,
+      unitName = c.UnitName,
+      taxCode = c.TaxCode,
+      gender = c.Gender,
+      dateOfBirth = c.DateOfBirth != null ? c.DateOfBirth.Value.ToString("yyyy-MM-dd") : null,
+      source = c.Source,
+      tags = c.Tags.Count > 0 ? c.Tags : (string.IsNullOrWhiteSpace(c.Tag) ? (IReadOnlyList<string>)new List<string>() : new List<string> { c.Tag }),
+      marketGroup = c.MarketGroup,
+      collaboratorName = c.CollaboratorName,
+      city = c.City,
+      address = c.Address,
+      idCardNumber = c.IdCardNumber,
+      passportExpiry = c.PassportExpiry != null ? c.PassportExpiry.Value.ToString("yyyy-MM-dd") : null,
+      note = c.Note
+    });
+  </script>
+}
