@@ -49,7 +49,7 @@ public static class MenuData
             new("q-booking", "Booking Phòng", To: "#", Perm: "quote.view"),
             new("q-service", "Dịch vụ lẻ", To: "#", Perm: "quote.view"),
             new("q-visa", "Visa", To: "#", Perm: "quote.view"),
-            new("q-agent", "Báo giá Đại lý (B2B)", To: "#", Perm: "agentquote.view"),
+            new("q-agent", "Báo giá Đại lý (B2B)", To: "/AgentQuotes", Perm: "agentquote.view"),
         }),
         new("g-order", "Đơn hàng/LKH", "ti ti-shopping-cart", Children: new List<MenuNode>
         {
@@ -115,9 +115,9 @@ public static class MenuData
         }),
         new("g-project", "Dự án & Công việc", "ti ti-checklist", Children: new List<MenuNode>
         {
-            new("pj-project", "Dự án", To: "#", Perm: "workflow.view"),
-            new("pj-mytask", "Công việc của tôi", To: "#", Perm: "task.view"),
-            new("pj-tasks", "Danh sách Công việc", To: "#", Perm: "task.view"),
+            new("pj-project", "Dự án", To: "/Workflows", Perm: "workflow.view"),
+            new("pj-mytask", "Công việc của tôi", To: "/WorkTasks", Perm: "task.view"),
+            new("pj-tasks", "Danh sách Công việc", To: "/WorkTasks", Perm: "task.view"),
             new("pj-perf", "Báo cáo Hiệu suất", To: "#", Perm: "task.view"),
         }),
         new("g-marketing", "Marketing", "ti ti-speakerphone", Children: new List<MenuNode>
@@ -147,14 +147,14 @@ public static class MenuData
         new("g-agent", "Đại lý (B2B)", "ti ti-heart-handshake", Children: new List<MenuNode>
         {
             new("ag-list", "Danh sách đại lý", To: "/Agents", Perm: "agent.view"),
-            new("ag-booking", "Đặt chỗ đại lý", To: "#", Perm: "agentquote.view"),
+            new("ag-booking", "Đặt chỗ đại lý", To: "/AgentBookings", Perm: "agentquote.view"),
         }),
         new("g-system", "Cài đặt hệ thống", "ti ti-settings", Children: new List<MenuNode>
         {
             new("sys-users", "Thành viên", To: "#", Perm: "user.view"),
             new("sys-roles", "Vai trò & quyền", To: "#", Perm: "user.view"),
             new("sys-config", "Cấu hình", To: "/ConfigHub", Perm: "user.view"),
-            new("sys-billing", "Gói dịch vụ", To: "#", Perm: "subscription.view"),
+            new("sys-billing", "Gói dịch vụ", To: "/Billing", Perm: "subscription.view"),
         }),
         new("g-log", "Log hệ thống", "ti ti-history", Children: new List<MenuNode>
         {

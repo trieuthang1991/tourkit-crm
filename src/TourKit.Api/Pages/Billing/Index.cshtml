@@ -1,0 +1,51 @@
+@page
+@model TourKit.Api.Pages.Billing.IndexModel
+@using TourKit.Shared.Enums
+@{ ViewData["Title"] = "Gói dịch vụ"; }
+
+<h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Cài đặt /</span> Gói dịch vụ</h4>
+
+@if (Model.Subscription is { } sub)
+{
+  var expired = sub.Status != SubscriptionStatus.Active;
+  <div class="card mb-4 @(expired ? "border-danger" : "border-primary")">
+    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h5 class="mb-1">Gói hiện tại: <span class="text-primary">@sub.PlanCode</span></h5>
+        <span class="badge bg-label-@(sub.Status == SubscriptionStatus.Active ? "success" : "danger")">
+          @(sub.Status == SubscriptionStatus.Active ? "Đang hoạt động" : sub.Status == SubscriptionStatus.Expired ? "Hết hạn" : "Đã huỷ")
+        </span>
+        <span class="text-muted ms-2">Bắt đầu @sub.StartedAt.ToString("dd/MM/yyyy")@(sub.ExpiresAt is { } e ? $" · Hết hạn {e:dd/MM/yyyy}" : "")</span>
+      </div>
+    </div>
+  </div>
+}
+
+<div class="row g-4">
+  @foreach (var p in Model.Plans)
+  {
+    var current = Model.Subscription?.PlanCode == p.Code;
+    <div class="col-md-4">
+      <div class="card h-100 @(current ? "border-primary" : "")">
+        <div class="card-body text-center">
+          <h5 class="mb-1">@p.Name</h5>
+          <div class="my-3"><span class="h2 fw-bold text-primary">@p.PriceMonthly.ToString("#,##0")</span><span class="text-muted">đ/tháng</span></div>
+          <ul class="list-unstyled text-start mb-4">
+            <li class="mb-2"><i class="ti ti-users me-2 text-primary"></i>Tối đa @p.MaxUsers người dùng</li>
+            <li class="mb-2"><i class="ti ti-map me-2 text-primary"></i>Tối đa @p.MaxTours tour</li>
+          </ul>
+          @if (current)
+          {
+            <button class="btn btn-label-success d-grid w-100" disabled><i class="ti ti-check me-1"></i> Đang dùng</button>
+          }
+          else
+          {
+            <form method="post" asp-page-handler="ChangePlan" asp-route-planCode="@p.Code" class="d-grid">
+              <button type="submit" class="btn btn-primary">Chọn gói này</button>
+            </form>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
