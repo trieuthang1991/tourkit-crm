@@ -1,0 +1,86 @@
+@page
+@model TourKit.Api.Pages.ProviderDebtReport.IndexModel
+@{ ViewData["Title"] = "Công nợ NCC"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+@{
+    (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+    {
+        ("Tổng chi phí", Model.TotalCost.ToString("#,##0"), "ti ti-file-invoice", "primary", "toàn bộ NCC"),
+        ("Đã chi", Model.TotalPaid.ToString("#,##0"), "ti ti-cash", "success", "phiếu đã duyệt"),
+        ("Còn phải trả", Model.TotalOutstanding.ToString("#,##0"), "ti ti-alert-triangle", "danger", "chưa trả"),
+    };
+}
+<div class="row g-4 mb-4">
+  @foreach (var s in statCards)
+  {
+    <div class="col-sm-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar flex-shrink-0 me-3">
+              <span class="avatar-initial rounded-3 bg-label-@s.Color">
+                <i class="@s.Icon ti-md"></i>
+              </span>
+            </div>
+            <div>
+              <span class="d-block text-muted small">@s.Label</span>
+              <h4 class="mb-0">@s.Value</h4>
+            </div>
+          </div>
+          <div class="text-muted small mt-2">@s.Sub</div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Công nợ phải trả NCC (phân tuổi nợ)</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead>
+        <tr>
+          <th>Nhà cung cấp</th>
+          <th class="text-end">Tổng chi phí</th>
+          <th class="text-end">Đã chi</th>
+          <th class="text-end">Còn phải trả</th>
+          <th class="text-end">0–30 ngày</th>
+          <th class="text-end">31–60</th>
+          <th class="text-end">61–90</th>
+          <th class="text-end">&gt;90</th>
+        </tr>
+      </thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr>
+          <td class="fw-medium">@(string.IsNullOrEmpty(x.ProviderName) ? "—" : x.ProviderName)</td>
+          <td class="text-end">@x.TotalCost.ToString("#,##0")</td>
+          <td class="text-end text-success">@x.Paid.ToString("#,##0")</td>
+          <td class="text-end fw-medium @(x.Outstanding > 0 ? "text-danger" : "")">@x.Outstanding.ToString("#,##0")</td>
+          <td class="text-end">@x.Current.ToString("#,##0")</td>
+          <td class="text-end">@x.D30.ToString("#,##0")</td>
+          <td class="text-end">@x.D60.ToString("#,##0")</td>
+          <td class="text-end">@x.D90Plus.ToString("#,##0")</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () { tk.tableClient('#tbl'); });
+  </script>
+}

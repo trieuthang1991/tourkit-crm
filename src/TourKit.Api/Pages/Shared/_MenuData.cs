@@ -97,9 +97,9 @@ public static class MenuData
             new("fi-receipt", "Phiếu thu", To: "#", Perm: "receipt.view"),
             new("fi-payment", "Phiếu chi", To: "#", Perm: "payment.view"),
             new("fi-invoice", "Danh sách hoá đơn (VAT)", To: "#", Perm: "invoice.view"),
-            new("fi-cashflow", "Thống kê dòng tiền", To: "#", Perm: "report.cashflow.view"),
-            new("fi-debt-c", "Công nợ khách", To: "#", Perm: "report.debt.view"),
-            new("fi-debt-p", "Công nợ NCC", To: "#", Perm: "report.providerdebt.view"),
+            new("fi-cashflow", "Thống kê dòng tiền", To: "/CashFlowReport", Perm: "report.cashflow.view"),
+            new("fi-debt-c", "Công nợ khách", To: "/CustomerDebtReport", Perm: "report.debt.view"),
+            new("fi-debt-p", "Công nợ NCC", To: "/ProviderDebtReport", Perm: "report.providerdebt.view"),
         }),
         new("g-kpi", "KPIs", "ti ti-trending-up", Children: new List<MenuNode>
         {
@@ -133,7 +133,7 @@ public static class MenuData
                 new("zalo-zns", "ZNS", To: "#", Perm: "marketing.view"),
                 new("zalo-uid", "Zalo UID (Tin follow OA)", To: "#", Perm: "marketing.view"),
             }),
-            new("mkt-posts", "Bài viết", To: "#", Perm: "post.view"),
+            new("mkt-posts", "Bài viết", To: "/Posts", Perm: "post.view"),
             new("mkt-postcat", "Chuyên mục bài viết", To: "/PostCategories", Perm: "post.view"),
         }),
         new("g-report", "Báo cáo", "ti ti-chart-bar", Children: new List<MenuNode>

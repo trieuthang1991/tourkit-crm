@@ -1,0 +1,60 @@
+@page
+@model TourKit.Api.Pages.Payments.IndexModel
+@{ ViewData["Title"] = "Phiếu chi"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Phiếu chi</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead>
+        <tr>
+          <th>Mã phiếu</th>
+          <th>Mã đơn</th>
+          <th>Nhà cung cấp</th>
+          <th>Người nhận</th>
+          <th class="text-end">Số tiền</th>
+          <th>Phương thức</th>
+          <th>Ngày lập</th>
+          <th class="text-end">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr>
+          <td class="fw-medium">@x.Code</td>
+          <td>@(string.IsNullOrEmpty(x.OrderCode) ? "—" : x.OrderCode)</td>
+          <td>@(string.IsNullOrEmpty(x.ProviderName) ? "—" : x.ProviderName)</td>
+          <td>@(string.IsNullOrEmpty(x.ReceiverName) ? "—" : x.ReceiverName)</td>
+          <td class="text-end">@x.Amount.ToString("#,##0")</td>
+          <td>@(string.IsNullOrEmpty(x.PaymentMethod) ? "—" : x.PaymentMethod)</td>
+          <td>@x.IssuedAt.ToString("dd/MM/yyyy")</td>
+          <td class="text-end">
+            <span class="badge bg-label-@TourKit.Api.Pages.Payments.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.Payments.IndexModel.StatusLabel(x.Status)</span>
+            @if (x.IsRecognized)
+            {
+              <span class="badge bg-label-info">Đã ghi nhận</span>
+            }
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () { tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [7] }] }); });
+  </script>
+}

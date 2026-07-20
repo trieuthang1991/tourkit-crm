@@ -1,0 +1,71 @@
+@page
+@model TourKit.Api.Pages.CashFlowReport.IndexModel
+@{ ViewData["Title"] = "Thống kê dòng tiền"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+@{
+    (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+    {
+        ("Tổng thu vào", Model.TotalInflow.ToString("#,##0"), "ti ti-arrow-down-circle", "success", "tiền vào"),
+        ("Tổng chi ra", Model.TotalOutflow.ToString("#,##0"), "ti ti-arrow-up-circle", "danger", "tiền ra"),
+        ("Dòng tiền ròng", Model.TotalNet.ToString("#,##0"), "ti ti-cash", "primary", "thu − chi"),
+    };
+}
+<div class="row g-4 mb-4">
+  @foreach (var s in statCards)
+  {
+    <div class="col-sm-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar flex-shrink-0 me-3">
+              <span class="avatar-initial rounded-3 bg-label-@s.Color">
+                <i class="@s.Icon ti-md"></i>
+              </span>
+            </div>
+            <div>
+              <span class="d-block text-muted small">@s.Label</span>
+              <h4 class="mb-0">@s.Value</h4>
+            </div>
+          </div>
+          <div class="text-muted small mt-2">@s.Sub</div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Dòng tiền theo phương thức thanh toán</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Phương thức</th><th class="text-end">Thu vào</th><th class="text-end">Chi ra</th><th class="text-end">Ròng</th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr>
+          <td class="fw-medium">@(string.IsNullOrEmpty(x.PaymentMethod) ? "—" : x.PaymentMethod)</td>
+          <td class="text-end text-success">@x.Inflow.ToString("#,##0")</td>
+          <td class="text-end text-danger">@x.Outflow.ToString("#,##0")</td>
+          <td class="text-end fw-medium">@x.Net.ToString("#,##0")</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () { tk.tableClient('#tbl'); });
+  </script>
+}
