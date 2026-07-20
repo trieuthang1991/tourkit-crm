@@ -152,7 +152,7 @@ public static class MenuData
         new("g-system", "Cài đặt hệ thống", "ti ti-settings", Children: new List<MenuNode>
         {
             new("sys-users", "Thành viên", To: "/Users", Perm: "user.view"),
-            new("sys-roles", "Vai trò & quyền", To: "#", Perm: "user.view"),
+            new("sys-roles", "Vai trò & quyền", To: "/Roles", Perm: "user.view"),
             new("sys-config", "Cấu hình", To: "/ConfigHub", Perm: "user.view"),
             new("sys-billing", "Gói dịch vụ", To: "/Billing", Perm: "subscription.view"),
         }),

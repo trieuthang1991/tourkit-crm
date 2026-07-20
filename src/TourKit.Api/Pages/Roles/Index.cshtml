@@ -1,0 +1,105 @@
+@page
+@model TourKit.Api.Pages.Roles.IndexModel
+@{ ViewData["Title"] = "Vai trò & quyền"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Vai trò &amp; quyền</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm vai trò</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Vai trò</th><th>Số quyền</th><th>Người dùng</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var r in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = r.Id, name = r.Name, permissionIds = r.PermissionIds })'>
+          <td class="fw-medium">@r.Name</td>
+          <td><span class="badge bg-label-primary">@r.PermissionCount</span></td>
+          <td>@r.UserCount</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm js-del" data-id="@r.Id" data-name="@r.Name" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:640px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">vai trò</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3"><label class="form-label">Tên vai trò <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="VD: Trưởng phòng Sale" /></div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <label class="form-label mb-0">Quyền hạn</label>
+        <div><a href="#" class="small me-2" id="chk-all">Chọn tất cả</a><a href="#" class="small" id="chk-none">Bỏ chọn</a></div>
+      </div>
+      <div class="accordion" id="perm-acc">
+        @{ var gi = 0; }
+        @foreach (var grp in Model.PermGroups)
+        {
+          var cid = $"g{gi++}";
+          <div class="accordion-item">
+            <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@cid">@grp.Key <span class="badge bg-label-secondary ms-2">@grp.Count()</span></button></h2>
+            <div id="@cid" class="accordion-collapse collapse" data-bs-parent="#perm-acc">
+              <div class="accordion-body">
+                @foreach (var p in grp)
+                {
+                  <div class="form-check">
+                    <input class="form-check-input js-perm" type="checkbox" name="Input.PermissionIds" value="@p.Id" id="p-@p.Id" />
+                    <label class="form-check-label" for="p-@p.Id">@p.Name <code class="small text-muted">@p.Code</code></label>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
+        <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" id="del-id" /></form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [3] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'vai trò',
+        rules: { 'Input.Name': { required: true } },
+        messages: { 'Input.Name': { required: 'Bắt buộc nhập tên vai trò' } },
+        afterOpen: function (data) {
+          $('.js-perm').prop('checked', false);
+          if (data && data.permissionIds) { data.permissionIds.forEach(function (id) { $('#p-' + id).prop('checked', true); }); }
+        }
+      });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = $(this).data('id'); tk.confirmDelete($(this).data('name'), function () { $('#del-id').val(id); $('#delete-form').submit(); });
+      });
+      $('#chk-all').on('click', function (e) { e.preventDefault(); $('.js-perm').prop('checked', true); });
+      $('#chk-none').on('click', function (e) { e.preventDefault(); $('.js-perm').prop('checked', false); });
+    });
+  </script>
+}
