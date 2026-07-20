@@ -1,0 +1,40 @@
+@page
+@model TourKit.Api.Pages.FinanceReport.IndexModel
+@{ ViewData["Title"] = "Báo cáo Tài chính"; }
+
+@{
+    (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+    {
+        ("Số đơn", Model.Summary.OrderCount.ToString("#,##0"), "ti ti-file-invoice", "secondary", "tổng số đơn"),
+        ("Doanh thu", Model.Summary.TotalRevenue.ToString("#,##0"), "ti ti-report-money", "primary", "tổng phải thu"),
+        ("Đã thu", Model.Summary.TotalReceived.ToString("#,##0"), "ti ti-arrow-down-circle", "success", "phiếu thu đã duyệt"),
+        ("Còn phải thu", Model.Summary.ReceivableOutstanding.ToString("#,##0"), "ti ti-alert-triangle", "warning", "công nợ khách"),
+        ("Chi phí", Model.Summary.TotalCost.ToString("#,##0"), "ti ti-receipt", "info", "tổng phải trả NCC"),
+        ("Đã chi", Model.Summary.TotalPaid.ToString("#,##0"), "ti ti-cash", "success", "phiếu chi đã duyệt"),
+        ("Còn phải trả", Model.Summary.PayableOutstanding.ToString("#,##0"), "ti ti-alert-triangle", "danger", "công nợ NCC"),
+        ("Lợi nhuận gộp", Model.Summary.GrossProfit.ToString("#,##0"), "ti ti-trending-up", "primary", "doanh thu − chi phí"),
+    };
+}
+<div class="row g-4 mb-4">
+  @foreach (var s in statCards)
+  {
+    <div class="col-sm-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar flex-shrink-0 me-3">
+              <span class="avatar-initial rounded-3 bg-label-@s.Color">
+                <i class="@s.Icon ti-md"></i>
+              </span>
+            </div>
+            <div>
+              <span class="d-block text-muted small">@s.Label</span>
+              <h4 class="mb-0">@s.Value</h4>
+            </div>
+          </div>
+          <div class="text-muted small mt-2">@s.Sub</div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

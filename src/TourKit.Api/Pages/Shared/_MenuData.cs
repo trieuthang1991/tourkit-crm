@@ -53,7 +53,7 @@ public static class MenuData
         }),
         new("g-order", "Đơn hàng/LKH", "ti ti-shopping-cart", Children: new List<MenuNode>
         {
-            new("o-all", "Tất cả đơn hàng", To: "#", Perm: "booking.view"),
+            new("o-all", "Tất cả đơn hàng", To: "/Orders", Perm: "booking.view"),
             new("o-tours", "Tất cả Tour/LKH", To: "#", Perm: "departure.view"),
             new("o-fit", "Tour FIT", To: "#", Perm: "booking.view"),
             new("o-git", "Tour GIT/Combo", To: "#", Perm: "booking.view"),
@@ -103,15 +103,15 @@ public static class MenuData
         }),
         new("g-kpi", "KPIs", "ti ti-trending-up", Children: new List<MenuNode>
         {
-            new("kpi-config", "Thiết lập KPIs", To: "#", Perm: "report.dashboard.view"),
+            new("kpi-config", "Thiết lập KPIs", To: "/KpiConfig", Perm: "report.dashboard.view"),
         }),
         new("g-commission", "Hoa Hồng", "ti ti-percentage", Children: new List<MenuNode>
         {
-            new("hh-config", "Thiết lập hoa hồng", To: "#", Perm: "commission.view"),
-            new("hh-campaign", "Chính sách hoa hồng (bậc thang)", To: "#", Perm: "commission.view"),
+            new("hh-config", "Thiết lập hoa hồng", To: "/CommissionConfig", Perm: "commission.view"),
+            new("hh-campaign", "Chính sách hoa hồng (bậc thang)", To: "/CommissionTiers", Perm: "commission.view"),
             new("hh-customer", "HH theo loại khách", To: "/CustomerCommissionRules", Perm: "commission.view"),
-            new("hh-source", "Báo cáo theo nguồn", To: "#", Perm: "report.commission.view"),
-            new("hh-milestone", "Báo cáo theo cột mốc", To: "#", Perm: "report.commission.view"),
+            new("hh-source", "Báo cáo theo nguồn", To: "/CommissionBySourceReport", Perm: "report.commission.view"),
+            new("hh-milestone", "Báo cáo theo cột mốc", To: "/CommissionByMilestoneReport", Perm: "report.commission.view"),
         }),
         new("g-project", "Dự án & Công việc", "ti ti-checklist", Children: new List<MenuNode>
         {
@@ -124,7 +124,7 @@ public static class MenuData
         {
             new("mkt-email", "Email Marketing", Children: new List<MenuNode>
             {
-                new("mkt-campaign", "Chiến dịch", To: "#", Perm: "marketing.view"),
+                new("mkt-campaign", "Chiến dịch", To: "/MarketingCampaigns", Perm: "marketing.view"),
                 new("mkt-store", "Kho Email Mẫu", To: "/MessageTemplates", Perm: "marketing.view"),
             }),
             new("mkt-zalo", "Zalo OA/ZBS", Children: new List<MenuNode>
@@ -138,9 +138,9 @@ public static class MenuData
         }),
         new("g-report", "Báo cáo", "ti ti-chart-bar", Children: new List<MenuNode>
         {
-            new("rp-seller", "Nhân viên", To: "#", Perm: "report.turnover.view"),
-            new("rp-money", "Tài chính", To: "#", Perm: "report.turnover.view"),
-            new("rp-tourtype", "Thu chi theo loại tour", To: "#", Perm: "report.turnover.view"),
+            new("rp-seller", "Nhân viên", To: "/SellerReport", Perm: "report.turnover.view"),
+            new("rp-money", "Tài chính", To: "/FinanceReport", Perm: "report.turnover.view"),
+            new("rp-tourtype", "Thu chi theo loại tour", To: "/TourTypeReport", Perm: "report.turnover.view"),
             new("rp-export", "Xuất báo cáo", To: "#", Perm: "report.turnover.view"),
             new("rp-system", "Báo cáo tổng hợp", To: "#", Perm: "report.turnover.view"),
         }),

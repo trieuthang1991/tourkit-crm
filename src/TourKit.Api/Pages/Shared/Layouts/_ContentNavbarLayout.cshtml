@@ -64,11 +64,20 @@
             // Đọc rồi XOÁ hẳn: layout Vuexy gọi TempData.Keep() nên nếu không Remove, toast dính mãi.
             var okMsg = TempData["ok"] as string;
             TempData.Remove("ok");
+            var errMsg = TempData["err"] as string;
+            TempData.Remove("err");
           }
           @if (okMsg != null)
           {
             <div class="alert alert-success alert-dismissible" role="alert">
               @okMsg
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          }
+          @if (errMsg != null)
+          {
+            <div class="alert alert-danger alert-dismissible" role="alert">
+              @errMsg
               <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
           }

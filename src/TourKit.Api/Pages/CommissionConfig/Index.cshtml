@@ -1,0 +1,115 @@
+@page
+@model TourKit.Api.Pages.CommissionConfig.IndexModel
+@{ ViewData["Title"] = "Thiết lập hoa hồng"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card"><div class="card-body d-flex align-items-center">
+      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ti ti-percentage"></i></span></div>
+      <div><small class="text-muted d-block">Tổng quy tắc</small><h5 class="mb-0">@Model.Stats.Total</h5></div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card"><div class="card-body d-flex align-items-center">
+      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-success"><i class="ti ti-check"></i></span></div>
+      <div><small class="text-muted d-block">Đang áp dụng</small><h5 class="mb-0">@Model.Stats.Active</h5></div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card"><div class="card-body d-flex align-items-center">
+      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-secondary"><i class="ti ti-player-pause"></i></span></div>
+      <div><small class="text-muted d-block">Tạm ngừng</small><h5 class="mb-0">@Model.Stats.Inactive</h5></div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card"><div class="card-body d-flex align-items-center">
+      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-info"><i class="ti ti-chart-bar"></i></span></div>
+      <div><small class="text-muted d-block">% trung bình</small><h5 class="mb-0">@Model.Stats.AvgPercentage.ToString("0.##")</h5></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Thiết lập hoa hồng theo nhân viên</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm quy tắc</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th style="width:55%">Nhân viên</th><th class="text-end" style="width:20%">%</th><th style="width:15%">Trạng thái</th><th style="width:10%"></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, userId = x.UserId, percentage = x.Percentage, status = x.Status })'>
+          <td class="fw-medium">@(x.UserName ?? x.UserId.ToString())</td>
+          <td class="text-end">@x.Percentage.ToString("0.##")</td>
+          <td>@if (x.Status == 1) { <span class="badge bg-label-success">Đang áp dụng</span> } else { <span class="badge bg-label-secondary">Tạm ngừng</span> }</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">quy tắc hoa hồng</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3">
+        <label class="form-label">Nhân viên <span class="text-danger">*</span></label>
+        <select name="Input.UserId" class="form-select tk-s2" data-placeholder="Chọn nhân viên">
+          <option value=""></option>
+          @foreach (var u in Model.Users)
+          {
+            <option value="@u.Id">@u.Name</option>
+          }
+        </select>
+      </div>
+      <div class="mb-3"><label class="form-label">% hoa hồng <span class="text-danger">*</span></label><input type="number" step="any" min="0" name="Input.Percentage" class="form-control" placeholder="Nhập % hoa hồng" /></div>
+      <div class="mb-3">
+        <label class="form-label">Trạng thái</label>
+        <select name="Input.Status" class="form-select"><option value="1">Đang áp dụng</option><option value="0">Tạm ngừng</option></select>
+      </div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [3] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'quy tắc hoa hồng',
+        rules: { 'Input.UserId': { required: true }, 'Input.Percentage': { required: true, number: true, min: 0 } },
+        messages: { 'Input.UserId': { required: 'Bắt buộc chọn nhân viên' }, 'Input.Percentage': { required: 'Bắt buộc nhập %' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá quy tắc hoa hồng?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}

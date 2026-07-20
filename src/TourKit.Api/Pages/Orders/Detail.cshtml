@@ -1,0 +1,104 @@
+@page "{id:guid}"
+@using TourKit.Shared.Enums
+@model TourKit.Api.Pages.Orders.DetailModel
+@{ ViewData["Title"] = $"Đơn {Model.Order.Code}"; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-1">Đơn hàng @Model.Order.Code
+      <span class="badge bg-label-@TourKit.Api.Pages.Orders.DetailModel.StatusColor(Model.Order.Status) ms-2">@TourKit.Api.Pages.Orders.DetailModel.StatusLabel(Model.Order.Status)</span>
+    </h4>
+    <small class="text-muted">@(Model.Order.TourTitle ?? "—") · Khởi hành @(Model.Order.DepartureDate?.ToString("dd/MM/yyyy") ?? "—")</small>
+  </div>
+  <a href="/Orders" class="btn btn-label-secondary"><i class="ti ti-arrow-left me-1"></i> Danh sách</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-header"><h5 class="mb-0">Thông tin đơn</h5></div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4 text-muted fw-normal">Mã đơn</dt><dd class="col-sm-8 fw-medium">@Model.Order.Code</dd>
+          <dt class="col-sm-4 text-muted fw-normal">Khách hàng</dt><dd class="col-sm-8">@(Model.Order.CustomerName ?? "—")</dd>
+          <dt class="col-sm-4 text-muted fw-normal">Tour</dt><dd class="col-sm-8">@(Model.Order.TourTitle ?? "—")</dd>
+          <dt class="col-sm-4 text-muted fw-normal">Ngày khởi hành</dt><dd class="col-sm-8">@(Model.Order.DepartureDate?.ToString("dd/MM/yyyy") ?? "—")</dd>
+          <dt class="col-sm-4 text-muted fw-normal">Nhân viên phụ trách</dt><dd class="col-sm-8">@(Model.SalesUsers.FirstOrDefault(u => u.Id == Model.Order.SalesUserId).Name ?? "— chưa gán —")</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h5 class="mb-0">Khách (pax) &amp; chỗ</h5></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Mã giữ chỗ</th><th class="text-center">NL</th><th class="text-center">TE</th><th class="text-center">TE nhỏ</th><th class="text-center">EB</th><th class="text-end">Đã đặt cọc</th><th>Liên hệ chính</th></tr></thead>
+          <tbody>
+          @if (Model.Lines.Count == 0)
+          {
+            <tr><td colspan="7" class="text-center text-muted py-4">Chưa có chỗ nào trong đơn.</td></tr>
+          }
+          @foreach (var l in Model.Lines)
+          {
+            <tr>
+              <td>@(l.ReservationCode ?? "—")</td>
+              <td class="text-center">@l.Quantity</td>
+              <td class="text-center">@l.AmountChildren</td>
+              <td class="text-center">@l.AmountChildrenSmall</td>
+              <td class="text-center">@l.QuantityBaby</td>
+              <td class="text-end">@l.UpfrontAmount.ToString("#,##0")</td>
+              <td>@if (l.IsMainContact) { <span class="badge bg-label-primary">Chính</span> }</td>
+            </tr>
+          }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card mb-4">
+      <div class="card-header"><h5 class="mb-0">Tài chính</h5></div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Doanh thu</span><span class="fw-medium">@Model.Order.TotalRevenue.ToString("#,##0")</span></div>
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Đã thu</span><span class="text-success fw-medium">@Model.Order.AmountPaid.ToString("#,##0")</span></div>
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Còn nợ</span><span class="text-danger fw-medium">@Model.Order.Outstanding.ToString("#,##0")</span></div>
+        <hr />
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Chi phí dự toán</span><span>@Model.Order.TotalCost.ToString("#,##0")</span></div>
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Chi phí thực tế</span><span>@Model.Order.ActualCost.ToString("#,##0")</span></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Số khách (bán/tổng)</span><span>@Model.Order.SeatSold/@Model.Order.SeatTotal</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h5 class="mb-0">Thao tác</h5></div>
+      <div class="card-body">
+        <form method="post" asp-page-handler="AssignSales" asp-route-id="@Model.Order.Id" class="mb-3">
+          <label class="form-label">Gán nhân viên phụ trách</label>
+          <div class="input-group">
+            <select name="salesUserId" class="form-select">
+              <option value="">— Bỏ gán —</option>
+              @foreach (var u in Model.SalesUsers)
+              {
+                <option value="@u.Id" selected="@(u.Id == Model.Order.SalesUserId)">@u.Name</option>
+              }
+            </select>
+            <button type="submit" class="btn btn-primary">Lưu</button>
+          </div>
+        </form>
+        @if (Model.Order.Status == OrderStatus.Confirmed)
+        {
+          <form method="post" asp-page-handler="Close" asp-route-id="@Model.Order.Id" class="d-grid">
+            <button type="submit" class="btn btn-success"><i class="ti ti-lock me-1"></i> Tất toán đơn</button>
+          </form>
+        }
+        else if (Model.Order.Status == OrderStatus.Closed)
+        {
+          <form method="post" asp-page-handler="Reopen" asp-route-id="@Model.Order.Id" class="d-grid">
+            <button type="submit" class="btn btn-label-warning"><i class="ti ti-lock-open me-1"></i> Mở lại đơn</button>
+          </form>
+        }
+      </div>
+    </div>
+  </div>
+</div>

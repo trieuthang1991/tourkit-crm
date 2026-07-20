@@ -1,0 +1,82 @@
+@page
+@using TourKit.Shared.Enums
+@model TourKit.Api.Pages.Orders.IndexModel
+@{ ViewData["Title"] = "Đơn hàng"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card"><div class="card-body">
+      <div class="d-flex justify-content-between"><div><p class="mb-1 text-muted">Tổng đơn</p><h4 class="mb-0">@Model.Stats.Total</h4></div><span class="badge bg-label-primary rounded p-2"><i class="ti ti-shopping-cart ti-md"></i></span></div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card"><div class="card-body">
+      <div class="d-flex justify-content-between"><div><p class="mb-1 text-muted">Doanh thu</p><h4 class="mb-0">@Model.Stats.TotalRevenue.ToString("#,##0")</h4></div><span class="badge bg-label-success rounded p-2"><i class="ti ti-cash ti-md"></i></span></div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card"><div class="card-body">
+      <div class="d-flex justify-content-between"><div><p class="mb-1 text-muted">Đã thu</p><h4 class="mb-0">@Model.Stats.TotalPaid.ToString("#,##0")</h4></div><span class="badge bg-label-info rounded p-2"><i class="ti ti-wallet ti-md"></i></span></div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card"><div class="card-body">
+      <div class="d-flex justify-content-between"><div><p class="mb-1 text-muted">Còn nợ</p><h4 class="mb-0 text-danger">@Model.Stats.TotalOutstanding.ToString("#,##0")</h4></div><span class="badge bg-label-danger rounded p-2"><i class="ti ti-alert-triangle ti-md"></i></span></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <h5 class="mb-0">Danh sách đơn hàng</h5>
+    <select id="f-status" class="form-select form-select-sm" style="width:auto">
+      <option value="">Tất cả trạng thái</option>
+      <option value="Nháp/Giữ chỗ">Nháp/Giữ chỗ</option>
+      <option value="Đã xác nhận">Đã xác nhận</option>
+      <option value="Đã huỷ">Đã huỷ</option>
+      <option value="Đã tất toán">Đã tất toán</option>
+    </select>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Tour</th><th>Ngày đi</th><th class="text-end">Doanh thu</th><th class="text-end">Đã thu</th><th class="text-end">Còn nợ</th><th class="text-center">Khách</th><th>Sales</th><th>Trạng thái</th></tr></thead>
+      <tbody>
+      @foreach (var o in Model.Items)
+      {
+        <tr>
+          <td><a href="/Orders/Detail/@o.Id" class="fw-medium">@o.Code</a></td>
+          <td>@(o.CustomerName ?? "—")</td>
+          <td>@(o.TourTitle ?? "—")</td>
+          <td data-order="@(o.DepartureDate?.ToUnixTimeSeconds() ?? 0)">@(o.DepartureDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td class="text-end">@o.TotalRevenue.ToString("#,##0")</td>
+          <td class="text-end">@o.AmountPaid.ToString("#,##0")</td>
+          <td class="text-end @(o.Outstanding > 0 ? "text-danger" : "")">@o.Outstanding.ToString("#,##0")</td>
+          <td class="text-center">@o.SeatSold/@o.SeatTotal</td>
+          <td>@Model.SalesName(o.SalesUserId)</td>
+          <td><span class="badge bg-label-@TourKit.Api.Pages.Orders.IndexModel.StatusColor(o.Status)">@TourKit.Api.Pages.Orders.IndexModel.StatusLabel(o.Status)</span></td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () {
+      var dt = tk.tableClient('#tbl', { order: [[3, 'desc']] });
+      $('#f-status').on('change', function () {
+        var v = this.value;
+        dt.column(9).search(v ? '^' + $.fn.dataTable.util.escapeRegex(v) + '$' : '', true, false).draw();
+      });
+    });
+  </script>
+}

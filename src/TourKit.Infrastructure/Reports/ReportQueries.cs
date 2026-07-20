@@ -335,7 +335,7 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
                 .ToListAsync())
             .ToDictionary(x => x.OrderId, x => x.Cost);
 
-        var refDate = to ?? DateTimeOffset.Now;
+        var refDate = to ?? DateTimeOffset.UtcNow;
 
         // Campaign ĐANG ÁP DỤNG (Status 0) phủ refDate + nhân viên + bậc — nạp về memory rồi ghép.
         var campaigns = await db.CommissionCampaigns.AsNoTracking()

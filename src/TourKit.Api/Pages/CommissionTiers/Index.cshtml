@@ -1,0 +1,41 @@
+@page
+@model TourKit.Api.Pages.CommissionTiers.IndexModel
+@{ ViewData["Title"] = "Chính sách hoa hồng bậc thang"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Chính sách hoa hồng (bậc thang)</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th style="width:34%">Tên chính sách</th><th style="width:16%">Từ ngày</th><th style="width:16%">Đến ngày</th><th class="text-end" style="width:12%">Nhân viên</th><th class="text-end" style="width:10%">Số bậc</th><th style="width:12%">Trạng thái</th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr>
+          <td class="fw-medium">@x.Name</td>
+          <td>@x.StartDate.ToString("dd/MM/yyyy")</td>
+          <td>@x.EndDate.ToString("dd/MM/yyyy")</td>
+          <td class="text-end">@x.UserCount</td>
+          <td class="text-end">@x.TierCount</td>
+          <td>@if (x.Status == 1) { <span class="badge bg-label-success">Đang áp dụng</span> } else { <span class="badge bg-label-secondary">Tạm ngừng</span> }</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () { tk.tableClient('#tbl'); });
+  </script>
+}

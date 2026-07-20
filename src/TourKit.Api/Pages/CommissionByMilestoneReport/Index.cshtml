@@ -1,0 +1,107 @@
+@page
+@model TourKit.Api.Pages.CommissionByMilestoneReport.IndexModel
+@{ ViewData["Title"] = "Hoa hồng theo cột mốc"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+@{
+    (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+    {
+        ("Tổng doanh thu", Model.TotalTurnover.ToString("#,##0"), "ti ti-report-money", "primary", "trong khoảng lọc"),
+        ("Tổng lợi nhuận", Model.TotalProfit.ToString("#,##0"), "ti ti-trending-up", "success", "doanh thu − chi phí"),
+        ("Hoa hồng theo lợi nhuận", Model.TotalCommissionByProfit.ToString("#,##0"), "ti ti-gift", "warning", "theo bậc lợi nhuận"),
+    };
+}
+<div class="row g-4 mb-4">
+  @foreach (var s in statCards)
+  {
+    <div class="col-sm-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar flex-shrink-0 me-3">
+              <span class="avatar-initial rounded-3 bg-label-@s.Color">
+                <i class="@s.Icon ti-md"></i>
+              </span>
+            </div>
+            <div>
+              <span class="d-block text-muted small">@s.Label</span>
+              <h4 class="mb-0">@s.Value</h4>
+            </div>
+          </div>
+          <div class="text-muted small mt-2">@s.Sub</div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h5 class="mb-0">Hoa hồng theo cột mốc / bậc thang</h5>
+    <form method="get" class="d-flex flex-wrap align-items-end gap-2">
+      <div>
+        <label class="form-label small mb-1" for="From">Từ ngày</label>
+        <input type="text" id="From" name="From" value="@Model.FromValue" class="form-control form-control-sm tk-date" placeholder="dd/mm/yyyy" autocomplete="off" />
+      </div>
+      <div>
+        <label class="form-label small mb-1" for="To">Đến ngày</label>
+        <input type="text" id="To" name="To" value="@Model.ToValue" class="form-control form-control-sm tk-date" placeholder="dd/mm/yyyy" autocomplete="off" />
+      </div>
+      <div>
+        <button type="submit" class="btn btn-sm btn-primary"><i class="ti ti-filter me-1"></i>Lọc</button>
+        <a href="@Url.Page("Index")" class="btn btn-sm btn-label-secondary">Xoá lọc</a>
+      </div>
+    </form>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead>
+        <tr>
+          <th>Nhân viên</th>
+          <th>Chiến dịch</th>
+          <th class="text-end">Doanh thu</th>
+          <th class="text-end">Chi phí</th>
+          <th class="text-end">Lợi nhuận</th>
+          <th class="text-end">Tỉ lệ</th>
+          <th class="text-end">HH theo lợi nhuận</th>
+          <th class="text-end">HH theo doanh thu</th>
+        </tr>
+      </thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr>
+          <td class="fw-medium">@x.UserId</td>
+          <td>@(string.IsNullOrEmpty(x.CampaignName) ? "—" : x.CampaignName)</td>
+          <td class="text-end">@x.Turnover.ToString("#,##0")</td>
+          <td class="text-end text-danger">@x.Cost.ToString("#,##0")</td>
+          <td class="text-end fw-medium @(x.Profit < 0 ? "text-danger" : "text-success")">@x.Profit.ToString("#,##0")</td>
+          <td class="text-end">@x.CommissionRate.ToString("0.##")</td>
+          <td class="text-end text-warning fw-medium">@x.CommissionByProfit.ToString("#,##0")</td>
+          <td class="text-end">@x.CommissionByRevenue.ToString("#,##0")</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () {
+      if (window.flatpickr) {
+        flatpickr('.tk-date', { altInput: true, altFormat: 'd/m/Y', dateFormat: 'Y-m-d', allowInput: true });
+      }
+      tk.tableClient('#tbl');
+    });
+  </script>
+}
