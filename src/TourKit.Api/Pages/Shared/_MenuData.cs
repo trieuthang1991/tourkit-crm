@@ -32,11 +32,11 @@ public static class MenuData
             new("crm-opp", "Cơ hội bán hàng", To: "/Leads", Perm: "lead.view"),
             new("crm-data", "Data khách hàng", To: "/Customers", Perm: "customer.view"),
             new("crm-dedup", "Rà khách trùng", To: "/Customers/Duplicates", Perm: "customer.view"),
-            new("crm-care", "Quản lý lịch hẹn", To: "#", Perm: "care.view"),
+            new("crm-care", "Quản lý lịch hẹn", To: "/CustomerCares", Perm: "care.view"),
             new("crm-feedback", "Feedback", Children: new List<MenuNode>
             {
-                new("fb-general", "Feedback chung", To: "#", Perm: "rating.view"),
-                new("fb-tour", "Feedback theo Tour", To: "#", Perm: "rating.view"),
+                new("fb-general", "Feedback chung", To: "/TourRatings", Perm: "rating.view"),
+                new("fb-tour", "Feedback theo Tour", To: "/TourRatings", Perm: "rating.view"),
                 new("fb-zns", "Feedback ZNS", To: "#", Perm: "rating.view"),
             }),
         }),
@@ -109,7 +109,7 @@ public static class MenuData
         {
             new("hh-config", "Thiết lập hoa hồng", To: "#", Perm: "commission.view"),
             new("hh-campaign", "Chính sách hoa hồng (bậc thang)", To: "#", Perm: "commission.view"),
-            new("hh-customer", "HH theo loại khách", To: "#", Perm: "commission.view"),
+            new("hh-customer", "HH theo loại khách", To: "/CustomerCommissionRules", Perm: "commission.view"),
             new("hh-source", "Báo cáo theo nguồn", To: "#", Perm: "report.commission.view"),
             new("hh-milestone", "Báo cáo theo cột mốc", To: "#", Perm: "report.commission.view"),
         }),

@@ -1,0 +1,115 @@
+@page
+@model TourKit.Api.Pages.CustomerCares.IndexModel
+@{ ViewData["Title"] = "Quản lý lịch hẹn"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Quản lý lịch hẹn / CSKH</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Tạo lịch hẹn</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Khách</th><th>Tiêu đề</th><th>Nhắc lúc</th><th>NV</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, title = x.Title, detail = x.Detail, remindAt = x.RemindAt != null ? x.RemindAt.Value.ToString("yyyy-MM-dd") : null, feedback = x.Feedback, assignedToUserId = x.AssignedToUserId, status = x.Status, customerName = x.CustomerName })'>
+          <td class="fw-medium">@x.CustomerName</td>
+          <td>@x.Title</td>
+          <td>@(x.RemindAt?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td>@x.AssigneeName</td>
+          <td><span class="badge bg-label-@(x.Status == 1 ? "success" : "warning")">@(x.Status == 1 ? "Đã xong" : "Chờ xử lý")</span></td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">lịch hẹn</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3" id="row-customer">
+        <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
+        <select name="Input.CustomerId" id="oc-customer" class="form-select" style="width:100%"></select>
+      </div>
+      <div class="mb-3 d-none" id="row-customer-name">
+        <label class="form-label">Khách hàng</label>
+        <input type="text" id="oc-customer-name" class="form-control" disabled />
+      </div>
+      <div class="mb-3"><label class="form-label">Tiêu đề <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Nội dung cần chăm sóc" /></div>
+      <div class="mb-3"><label class="form-label">Chi tiết</label><textarea name="Input.Detail" class="form-control" rows="2"></textarea></div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Nhắc lúc</label><input type="text" name="Input.RemindAt" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+        <div class="col-6 mb-3">
+          <label class="form-label">Trạng thái</label>
+          <select name="Input.Status" class="form-select"><option value="0">Chờ xử lý</option><option value="1">Đã xong</option></select>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">NV phụ trách</label>
+        <select name="Input.AssignedToUserId" class="form-select tk-s2" data-placeholder="Chọn NV">
+          <option value="">— Chưa gán —</option>
+          @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
+        </select>
+      </div>
+      <div class="mb-3"><label class="form-label">Kết quả (feedback)</label><textarea name="Input.Feedback" class="form-control" rows="2"></textarea></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [5] }] });
+      // Select2 ajax chọn khách (không dùng tk-s2 vì cần ajax riêng)
+      $('#oc-customer').select2({ dropdownParent: $('#oc'), width: '100%', placeholder: 'Gõ tên/SĐT để tìm…',
+        ajax: { url: '?handler=CustomerSearch', dataType: 'json', delay: 250, data: function (p) { return { q: p.term }; }, processResults: function (d) { return d; } }, minimumInputLength: 2 });
+
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'lịch hẹn',
+        rules: { 'Input.Title': { required: true } }, messages: { 'Input.Title': { required: 'Bắt buộc nhập tiêu đề' } },
+        afterOpen: function (data) {
+          if (data) { // sửa: khoá chọn khách, hiện tên
+            $('#row-customer').addClass('d-none'); $('#row-customer-name').removeClass('d-none');
+            $('#oc-customer-name').val(data.customerName || '');
+          } else { // tạo: hiện picker, reset
+            $('#row-customer').removeClass('d-none'); $('#row-customer-name').addClass('d-none');
+            $('#oc-customer').val(null).trigger('change');
+          }
+        }
+      });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá lịch hẹn?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}
