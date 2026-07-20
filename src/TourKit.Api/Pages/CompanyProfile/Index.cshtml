@@ -1,0 +1,41 @@
+@page
+@model TourKit.Api.Pages.CompanyProfile.IndexModel
+@{ ViewData["Title"] = "Thông tin công ty"; }
+
+@section VendorScripts {
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+}
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Thông tin công ty</h5></div>
+  <div class="card-body">
+    <form id="frm" method="post">
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label">Tên công ty <span class="text-danger">*</span></label>
+          <input asp-for="Input.Name" class="form-control" placeholder="Tên đầy đủ" />
+          <span asp-validation-for="Input.Name" class="text-danger"></span>
+        </div>
+        <div class="col-md-4"><label class="form-label">Tên viết tắt</label><input asp-for="Input.ShortName" class="form-control" /></div>
+        <div class="col-12"><label class="form-label">Địa chỉ</label><input asp-for="Input.Address" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Hotline</label><input asp-for="Input.Hotline" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Email</label><input asp-for="Input.Email" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Website</label><input asp-for="Input.Website" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Mã số thuế</label><input asp-for="Input.TaxCode" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Người đại diện</label><input asp-for="Input.LegalRepName" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Chức vụ</label><input asp-for="Input.LegalRepTitle" class="form-control" /></div>
+        <div class="col-md-6"><label class="form-label">Số giấy phép</label><input asp-for="Input.LicenseNumber" class="form-control" /></div>
+        <div class="col-md-6"><label class="form-label">Tài khoản ngân hàng</label><input asp-for="Input.BankAccount" class="form-control" /></div>
+      </div>
+      <div class="mt-4">
+        <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i> Lưu</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+@section PageScripts {
+  <script>
+    $(function () { $('#frm').validate({ rules: { 'Input.Name': { required: true } }, messages: { 'Input.Name': { required: 'Bắt buộc nhập tên công ty' } }, errorClass: 'text-danger d-block small', errorElement: 'span' }); });
+  </script>
+}
