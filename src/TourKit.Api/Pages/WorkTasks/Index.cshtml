@@ -17,20 +17,6 @@
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
       <thead><tr><th>Tiêu đề</th><th>Trạng thái</th><th>Hạn</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, title = x.Title, description = x.Description, assigneeUserId = x.AssigneeUserId, dueDate = x.DueDate != null ? x.DueDate.Value.ToString("yyyy-MM-dd") : null, priority = x.Priority, status = x.Status })'>
-          <td class="fw-medium">@x.Title</td>
-          <td><span class="badge bg-label-@TourKit.Api.Pages.WorkTasks.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.WorkTasks.IndexModel.StatusLabel(x.Status)</span></td>
-          <td>@(x.DueDate?.ToString("dd/MM/yyyy") ?? "—")</td>
-          <td class="text-end">
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
-        </tr>
-      }
-      </tbody>
     </table>
   </div>
 </div>
@@ -81,14 +67,27 @@
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt;
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [3] }] });
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        columns: [
+          { data: 'title', render: function (v) { return '<span class="fw-medium">' + tk.escape(v) + '</span>'; } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: 'dueDateText' },
+          { data: null, className: 'text-end', render: function () {
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'công việc',
         rules: { 'Input.Title': { required: true } }, messages: { 'Input.Title': { required: 'Bắt buộc nhập tiêu đề' } } });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = this.getAttribute('data-id');
+        var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá công việc?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
       });
     });

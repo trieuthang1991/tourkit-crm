@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
 using TourKit.Application.Admin;
 using TourKit.Application.Work;
@@ -9,8 +9,9 @@ using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Pages.WorkTasks;
 
+// Danh sách công việc: DataTables SERVER-SIDE (không get-all).
 [Authorize(Policy = "task.view")]
-public class IndexModel : PageModel
+public class IndexModel : TkListPageModel
 {
     private readonly IWorkTaskService _svc;
     private readonly IUserAdminService _users;
@@ -20,7 +21,6 @@ public class IndexModel : PageModel
         _users = users;
     }
 
-    public IReadOnlyList<WorkTaskDto> Items { get; private set; } = [];
     public IReadOnlyList<(Guid Id, string Name)> Users { get; private set; } = [];
 
     [BindProperty] public Guid? Id { get; set; }
@@ -54,9 +54,30 @@ public class IndexModel : PageModel
     };
 
     public async Task OnGetAsync()
+        => Users = (await _users.ListAsync()).Select(u => (u.Id, u.FullName)).ToList();
+
+    /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
+    public async Task<IActionResult> OnGetDataAsync()
     {
-        Items = (await _svc.ListAsync(1, 1000, null, null)).Items;
-        Users = (await _users.ListAsync()).Select(u => (u.Id, u.FullName)).ToList();
+        var dt = ParseDataTables();
+        var status = int.TryParse(Request.Query["status"], out var st) ? st : (int?)null;
+        var result = await _svc.ListAsync(dt.Page, dt.Size, null, status, dt.Keyword);
+
+        var data = result.Items.Select(x => new
+        {
+            id = x.Id,
+            title = x.Title,
+            description = x.Description,
+            assigneeUserId = x.AssigneeUserId,
+            dueDate = x.DueDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            dueDateText = x.DueDate?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "—",
+            priority = x.Priority,
+            status = x.Status,
+            statusLabel = StatusLabel(x.Status),
+            statusColor = StatusColor(x.Status),
+        });
+
+        return DtJson(dt.Draw, result.Total, result.Total, data);
     }
 
     public async Task<IActionResult> OnPostSaveAsync()
