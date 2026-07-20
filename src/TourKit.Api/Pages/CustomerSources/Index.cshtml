@@ -1,0 +1,90 @@
+@page
+@model TourKit.Api.Pages.CustomerSources.IndexModel
+@{ ViewData["Title"] = "Nguồn khách hàng"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Nguồn khách hàng</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="ocSource.open(null)">
+      <i class="ti ti-plus me-1"></i> Thêm nguồn
+    </button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl-sources" class="table table-hover">
+      <thead>
+        <tr><th style="width:60%">Tên nguồn</th><th class="text-end" style="width:20%">Thứ tự</th><th style="width:20%"></th></tr>
+      </thead>
+      <tbody>
+      @foreach (var s in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = s.Id, name = s.Name, sortOrder = s.SortOrder })'>
+          <td class="fw-medium">@s.Name</td>
+          <td class="text-end">@s.SortOrder</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@s.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<!-- Offcanvas thêm/sửa -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="ocSource">
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title">Nguồn khách</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="sourceForm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3">
+        <label class="form-label">Tên nguồn <span class="text-danger">*</span></label>
+        <input type="text" name="Input.Name" class="form-control" placeholder="Facebook, Hotline…" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Thứ tự</label>
+        <input type="number" name="Input.SortOrder" class="form-control" value="0" />
+      </div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var ocSource;
+    $(function () {
+      var table = tk.tableClient('#tbl-sources', { columnDefs: [{ orderable: false, targets: [2] }] });
+      ocSource = tk.form({ offcanvas: '#ocSource', form: '#sourceForm', table: '#tbl-sources', saveUrl: '?handler=Save',
+        title: 'nguồn khách', rules: { 'Input.Name': { required: true } }, messages: { 'Input.Name': { required: 'Bắt buộc nhập tên nguồn' } } });
+
+      $('#tbl-sources tbody').on('click', '.js-edit', function () {
+        ocSource.open($(this).closest('tr').data('json'));
+      });
+      $('#tbl-sources tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá nguồn khách?' }).then(function (ok) {
+          if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); }
+        });
+      });
+    });
+  </script>
+}
