@@ -72,6 +72,7 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptio
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICookieAuthService, CookieAuthService>();   // xác thực cookie cho UI Razor Pages
 builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 // ICurrentUserContext (Shared) trỏ về cùng instance CurrentUser — cho Infrastructure/interceptor đọc UserId.
