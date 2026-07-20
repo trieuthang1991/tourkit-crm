@@ -16,4 +16,7 @@ public interface ICustomerService
 
     /// <summary>Rà khách nghi trùng: gom theo SĐT/email đã chuẩn hoá, chỉ trả nhóm có ≥2 khách.</summary>
     Task<IReadOnlyList<DuplicateGroupDto>> FindDuplicatesAsync();
+
+    /// <summary>Tìm khách trùng SĐT (đã chuẩn hoá, bắt cả +84/0), loại trừ chính khách đang sửa. Null nếu không trùng.</summary>
+    Task<DuplicateCustomerDto?> FindByPhoneAsync(string? phone, Guid? excludeId = null);
 }

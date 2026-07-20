@@ -251,10 +251,11 @@ public sealed class CustomerService(
             TempBalance = dto.TempBalance,
             Email = dto.Email,
             Address = dto.Address,
-            DateOfBirth = dto.DateOfBirth,
+            // Npgsql timestamptz yêu cầu offset UTC → chuẩn hoá (binder parse date-only ra offset local).
+            DateOfBirth = dto.DateOfBirth?.ToUniversalTime(),
             IdCardNumber = dto.IdCardNumber,
             PassportNumber = dto.PassportNumber,
-            PassportExpiry = dto.PassportExpiry,
+            PassportExpiry = dto.PassportExpiry?.ToUniversalTime(),
             Nationality = dto.Nationality,
             CrmProfileJson = profile.ToJsonOrNull(),
         };
@@ -299,10 +300,10 @@ public sealed class CustomerService(
         entity.TempBalance = dto.TempBalance;
         entity.Email = dto.Email;
         entity.Address = dto.Address;
-        entity.DateOfBirth = dto.DateOfBirth;
+        entity.DateOfBirth = dto.DateOfBirth?.ToUniversalTime();   // timestamptz cần offset UTC
         entity.IdCardNumber = dto.IdCardNumber;
         entity.PassportNumber = dto.PassportNumber;
-        entity.PassportExpiry = dto.PassportExpiry;
+        entity.PassportExpiry = dto.PassportExpiry?.ToUniversalTime();
         entity.Nationality = dto.Nationality;
         entity.CrmProfileJson = profile.ToJsonOrNull();
         repo.Update(entity);
@@ -373,6 +374,22 @@ public sealed class CustomerService(
             .OrderByDescending(g => g.Customers.Count)
             .ThenBy(g => g.MatchType)
             .ToList();
+    }
+
+    public async Task<DuplicateCustomerDto?> FindByPhoneAsync(string? phone, Guid? excludeId = null)
+    {
+        var norm = NormalizePhone(phone);
+        if (norm.Length < 8)
+        {
+            return null;
+        }
+
+        // Lọc thô ở SQL theo 8 số cuối (LIKE), rồi so khớp CHUẨN HOÁ trong bộ nhỏ (bắt +84 vs 0).
+        var tail = norm[^8..];
+        var candidates = await repo.ListAsync(c => c.Phone != null && c.Phone.EndsWith(tail));
+        var match = candidates.FirstOrDefault(c =>
+            (excludeId == null || c.Id != excludeId.Value) && NormalizePhone(c.Phone) == norm);
+        return match is null ? null : MapDuplicate(match);
     }
 
     /// <summary>Chuẩn hoá SĐT VN: bỏ ký tự không phải số; tiền tố quốc tế 84 → 0 (bắt trùng 0901… vs +84901…).</summary>

@@ -42,7 +42,7 @@
         <p class="fw-semibold mb-2"><i class="ti ti-building me-1"></i> Thông tin doanh nghiệp</p>
         <div class="mb-3">
           <label class="form-label">Tên đơn vị <span class="text-danger">*</span></label>
-          <input type="text" name="Input.UnitName" id="oc-unitname" class="form-control" placeholder="Công ty TNHH…" />
+          <input type="text" name="Input.UnitName" id="oc-unitname" class="form-control" placeholder="Nhập tên công ty/đơn vị" />
         </div>
         <div class="mb-0">
           <label class="form-label">Mã số thuế</label>
@@ -52,11 +52,11 @@
 
       <div class="mb-3">
         <label class="form-label">Họ tên <span class="text-danger">*</span></label>
-        <input type="text" name="Input.FullName" class="form-control" placeholder="Nguyễn Văn A" required />
+        <input type="text" name="Input.FullName" class="form-control" placeholder="Nhập đầy đủ họ tên" />
       </div>
       <div class="row">
         <div class="col-md-6 mb-3">
-          <label class="form-label">Số điện thoại</label>
+          <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
           <input type="text" name="Input.Phone" class="form-control" placeholder="09xxxxxxxx" />
         </div>
         <div class="col-md-6 mb-3">
@@ -76,7 +76,7 @@
         </div>
         <div class="col-md-6 mb-3">
           <label class="form-label">Ngày sinh</label>
-          <input type="date" name="Input.DateOfBirth" class="form-control" />
+          <input type="text" name="Input.DateOfBirth" class="form-control oc-date" placeholder="dd/mm/yyyy" autocomplete="off" />
         </div>
       </div>
       <div class="row">
@@ -137,7 +137,7 @@
         </div>
         <div class="col-md-6 mb-3">
           <label class="form-label">Ngày hết hạn</label>
-          <input type="date" name="Input.PassportExpiry" class="form-control" />
+          <input type="text" name="Input.PassportExpiry" class="form-control oc-date" placeholder="dd/mm/yyyy" autocomplete="off" />
         </div>
       </div>
       <div class="mb-3">
@@ -150,5 +150,3 @@
     </form>
   </div>
 </div>
-
-<div id="js-toast" class="bs-toast-container position-fixed top-0 end-0 p-3" style="z-index:1090"></div>

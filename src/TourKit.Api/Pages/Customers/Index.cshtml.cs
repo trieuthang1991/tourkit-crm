@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using TourKit.Api.Web;
 using TourKit.Application.Catalog;
 using TourKit.Application.Customers;
 using TourKit.Application.Customers.Dtos;
@@ -110,10 +111,23 @@ public class IndexModel : PageModel
     /// <summary>Lưu (tạo/sửa) từ offcanvas — AJAX, trả JSON.</summary>
     public async Task<IActionResult> OnPostSaveAsync()
     {
+        if (string.IsNullOrWhiteSpace(Input.Phone))
+        {
+            return new JsonResult(Result.Error("Bắt buộc nhập số điện thoại"));
+        }
+
         if (!ModelState.IsValid)
         {
             var err = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault();
-            return new JsonResult(new { ok = false, error = err ?? "Dữ liệu không hợp lệ." });
+            return new JsonResult(Result.Error(err ?? "Dữ liệu không hợp lệ."));
+        }
+
+        // SĐT là khoá check trùng: chặn nếu đã có khách khác cùng số (chuẩn hoá).
+        var dup = await _service.FindByPhoneAsync(Input.Phone, Id);
+        if (dup is not null)
+        {
+            return new JsonResult(Result.Error(
+                $"Số điện thoại đã tồn tại — khách: {dup.FullName}{(string.IsNullOrEmpty(dup.Code) ? "" : $" ({dup.Code})")}"));
         }
 
         if (Id is Guid gid && gid != Guid.Empty)
@@ -137,7 +151,7 @@ public class IndexModel : PageModel
                 UnitName: Input.UnitName, TaxCode: Input.TaxCode, Note: Input.Note));
         }
 
-        return new JsonResult(new { ok = true });
+        return new JsonResult(Result.Success("Đã lưu khách hàng."));
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)

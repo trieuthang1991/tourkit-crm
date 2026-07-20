@@ -9,6 +9,8 @@
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
 @{
@@ -95,16 +97,27 @@
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/jquery-validation/additional-methods.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
   <script src="~/js/customer-form.js"></script>
   <script>
     $(function () {
+      // Cắt chuỗi dài + tooltip để cột không bị vỡ/xô lệch.
+      function trunc(d, max) {
+        var s = d || '';
+        var esc = $('<div>').text(s).html();
+        return '<span class="d-inline-block text-truncate align-middle" style="max-width:' + max + 'px" title="' + esc + '">' + esc + '</span>';
+      }
       var table = $('#tbl-customers').DataTable({
         processing: true,
         serverSide: true,
         ordering: false,
+        autoWidth: false,   // KHÔNG tự tính width -> cột cố định, tránh vỡ khi reload
         ajax: {
           url: '?handler=Data',
           data: function (d) {
@@ -113,15 +126,15 @@
           }
         },
         columns: [
-          { data: 'code', render: function (d, t, row) { return '<a href="/Customers/Details/' + row.id + '" class="fw-medium">' + (d || '') + '</a>'; } },
-          { data: 'fullName', render: function (d, t, row) { return '<a href="/Customers/Details/' + row.id + '" class="fw-medium text-heading">' + (d || '') + '</a>'; } },
-          { data: 'phone' },
-          { data: 'source' },
-          { data: 'tag' },
-          { data: 'revenue', className: 'text-end', render: function (d) { return (d || 0).toLocaleString('vi-VN'); } },
-          { data: 'createdAt' },
+          { data: 'code', width: '110px', render: function (d, t, row) { return '<a href="/Customers/Details/' + row.id + '" class="fw-medium">' + (d || '') + '</a>'; } },
+          { data: 'fullName', width: '210px', render: function (d, t, row) { return '<a href="/Customers/Details/' + row.id + '" class="fw-medium text-heading d-inline-block text-truncate align-middle" style="max-width:200px" title="' + $('<div>').text(d || '').html() + '">' + $('<div>').text(d || '').html() + '</a>'; } },
+          { data: 'phone', width: '120px' },
+          { data: 'source', width: '120px', render: function (d) { return trunc(d, 110); } },
+          { data: 'tag', width: '150px', render: function (d) { return trunc(d, 140); } },
+          { data: 'revenue', width: '120px', className: 'text-end', render: function (d) { return (d || 0).toLocaleString('vi-VN'); } },
+          { data: 'createdAt', width: '100px' },
           {
-            data: 'id', orderable: false, searchable: false, className: 'text-end',
+            data: 'id', width: '90px', orderable: false, searchable: false, className: 'text-end',
             render: function (id) {
               return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
                      '<button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="' + id + '" title="Xoá"><i class="ti ti-trash"></i></button>';
@@ -153,11 +166,23 @@
       });
 
       $('#tbl-customers tbody').on('click', '.js-del', function () {
-        if (confirm('Xoá khách hàng này?')) {
-          var f = document.getElementById('delete-form');
-          f.querySelector('input[name="id"]').value = this.getAttribute('data-id');
-          f.submit();
-        }
+        var id = this.getAttribute('data-id');
+        Swal.fire({
+          title: 'Xoá khách hàng?',
+          text: 'Thao tác này không thể hoàn tác.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Xoá',
+          cancelButtonText: 'Huỷ',
+          customClass: { confirmButton: 'btn btn-danger me-2', cancelButton: 'btn btn-label-secondary' },
+          buttonsStyling: false
+        }).then(function (result) {
+          if (result.isConfirmed) {
+            var f = document.getElementById('delete-form');
+            f.querySelector('input[name="id"]').value = id;
+            f.submit();
+          }
+        });
       });
     });
   </script>
