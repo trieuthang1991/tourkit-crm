@@ -1,0 +1,64 @@
+@using TourKit.Api.Pages.Shared
+@{
+    TempData.Keep();
+    bool Has(string p) => User.HasClaim("perm", p);
+    var groups = MenuData.FilterByPerm(MenuData.Groups, Has);
+    var current = ViewContext.HttpContext.Request.Path.Value ?? "/";
+}
+@functions {
+    static bool IsActive(MenuNode n, string path) =>
+        n.To is { } to && to != "#" && (path.Equals(to, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith(to + "/", StringComparison.OrdinalIgnoreCase));
+    static bool GroupActive(MenuNode g, string path) =>
+        g.Children?.Any(c => IsActive(c, path) || GroupActive(c, path)) ?? false;
+}
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+  <div class="app-brand demo">
+    <a href="/Dashboard" class="app-brand-link">
+      <span class="app-brand-logo demo">
+        <span class="fw-bold fs-3 text-primary">T</span>
+      </span>
+      <span class="app-brand-text demo menu-text fw-bold ms-2">TourKit</span>
+    </a>
+  </div>
+
+  <div class="menu-inner-shadow"></div>
+
+  <ul class="menu-inner py-1">
+    @foreach (var g in groups)
+    {
+        var gActive = GroupActive(g, current);
+        <li class="menu-item @(gActive ? "active open" : "")">
+            <a href="javascript:void(0)" class="menu-link menu-toggle">
+                @if (g.Icon != null) { <i class="menu-icon tf-icons @g.Icon"></i> }
+                <div>@g.Label</div>
+            </a>
+            <ul class="menu-sub">
+                @foreach (var c in g.Children!)
+                {
+                    if (c.Children is { Count: > 0 })
+                    {
+                        <li class="menu-item @(GroupActive(c, current) ? "active open" : "")">
+                            <a href="javascript:void(0)" class="menu-link menu-toggle"><div>@c.Label</div></a>
+                            <ul class="menu-sub">
+                                @foreach (var sub in c.Children)
+                                {
+                                    <li class="menu-item @(IsActive(sub, current) ? "active" : "")">
+                                        <a href="@sub.To" class="menu-link"><div>@sub.Label</div></a>
+                                    </li>
+                                }
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="menu-item @(IsActive(c, current) ? "active" : "")">
+                            <a href="@c.To" class="menu-link"><div>@c.Label</div></a>
+                        </li>
+                    }
+                }
+            </ul>
+        </li>
+    }
+  </ul>
+</aside>

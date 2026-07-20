@@ -1,0 +1,3 @@
+/* Override/tinh chỉnh theme TourKit trên nền Vuexy theme-default (primary tím #7367f0).
+   Vuexy default đã là tím nên phần lớn để trống; đắp dần khi cần. */
+.app-brand-logo b { color: var(--bs-primary); }
