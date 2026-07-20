@@ -81,4 +81,16 @@ public class IndexModel : PageModel
         TempData["ok"] = "Đã đổi trạng thái người dùng.";
         return RedirectToPage();
     }
+
+    /// <summary>Quản trị đặt lại mật khẩu hộ (khác luồng tự quên mật khẩu qua email ở /Auth/ForgotPassword).</summary>
+    public async Task<IActionResult> OnPostResetPasswordAsync(Guid id, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
+        {
+            return new JsonResult(Result.Error("Mật khẩu mới tối thiểu 8 ký tự."));
+        }
+
+        await _users.ResetPasswordAsync(id, _hasher.Hash(newPassword));
+        return new JsonResult(Result.Success("Đã đặt lại mật khẩu."));
+    }
 }

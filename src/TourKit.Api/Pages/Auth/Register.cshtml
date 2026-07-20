@@ -1,0 +1,105 @@
+@page
+@model TourKit.Api.Pages.Auth.RegisterModel
+@{
+  Layout = "Layouts/_BlankLayout";
+  ViewData["Title"] = "Đăng ký";
+}
+
+@section PageStyles {
+  <link rel="stylesheet" href="~/vendor/css/pages/page-auth.css">
+}
+
+@section PageScripts {
+  <script src="~/js/pages-auth.js"></script>
+}
+
+@* ************** Content ************** *@
+
+<div class="authentication-wrapper authentication-cover authentication-bg">
+  <div class="authentication-inner row">
+    <!-- /Left Text -->
+    <div class="d-none d-lg-flex col-lg-7 p-0">
+      <div class="auth-cover-bg auth-cover-bg-color d-flex justify-content-center align-items-center">
+        <img src="~/img/illustrations/auth-register-illustration-light.png" alt="auth-register-cover" class="img-fluid my-5 auth-illustration" data-app-light-img="illustrations/auth-register-illustration-light.png" data-app-dark-img="illustrations/auth-register-illustration-dark.png">
+
+        <img src="~/img/illustrations/bg-shape-image-light.png" alt="auth-register-cover" class="platform-bg" data-app-light-img="illustrations/bg-shape-image-light.png" data-app-dark-img="illustrations/bg-shape-image-dark.png">
+      </div>
+    </div>
+    <!-- /Left Text -->
+
+    <!-- Register -->
+    <div class="d-flex col-12 col-lg-5 align-items-center p-sm-5 p-4">
+      <div class="w-px-400 mx-auto">
+        <!-- Logo -->
+        <div class="app-brand mb-4">
+          <a href="/" class="app-brand-link gap-2">
+            <span class="app-brand-logo demo"><span class="fw-bold fs-3 text-primary">T</span></span>
+            <span class="app-brand-text demo text-body fw-bold ms-1 fs-4">TourKit</span>
+          </a>
+        </div>
+        <!-- /Logo -->
+        <h3 class="mb-1 fw-bold">Bắt đầu cùng TourKit 🚀</h3>
+        <p class="mb-4">Tạo doanh nghiệp của bạn và quản lý tour dễ dàng hơn</p>
+
+        @if (Model.Error != null)
+        {
+          <div class="alert alert-danger" role="alert">@Model.Error</div>
+        }
+
+        <form id="formAuthentication" class="mb-3" method="post">
+          <div class="mb-3">
+            <label asp-for="Input.CompanyName" class="form-label">Tên doanh nghiệp <span class="text-danger">*</span></label>
+            <input asp-for="Input.CompanyName" class="form-control" placeholder="VD: Công ty Du lịch Biển Xanh" autofocus>
+            <span asp-validation-for="Input.CompanyName" class="text-danger"></span>
+          </div>
+          <div class="mb-3">
+            <label asp-for="Input.Slug" class="form-label">Mã doanh nghiệp <span class="text-danger">*</span></label>
+            <input asp-for="Input.Slug" class="form-control" placeholder="vd: bien-xanh">
+            <div class="form-text">Chữ thường, số và dấu gạch ngang. Dùng để đăng nhập.</div>
+            <span asp-validation-for="Input.Slug" class="text-danger"></span>
+          </div>
+          <div class="mb-3">
+            <label asp-for="Input.AdminFullName" class="form-label">Họ tên quản trị viên <span class="text-danger">*</span></label>
+            <input asp-for="Input.AdminFullName" class="form-control" placeholder="Nhập họ tên của bạn">
+            <span asp-validation-for="Input.AdminFullName" class="text-danger"></span>
+          </div>
+          <div class="mb-3">
+            <label asp-for="Input.AdminEmail" class="form-label">Email <span class="text-danger">*</span></label>
+            <input asp-for="Input.AdminEmail" class="form-control" placeholder="Nhập email của bạn">
+            <span asp-validation-for="Input.AdminEmail" class="text-danger"></span>
+          </div>
+          <div class="mb-3 form-password-toggle">
+            <label class="form-label" asp-for="Input.AdminPassword">Mật khẩu <span class="text-danger">*</span></label>
+            <div class="input-group input-group-merge">
+              <input asp-for="Input.AdminPassword" type="password" class="form-control" placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" aria-describedby="password" />
+              <span class="input-group-text cursor-pointer"><i class="ti ti-eye-off"></i></span>
+            </div>
+            <div class="form-text">Tối thiểu 8 ký tự.</div>
+            <span asp-validation-for="Input.AdminPassword" class="text-danger"></span>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input asp-for="Input.AcceptTerms" class="form-check-input" type="checkbox" id="terms-conditions">
+              <label class="form-check-label" for="terms-conditions">
+                Tôi đồng ý với điều khoản sử dụng
+              </label>
+              <span asp-validation-for="Input.AcceptTerms" class="text-danger d-block"></span>
+            </div>
+          </div>
+          <button class="btn btn-primary d-grid w-100" type="submit">
+            Đăng ký
+          </button>
+        </form>
+
+        <p class="text-center">
+          <span>Đã có tài khoản?</span>
+          <a asp-page="/Auth/Login">
+            <span>Đăng nhập ngay</span>
+          </a>
+        </p>
+      </div>
+    </div>
+    <!-- /Register -->
+  </div>
+</div>

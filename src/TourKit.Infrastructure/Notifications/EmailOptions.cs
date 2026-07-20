@@ -9,7 +9,12 @@ public sealed class EmailOptions
     public string Host { get; set; } = string.Empty;
     public int Port { get; set; } = 587;
     public bool EnableSsl { get; set; } = true;
+    /// <summary>Nhận cả dạng "ENC:" (Crypton, dùng chung hệ sinh thái TourKit) — tự giải khi gửi.</summary>
     public string User { get; set; } = string.Empty;
+
+    /// <summary>Nhận cả dạng "ENC:" (Crypton) — tự giải khi gửi.</summary>
     public string Password { get; set; } = string.Empty;
+
     public string From { get; set; } = "no-reply@tourkit.vn";
+    public string FromName { get; set; } = "TourKit";
 }

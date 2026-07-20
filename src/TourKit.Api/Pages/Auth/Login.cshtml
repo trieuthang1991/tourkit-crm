@@ -41,6 +41,10 @@
         <h3 class="mb-1 fw-bold">Chào mừng đến TourKit! 👋</h3>
         <p class="mb-4">Đăng nhập để tiếp tục làm việc</p>
 
+        @if (TempData["ok"] is string okMsg)
+        {
+          <div class="alert alert-success" role="alert">@okMsg</div>
+        }
         @if (Model.Error != null)
         {
           <div class="alert alert-danger" role="alert">@Model.Error</div>
@@ -58,7 +62,12 @@
             <span asp-validation-for="Input.Email" class="text-danger"></span>
           </div>
           <div class="mb-3 form-password-toggle">
-            <label class="form-label" asp-for="Input.Password">Mật khẩu</label>
+            <div class="d-flex justify-content-between">
+              <label class="form-label" asp-for="Input.Password">Mật khẩu</label>
+              <a asp-page="/Auth/ForgotPassword">
+                <small>Quên mật khẩu?</small>
+              </a>
+            </div>
             <div class="input-group input-group-merge">
               <input asp-for="Input.Password" type="password" class="form-control" placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" aria-describedby="password" />
               <span class="input-group-text cursor-pointer"><i class="ti ti-eye-off"></i></span>
@@ -77,6 +86,13 @@
             Đăng nhập
           </button>
         </form>
+
+        <p class="text-center">
+          <span>Chưa có tài khoản?</span>
+          <a asp-page="/Auth/Register">
+            <span>Đăng ký doanh nghiệp</span>
+          </a>
+        </p>
       </div>
     </div>
     <!-- /Login -->

@@ -27,6 +27,7 @@
           <td><span class="badge bg-label-@(u.IsActive ? "success" : "secondary")">@(u.IsActive ? "Hoạt động" : "Khoá")</span></td>
           <td class="text-end">
             <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm js-pwd" data-id="@u.Id" data-name="@u.FullName" title="Đặt lại mật khẩu"><i class="ti ti-key"></i></button>
             <form method="post" asp-page-handler="Toggle" asp-route-id="@u.Id" class="d-inline">
               <button type="submit" class="btn btn-icon btn-sm" title="@(u.IsActive ? "Khoá" : "Mở khoá")"><i class="ti ti-@(u.IsActive ? "lock" : "lock-open")"></i></button>
             </form>
@@ -83,6 +84,23 @@
         afterOpen: function (data) { $('#row-pass').toggle(!data); }
       });
       $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-pwd', function () {
+        var id = $(this).data('id');
+        Swal.fire({
+          title: 'Đặt lại mật khẩu', text: 'Cho người dùng: ' + $(this).data('name'),
+          input: 'password', inputPlaceholder: 'Mật khẩu mới (tối thiểu 8 ký tự)',
+          inputAttributes: { minlength: 8 }, showCancelButton: true,
+          confirmButtonText: 'Đặt lại', cancelButtonText: 'Huỷ',
+          customClass: { confirmButton: 'btn btn-primary me-2', cancelButton: 'btn btn-label-secondary' }, buttonsStyling: false,
+          inputValidator: function (v) { return (!v || v.length < 8) ? 'Mật khẩu tối thiểu 8 ký tự' : undefined; }
+        }).then(function (r) {
+          if (!r.isConfirmed) { return; }
+          var fd = new FormData(); fd.append('id', id); fd.append('newPassword', r.value);
+          tk.post('?handler=ResetPassword', fd).then(function (res) {
+            if (res && res.isSuccess) { tk.toast(res.message); } else { tk.error((res && res.message) || 'Không đặt lại được mật khẩu.'); }
+          });
+        });
+      });
     });
   </script>
 }
