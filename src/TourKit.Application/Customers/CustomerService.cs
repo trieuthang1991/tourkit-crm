@@ -393,14 +393,13 @@ public sealed class CustomerService(
     {
         var all = await repo.ListAsync();
 
-        // Gom theo SĐT chuẩn hoá (chỉ số, +84/84→0) và email (thường + trim). Chỉ nhóm ≥2 khách mới là "trùng".
+        // Gom theo cột PhoneNormalized (đã chuẩn hoá +84/0 lúc ghi) và email (thường + trim). Chỉ nhóm ≥2 là "trùng".
         var byPhone = all
-            .Select(c => (Customer: c, Key: VietnameseText.NormalizePhone(c.Phone)))
-            .Where(x => x.Key.Length > 0)
-            .GroupBy(x => x.Key)
+            .Where(c => !string.IsNullOrEmpty(c.PhoneNormalized))
+            .GroupBy(c => c.PhoneNormalized!)
             .Where(g => g.Count() > 1)
             .Select(g => new DuplicateGroupDto("phone", g.Key,
-                g.Select(x => MapDuplicate(x.Customer)).OrderBy(d => d.CreatedAt).ToList()));
+                g.Select(MapDuplicate).OrderBy(d => d.CreatedAt).ToList()));
 
         var byEmail = all
             .Select(c => (Customer: c, Key: (c.Email ?? string.Empty).Trim().ToLowerInvariant()))
@@ -424,11 +423,9 @@ public sealed class CustomerService(
             return null;
         }
 
-        // Lọc thô ở SQL theo 8 số cuối (LIKE), rồi so khớp CHUẨN HOÁ trong bộ nhỏ (bắt +84 vs 0).
-        var tail = norm[^8..];
-        var candidates = await repo.ListAsync(c => c.Phone != null && c.Phone.EndsWith(tail));
-        var match = candidates.FirstOrDefault(c =>
-            (excludeId == null || c.Id != excludeId.Value) && VietnameseText.NormalizePhone(c.Phone) == norm);
+        // So thẳng cột PhoneNormalized ở SQL (đã index) — không còn EndsWith('%...') không sargable.
+        var candidates = await repo.ListAsync(c => c.PhoneNormalized == norm);
+        var match = candidates.FirstOrDefault(c => excludeId == null || c.Id != excludeId.Value);
         return match is null ? null : MapDuplicate(match);
     }
 
