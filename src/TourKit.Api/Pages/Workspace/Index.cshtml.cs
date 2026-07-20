@@ -59,10 +59,23 @@ public class IndexModel : PageModel
         OverdueTaskCount = MyTasks.Count(t =>
             t.Status is (int)WorkTaskStatus.Todo or (int)WorkTaskStatus.InProgress && t.DueDate is { } d && d < now);
         DoneTaskCount = MyTasks.Count(t => t.Status == (int)WorkTaskStatus.Done);
-        UpcomingCareCount = MyCares.Count(c => c.Status != 1); // 1 = Đã xong
+        UpcomingCareCount = MyCares.Count(c => c.Status != CareDone);
     }
 
-    // Care status: 0 Chờ xử lý · 1 Đã xong.
-    public static string CareStatusLabel(int s) => s == 1 ? "Đã xong" : "Chờ xử lý";
-    public static string CareStatusColor(int s) => s == 1 ? "success" : "warning";
+    // Trạng thái CSKH (bám CARE_STATUS hệ cũ): 0 Mới · 1 Đang xử lý · 2 Hoàn thành.
+    private const int CareDone = 2;
+
+    public static string CareStatusLabel(int s) => s switch
+    {
+        1 => "Đang xử lý",
+        CareDone => "Hoàn thành",
+        _ => "Mới",
+    };
+
+    public static string CareStatusColor(int s) => s switch
+    {
+        1 => "info",
+        CareDone => "success",
+        _ => "warning",
+    };
 }

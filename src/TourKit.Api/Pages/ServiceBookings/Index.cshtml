@@ -1,42 +1,148 @@
 @page
 @model TourKit.Api.Pages.ServiceBookings.IndexModel
-@{ ViewData["Title"] = "Danh sách Booking"; }
+@{ ViewData["Title"] = "Đặt dịch vụ lẻ"; }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Danh sách Booking</h5>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Đặt dịch vụ lẻ</h4>
+</div>
+
+@* 6 KPI — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng dịch vụ</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Khách sạn</small><h5 class="mb-0">@Model.Stats.Hotel.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Vé máy bay</small><h5 class="mb-0">@Model.Stats.Flight.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Visa</small><h5 class="mb-0">@Model.Stats.Visa.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Vé / Khác</small><h5 class="mb-0">@((Model.Stats.Ticket + Model.Stats.Other).ToString("#,##0"))</h5></div></div></div>
+</div>
+
+@* Thanh lọc — đủ 4 tiêu chí hệ cũ (q · NCC · trạng thái · khoảng ngày bắt đầu) *@
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / mô tả dịch vụ" /></div>
+      <div class="col-md-2">
+        <select id="f-providerId" class="form-select tk-s2f" data-placeholder="Nhà cung cấp"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-status" class="form-select"><option value="">Trạng thái</option><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+      </div>
+      <div class="col-md-2"><input type="text" id="f-dateFrom" class="form-control tk-datef" placeholder="Bắt đầu từ" /></div>
+      <div class="col-md-2 d-flex gap-2">
+        <input type="text" id="f-dateTo" class="form-control tk-datef" placeholder="đến" />
+        <button type="button" class="btn btn-primary" id="btn-search" title="Tìm kiếm"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
   </div>
+</div>
+
+@* Tab loại dịch vụ — bám Segmented hệ cũ *@
+<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
+  <li class="nav-item"><button type="button" class="nav-link active" data-v="">Tất cả (@Model.Stats.Total)</button></li>
+  @foreach (var t in TourKit.Api.Pages.ServiceBookings.IndexModel.TypeTabs)
+  {
+    <li class="nav-item"><button type="button" class="nav-link" data-v="@t.Value">@t.Label</button></li>
+  }
+</ul>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Danh sách booking dịch vụ</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Mã</th><th>Loại</th><th>Mô tả</th><th>Ngày BĐ</th><th class="text-end">SL × Đơn giá</th><th class="text-end">Thành tiền</th><th class="text-end">Trạng thái</th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
+      <thead>
         <tr>
-          <td class="fw-medium">@x.Code</td>
-          <td>@TourKit.Api.Pages.ServiceBookings.IndexModel.TypeLabel(x.Type)</td>
-          <td>@(string.IsNullOrEmpty(x.Description) ? "—" : x.Description)</td>
-          <td>@(x.StartDate?.ToString("dd/MM/yyyy") ?? "—")</td>
-          <td class="text-end">@x.Quantity × @x.UnitPrice.ToString("#,##0")</td>
-          <td class="text-end">@x.TotalAmount.ToString("#,##0")</td>
-          <td class="text-end"><span class="badge bg-label-secondary">@x.Status</span></td>
+          <th class="text-center">#</th><th>Mã</th><th>Loại</th><th>Dịch vụ / NCC</th>
+          <th>Thời gian sử dụng</th><th class="text-end">Giá trị</th><th class="text-center">Trạng thái</th>
         </tr>
-      }
-      </tbody>
+      </thead>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="7" class="small"></td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
 
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
 }
 
 @section PageScripts {
   <script>
-    $(function () { tk.tableClient('#tbl'); });
+    var dt, type = '';
+    // Mọi tiêu chí đẩy xuống SERVER (ServiceBookingListFilter) — không lọc ở client.
+    var FILTERS = ['providerId', 'status', 'dateFrom', 'dateTo'];
+
+    function collectFilters(d) {
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
+      if (type !== '') { d.type = type; }
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+
+    $(function () {
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: 'code', render: function (v) { return '<span class="fw-medium">' + tk.escape(v) + '</span>'; } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.typeColor + '">' + tk.escape(r.typeLabel) + '</span>'; } },
+          { data: null, render: function (r) {
+              // Cột ghép: mô tả dịch vụ · nhà cung cấp (bám CellStack hệ cũ)
+              return '<div>' + tk.trunc(r.description, 240) + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.providerName) + '</div>';
+            } },
+          { data: null, render: function (r) {
+              return '<div>' + tk.escape(r.startDateText) + '</div>' +
+                     (r.endDateText ? '<div class="small text-muted">→ ' + tk.escape(r.endDateText) + '</div>' : '');
+            } },
+          { data: null, className: 'text-end', render: function (r) {
+              return '<div class="fw-medium">' + tk.money(r.totalAmount) + '</div>' +
+                     '<div class="small text-muted">' + tk.money(r.quantity) + ' × ' + tk.money(r.unitPrice) + '</div>';
+            } },
+          { data: 'status', className: 'text-center', render: function (v) { return '<span class="badge bg-label-secondary">' + tk.escape(v) + '</span>'; } }
+        ]
+      });
+
+      // Dòng tổng cộng trang: đọc khối pageSum ngoài contract DataTables qua sự kiện xhr.
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' +
+          '<span class="me-3 text-muted">Số lượng: <span class="fw-medium">' + tk.money(s.quantity) + '</span></span>' +
+          '<span class="me-3 text-muted">Thành tiền: <span class="fw-medium">' + tk.money(s.total) + '</span></span>');
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#f-status').on('change', function () { dt.ajax.reload(); });
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('.tk-datef').on('change', function () { dt.ajax.reload(); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        type = '';
+        $('#tabs .nav-link').removeClass('active').filter('[data-v=""]').addClass('active');
+        dt.ajax.reload();
+      });
+      $('#tabs').on('click', '.nav-link', function () {
+        $('#tabs .nav-link').removeClass('active');
+        $(this).addClass('active');
+        type = this.getAttribute('data-v');
+        dt.ajax.reload();
+      });
+    });
   </script>
 }

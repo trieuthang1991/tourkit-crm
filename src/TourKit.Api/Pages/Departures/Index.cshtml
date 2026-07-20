@@ -1,6 +1,6 @@
 @page
 @model TourKit.Api.Pages.Departures.IndexModel
-@{ ViewData["Title"] = "Chuyến đi / LKH"; }
+@{ ViewData["Title"] = "Chuyến đi (Tour / LKH)"; }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
@@ -9,43 +9,57 @@
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="row g-4 mb-4">
-  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng chuyến</p><h4 class="mb-0">@Model.Stats.Total</h4></div></div></div>
-  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Sắp khởi hành</p><h4 class="mb-0 text-success">@Model.Stats.Upcoming</h4></div></div></div>
-  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Đã đóng</p><h4 class="mb-0 text-muted">@Model.Stats.Closed</h4></div></div></div>
-  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng chỗ</p><h4 class="mb-0">@Model.Stats.TotalSlots</h4></div></div></div>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Chuyến đi (Tour / LKH)</h4>
+  <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm chuyến</button>
 </div>
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Danh sách chuyến đi / LKH</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm chuyến</button>
+@* 4 KPI — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chuyến</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Sắp khởi hành</small><h5 class="mb-0 text-success">@Model.Stats.Upcoming.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã đóng</small><h5 class="mb-0 text-danger">@Model.Stats.Closed.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chỗ</small><h5 class="mb-0">@Model.Stats.TotalSlots.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — đủ 4 tiêu chí hệ cũ (q · loại tour · NV điều hành · khoảng ngày khởi hành) *@
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / tên chuyến" /></div>
+      <div class="col-md-2">
+        <select id="f-tourType" class="form-select tk-s2f" data-placeholder="Loại tour"><option value=""></option>@foreach (var t in Model.TourTypes) { <option value="@t">@t</option> }</select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-assignedToUserId" class="form-select tk-s2f" data-placeholder="NV điều hành"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
+      </div>
+      <div class="col-md-2"><input type="text" id="f-departureFrom" class="form-control tk-datef" placeholder="Khởi hành từ" /></div>
+      <div class="col-md-2 d-flex gap-2">
+        <input type="text" id="f-departureTo" class="form-control tk-datef" placeholder="đến" />
+        <button type="button" class="btn btn-primary" id="btn-search" title="Tìm kiếm"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
   </div>
+</div>
+
+@* Tab trạng thái — bám SegmentTabs hệ cũ (Tất cả / Đang mở / Đã đóng) *@
+<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
+  <li class="nav-item"><button type="button" class="nav-link active" data-v="">Tất cả (@Model.Stats.Total)</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-v="false">Đang mở</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-v="true">Đã đóng (@Model.Stats.Closed)</button></li>
+</ul>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Danh sách chuyến khởi hành</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Mã</th><th>Tên chuyến</th><th>Loại</th><th>Ngày đi</th><th>Ngày về</th><th class="text-center">Chỗ</th><th>Trạng thái</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var d in Model.Items)
-      {
+      <thead>
         <tr>
-          <td class="fw-medium">@d.Code</td>
-          <td>@d.Title</td>
-          <td>@(d.TourType ?? "—")</td>
-          <td data-order="@(d.DepartureDate?.ToUnixTimeSeconds() ?? 0)">@(d.DepartureDate?.ToString("dd/MM/yyyy") ?? "—")</td>
-          <td>@(d.EndDate?.ToString("dd/MM/yyyy") ?? "—")</td>
-          <td class="text-center">@d.TotalSlots</td>
-          <td><span class="badge bg-label-@TourKit.Api.Pages.Departures.IndexModel.StatusColor(d)">@TourKit.Api.Pages.Departures.IndexModel.StatusLabel(d)</span></td>
-          <td class="text-end">
-            @if (!d.IsClosed)
-            {
-              <form method="post" asp-page-handler="Close" asp-route-id="@d.Id" class="d-inline js-close" data-name="@d.Code">
-                <button type="submit" class="btn btn-icon btn-sm" title="Đóng chuyến"><i class="ti ti-lock"></i></button>
-              </form>
-            }
-          </td>
+          <th class="text-center">#</th><th>Tour / LKH</th><th>Ngày đi / về</th>
+          <th class="text-end">Tổng chỗ</th><th>Điều hành</th><th>Trạng thái</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
     </table>
   </div>
 </div>
@@ -63,8 +77,8 @@
         <div class="col-7 mb-3"><label class="form-label">Tên chuyến <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Đà Nẵng 3N2Đ" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Ngày khởi hành</label><input type="text" name="Input.DepartureDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Ngày về</label><input type="text" name="Input.EndDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Ngày khởi hành</label><input type="text" name="Input.DepartureDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Ngày về</label><input type="text" name="Input.EndDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
       </div>
       <div class="mb-3"><label class="form-label">Tổng số chỗ</label><input type="number" name="Input.TotalSlots" class="form-control" placeholder="0" min="0" /></div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
@@ -83,17 +97,79 @@
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt, isClosed = '';
+    // Mọi tiêu chí đẩy xuống SERVER (DepartureListFilter) — không lọc ở client.
+    var FILTERS = ['tourType', 'assignedToUserId', 'departureFrom', 'departureTo'];
+
+    function collectFilters(d) {
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
+      if (isClosed !== '') { d.isClosed = isClosed; }
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+
     $(function () {
-      tk.tableClient('#tbl', { order: [[3, 'desc']], columnDefs: [{ orderable: false, targets: [7] }] });
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: null, render: function (r) {
+              // Cột ghép: tên chuyến · mã · loại tour (bám CellEntity hệ cũ)
+              return '<div class="fw-medium">' + tk.escape(r.title) + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.code) + ' · ' + tk.escape(r.tourType) + '</div>';
+            } },
+          { data: null, render: function (r) {
+              return '<div>' + tk.escape(r.departureDateText) + '</div>' +
+                     (r.endDateText ? '<div class="small text-muted">→ ' + tk.escape(r.endDateText) + '</div>' : '');
+            } },
+          { data: 'totalSlots', className: 'text-end fw-medium', render: function (v) { return tk.money(v); } },
+          { data: 'assigneeName', render: function (v) { return tk.trunc(v, 170); } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end', render: function (r) {
+              return r.isClosed ? '' : '<button type="button" class="btn btn-icon btn-sm js-close" title="Đóng chuyến"><i class="ti ti-lock"></i></button>';
+            } }
+        ]
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'chuyến đi',
         rules: { 'Input.Code': { required: true }, 'Input.Title': { required: true } },
         messages: { 'Input.Code': { required: 'Bắt buộc nhập mã chuyến' }, 'Input.Title': { required: 'Bắt buộc nhập tên chuyến' } }
       });
-      $('#tbl tbody').on('submit', '.js-close', function (e) {
-        e.preventDefault(); var f = this;
-        tk.confirmDelete({ title: 'Đóng chuyến ' + $(f).data('name') + '?', text: 'Chuyến đã đóng sẽ khoá đặt chỗ.', confirm: 'Đóng chuyến' })
-          .then(function (ok) { if (ok) { f.submit(); } });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('.tk-datef').on('change', function () { dt.ajax.reload(); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        isClosed = '';
+        $('#tabs .nav-link').removeClass('active').filter('[data-v=""]').addClass('active');
+        dt.ajax.reload();
+      });
+      $('#tabs').on('click', '.nav-link', function () {
+        $('#tabs .nav-link').removeClass('active');
+        $(this).addClass('active');
+        isClosed = this.getAttribute('data-v');
+        dt.ajax.reload();
+      });
+
+      // Server-side: lấy dữ liệu dòng từ DataTables API (không có data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-close', function () {
+        var row = dt.row($(this).closest('tr')).data();
+        tk.confirmDelete({ title: 'Đóng chuyến ' + row.code + '?', text: 'Chuyến đã đóng sẽ khoá đặt chỗ.', confirm: 'Đóng chuyến' })
+          .then(function (ok) {
+            if (!ok) { return; }
+            var fd = new FormData(); fd.append('id', row.id);
+            tk.post('?handler=Close', fd).then(function (res) {
+              if (res && res.isSuccess) { dt.ajax.reload(null, false); tk.toast(res.message || 'Đã đóng chuyến.'); }
+              else { tk.error((res && res.message) || 'Đóng chuyến thất bại.'); }
+            });
+          });
       });
     });
   </script>

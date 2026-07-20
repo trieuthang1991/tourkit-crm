@@ -1,42 +1,68 @@
 @page
 @model TourKit.Api.Pages.LeadCampaigns.IndexModel
-@{ ViewData["Title"] = "Chiến dịch chia số"; }
+@{ ViewData["Title"] = "Chia số Sale"; }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Chiến dịch chia số</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm</button>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Chia số Sale</h4>
+  <div class="d-flex gap-2">
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Tạo chiến dịch mới</button>
   </div>
+</div>
+
+@* 4 thẻ KPI — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chiến dịch</small><h5 class="mb-0">@Model.Stats.TotalCampaigns.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng Leads</small><h5 class="mb-0">@Model.Stats.TotalLeads.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tỷ lệ chốt TB</small><h5 class="mb-0 text-success">@Model.Stats.AvgCloseRate.ToString("0.##")%</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Hoàn thành</small><h5 class="mb-0">@Model.Stats.Completed.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — đủ 2 tiêu chí service hỗ trợ *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Tên chiến dịch…" /></div>
+      <div class="col-md-4">
+        <select id="f-createdByUserId" class="form-select tk-s2f" data-placeholder="Người tạo"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm kiếm</button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th style="width:55%">Tên</th><th class="text-end" style="width:15%">Tổng lead</th><th class="text-end" style="width:15%">Đã chốt</th><th class="text-end" style="width:15%">Tỉ lệ chốt</th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, name = x.Name })'>
-          <td class="fw-medium">@x.Name</td>
-          <td class="text-end">@x.TotalLeads</td>
-          <td class="text-end">@x.ClosedCount</td>
-          <td class="text-end">@x.CloseRate.ToString("0.#")%</td>
+      <thead>
+        <tr>
+          <th class="text-center">#</th><th>Chiến dịch</th><th>Ngày tạo</th>
+          <th class="text-end">Số liệu</th><th>Tiến độ</th><th class="text-end">Đơn chốt</th><th>Trạng thái</th>
         </tr>
-      }
-      </tbody>
+      </thead>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="7" class="small"></td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="oc">
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">chiến dịch chia số</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
   <div class="offcanvas-body">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
       <input type="hidden" name="Id" />
-      <div class="mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên chiến dịch" /></div>
+      <div class="mb-3"><label class="form-label">Tên chiến dịch <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên chiến dịch" /></div>
       <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="3" placeholder="Nhập ghi chú"></textarea></div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
@@ -46,17 +72,88 @@
 
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt;
+    // Tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['createdByUserId'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+
     $(function () {
-      tk.tableClient('#tbl');
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: null, render: function (r) {
+              // Cột ghép: tên chiến dịch + người tạo
+              return '<div class="fw-medium">' + tk.escape(r.name) + '</div>' +
+                     '<div class="small text-muted">' + (r.createdByName ? 'Tạo bởi ' + tk.escape(r.createdByName) : '—') + '</div>';
+            } },
+          { data: 'createdAt' },
+          { data: null, className: 'text-end', render: function (r) {
+              // Cột ghép: tổng lead + tiến độ chăm sóc
+              return '<div>' + tk.money(r.totalLeads) + ' leads</div>' +
+                     '<div class="small text-muted">Chăm sóc ' + tk.money(r.caredCount) + '/' + tk.money(r.totalLeads) + '</div>';
+            } },
+          { data: 'progress', render: function (v) {
+              var p = Number(v) || 0;
+              return '<div class="d-flex align-items-center gap-2">' +
+                     '<div class="progress w-100" style="height:6px"><div class="progress-bar" style="width:' + p + '%"></div></div>' +
+                     '<small class="text-muted">' + p + '%</small></div>';
+            } },
+          { data: null, className: 'text-end', render: function (r) {
+              return '<div class="fw-medium text-success">' + tk.money(r.closedCount) + '</div>' +
+                     '<div class="small text-muted">' + (Number(r.closeRate) || 0) + '%</div>';
+            } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } }
+        ]
+      });
+
+      // tk.table không nhận drawCallback → gắn sau qua sự kiện xhr.
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        var parts = [['Tổng lead', s.totalLeads, ''], ['Đã chăm sóc', s.caredCount, ''], ['Đơn chốt', s.closedCount, 'text-success']];
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' + parts.map(function (p) {
+          return '<span class="me-3 text-muted">' + p[0] + ': <span class="fw-medium ' + p[2] + '">' + tk.money(p[1]) + '</span></span>';
+        }).join(''));
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'chiến dịch chia số',
         rules: { 'Input.Name': { required: true } }, messages: { 'Input.Name': { required: 'Bắt buộc nhập tên' } } });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        dt.ajax.reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
+      });
     });
   </script>
 }

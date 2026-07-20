@@ -1,53 +1,82 @@
 @page
 @model TourKit.Api.Pages.Leads.IndexModel
-@using TourKit.Shared.Enums
 @{ ViewData["Title"] = "Cơ hội bán hàng"; }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Cơ hội bán hàng</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm cơ hội</button>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Cơ hội bán hàng (Lead)</h4>
+  <div class="d-flex gap-2">
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm cơ hội</button>
   </div>
+</div>
+
+@* 7 thẻ pipeline — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng cơ hội</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Mới</small><h5 class="mb-0">@Model.Stats.New.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã liên hệ</small><h5 class="mb-0 text-warning">@Model.Stats.Contacted.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tiềm năng</small><h5 class="mb-0 text-info">@Model.Stats.Qualified.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chốt</small><h5 class="mb-0 text-success">@Model.Stats.Won.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Mất</small><h5 class="mb-0 text-danger">@Model.Stats.Lost.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã chuyển KH</small><h5 class="mb-0">@Model.Stats.Converted.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — đủ 7 tiêu chí service hỗ trợ (4 lọc nhanh + panel nâng cao) *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Tên cơ hội, SĐT, email, nguồn…" /></div>
+      <div class="col-md-2">
+        <select id="f-status" class="form-select">
+          <option value="">Trạng thái</option>
+          <option value="1">Mới</option><option value="2">Đã liên hệ</option><option value="3">Tiềm năng</option>
+          <option value="4">Đã chốt</option><option value="5">Thất bại</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-source" class="form-select tk-s2f" data-placeholder="Nguồn khách hàng"><option value=""></option>@foreach (var s in Model.Sources) { <option value="@s">@s</option> }</select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-assignedToUserId" class="form-select tk-s2f" data-placeholder="NV phụ trách"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3"><label class="form-label small mb-1">Người tạo</label><select id="f-createdByUserId" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Chi nhánh</label><select id="f-branchId" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }</select></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Ngày lập từ</label><input type="text" id="f-createdFrom" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="text" id="f-createdTo" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Họ tên</th><th>SĐT</th><th>Nguồn</th><th>Trạng thái</th><th>NV phụ trách</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, fullName = x.FullName, phone = x.Phone, email = x.Email, source = x.Source, status = (int)x.Status, assignedToUserId = x.AssignedToUserId, branchId = x.BranchId })'>
-          <td class="fw-medium">@x.FullName</td>
-          <td>@x.Phone</td>
-          <td>@x.Source</td>
-          <td><span class="badge bg-label-@TourKit.Api.Pages.Leads.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.Leads.IndexModel.StatusLabel(x.Status)</span></td>
-          <td>@Model.UserName(x.AssignedToUserId)</td>
-          <td class="text-end">
-            @if (x.ConvertedCustomerId is null)
-            {
-              <form method="post" asp-page-handler="Convert" asp-route-id="@x.Id" class="d-inline js-convert">
-                <button type="submit" class="btn btn-icon btn-sm text-success" title="Chuyển thành khách"><i class="ti ti-user-check"></i></button>
-              </form>
-            }
-            else
-            {
-              <a href="/Customers/Details/@x.ConvertedCustomerId" class="btn btn-icon btn-sm" title="Xem khách"><i class="ti ti-user"></i></a>
-            }
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
+      <thead>
+        <tr>
+          <th class="text-center">#</th><th>Cơ hội</th><th>Liên hệ</th><th>Nguồn</th>
+          <th>Phụ trách</th><th>Trạng thái</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
     </table>
   </div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+<form id="convert-form" method="post" asp-page-handler="Convert" class="d-none"><input type="hidden" name="id" /></form>
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">cơ hội</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
@@ -57,8 +86,8 @@
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Họ tên <span class="text-danger">*</span></label><input type="text" name="Input.FullName" class="form-control" placeholder="Nhập họ tên" /></div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" placeholder="Nhập số điện thoại" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" placeholder="Nhập email" /></div>
       </div>
       <div class="mb-3"><label class="form-label">Nguồn</label><input type="text" name="Input.Source" class="form-control" placeholder="Facebook, Hotline…" /></div>
       <div class="mb-3">
@@ -91,21 +120,93 @@
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt;
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['status', 'source', 'assignedToUserId', 'createdByUserId', 'branchId', 'createdFrom', 'createdTo'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [5] }] });
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: null, render: function (r) {
+              // Cột ghép: tên cơ hội + chi nhánh (bám CellEntity hệ cũ)
+              return '<div class="fw-medium">' + tk.escape(r.fullName) + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.branchName || '—') + '</div>';
+            } },
+          { data: null, render: function (r) {
+              // Cột ghép: SĐT + email (bám CellStack hệ cũ)
+              return '<div>' + tk.escape(r.phone || '—') + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.email || '—') + '</div>';
+            } },
+          { data: 'source', render: function (v) { return tk.escape(v || '—'); } },
+          { data: 'assigneeName', render: function (v) { return tk.escape(v || '—'); } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end', render: function (r) {
+              var act = r.convertedCustomerId
+                ? '<a href="/Customers/Details/' + r.convertedCustomerId + '" class="btn btn-icon btn-sm" title="Xem khách"><i class="ti ti-user"></i></a>'
+                : '<button type="button" class="btn btn-icon btn-sm text-success js-convert" title="Chuyển thành khách"><i class="ti ti-user-check"></i></button>';
+              return act +
+                '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'cơ hội',
         rules: { 'Input.FullName': { required: true } }, messages: { 'Input.FullName': { required: 'Bắt buộc nhập họ tên' } } });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+
+      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = this.getAttribute('data-id');
+        var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá cơ hội?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+      $('#tbl tbody').on('click', '.js-convert', function () {
+        var id = dt.row($(this).closest('tr')).data().id;
+        tk.confirmDelete({ title: 'Chuyển thành khách hàng?', text: 'Hệ thống sẽ tạo khách hàng mới từ cơ hội này.', confirm: 'Chuyển' })
+          .then(function (ok) { if (ok) { var f = document.getElementById('convert-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#f-status').on('change', function () { dt.ajax.reload(); });
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('.tk-datef').on('change', function () { dt.ajax.reload(); });
+      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        dt.ajax.reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
       });
     });
   </script>

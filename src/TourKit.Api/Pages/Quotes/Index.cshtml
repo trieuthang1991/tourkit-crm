@@ -4,63 +4,265 @@
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="row g-4 mb-4">
-  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng báo giá</p><h4 class="mb-0">@Model.Stats.Total</h4></div></div></div>
-  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Đã gửi</p><h4 class="mb-0 text-info">@Model.Stats.Sent</h4></div></div></div>
-  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Chấp nhận</p><h4 class="mb-0 text-success">@Model.Stats.Accepted</h4></div></div></div>
-  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng giá trị</p><h4 class="mb-0">@Model.Stats.TotalAmount.ToString("#,##0")</h4></div></div></div>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Báo giá — @Model.TypeLabel</h4>
+  <div class="d-flex gap-2">
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    @if (Model.CanManage)
+    {
+      <a href="/Quotes/Edit@(Model.QuoteType is int t ? $"?type={t}" : "")" class="btn btn-primary"><i class="ti ti-plus me-1"></i> Thêm báo giá</a>
+    }
+  </div>
+</div>
+
+@* 6 KPI — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng báo giá</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng giá trị</small><h5 class="mb-0" id="kpi-amount">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Lợi nhuận dự kiến</small><h5 class="mb-0 text-success" id="kpi-profit">@Model.Stats.TotalProfit.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chấp nhận</small><h5 class="mb-0 text-success" id="kpi-accepted">@Model.Stats.Accepted.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã gửi</small><h5 class="mb-0 text-info" id="kpi-sent">@Model.Stats.Sent.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Từ chối</small><h5 class="mb-0 text-danger" id="kpi-rejected">@Model.Stats.Rejected.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — lọc nhanh + panel nâng cao; MỌI tiêu chí đẩy xuống server *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / khách hàng / tiêu đề" /></div>
+      <div class="col-md-3">
+        <select id="f-status" class="form-select">
+          <option value="">Trạng thái</option>
+          <option value="0">Nháp</option><option value="1">Đã gửi</option>
+          <option value="2">Chấp nhận</option><option value="3">Từ chối</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select id="f-quoteType" class="form-select">
+          <option value="">Loại báo giá</option>
+          @for (var i = 0; i < TourKit.Api.Pages.Quotes.IndexModel.TypeLabels.Length; i++)
+          {
+            <option value="@i" selected="@(Model.QuoteType == i)">@TourKit.Api.Pages.Quotes.IndexModel.TypeLabels[i]</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3"><label class="form-label small mb-1">Hạn hiệu lực từ</label><input type="text" id="f-validFrom" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="text" id="f-validTo" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Đã chuyển đơn</label>
+        <select id="f-converted" class="form-select"><option value="">Tất cả</option><option value="true">Đã chuyển</option><option value="false">Chưa chuyển</option></select>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Danh sách báo giá — @Model.TypeLabel</h5>
-    <a href="/Quotes/Edit@(Model.QuoteType is int t ? $"?type={t}" : "")" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Tạo báo giá</a>
-  </div>
+  <div class="card-header"><h5 class="mb-0">Danh sách báo giá</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Mã</th><th>Khách hàng</th><th>Tiêu đề</th><th class="text-center">Khách</th><th class="text-end">Tổng giá</th><th class="text-end">Lợi nhuận</th><th>Hiệu lực</th><th>Trạng thái</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var q in Model.Items)
-      {
+      <thead>
         <tr>
-          <td><a href="/Quotes/Edit/@q.Id" class="fw-medium">@q.Code</a></td>
-          <td>@q.CustomerName</td>
-          <td>@q.Title</td>
-          <td class="text-center">@(q.Adults + q.Children + q.Infants)</td>
-          <td class="text-end">@q.TotalAmount.ToString("#,##0")</td>
-          <td class="text-end @(q.TotalProfit >= 0 ? "text-success" : "text-danger")">@q.TotalProfit.ToString("#,##0")</td>
-          <td>@(q.ValidUntil?.ToString("dd/MM/yyyy") ?? "—")</td>
-          <td>
-            <span class="badge bg-label-@TourKit.Api.Pages.Quotes.IndexModel.StatusColor(q.Status)">@TourKit.Api.Pages.Quotes.IndexModel.StatusLabel(q.Status)</span>
-            @if (q.ConvertedOrderId != null) { <span class="badge bg-label-primary ms-1" title="Đã chuyển đơn">→ đơn</span> }
-          </td>
-          <td class="text-end">
-            <a href="/Quotes/Edit/@q.Id" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>
-            <button type="button" class="btn btn-icon btn-sm js-del" data-id="@q.Id" data-name="@q.Code" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
+          <th class="text-center">#</th><th>Báo giá</th><th>Khách / Tour</th>
+          <th class="text-center">Số khách</th><th class="text-end">Giá trị</th>
+          <th>Hạn hiệu lực</th><th>Trạng thái</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="8" class="small"></td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
 
-<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" id="del-id" /></form>
+@Html.AntiForgeryToken()
+
+@* Modal chuyển báo giá thành đơn — ghép chuyến sẵn có hoặc tour lẻ FIT theo ngày *@
+<div class="modal fade" id="convert-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Chuyển báo giá thành đơn</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p class="text-muted small">Đơn sẽ đặt chỗ theo số khách của báo giá (giá chỗ = giá báo giá); doanh thu đơn = tổng báo giá; các dòng dịch vụ (KS/xe/visa/vé) sinh phiếu đặt dịch vụ lẻ.</p>
+        <input type="hidden" id="cv-id" />
+        <div class="mb-3">
+          <label class="form-label">Ghép chuyến khởi hành sẵn có</label>
+          <select id="cv-departure" class="form-select tk-s2m" data-placeholder="Chọn chuyến khởi hành">
+            <option value=""></option>
+            @foreach (var d in Model.Departures) { <option value="@d.Id">@d.Text</option> }
+          </select>
+        </div>
+        <div class="mb-1">
+          <label class="form-label">Hoặc tour lẻ FIT — ngày khởi hành</label>
+          <input type="text" id="cv-date" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Huỷ</button>
+        <button type="button" class="btn btn-primary" id="cv-submit">Chuyển</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
   <script>
+    var dt;
+    var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['status', 'quoteType', 'validFrom', 'validTo', 'converted'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+    function refreshStats() {
+      $.getJSON('?handler=Stats&' + new URLSearchParams(filterValues()).toString(), function (s) {
+        $('#kpi-total').text(tk.money(s.total));
+        $('#kpi-amount').text(tk.money(s.totalAmount));
+        $('#kpi-profit').text(tk.money(s.totalProfit));
+        $('#kpi-accepted').text(tk.money(s.accepted));
+        $('#kpi-sent').text(tk.money(s.sent));
+        $('#kpi-rejected').text(tk.money(s.rejected));
+      });
+    }
+
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [8] }] });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+      $('#cv-departure').select2({ width: '100%', allowClear: true, placeholder: 'Chọn chuyến khởi hành', dropdownParent: $('#convert-modal') });
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          // Báo giá: mã (link sửa) + loại báo giá
+          { data: null, render: function (r) {
+              return '<a href="/Quotes/Edit/' + r.id + '" class="fw-medium">' + tk.escape(r.code) + '</a>' +
+                     '<div class="small text-muted">' + tk.escape(r.typeLabel) + '</div>';
+            } },
+          // Khách / Tour
+          { data: null, render: function (r) {
+              return '<div class="fw-medium">' + tk.trunc(r.customerName, 200) + '</div>' +
+                     '<div class="small text-muted">' + tk.trunc(r.title, 220) + '</div>';
+            } },
+          { data: null, className: 'text-center', render: function (r) {
+              return '<span class="badge bg-label-secondary me-1" title="Người lớn">' + r.adults + 'NL</span>' +
+                     '<span class="badge bg-label-info me-1" title="Trẻ em">' + r.children + 'TE</span>' +
+                     '<span class="badge bg-label-warning" title="Trẻ nhỏ">' + r.infants + 'EB</span>';
+            } },
+          // Giá trị: tổng bán + lợi nhuận
+          { data: null, className: 'text-end', render: function (r) {
+              return '<div class="fw-medium" title="Tổng giá bán">' + tk.money(r.totalAmount) + '</div>' +
+                     '<div class="small ' + (r.totalProfit < 0 ? 'text-danger' : 'text-success') + '" title="Lợi nhuận">LN ' + tk.money(r.totalProfit) + '</div>';
+            } },
+          { data: 'validUntil' },
+          { data: null, render: function (r) {
+              var h = '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>';
+              if (r.convertedOrderId) { h += '<span class="badge bg-label-primary ms-1">Đã chuyển đơn</span>'; }
+              return h;
+            } },
+          { data: null, className: 'text-end text-nowrap', render: function (r) {
+              var h = '<a href="/Quotes/Edit/' + r.id + '" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>';
+              if (CAN_MANAGE && r.status === 2 && !r.convertedOrderId) {
+                h += '<button type="button" class="btn btn-sm btn-label-primary ms-1 js-convert" title="Chuyển đơn">Chuyển đơn</button>';
+              }
+              if (r.convertedOrderId) {
+                h += '<a href="/Orders/Detail/' + r.convertedOrderId + '" class="btn btn-icon btn-sm" title="Mở đơn"><i class="ti ti-external-link"></i></a>';
+              }
+              if (CAN_MANAGE) {
+                h += '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+              }
+              return h;
+            } }
+        ]
+      });
+
+      // Dòng "Tổng cộng (trang này)" — đọc khối pageSum ngoài contract DataTables.
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        var parts = [['Tổng giá trị', s.amount, ''], ['Tổng vốn', s.cost, ''], ['Lợi nhuận', s.profit, s.profit < 0 ? 'text-danger' : 'text-success']];
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' + parts.map(function (p) {
+          return '<span class="me-3 text-muted">' + p[0] + ': <span class="fw-medium ' + p[2] + '">' + tk.money(p[1]) + '</span></span>';
+        }).join(''));
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); refreshStats(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); refreshStats(); } });
+      $('#f-status, #f-quoteType, #f-converted').on('change', function () { dt.ajax.reload(); refreshStats(); });
+      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { $('#f-' + k).val(''); });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        dt.ajax.reload(); refreshStats();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
+      });
+
+      // Server-side: lấy dữ liệu dòng từ DataTables API.
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = $(this).data('id'); tk.confirmDelete({ title: 'Xoá báo giá ' + $(this).data('name') + '?' }).then(function (ok) { if (ok) { $('#del-id').val(id); $('#delete-form').submit(); } });
+        var r = dt.row($(this).closest('tr')).data();
+        tk.confirmDelete({ title: 'Xoá báo giá ' + r.code + '?' }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData(); fd.append('id', r.id);
+          tk.post('?handler=Delete', fd).then(function (res) {
+            if (res && res.isSuccess) { dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã xoá.'); }
+            else { tk.error((res && res.message) || 'Xoá thất bại.'); }
+          });
+        });
+      });
+
+      $('#tbl tbody').on('click', '.js-convert', function () {
+        var r = dt.row($(this).closest('tr')).data();
+        $('#cv-id').val(r.id);
+        $('#cv-departure').val(null).trigger('change');
+        if ($('#cv-date')[0]._flatpickr) { $('#cv-date')[0]._flatpickr.clear(); }
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('convert-modal')).show();
+      });
+
+      $('#cv-submit').on('click', function () {
+        var fd = new FormData();
+        fd.append('id', $('#cv-id').val());
+        var dep = $('#cv-departure').val(); if (dep) { fd.append('tourDepartureId', dep); }
+        var dte = $('#cv-date').val(); if (!dep && dte) { fd.append('departureDate', dte); }
+        if (!dep && !dte) { tk.error('Chọn chuyến khởi hành hoặc nhập ngày khởi hành.'); return; }
+        tk.post('?handler=Convert', fd).then(function (res) {
+          if (res && res.isSuccess) {
+            bootstrap.Modal.getInstance(document.getElementById('convert-modal')).hide();
+            dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã chuyển đơn.');
+          } else { tk.error((res && res.message) || 'Chuyển đơn thất bại.'); }
+        });
       });
     });
   </script>

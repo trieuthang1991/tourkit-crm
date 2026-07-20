@@ -1,6 +1,6 @@
 @page
 @model TourKit.Api.Pages.CustomerCares.IndexModel
-@{ ViewData["Title"] = "Quản lý lịch hẹn"; }
+@{ ViewData["Title"] = "Chăm sóc khách hàng"; }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
@@ -9,30 +9,57 @@
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Quản lý lịch hẹn / CSKH</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Tạo lịch hẹn</button>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Chăm sóc khách hàng</h4>
+  <div class="d-flex gap-2">
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm lịch chăm sóc</button>
   </div>
+</div>
+
+@* 5 thẻ KPI — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng lịch</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Mới</small><h5 class="mb-0 text-warning">@Model.Stats.New.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đang xử lý</small><h5 class="mb-0 text-info">@Model.Stats.InProgress.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Hoàn thành</small><h5 class="mb-0 text-success">@Model.Stats.Done.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Quá hạn</small><h5 class="mb-0 text-danger">@Model.Stats.Overdue.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — đủ 4 tiêu chí service hỗ trợ (trạng thái dạng chip bám Segmented hệ cũ) *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Tiêu đề lịch chăm sóc…" /></div>
+      <div class="col-md-3"><select id="f-customerId" class="form-select" style="width:100%"><option value=""></option></select></div>
+      <div class="col-md-3">
+        <select id="f-assignedToUserId" class="form-select tk-s2f" data-placeholder="Người phụ trách"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="mt-3 pt-3 border-top d-flex flex-wrap gap-2">
+      <input type="hidden" id="f-status" value="" />
+      <button type="button" class="btn btn-sm btn-primary js-st" data-status="">Tất cả (@Model.Stats.Total.ToString("#,##0"))</button>
+      <button type="button" class="btn btn-sm btn-label-secondary js-st" data-status="0">Mới (@Model.Stats.New.ToString("#,##0"))</button>
+      <button type="button" class="btn btn-sm btn-label-secondary js-st" data-status="1">Đang xử lý (@Model.Stats.InProgress.ToString("#,##0"))</button>
+      <button type="button" class="btn btn-sm btn-label-secondary js-st" data-status="2">Hoàn thành (@Model.Stats.Done.ToString("#,##0"))</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Khách</th><th>Tiêu đề</th><th>Nhắc lúc</th><th>NV</th><th>Trạng thái</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, title = x.Title, detail = x.Detail, remindAt = x.RemindAt != null ? x.RemindAt.Value.ToString("yyyy-MM-dd") : null, feedback = x.Feedback, assignedToUserId = x.AssignedToUserId, status = x.Status, customerName = x.CustomerName })'>
-          <td class="fw-medium">@x.CustomerName</td>
-          <td>@x.Title</td>
-          <td>@(x.RemindAt?.ToString("dd/MM/yyyy") ?? "—")</td>
-          <td>@x.AssigneeName</td>
-          <td><span class="badge bg-label-@(x.Status == 1 ? "success" : "warning")">@(x.Status == 1 ? "Đã xong" : "Chờ xử lý")</span></td>
-          <td class="text-end">
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
+      <thead>
+        <tr>
+          <th class="text-center">#</th><th>Khách hàng</th><th>Nội dung</th><th>Người phụ trách</th>
+          <th>Nhắc hẹn</th><th>Phản hồi</th><th>Trạng thái</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
     </table>
   </div>
 </div>
@@ -40,7 +67,7 @@
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
-  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">lịch hẹn</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">lịch chăm sóc</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
   <div class="offcanvas-body">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
@@ -54,22 +81,22 @@
         <input type="text" id="oc-customer-name" class="form-control" disabled />
       </div>
       <div class="mb-3"><label class="form-label">Tiêu đề <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Nội dung cần chăm sóc" /></div>
-      <div class="mb-3"><label class="form-label">Chi tiết</label><textarea name="Input.Detail" class="form-control" rows="2"></textarea></div>
+      <div class="mb-3"><label class="form-label">Nội dung</label><textarea name="Input.Detail" class="form-control" rows="2" placeholder="Chi tiết nội dung chăm sóc"></textarea></div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Nhắc lúc</label><input type="text" name="Input.RemindAt" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Nhắc hẹn</label><input type="text" name="Input.RemindAt" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
         <div class="col-6 mb-3">
-          <label class="form-label">Trạng thái</label>
-          <select name="Input.Status" class="form-select"><option value="0">Chờ xử lý</option><option value="1">Đã xong</option></select>
+          <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+          <select name="Input.Status" class="form-select"><option value="0">Mới</option><option value="1">Đang xử lý</option><option value="2">Hoàn thành</option></select>
         </div>
       </div>
       <div class="mb-3">
-        <label class="form-label">NV phụ trách</label>
+        <label class="form-label">Người phụ trách</label>
         <select name="Input.AssignedToUserId" class="form-select tk-s2" data-placeholder="Chọn NV">
           <option value="">— Chưa gán —</option>
           @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
         </select>
       </div>
-      <div class="mb-3"><label class="form-label">Kết quả (feedback)</label><textarea name="Input.Feedback" class="form-control" rows="2"></textarea></div>
+      <div class="mb-3"><label class="form-label">Phản hồi</label><textarea name="Input.Feedback" class="form-control" rows="2" placeholder="Kết quả / phản hồi của khách"></textarea></div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
     </form>
@@ -86,14 +113,58 @@
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt;
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['customerId', 'assignedToUserId', 'status'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [5] }] });
-      // Select2 ajax chọn khách (không dùng tk-s2 vì cần ajax riêng)
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      // Select2 ajax chọn khách ở thanh lọc — dùng chung handler ?handler=CustomerSearch
+      $('#f-customerId').select2({ width: '100%', allowClear: true, placeholder: 'Khách hàng',
+        ajax: { url: '?handler=CustomerSearch', dataType: 'json', delay: 250, data: function (p) { return { q: p.term }; }, processResults: function (d) { return d; } }, minimumInputLength: 2 });
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: 'customerName', render: function (v) { return '<span class="fw-medium">' + tk.escape(v || '—') + '</span>'; } },
+          { data: null, render: function (r) {
+              // Cột ghép: tiêu đề + chi tiết (bám CellStack hệ cũ)
+              return '<div class="fw-medium">' + tk.escape(r.title) + '</div>' +
+                     (r.detail ? '<div class="small text-muted">' + tk.trunc(r.detail, 280) + '</div>' : '');
+            } },
+          { data: 'assigneeName', render: function (v) { return tk.escape(v || '—'); } },
+          { data: null, render: function (r) {
+              return r.overdue
+                ? '<span class="text-danger fw-medium" title="Quá hạn nhắc">' + tk.escape(r.remindAtText) + '</span>'
+                : tk.escape(r.remindAtText);
+            } },
+          { data: 'feedback', render: function (v) { return v ? tk.trunc(v, 210) : '<span class="text-muted">—</span>'; } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end', render: function () {
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
+      // Select2 ajax chọn khách trong offcanvas (không dùng tk-s2 vì cần ajax riêng)
       $('#oc-customer').select2({ dropdownParent: $('#oc'), width: '100%', placeholder: 'Gõ tên/SĐT để tìm…',
         ajax: { url: '?handler=CustomerSearch', dataType: 'json', delay: 250, data: function (p) { return { q: p.term }; }, processResults: function (d) { return d; } }, minimumInputLength: 2 });
 
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'lịch hẹn',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'lịch chăm sóc',
         rules: { 'Input.Title': { required: true } }, messages: { 'Input.Title': { required: 'Bắt buộc nhập tiêu đề' } },
         afterOpen: function (data) {
           if (data) { // sửa: khoá chọn khách, hiện tên
@@ -105,10 +176,37 @@
           }
         }
       });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+
+      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = this.getAttribute('data-id');
-        tk.confirmDelete({ title: 'Xoá lịch hẹn?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+        var id = dt.row($(this).closest('tr')).data().id;
+        tk.confirmDelete({ title: 'Xoá lịch chăm sóc?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('.tk-s2f, #f-customerId').on('change', function () { dt.ajax.reload(); });
+      $('.js-st').on('click', function () {
+        $('.js-st').removeClass('btn-primary').addClass('btn-label-secondary');
+        $(this).removeClass('btn-label-secondary').addClass('btn-primary');
+        $('#f-status').val(this.getAttribute('data-status'));
+        dt.ajax.reload();
+      });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        $('#f-assignedToUserId').val('').trigger('change.select2');
+        $('#f-customerId').val(null).trigger('change.select2');
+        $('#f-status').val('');
+        $('.js-st').removeClass('btn-primary').addClass('btn-label-secondary');
+        $('.js-st[data-status=""]').removeClass('btn-label-secondary').addClass('btn-primary');
+        dt.ajax.reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
       });
     });
   </script>

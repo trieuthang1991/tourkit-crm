@@ -1,23 +1,34 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
+using TourKit.Application.Providers;
 
 namespace TourKit.Api.Pages.ServiceOperations;
 
-// READ-ONLY + hành động: IServiceOperationService là lớp ĐỌC trên ServiceBooking, chỉ có mutation duy nhất là
-// PayAsync (ghi nhận số đã chi NCC) — không Create/Update. Danh sách + StatCards + offcanvas "Ghi nhận thanh toán".
+// Phiếu điều hành dịch vụ: DataTables SERVER-SIDE + GIỮ ĐỦ thông tin bản cũ
+// (web/src/features/serviceOperations/ServiceOperationsPage.tsx): 4 KPI đếm theo trạng thái chi,
+// tab Tất cả/Chờ chi/Chưa chi hết/Thành công, lọc từ khoá + NCC, cột ghép Phiếu ĐH và Dịch vụ/NCC,
+// cột Thanh toán (đã TT + còn thiếu), dòng Tổng cộng, offcanvas "Ghi nhận thanh toán" (PayAsync).
+// READ-ONLY ngoài PayAsync: IServiceOperationService là lớp đọc trên ServiceBooking.
 [Authorize(Policy = "servicebooking.view")]
-public class IndexModel : PageModel
+public class IndexModel : TkListPageModel
 {
     private readonly IServiceOperationService _svc;
-    public IndexModel(IServiceOperationService svc) => _svc = svc;
+    private readonly IProviderService _providers;
 
-    public IReadOnlyList<ServiceOperationDto> Items { get; private set; } = [];
+    public IndexModel(IServiceOperationService svc, IProviderService providers)
+    {
+        _svc = svc;
+        _providers = providers;
+    }
+
     public ServiceOperationStatsDto Stats { get; private set; } = new(0, 0, 0, 0, 0, 0, 0);
+    public IReadOnlyList<(Guid Id, string Name)> Providers { get; private set; } = [];
 
     [BindProperty] public Guid Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
@@ -39,13 +50,67 @@ public class IndexModel : PageModel
     {
         2 => "success",
         1 => "warning",
-        _ => "secondary",
+        _ => "danger",
     };
 
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Items = (await _svc.ListAsync(1, 1000)).Items;
+        Providers = (await _providers.ListAsync(1, 1000)).Items.Select(p => (p.Id, p.Name)).ToList();
+    }
+
+    /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí ServiceOperationListFilter hỗ trợ.</summary>
+    private ServiceOperationListFilter BuildFilter(string? keyword)
+    {
+        var q = Request.Query;
+        return new ServiceOperationListFilter(
+            Q: keyword,
+            ProviderId: Guid.TryParse(q["providerId"], out var g) ? g : null,
+            PaymentStatus: int.TryParse(q["paymentStatus"], out var s) ? s : null);
+    }
+
+    /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang + KPI/tổng cộng theo bộ lọc đang áp.</summary>
+    public async Task<IActionResult> OnGetDataAsync()
+    {
+        var dt = ParseDataTables();
+        var filter = BuildFilter(dt.Keyword);
+        var result = await _svc.ListAsync(dt.Page, dt.Size, filter);
+        var stats = await _svc.GetStatsAsync(filter);
+
+        var data = result.Items.Select(x => new
+        {
+            id = x.Id,
+            code = x.Code,
+            providerName = string.IsNullOrWhiteSpace(x.ProviderName) ? "—" : x.ProviderName,
+            description = string.IsNullOrWhiteSpace(x.Description) ? "—" : x.Description,
+            usageDateText = x.UsageDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+            totalAmount = x.TotalAmount,
+            paidAmount = x.PaidAmount,
+            recognizedPaidAmount = x.RecognizedPaidAmount,
+            remainingAmount = x.RemainingAmount,
+            paymentStatus = x.PaymentStatus,
+            statusLabel = PaymentLabel(x.PaymentStatus),
+            statusColor = PaymentColor(x.PaymentStatus),
+        }).ToList();
+
+        return new JsonResult(new
+        {
+            draw = dt.Draw,
+            recordsTotal = stats.Total,
+            recordsFiltered = result.Total,
+            data,
+            // Thẻ KPI + dòng tổng cộng bám bộ lọc đang áp (đúng như stats hệ cũ nhận filter).
+            stats = new
+            {
+                total = stats.Total,
+                unpaid = stats.Unpaid,
+                partial = stats.Partial,
+                done = stats.Done,
+                totalCost = stats.TotalCost,
+                totalPaid = stats.TotalPaid,
+                totalRemaining = stats.TotalRemaining,
+            },
+        });
     }
 
     public async Task<IActionResult> OnPostPayAsync()

@@ -4,57 +4,240 @@
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Phiếu chi</h5>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Phiếu chi</h4>
+  <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+</div>
+
+@* 5 KPI — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng số phiếu</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0 text-danger" id="kpi-amount">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chờ duyệt</small><h5 class="mb-0 text-warning" id="kpi-pending">@Model.Stats.Pending.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã duyệt</small><h5 class="mb-0 text-success" id="kpi-approved">@Model.Stats.Approved.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Từ chối</small><h5 class="mb-0 text-danger" id="kpi-rejected">@Model.Stats.Rejected.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — đủ 9 tiêu chí hệ cũ, MỌI tiêu chí đẩy xuống server *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã phiếu / mã đơn / NCC / người nhận" /></div>
+      <div class="col-md-3">
+        <select id="f-status" class="form-select">
+          <option value="">Trạng thái</option>
+          <option value="0">Chờ duyệt</option><option value="1">Đã duyệt</option><option value="2">Từ chối</option>
+        </select>
+      </div>
+      <div class="col-md-3"><input type="text" id="f-paymentMethod" class="form-control" placeholder="PT thanh toán" /></div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3"><label class="form-label small mb-1">Từ ngày</label><input type="text" id="f-from" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">đến ngày</label><input type="text" id="f-to" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Số tiền từ</label><input type="number" min="0" id="f-amountFrom" class="form-control" placeholder="0" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="number" min="0" id="f-amountTo" class="form-control" placeholder="0" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Chi nhánh</label><select id="f-branchId" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }</select></div>
+      <div class="col-md-3"><label class="form-label small mb-1">NV phụ trách</label><select id="f-salesUserId" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
+    </div>
   </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Danh sách phiếu chi</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
       <thead>
         <tr>
-          <th>Mã phiếu</th>
-          <th>Mã đơn</th>
-          <th>Nhà cung cấp</th>
-          <th>Người nhận</th>
-          <th class="text-end">Số tiền</th>
-          <th>Phương thức</th>
-          <th>Ngày lập</th>
-          <th class="text-end">Trạng thái</th>
+          <th class="text-center">#</th><th>Phiếu chi</th><th>Đối tượng nhận</th>
+          <th>Hình thức</th><th class="text-end">Số tiền</th><th>Trạng thái</th><th></th>
         </tr>
       </thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr>
-          <td class="fw-medium">@x.Code</td>
-          <td>@(string.IsNullOrEmpty(x.OrderCode) ? "—" : x.OrderCode)</td>
-          <td>@(string.IsNullOrEmpty(x.ProviderName) ? "—" : x.ProviderName)</td>
-          <td>@(string.IsNullOrEmpty(x.ReceiverName) ? "—" : x.ReceiverName)</td>
-          <td class="text-end">@x.Amount.ToString("#,##0")</td>
-          <td>@(string.IsNullOrEmpty(x.PaymentMethod) ? "—" : x.PaymentMethod)</td>
-          <td>@x.IssuedAt.ToString("dd/MM/yyyy")</td>
-          <td class="text-end">
-            <span class="badge bg-label-@TourKit.Api.Pages.Payments.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.Payments.IndexModel.StatusLabel(x.Status)</span>
-            @if (x.IsRecognized)
-            {
-              <span class="badge bg-label-info">Đã ghi nhận</span>
-            }
-          </td>
-        </tr>
-      }
-      </tbody>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="7" class="small"></td></tr>
+      </tfoot>
     </table>
+  </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@* Modal chi tiết phiếu — mở khi kích 1 dòng (bám PaymentDetailModal hệ cũ) *@
+<div class="modal fade" id="detail-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="dm-title">Phiếu chi</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <h4 class="mb-0 text-danger" id="dm-amount">0</h4>
+          <span id="dm-status"></span>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted small">Ngày lập</span><span class="fw-medium small" id="dm-issuedAt"></span></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted small">Nhà cung cấp</span><span class="fw-medium small" id="dm-provider"></span></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted small">Mã đơn</span><span class="fw-medium small" id="dm-order"></span></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted small">Người nhận</span><span class="fw-medium small" id="dm-receiver"></span></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted small">Đối tác</span><span class="fw-medium small" id="dm-partner"></span></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted small">Hình thức</span><span class="fw-medium small" id="dm-method"></span></div>
+        <div class="d-flex justify-content-between py-2"><span class="text-muted small">Ghi nhận dòng tiền</span><span class="fw-medium small" id="dm-recognized"></span></div>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <a href="#" class="btn btn-label-secondary" id="dm-order-link"><i class="ti ti-external-link me-1"></i> Mở đơn liên quan</a>
+        <span id="dm-actions"></span>
+      </div>
+    </div>
   </div>
 </div>
 
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
   <script>
-    $(function () { tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [7] }] }); });
+    var dt;
+    var CAN_APPROVE = @(Model.CanApprove ? "true" : "false");
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['status', 'paymentMethod', 'from', 'to', 'amountFrom', 'amountTo', 'branchId', 'salesUserId'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+    function refreshStats() {
+      $.getJSON('?handler=Stats', function (s) {
+        $('#kpi-total').text(tk.money(s.total));
+        $('#kpi-amount').text(tk.money(s.totalAmount));
+        $('#kpi-pending').text(tk.money(s.pending));
+        $('#kpi-approved').text(tk.money(s.approved));
+        $('#kpi-rejected').text(tk.money(s.rejected));
+      });
+    }
+    function act(id, handler) {
+      var fd = new FormData(); fd.append('id', id);
+      return tk.post('?handler=' + handler, fd).then(function (res) {
+        if (res && res.isSuccess) { dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã xử lý.'); }
+        else { tk.error((res && res.message) || 'Thao tác thất bại.'); }
+      });
+    }
+
+    $(function () {
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          // Phiếu chi: mã + ngày lập
+          { data: null, render: function (r) {
+              return '<span class="fw-medium">' + tk.escape(r.code) + '</span>' +
+                     '<div class="small text-muted">' + tk.escape(r.issuedAt) + '</div>';
+            } },
+          // Đối tượng nhận: NCC + mã đơn + người nhận
+          { data: null, render: function (r) {
+              return '<div class="fw-medium">' + tk.trunc(r.providerName, 200) + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.orderCode) + ' · ' + tk.trunc(r.receiverName, 150) + '</div>';
+            } },
+          { data: 'paymentMethod' },
+          { data: null, className: 'text-end', render: function (r) {
+              return '<div class="fw-medium text-danger">' + tk.money(r.amount) + '</div>' +
+                     (r.isRecognized ? '<div class="small text-muted">Đã ghi nhận</div>' : '');
+            } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end text-nowrap', render: function (r) {
+              if (!CAN_APPROVE || r.status !== 0) { return ''; }
+              return '<button type="button" class="btn btn-sm btn-label-primary js-approve">Duyệt</button>' +
+                     '<button type="button" class="btn btn-sm btn-label-danger ms-1 js-reject">Từ chối</button>';
+            } }
+        ]
+      });
+
+      // Dòng "Tổng cộng (trang này)" — đọc khối pageSum ngoài contract DataTables.
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' +
+          '<span class="me-3 text-muted">Tổng tiền: <span class="fw-medium text-danger">' + tk.money(s.amount) + '</span></span>');
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q, #f-paymentMethod').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#f-status').on('change', function () { dt.ajax.reload(); });
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        dt.ajax.reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
+      });
+
+      // Server-side: lấy dữ liệu dòng từ DataTables API.
+      $('#tbl tbody').on('click', '.js-approve', function (e) {
+        e.stopPropagation();
+        var r = dt.row($(this).closest('tr')).data();
+        Swal.fire({ title: 'Duyệt phiếu chi ' + r.code + '?', icon: 'question', showCancelButton: true, confirmButtonText: 'Duyệt', cancelButtonText: 'Huỷ',
+          customClass: { confirmButton: 'btn btn-primary me-2', cancelButton: 'btn btn-label-secondary' }, buttonsStyling: false })
+          .then(function (x) { if (x.isConfirmed) { act(r.id, 'Approve'); } });
+      });
+      $('#tbl tbody').on('click', '.js-reject', function (e) {
+        e.stopPropagation();
+        var r = dt.row($(this).closest('tr')).data();
+        Swal.fire({ title: 'Từ chối phiếu ' + r.code + '?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Từ chối', cancelButtonText: 'Huỷ',
+          customClass: { confirmButton: 'btn btn-danger me-2', cancelButton: 'btn btn-label-secondary' }, buttonsStyling: false })
+          .then(function (x) { if (x.isConfirmed) { act(r.id, 'Reject'); } });
+      });
+
+      // Kích dòng → modal chi tiết.
+      $('#tbl tbody').on('click', 'tr', function () {
+        var r = dt.row(this).data();
+        if (!r) { return; }
+        $('#dm-title').text('Phiếu chi ' + r.code);
+        $('#dm-amount').text(tk.money(r.amount));
+        $('#dm-status').html('<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>');
+        $('#dm-issuedAt').text(r.issuedAt);
+        $('#dm-provider').text(r.providerName);
+        $('#dm-order').text(r.orderCode);
+        $('#dm-receiver').text(r.receiverName);
+        $('#dm-partner').text(r.partner);
+        $('#dm-method').text(r.paymentMethod);
+        $('#dm-recognized').text(r.isRecognized ? 'Đã ghi nhận' : 'Chưa ghi nhận');
+        $('#dm-order-link').attr('href', '/Orders/Detail/' + r.orderId);
+        var $a = $('#dm-actions').empty();
+        if (CAN_APPROVE && r.status === 0) {
+          $a.append('<button type="button" class="btn btn-label-danger me-2" id="dm-reject">Từ chối</button>' +
+                    '<button type="button" class="btn btn-primary" id="dm-approve">Duyệt</button>');
+          $('#dm-reject').on('click', function () { bootstrap.Modal.getInstance(document.getElementById('detail-modal')).hide(); act(r.id, 'Reject'); });
+          $('#dm-approve').on('click', function () { bootstrap.Modal.getInstance(document.getElementById('detail-modal')).hide(); act(r.id, 'Approve'); });
+        }
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('detail-modal')).show();
+      });
+    });
   </script>
 }

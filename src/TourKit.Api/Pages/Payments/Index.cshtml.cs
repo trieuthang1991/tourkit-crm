@@ -1,20 +1,39 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc;
+using TourKit.Api.Pages.Shared;
+using TourKit.Api.Web;
+using TourKit.Application.Admin;
+using TourKit.Application.Catalog;
 using TourKit.Application.Finance;
 using TourKit.Application.Finance.Dtos;
 
 namespace TourKit.Api.Pages.Payments;
 
-// LIST read-only: IPaymentService.CreateAsync gắn theo orderId (FK) + ProviderId/OrderCostId (FK),
-// là luồng duyệt phiếu (Create → Approve/Reject theo đơn) và không có lookup enrich để chọn
-// đơn/NCC trên form → không dựng offcanvas create, chỉ hiển thị danh sách tổng (ListAllAsync).
+// Danh sách phiếu chi: DataTables SERVER-SIDE + GIỮ ĐỦ thông tin bản cũ
+// (web/src/features/finance/PaymentsListPage.tsx): 5 KPI, thanh lọc 9 tiêu chí (từ khoá, ngày,
+// hình thức, số tiền từ/đến, chi nhánh, NV phụ trách, trạng thái), cột kép, dòng tổng cộng trang,
+// export CSV, modal chi tiết + duyệt/từ chối tại chỗ.
+// Vẫn KHÔNG có form tạo phiếu: IPaymentService.CreateAsync gắn theo orderId (tạo từ màn đơn).
 [Authorize(Policy = "payment.view")]
-public class IndexModel : PageModel
+public class IndexModel : TkListPageModel
 {
     private readonly IPaymentService _svc;
-    public IndexModel(IPaymentService svc) => _svc = svc;
+    private readonly IBranchService _branches;
+    private readonly IUserAdminService _users;
 
-    public IReadOnlyList<PaymentListItemDto> Items { get; private set; } = [];
+    public IndexModel(IPaymentService svc, IBranchService branches, IUserAdminService users)
+    {
+        _svc = svc;
+        _branches = branches;
+        _users = users;
+    }
+
+    public PaymentStatsDto Stats { get; private set; } = new(0, 0, 0, 0, 0);
+    public IReadOnlyList<(Guid Id, string Name)> Branches { get; private set; } = [];
+    public IReadOnlyList<(Guid Id, string Name)> Users { get; private set; } = [];
+
+    public bool CanApprove => User.HasClaim("perm", "payment.approve");
 
     // Trạng thái phiếu chi: 0 chờ duyệt · 1 đã duyệt · 2 từ chối.
     public static string StatusLabel(int s) => s switch
@@ -32,5 +51,130 @@ public class IndexModel : PageModel
         _ => "warning",
     };
 
-    public async Task OnGetAsync() => Items = (await _svc.ListAllAsync(1, 1000)).Items;
+    public async Task OnGetAsync()
+    {
+        Stats = await _svc.GetStatsAsync();
+        Branches = (await _branches.ListAsync()).Select(b => (b.Id, b.Name)).ToList();
+        Users = (await _users.ListAsync()).Select(u => (u.Id, u.FullName)).ToList();
+    }
+
+    /// <summary>Dựng bộ lọc từ query — đúng 9 tiêu chí PaymentListFilter hỗ trợ.</summary>
+    private PaymentListFilter BuildFilter(string? keyword)
+    {
+        var q = Request.Query;
+        int? I(string k) => int.TryParse(q[k], out var n) ? n : null;
+        Guid? G(string k) => Guid.TryParse(q[k], out var g) ? g : null;
+        decimal? M(string k) => decimal.TryParse(q[k], NumberStyles.Number, CultureInfo.InvariantCulture, out var d) ? d : null;
+        DateTimeOffset? D(string k) => DateTimeOffset.TryParse(q[k], CultureInfo.InvariantCulture, out var d) ? d.ToUniversalTime() : null;
+        string? S(string k) => string.IsNullOrWhiteSpace(q[k]) ? null : q[k].ToString();
+
+        return new PaymentListFilter(
+            Q: keyword,
+            Status: I("status"),
+            From: D("from"), To: D("to"),
+            PaymentMethod: S("paymentMethod"),
+            AmountFrom: M("amountFrom"), AmountTo: M("amountTo"),
+            BranchId: G("branchId"),
+            SalesUserId: G("salesUserId"));
+    }
+
+    /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
+    public async Task<IActionResult> OnGetDataAsync()
+    {
+        var dt = ParseDataTables();
+        var result = await _svc.ListAllAsync(dt.Page, dt.Size, BuildFilter(dt.Keyword));
+        var stats = await _svc.GetStatsAsync();
+
+        var items = result.Items.Select(x => new
+        {
+            id = x.Id,
+            code = x.Code,
+            orderId = x.OrderId,
+            orderCode = string.IsNullOrWhiteSpace(x.OrderCode) ? "—" : x.OrderCode,
+            providerName = string.IsNullOrWhiteSpace(x.ProviderName) ? "—" : x.ProviderName,
+            receiverName = string.IsNullOrWhiteSpace(x.ReceiverName) ? "—" : x.ReceiverName,
+            partner = string.IsNullOrWhiteSpace(x.Partner) ? "—" : x.Partner,
+            amount = x.Amount,
+            paymentMethod = string.IsNullOrWhiteSpace(x.PaymentMethod) ? "—" : x.PaymentMethod,
+            issuedAt = x.IssuedAt.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+            status = x.Status,
+            statusLabel = StatusLabel(x.Status),
+            statusColor = StatusColor(x.Status),
+            isRecognized = x.IsRecognized,
+        }).ToList();
+
+        // Tổng cộng TRANG HIỆN TẠI (bám dòng summary hệ cũ).
+        var pageSum = new { amount = items.Sum(x => x.amount) };
+
+        return new JsonResult(new
+        {
+            draw = dt.Draw,
+            recordsTotal = stats.Total,
+            recordsFiltered = result.Total,
+            data = items,
+            pageSum,
+        });
+    }
+
+    /// <summary>Thẻ thống kê dạng JSON — làm tươi KPI sau khi duyệt/từ chối.</summary>
+    public async Task<IActionResult> OnGetStatsAsync()
+    {
+        var s = await _svc.GetStatsAsync();
+        return new JsonResult(new { total = s.Total, totalAmount = s.TotalAmount, pending = s.Pending, approved = s.Approved, rejected = s.Rejected });
+    }
+
+    /// <summary>Xuất CSV theo đúng bộ lọc đang áp (giới hạn 5000 dòng).</summary>
+    public async Task<IActionResult> OnGetExportAsync()
+    {
+        const int max = 5000;
+        var keyword = Request.Query["search"].ToString() is { Length: > 0 } s ? s : null;
+        var result = await _svc.ListAllAsync(1, max, BuildFilter(keyword));
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("STT,Mã phiếu,Ngày,Nhà cung cấp,Mã đơn,Người nhận,Hình thức,Số tiền,Trạng thái");
+        var i = 0;
+        foreach (var p in result.Items)
+        {
+            i++;
+            string C(string? v) => "\"" + (v ?? "").Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+            sb.Append(i.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .Append(C(p.Code)).Append(',')
+              .Append(C(p.IssuedAt.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture))).Append(',')
+              .Append(C(p.ProviderName)).Append(',').Append(C(p.OrderCode)).Append(',')
+              .Append(C(p.ReceiverName)).Append(',').Append(C(p.PaymentMethod)).Append(',')
+              .Append(p.Amount.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .Append(C(StatusLabel(p.Status))).AppendLine();
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+        return File(bytes, "text/csv", "phieu-chi.csv");
+    }
+
+    public async Task<IActionResult> OnPostApproveAsync(Guid id) => await ActAsync(id, approve: true);
+
+    public async Task<IActionResult> OnPostRejectAsync(Guid id) => await ActAsync(id, approve: false);
+
+    private async Task<IActionResult> ActAsync(Guid id, bool approve)
+    {
+        if (!CanApprove)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền duyệt phiếu chi."));
+        }
+
+        try
+        {
+            if (approve)
+            {
+                await _svc.ApproveAsync(id);
+                return new JsonResult(Result.Success("Đã duyệt phiếu chi."));
+            }
+
+            await _svc.RejectAsync(id);
+            return new JsonResult(Result.Success("Đã từ chối phiếu chi."));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+    }
 }

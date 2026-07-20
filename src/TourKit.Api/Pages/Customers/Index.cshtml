@@ -4,6 +4,8 @@
 @{
     ViewData["Title"] = "Data khách hàng";
     ViewData["SaveUrl"] = "?handler=Save";
+    // Tỉnh/thành: ưu tiên facet lấy từ data thật (khớp giá trị đang lưu), rỗng thì dùng danh mục tỉnh.
+    var cityOptions = Model.Options.Cities.Count > 0 ? Model.Options.Cities : VietnamProvinces.All;
 }
 
 @section VendorStyles {
@@ -14,76 +16,149 @@
 }
 
 @{
-    (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+    // 5 thẻ thống kê — bám statCards hệ cũ (CustomerStatsDto).
+    (string Label, string Value, string Icon, string Color)[] statCards =
     {
-        ("Tổng khách", Model.Stats.Total.ToString("#,##0"), "ti ti-users", "primary", "toàn bộ data"),
-        ("Mới hôm nay", Model.Stats.NewToday.ToString("#,##0"), "ti ti-user-plus", "success", "khách vừa thêm"),
-        ("Mới tháng này", Model.Stats.NewThisMonth.ToString("#,##0"), "ti ti-calendar-stats", "info", "trong tháng"),
-        ("Mua lại", Model.Stats.RepeatBuyers.ToString("#,##0"), "ti ti-refresh", "warning", "khách quay lại"),
+        ("Tổng số khách hàng", Model.Stats.Total.ToString("#,##0"), "ti ti-users", "primary"),
+        ("Tạo hôm nay", Model.Stats.NewToday.ToString("#,##0"), "ti ti-user-plus", "info"),
+        ("Tạo trong tháng", Model.Stats.NewThisMonth.ToString("#,##0"), "ti ti-calendar-stats", "warning"),
+        ("Mua lần đầu", Model.Stats.FirstTimeBuyers.ToString("#,##0"), "ti ti-star", "success"),
+        ("Mua lại nhiều lần", Model.Stats.RepeatBuyers.ToString("#,##0"), "ti ti-refresh", "danger"),
+    };
+    // Chip "Chăm sóc khách hàng" — số đếm từ CustomerFunnelDto.Care.
+    (string Key, string Value, string Label, int Count)[] careChips =
+    {
+        ("purchaseBucket", "first", "Mua lần đầu", Model.Funnel.Care.FirstTime),
+        ("purchaseBucket", "repeat", "Khách mua lại", Model.Funnel.Care.Repeat),
+        ("notContactedBucket", "nc7", "7 ngày chưa liên hệ", Model.Funnel.Care.NotContacted7),
+        ("notContactedBucket", "nc15", "15 ngày chưa liên hệ", Model.Funnel.Care.NotContacted15),
+        ("notContactedBucket", "nc30", "30 ngày chưa liên hệ", Model.Funnel.Care.NotContacted30),
+        ("notContactedBucket", "nc90", "90 ngày chưa liên hệ", Model.Funnel.Care.NotContacted90),
     };
 }
-<div class="row g-4 mb-4">
+
+<div class="row g-3 mb-4">
   @foreach (var s in statCards)
   {
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-6 col-md-4 col-lg">
       <div class="card h-100">
-        <div class="card-body">
+        <div class="card-body py-3">
           <div class="d-flex align-items-center">
             <div class="avatar flex-shrink-0 me-3">
-              <span class="avatar-initial rounded-3 bg-label-@s.Color">
-                <i class="@s.Icon ti-md"></i>
-              </span>
+              <span class="avatar-initial rounded-3 bg-label-@s.Color"><i class="@s.Icon ti-md"></i></span>
             </div>
             <div>
-              <span class="d-block text-muted small">@s.Label</span>
-              <h4 class="mb-0">@s.Value</h4>
+              <small class="text-muted d-block">@s.Label</small>
+              <h5 class="mb-0">@s.Value</h5>
             </div>
           </div>
-          <div class="text-muted small mt-2">@s.Sub</div>
         </div>
       </div>
     </div>
   }
 </div>
 
+@* Thanh lọc — 4 lọc nhanh + panel nâng cao; TẤT CẢ tiêu chí đẩy xuống CustomerListFilter *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Nhập tên, SĐT, mã, email…" /></div>
+      <div class="col-md-2">
+        <select id="f-customerType" class="form-select">
+          <option value="">Loại khách</option>
+          @foreach (var t in Model.CustomerTypes)
+          {
+            <option value="@t.Code">@t.Name</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-source" class="form-select tk-s2f" data-placeholder="Nguồn khách"><option value=""></option>@foreach (var s in Model.Options.Sources) { <option value="@s">@s</option> }</select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-city" class="form-select tk-s2f" data-placeholder="Tỉnh/Thành"><option value=""></option>@foreach (var c in cityOptions) { <option value="@c">@c</option> }</select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search" title="Tìm kiếm"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3"><label class="form-label small mb-1">Thời gian tạo từ</label><input type="text" id="f-createdFrom" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="text" id="f-createdTo" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Thời gian chăm sóc từ</label><input type="text" id="f-careFrom" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="text" id="f-careTo" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
+
+      <div class="col-md-3"><label class="form-label small mb-1">Doanh thu từ</label><input type="number" min="0" step="1000" id="f-revenueFrom" class="form-control" placeholder="0" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Doanh thu đến</label><input type="number" min="0" step="1000" id="f-revenueTo" class="form-control" placeholder="Không giới hạn" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Giới tính</label>
+        <select id="f-gender" class="form-select"><option value="">Tất cả</option><option value="Nam">Nam</option><option value="Nữ">Nữ</option><option value="Khác">Khác</option></select>
+      </div>
+      <div class="col-md-3"><label class="form-label small mb-1">Sinh nhật (tháng)</label>
+        <select id="f-birthdayMonth" class="form-select"><option value="">Tất cả</option>@for (var m = 1; m <= 12; m++) { <option value="@m">Tháng @m</option> }</select>
+      </div>
+
+      <div class="col-md-3"><label class="form-label small mb-1">Thị trường</label><select id="f-marketGroup" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.MarketGroups) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Chi nhánh</label><select id="f-branch" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Branches) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Nhóm</label><select id="f-group" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Groups) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Phòng ban</label><select id="f-department" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Departments) { <option value="@v">@v</option> }</select></div>
+
+      <div class="col-md-3"><label class="form-label small mb-1">Tên CTV</label><select id="f-collaborator" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Collaborators) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Chiến dịch</label><select id="f-campaign" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Campaigns) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><label class="form-label small mb-1">Tag</label><select id="f-tag" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Tags) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><label class="form-label small mb-1">NV phụ trách</label><select id="f-assignedTo" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
+
+      <div class="col-md-3"><label class="form-label small mb-1">Người tạo</label><select id="f-createdBy" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
+    </div>
+  </div>
+</div>
+
+@* Chip lọc nhanh: phễu (Segment) + chăm sóc (PurchaseBucket / NotContactedBucket) *@
+<div class="card mb-4">
+  <div class="card-body d-flex flex-column gap-3">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <span class="text-muted small fw-medium" style="min-width:120px">Phễu khách hàng</span>
+      <button type="button" class="btn btn-sm btn-primary tk-chip" data-k="segment" data-v="">Tất cả <span class="badge bg-white text-dark ms-1">@Model.Funnel.Total.ToString("#,##0")</span></button>
+      @foreach (var seg in Model.Funnel.Segments)
+      {
+        <button type="button" class="btn btn-sm btn-label-secondary tk-chip" data-k="segment" data-v="@seg.Name">@seg.Name <span class="badge bg-secondary ms-1">@seg.Count.ToString("#,##0")</span></button>
+      }
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <span class="text-muted small fw-medium" style="min-width:120px">Chăm sóc khách hàng</span>
+      @foreach (var c in careChips)
+      {
+        <button type="button" class="btn btn-sm btn-label-secondary tk-chip" data-k="@c.Key" data-v="@c.Value">@c.Label <span class="badge bg-secondary ms-1">@c.Count.ToString("#,##0")</span></button>
+      }
+    </div>
+    @* Giá trị chip giữ ở input ẩn để gửi kèm request server-side *@
+    <input type="hidden" id="f-segment" value="" />
+    <input type="hidden" id="f-purchaseBucket" value="" />
+    <input type="hidden" id="f-notContactedBucket" value="" />
+  </div>
+</div>
+
 <div class="card">
-  <div class="card-header border-bottom">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0">Data khách hàng</h5>
-      <button type="button" class="btn btn-primary btn-sm" onclick="openCustomerOffcanvas(null)">
-        <i class="ti ti-plus me-1"></i> Thêm khách
-      </button>
-    </div>
-    <div class="row g-2">
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <select id="f-source" class="form-select form-select-sm">
-          <option value="">— Nguồn —</option>
-          @foreach (var s in Model.Options.Sources)
-          {
-              <option value="@s">@s</option>
-          }
-        </select>
-      </div>
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <select id="f-city" class="form-select form-select-sm">
-          <option value="">— Tỉnh/Thành —</option>
-          @foreach (var c in VietnamProvinces.All)
-          {
-              <option value="@c">@c</option>
-          }
-        </select>
-      </div>
-    </div>
+  <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Danh sách khách hàng</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="openCustomerOffcanvas(null)">
+      <i class="ti ti-plus me-1"></i> Thêm khách
+    </button>
   </div>
   <div class="card-datatable table-responsive">
     <table id="tbl-customers" class="table table-hover">
       <thead>
         <tr>
-          <th>Mã</th><th>Họ tên</th><th>SĐT</th><th>Nguồn</th><th>Tag</th>
-          <th class="text-end">Doanh thu</th><th>Ngày tạo</th><th></th>
+          <th class="text-center">#</th><th>Khách hàng</th><th>Liên hệ</th><th>Khu vực &amp; nhóm</th>
+          <th>CSKH gần nhất</th><th>Phụ trách</th><th class="text-end">Doanh thu</th><th></th>
         </tr>
       </thead>
       <tbody></tbody>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="8" class="small"></td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
@@ -106,78 +181,111 @@
 @section PageScripts {
   <script src="~/js/customer-form.js"></script>
   <script>
+    var dt;
+    // Mọi tiêu chí lọc đẩy xuống SERVER (không lọc client, không get-all).
+    var FILTERS = ['customerType', 'source', 'city', 'gender', 'marketGroup', 'collaborator', 'campaign',
+      'branch', 'group', 'department', 'segment', 'tag', 'assignedTo', 'createdBy',
+      'createdFrom', 'createdTo', 'careFrom', 'careTo', 'revenueFrom', 'revenueTo', 'birthdayMonth',
+      'purchaseBucket', 'notContactedBucket'];
+
+    function collectFilters(d) {
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+
+    // Ô ghép 2 dòng: dòng chính + dòng phụ nhỏ (bám CellStack hệ cũ).
+    function stack(main, sub, mainCls) {
+      var m = '<div class="' + (mainCls || 'text-heading') + ' text-truncate" title="' + tk.escape(main || '') + '">' + tk.escape(main || '—') + '</div>';
+      var s = sub ? '<div class="small text-muted text-truncate" title="' + tk.escape(sub) + '">' + tk.escape(sub) + '</div>' : '';
+      return m + s;
+    }
+
     $(function () {
-      // Cắt chuỗi dài + tooltip để cột không bị vỡ/xô lệch.
-      function trunc(d, max) {
-        var s = d || '';
-        var esc = $('<div>').text(s).html();
-        return '<span class="d-inline-block text-truncate align-middle" style="max-width:' + max + 'px" title="' + esc + '">' + esc + '</span>';
-      }
-      var table = $('#tbl-customers').DataTable({
-        processing: true,
-        serverSide: true,
-        ordering: false,
-        autoWidth: false,   // KHÔNG tự tính width -> cột cố định, tránh vỡ khi reload
-        ajax: {
-          url: '?handler=Data',
-          data: function (d) {
-            d.source = $('#f-source').val();
-            d.city = $('#f-city').val();
-          }
-        },
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl-customers', {
+        url: '?handler=Data',
+        extraData: collectFilters,
         columns: [
-          { data: 'code', width: '110px', render: function (d, t, row) { return '<a href="/Customers/Details/' + row.id + '" class="fw-medium">' + (d || '') + '</a>'; } },
-          { data: 'fullName', width: '210px', render: function (d, t, row) { return '<a href="/Customers/Details/' + row.id + '" class="fw-medium text-heading d-inline-block text-truncate align-middle" style="max-width:200px" title="' + $('<div>').text(d || '').html() + '">' + $('<div>').text(d || '').html() + '</a>'; } },
-          { data: 'phone', width: '120px' },
-          { data: 'source', width: '120px', render: function (d) { return trunc(d, 110); } },
-          { data: 'tag', width: '150px', render: function (d) { return trunc(d, 140); } },
-          { data: 'revenue', width: '120px', className: 'text-end', render: function (d) { return (d || 0).toLocaleString('vi-VN'); } },
-          { data: 'createdAt', width: '100px' },
+          { data: null, width: '44px', className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: null, width: '210px', render: function (r) {
+              var sub = [r.code, r.customerTypeName].filter(function (x) { return !!x; }).join(' · ');
+              return '<a href="/Customers/Details/' + r.id + '" class="fw-medium text-heading d-inline-block text-truncate align-middle" style="max-width:200px" title="' + tk.escape(r.fullName) + '">' + tk.escape(r.fullName) + '</a>' +
+                     (sub ? '<div class="small text-muted text-truncate" title="' + tk.escape(sub) + '">' + tk.escape(sub) + '</div>' : '');
+            } },
+          { data: null, width: '170px', render: function (r) { return stack(r.phone, r.email); } },
+          { data: null, width: '180px', render: function (r) { return stack(r.city, (r.segments || []).join(' · ')); } },
+          { data: null, width: '200px', render: function (r) { return stack(r.lastCareAt, r.lastCareContent); } },
+          { data: null, width: '170px', render: function (r) {
+              var main = (r.assignedToNames || []).join(', ');
+              var sub = r.collaboratorName ? ('CTV: ' + r.collaboratorName) : (r.createdByName || '');
+              return stack(main, sub);
+            } },
+          { data: null, width: '130px', className: 'text-end', render: function (r) {
+              return '<div class="fw-medium ' + ((r.revenue || 0) > 0 ? 'text-success' : 'text-heading') + '">' + tk.money(r.revenue) + '</div>' +
+                     '<div class="small text-muted">' + tk.money(r.purchaseCount) + ' lần mua</div>';
+            } },
           {
-            data: 'id', width: '90px', orderable: false, searchable: false, className: 'text-end',
+            data: 'id', width: '90px', className: 'text-end',
             render: function (id) {
               return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
                      '<button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="' + id + '" title="Xoá"><i class="ti ti-trash"></i></button>';
             }
           }
-        ],
-        lengthMenu: [10, 20, 50, 100],
-        pageLength: 20,
-        dom: '<"row mx-2 mt-2"<"col-md-6 d-flex align-items-center"l><"col-md-6 d-flex align-items-center justify-content-md-end"f>>t<"row mx-2 my-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-md-end"p>>',
-        language: {
-          processing: 'Đang tải...',
-          search: 'Tìm:',
-          lengthMenu: 'Hiện _MENU_ dòng',
-          info: 'Hiện _START_–_END_ trên _TOTAL_ khách',
-          infoEmpty: 'Không có khách',
-          infoFiltered: '(lọc từ _MAX_)',
-          zeroRecords: 'Không tìm thấy khách phù hợp',
-          emptyTable: 'Chưa có khách hàng',
-          paginate: { first: '«', last: '»', next: '›', previous: '‹' }
-        }
+        ]
       });
 
-      $('#f-source, #f-city').on('change', function () { table.ajax.reload(); });
+      // Dòng tổng cộng trang hiện tại (ngoài contract DataTables → đọc qua xhr.dt).
+      $('#tbl-customers').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' +
+          '<span class="me-3 text-muted">Tổng số lần mua: <span class="fw-medium text-heading">' + tk.money(s.purchases) + '</span></span>' +
+          '<span class="me-3 text-muted">Tổng doanh thu: <span class="fw-medium text-heading">' + tk.money(s.revenue) + '</span></span>');
+      });
+
+      // Chip: 3 nhóm (phễu/mua/chưa liên hệ) loại trừ nhau — bấm lại để bỏ chọn.
+      function syncChips() {
+        $('.tk-chip').each(function () {
+          var on = ($('#f-' + this.getAttribute('data-k')).val() || '') === this.getAttribute('data-v');
+          $(this).toggleClass('btn-primary', on).toggleClass('btn-label-secondary', !on);
+        });
+      }
+      $('.tk-chip').on('click', function () {
+        var k = this.getAttribute('data-k');
+        var v = this.getAttribute('data-v');
+        var next = ($('#f-' + k).val() || '') === v ? '' : v;
+        $('#f-segment, #f-purchaseBucket, #f-notContactedBucket').val('');
+        $('#f-' + k).val(next);
+        syncChips();
+        dt.ajax.reload();
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#f-customerType, #f-gender, #f-birthdayMonth, #f-revenueFrom, #f-revenueTo').on('change', function () { dt.ajax.reload(); });
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('.tk-datef').on('change', function () { dt.ajax.reload(); });
+      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        syncChips();
+        dt.ajax.reload();
+      });
 
       // Sửa: mở offcanvas, điền từ dữ liệu dòng (đã có đủ field trong JSON).
       $('#tbl-customers tbody').on('click', '.js-edit', function () {
-        var row = table.row($(this).closest('tr')).data();
+        var row = dt.row($(this).closest('tr')).data();
         if (row) { openCustomerOffcanvas(row); }
       });
 
       $('#tbl-customers tbody').on('click', '.js-del', function () {
         var id = this.getAttribute('data-id');
-        Swal.fire({
-          title: 'Xoá khách hàng?',
-          text: 'Thao tác này không thể hoàn tác.',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Xoá',
-          cancelButtonText: 'Huỷ',
-          customClass: { confirmButton: 'btn btn-danger me-2', cancelButton: 'btn btn-label-secondary' },
-          buttonsStyling: false
-        }).then(function (result) {
-          if (result.isConfirmed) {
+        tk.confirmDelete({ title: 'Xoá khách hàng?' }).then(function (ok) {
+          if (ok) {
             var f = document.getElementById('delete-form');
             f.querySelector('input[name="id"]').value = id;
             f.submit();

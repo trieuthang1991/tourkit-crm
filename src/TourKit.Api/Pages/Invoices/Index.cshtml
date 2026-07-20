@@ -1,54 +1,177 @@
 @page
 @model TourKit.Api.Pages.Invoices.IndexModel
-@{ ViewData["Title"] = "Danh sách hoá đơn (VAT)"; }
+@{ ViewData["Title"] = "Hoá đơn VAT"; }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Danh sách hoá đơn (VAT)</h5>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Hoá đơn VAT</h4>
+  <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+</div>
+
+@* 6 KPI — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng hoá đơn</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0" id="kpi-amount">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng VAT</small><h5 class="mb-0 text-info" id="kpi-vat">@Model.Stats.TotalVat.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã phát hành</small><h5 class="mb-0 text-success" id="kpi-issued">@Model.Stats.Issued.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Nháp</small><h5 class="mb-0" id="kpi-draft">@Model.Stats.Draft.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Huỷ</small><h5 class="mb-0 text-danger" id="kpi-cancelled">@Model.Stats.Cancelled.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — MỌI tiêu chí đẩy xuống server *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Ký hiệu / số / người mua / MST" /></div>
+      <div class="col-md-3">
+        <select id="f-status" class="form-select">
+          <option value="">Trạng thái</option>
+          <option value="0">Nháp</option><option value="1">Đã phát hành</option><option value="2">Đã huỷ</option>
+        </select>
+      </div>
+      <div class="col-md-3"></div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3"><label class="form-label small mb-1">Ngày HĐ từ</label><input type="text" id="f-dateFrom" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="text" id="f-dateTo" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+    </div>
   </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Danh sách hoá đơn (VAT)</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
       <thead>
         <tr>
-          <th>Ký hiệu</th>
-          <th>Số hoá đơn</th>
-          <th>Ngày HĐ</th>
-          <th>Người mua</th>
-          <th>Mã số thuế</th>
-          <th class="text-end">Tiền thuế (VAT)</th>
-          <th class="text-end">Tổng tiền</th>
-          <th class="text-end">Trạng thái</th>
+          <th class="text-center">#</th><th>Hoá đơn</th><th>Ngày</th><th>Người mua</th>
+          <th class="text-end">Giá trị</th><th>Trạng thái</th><th></th>
         </tr>
       </thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr>
-          <td class="fw-medium">@x.Series</td>
-          <td>@x.Number</td>
-          <td>@x.InvoiceDate.ToString("dd/MM/yyyy")</td>
-          <td>@(string.IsNullOrEmpty(x.BuyerName) ? "—" : x.BuyerName)</td>
-          <td>@(string.IsNullOrEmpty(x.BuyerTaxCode) ? "—" : x.BuyerTaxCode)</td>
-          <td class="text-end">@x.VatAmount.ToString("#,##0")</td>
-          <td class="text-end">@x.TotalAmount.ToString("#,##0")</td>
-          <td class="text-end"><span class="badge bg-label-@TourKit.Api.Pages.Invoices.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.Invoices.IndexModel.StatusLabel(x.Status)</span></td>
-        </tr>
-      }
-      </tbody>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="7" class="small"></td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
 
+@Html.AntiForgeryToken()
+
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
   <script>
-    $(function () { tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [7] }] }); });
+    var dt;
+    var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['status', 'dateFrom', 'dateTo'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+    function refreshStats() {
+      $.getJSON('?handler=Stats', function (s) {
+        $('#kpi-total').text(tk.money(s.total));
+        $('#kpi-amount').text(tk.money(s.totalAmount));
+        $('#kpi-vat').text(tk.money(s.totalVat));
+        $('#kpi-issued').text(tk.money(s.issued));
+        $('#kpi-draft').text(tk.money(s.draft));
+        $('#kpi-cancelled').text(tk.money(s.cancelled));
+      });
+    }
+
+    $(function () {
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          // Hoá đơn: số + ký hiệu
+          { data: null, render: function (r) {
+              return '<span class="fw-medium">' + tk.escape(r.number) + '</span>' +
+                     '<div class="small text-muted">' + tk.escape(r.series) + '</div>';
+            } },
+          { data: 'invoiceDate' },
+          // Người mua + MST
+          { data: null, render: function (r) {
+              return '<div class="fw-medium">' + tk.trunc(r.buyerName, 240) + '</div>' +
+                     (r.buyerTaxCode ? '<div class="small text-muted">MST ' + tk.escape(r.buyerTaxCode) + '</div>' : '');
+            } },
+          // Giá trị: tổng tiền + VAT
+          { data: null, className: 'text-end', render: function (r) {
+              return '<div class="fw-medium">' + tk.money(r.totalAmount) + '</div>' +
+                     '<div class="small text-muted">VAT ' + tk.money(r.vatAmount) + '</div>';
+            } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end text-nowrap', render: function () {
+              if (!CAN_MANAGE) { return ''; }
+              return '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
+      // Dòng "Tổng cộng (trang này)" — đọc khối pageSum ngoài contract DataTables.
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' +
+          '<span class="me-3 text-muted">Tổng tiền: <span class="fw-medium">' + tk.money(s.amount) + '</span></span>' +
+          '<span class="me-3 text-muted">Tổng VAT: <span class="fw-medium text-info">' + tk.money(s.vat) + '</span></span>');
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#f-status').on('change', function () { dt.ajax.reload(); });
+      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { $('#f-' + k).val(''); });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        dt.ajax.reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
+      });
+
+      // Server-side: lấy dữ liệu dòng từ DataTables API.
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var r = dt.row($(this).closest('tr')).data();
+        tk.confirmDelete({ title: 'Xoá hoá đơn ' + r.number + '?' }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData(); fd.append('id', r.id);
+          tk.post('?handler=Delete', fd).then(function (res) {
+            if (res && res.isSuccess) { dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã xoá.'); }
+            else { tk.error((res && res.message) || 'Xoá thất bại.'); }
+          });
+        });
+      });
+    });
   </script>
 }
