@@ -1,0 +1,100 @@
+@page
+@model TourKit.Api.Pages.Departures.IndexModel
+@{ ViewData["Title"] = "Chuyến đi / LKH"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng chuyến</p><h4 class="mb-0">@Model.Stats.Total</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Sắp khởi hành</p><h4 class="mb-0 text-success">@Model.Stats.Upcoming</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Đã đóng</p><h4 class="mb-0 text-muted">@Model.Stats.Closed</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng chỗ</p><h4 class="mb-0">@Model.Stats.TotalSlots</h4></div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Danh sách chuyến đi / LKH</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm chuyến</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Mã</th><th>Tên chuyến</th><th>Loại</th><th>Ngày đi</th><th>Ngày về</th><th class="text-center">Chỗ</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var d in Model.Items)
+      {
+        <tr>
+          <td class="fw-medium">@d.Code</td>
+          <td>@d.Title</td>
+          <td>@(d.TourType ?? "—")</td>
+          <td data-order="@(d.DepartureDate?.ToUnixTimeSeconds() ?? 0)">@(d.DepartureDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td>@(d.EndDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td class="text-center">@d.TotalSlots</td>
+          <td><span class="badge bg-label-@TourKit.Api.Pages.Departures.IndexModel.StatusColor(d)">@TourKit.Api.Pages.Departures.IndexModel.StatusLabel(d)</span></td>
+          <td class="text-end">
+            @if (!d.IsClosed)
+            {
+              <form method="post" asp-page-handler="Close" asp-route-id="@d.Id" class="d-inline js-close" data-name="@d.Code">
+                <button type="submit" class="btn btn-icon btn-sm" title="Đóng chuyến"><i class="ti ti-lock"></i></button>
+              </form>
+            }
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">chuyến đi</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="mb-3"><label class="form-label">Mẫu tour</label>
+        <select name="Input.TemplateId" class="form-select tk-s2" data-placeholder="Chọn mẫu (tuỳ chọn)"><option value="">— Không dùng mẫu —</option>@foreach (var t in Model.Templates) { <option value="@t.Id">@t.Label</option> }</select>
+      </div>
+      <div class="row">
+        <div class="col-5 mb-3"><label class="form-label">Mã chuyến <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="VD: DN-2607" /></div>
+        <div class="col-7 mb-3"><label class="form-label">Tên chuyến <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Đà Nẵng 3N2Đ" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Ngày khởi hành</label><input type="text" name="Input.DepartureDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Ngày về</label><input type="text" name="Input.EndDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
+      </div>
+      <div class="mb-3"><label class="form-label">Tổng số chỗ</label><input type="number" name="Input.TotalSlots" class="form-control" placeholder="0" min="0" /></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { order: [[3, 'desc']], columnDefs: [{ orderable: false, targets: [7] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'chuyến đi',
+        rules: { 'Input.Code': { required: true }, 'Input.Title': { required: true } },
+        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã chuyến' }, 'Input.Title': { required: 'Bắt buộc nhập tên chuyến' } }
+      });
+      $('#tbl tbody').on('submit', '.js-close', function (e) {
+        e.preventDefault(); var f = this;
+        tk.confirmDelete({ title: 'Đóng chuyến ' + $(f).data('name') + '?', text: 'Chuyến đã đóng sẽ khoá đặt chỗ.', confirm: 'Đóng chuyến' })
+          .then(function (ok) { if (ok) { f.submit(); } });
+      });
+    });
+  </script>
+}

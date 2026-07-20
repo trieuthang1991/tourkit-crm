@@ -54,7 +54,7 @@ public static class MenuData
         new("g-order", "Đơn hàng/LKH", "ti ti-shopping-cart", Children: new List<MenuNode>
         {
             new("o-all", "Tất cả đơn hàng", To: "/Orders", Perm: "booking.view"),
-            new("o-tours", "Tất cả Tour/LKH", To: "#", Perm: "departure.view"),
+            new("o-tours", "Tất cả Tour/LKH", To: "/Departures", Perm: "departure.view"),
             new("o-fit", "Tour FIT", To: "#", Perm: "booking.view"),
             new("o-git", "Tour GIT/Combo", To: "#", Perm: "booking.view"),
             new("o-landtour", "LandTour", To: "#", Perm: "booking.view"),
