@@ -1,0 +1,16 @@
+@page
+@model TourKit.Api.Pages.Dashboard.IndexModel
+@{ ViewData["Title"] = "Tổng quan"; }
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title mb-1">Chào mừng tới TourKit</h5>
+        <p class="mb-3 text-muted">Giao diện quản trị nền Vuexy, chạy trực tiếp trên ASP.NET Core.</p>
+        <a asp-page="/Customers/Index" class="btn btn-primary">
+          <i class="ti ti-users me-1"></i> Data khách hàng
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

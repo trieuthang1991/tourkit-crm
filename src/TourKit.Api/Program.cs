@@ -29,7 +29,12 @@ builder.Host.UseSerilog((context, config) => config
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AuthorizeFolder("/");            // mọi trang cần đăng nhập
+    options.Conventions.AllowAnonymousToFolder("/Auth"); // trừ đăng nhập/đăng xuất
+    options.Conventions.AllowAnonymousToPage("/Ping");   // trang smoke hạ tầng
+});
 
 // CORS cho SPA (Vite dev mặc định 5173/4173; prod cấu hình qua Cors:Origins).
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
