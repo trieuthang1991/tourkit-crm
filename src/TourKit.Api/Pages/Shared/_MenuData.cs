@@ -55,11 +55,11 @@ public static class MenuData
         {
             new("o-all", "Tất cả đơn hàng", To: "/Orders", Perm: "booking.view"),
             new("o-tours", "Tất cả Tour/LKH", To: "/Departures", Perm: "departure.view"),
-            new("o-fit", "Tour FIT", To: "#", Perm: "booking.view"),
-            new("o-git", "Tour GIT/Combo", To: "#", Perm: "booking.view"),
-            new("o-landtour", "LandTour", To: "#", Perm: "booking.view"),
-            new("o-visa", "Visa", To: "#", Perm: "booking.view"),
-            new("o-service", "Dịch vụ lẻ", To: "#", Perm: "booking.view"),
+            new("o-fit", "Tour FIT", To: "/Orders?bookingType=0", Perm: "booking.view"),
+            new("o-git", "Tour GIT/Combo", To: "/Orders?bookingType=1", Perm: "booking.view"),
+            new("o-landtour", "LandTour", To: "/Orders?bookingType=2", Perm: "booking.view"),
+            new("o-visa", "Visa", To: "/Orders?bookingType=5", Perm: "booking.view"),
+            new("o-service", "Dịch vụ lẻ", To: "/Orders?bookingType=4", Perm: "booking.view"),
         }),
         new("g-booking", "Booking Phòng/Khách sạn", "ti ti-building-skyscraper", Children: new List<MenuNode>
         {
