@@ -6,34 +6,53 @@
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Service không nhận từ khoá → ẩn ô search mặc định của DataTables (không lọc client). *@
+  <style>#tbl_filter { display: none; }</style>
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Bài viết</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm bài viết</button>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Bài viết</h4>
+  <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm bài viết</button>
+</div>
+
+@* Thanh lọc — chỉ 2 tiêu chí service có thật (chuyên mục, trạng thái), đẩy xuống SQL. *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4">
+        <select id="f-categoryId" class="form-select tk-s2f" data-placeholder="Chuyên mục">
+          <option value=""></option>
+          @foreach (var c in Model.Categories) { <option value="@c.Id">@c.Name</option> }
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select id="f-status" class="form-select">
+          <option value="">Tất cả trạng thái</option>
+          <option value="0">Nháp</option><option value="1">Xuất bản</option><option value="2">Lưu trữ</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
   </div>
+</div>
+
+<div class="card">
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Tiêu đề</th><th>Chuyên mục</th><th>Trạng thái</th><th>Lượt thích</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var p in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = p.Id, title = p.Title, slug = p.Slug, summary = p.Summary, body = p.Body, categoryId = p.CategoryId, status = p.Status, likeCount = p.LikeCount })'>
-          <td class="fw-medium">@p.Title<br /><small class="text-muted">@p.Slug</small></td>
-          <td>@(p.CategoryName ?? "—")</td>
-          <td><span class="badge bg-label-@TourKit.Api.Pages.Posts.IndexModel.StatusColor(p.Status)">@TourKit.Api.Pages.Posts.IndexModel.StatusLabel(p.Status)</span></td>
-          <td>@p.LikeCount</td>
-          <td class="text-end">
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm js-del" data-id="@p.Id" data-name="@p.Title" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
+      <thead>
+        <tr>
+          <th class="text-center">#</th><th>Tiêu đề</th><th>Chuyên mục</th><th>Trạng thái</th>
+          <th>Xuất bản</th><th class="text-end">Lượt thích</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
     </table>
   </div>
 </div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" id="del-id" /></form>
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:680px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">bài viết</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
@@ -62,7 +81,27 @@
   </div>
 </div>
 
-<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" id="del-id" /></form>
+@* Modal bình luận — bám PostCommentsModal.tsx: danh sách + duyệt/bỏ duyệt + xoá + thêm mới. *@
+<div class="modal fade" id="md-cmt" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Bình luận</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div id="cmt-list" class="mb-4"></div>
+        <div class="border-top pt-3">
+          <h6>Thêm bình luận</h6>
+          <form id="frm-cmt" onsubmit="return false">
+            <input type="hidden" name="postId" />
+            <div class="mb-2"><label class="form-label">Tên người bình luận <span class="text-danger">*</span></label><input type="text" name="authorName" class="form-control" placeholder="Nhập tên người bình luận" /></div>
+            <div class="mb-2"><label class="form-label">Nội dung <span class="text-danger">*</span></label><textarea name="content" class="form-control" rows="3" placeholder="Nhập nội dung bình luận"></textarea></div>
+            <div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="isApproved" value="true" id="cmt-approved" checked /><label class="form-check-label" for="cmt-approved">Duyệt hiển thị ngay</label></div>
+            <button type="submit" class="btn btn-primary btn-sm">Thêm</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
@@ -73,16 +112,103 @@
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt, cmtPostId = null;
+    var FILTERS = ['categoryId', 'status'];
+
+    function collectFilters(d) {
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
+    }
+
+    // ---- Bình luận ----
+    function renderComments(rows) {
+      if (!rows.length) { $('#cmt-list').html('<div class="text-muted">Chưa có bình luận</div>'); return; }
+      $('#cmt-list').html(rows.map(function (c) {
+        return '<div class="d-flex justify-content-between align-items-start border-bottom py-2">' +
+          '<div class="pe-3"><div class="fw-medium">' + tk.escape(c.authorName) +
+          ' <span class="badge bg-label-' + (c.isApproved ? 'success' : 'secondary') + ' ms-1">' + (c.isApproved ? 'Đã duyệt' : 'Chờ duyệt') + '</span></div>' +
+          '<div class="small">' + tk.escape(c.content) + '</div>' +
+          '<div class="small text-muted">' + tk.escape(c.createdAtText) + '</div></div>' +
+          '<div class="text-nowrap">' +
+          '<button type="button" class="btn btn-sm btn-label-secondary js-cmt-approve" data-id="' + c.id + '" data-approve="' + (c.isApproved ? 'false' : 'true') + '">' + (c.isApproved ? 'Bỏ duyệt' : 'Duyệt') + '</button> ' +
+          '<button type="button" class="btn btn-sm btn-label-danger js-cmt-del" data-id="' + c.id + '">Xoá</button>' +
+          '</div></div>';
+      }).join(''));
+    }
+    function loadComments() {
+      $.getJSON('?handler=Comments&postId=' + cmtPostId, renderComments);
+    }
+    function openComments(row) {
+      cmtPostId = row.id;
+      $('#md-cmt .modal-title').text('Bình luận — ' + row.title);
+      $('#frm-cmt')[0].reset();
+      $('#frm-cmt [name="postId"]').val(cmtPostId);
+      $('#cmt-list').html('<div class="text-muted">Đang tải…</div>');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('md-cmt')).show();
+      loadComments();
+    }
+
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [4] }] });
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: null, render: function (r) { return '<div class="fw-medium">' + tk.escape(r.title) + '</div><small class="text-muted">' + tk.escape(r.slug) + '</small>'; } },
+          { data: 'categoryName' },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: 'publishedAtText' },
+          { data: 'likeCount', className: 'text-end', render: function (v) { return tk.money(v); } },
+          { data: null, className: 'text-end text-nowrap', render: function () {
+              return '<button type="button" class="btn btn-sm btn-label-secondary js-cmt" title="Bình luận"><i class="ti ti-message-circle me-1"></i>Bình luận</button> ' +
+                     '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'bài viết',
         rules: { 'Input.Title': { required: true }, 'Input.Slug': { required: true } },
         messages: { 'Input.Title': { required: 'Bắt buộc nhập tiêu đề' }, 'Input.Slug': { required: 'Bắt buộc nhập slug' } }
       });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-status').on('change', function () { dt.ajax.reload(); });
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('#btn-reset').on('click', function () {
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        dt.ajax.reload();
+      });
+
+      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
+      $('#tbl tbody').on('click', '.js-cmt', function () { openComments(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = $(this).data('id'); tk.confirmDelete($(this).data('name'), function () { $('#del-id').val(id); $('#delete-form').submit(); });
+        var id = dt.row($(this).closest('tr')).data().id;
+        tk.confirmDelete({ title: 'Xoá bài viết?' }).then(function (ok) { if (ok) { $('#del-id').val(id); $('#delete-form').submit(); } });
+      });
+
+      $('#frm-cmt').on('submit', function () {
+        tk.post('?handler=CommentSave', new FormData(this)).then(function (res) {
+          if (res && res.isSuccess) { $('#frm-cmt')[0].reset(); $('#frm-cmt [name="postId"]').val(cmtPostId); tk.toast(res.message); loadComments(); }
+          else { tk.error((res && res.message) || 'Lưu thất bại.'); }
+        });
+      });
+      $('#cmt-list').on('click', '.js-cmt-approve', function () {
+        var fd = new FormData();
+        fd.append('postId', cmtPostId); fd.append('commentId', this.getAttribute('data-id')); fd.append('approved', this.getAttribute('data-approve'));
+        tk.post('?handler=CommentApprove', fd).then(function (res) { if (res && res.isSuccess) { tk.toast(res.message); loadComments(); } else { tk.error((res && res.message) || 'Thất bại.'); } });
+      });
+      $('#cmt-list').on('click', '.js-cmt-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá bình luận?' }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData();
+          fd.append('postId', cmtPostId); fd.append('commentId', id);
+          tk.post('?handler=CommentDelete', fd).then(function (res) { if (res && res.isSuccess) { tk.toast(res.message); loadComments(); } else { tk.error((res && res.message) || 'Thất bại.'); } });
+        });
       });
     });
   </script>

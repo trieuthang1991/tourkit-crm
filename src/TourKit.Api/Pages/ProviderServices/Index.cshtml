@@ -8,29 +8,43 @@
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Bảng giá NCC</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm giá</button>
+@* Service ListAsync CHỈ nhận providerId (không có keyword) → ẩn ô tìm mặc định của DataTables
+   để không tạo cảm giác tìm được mà thực tế server không lọc. *@
+<style>#tbl_filter { display: none; }</style>
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Bảng giá NCC</h4>
+  <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm bảng giá</button>
+</div>
+
+@* Thanh lọc — chỉ tiêu chí NCC (tiêu chí duy nhất service hỗ trợ), đẩy xuống SERVER *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <select id="f-providerId" class="form-select" data-placeholder="Lọc theo nhà cung cấp"><option value=""></option></select>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="button" class="btn btn-primary" id="btn-search"><i class="ti ti-search me-1"></i> Tìm kiếm</button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset"><i class="ti ti-rotate me-1"></i> Đặt lại</button>
+      </div>
+    </div>
   </div>
+</div>
+
+<div class="card">
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>NCC</th><th>Tên giá</th><th class="text-end">Giá vốn</th><th class="text-end">Giá bán</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, providerId = x.ProviderId, serviceItemId = x.ServiceItemId, priceName = x.PriceName, contractPrice = x.ContractPrice, publicPrice = x.PublicPrice, currencyCode = x.CurrencyCode, amountOfPeople = x.AmountOfPeople, note = x.Note, status = x.Status })'>
-          <td class="fw-medium">@Model.ProviderName(x.ProviderId)</td>
-          <td>@x.PriceName</td>
-          <td class="text-end">@x.ContractPrice.ToString("#,##0")</td>
-          <td class="text-end">@x.PublicPrice.ToString("#,##0")</td>
-          <td class="text-end">
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
+      <thead>
+        <tr>
+          <th class="text-center">#</th><th>NCC</th><th>Tên gói giá</th>
+          <th class="text-end">Giá hợp đồng</th><th class="text-end">Giá công bố</th>
+          <th class="text-center">Số khách</th><th>Tiền tệ</th><th>Trạng thái</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="9" class="small"></td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
@@ -45,10 +59,9 @@
       <input type="hidden" name="Id" />
       <div class="mb-3">
         <label class="form-label">Nhà cung cấp <span class="text-danger">*</span></label>
-        <select name="Input.ProviderId" class="form-select tk-s2" data-placeholder="Chọn NCC">
-          <option value=""></option>
-          @foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }
-        </select>
+        @* Danh sách NCC lớn → Select2 ajax (handler ProviderOptions), không nạp sẵn *@
+        <select name="Input.ProviderId" id="in-provider" class="form-select" data-placeholder="Chọn nhà cung cấp"><option value=""></option></select>
+        <small class="text-muted d-block mt-1 d-none" id="provider-lock-note">Không đổi được NCC khi sửa bảng giá.</small>
       </div>
       <div class="mb-3">
         <label class="form-label">Dịch vụ</label>
@@ -57,17 +70,29 @@
           @foreach (var s in Model.ServiceItems) { <option value="@s.Id">@s.Name</option> }
         </select>
       </div>
-      <div class="mb-3"><label class="form-label">Tên giá</label><input type="text" name="Input.PriceName" class="form-control" placeholder="Nhập tên giá" /></div>
+      <div class="mb-3"><label class="form-label">Tên gói giá</label><input type="text" name="Input.PriceName" class="form-control" placeholder="Nhập tên gói giá" /></div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Giá vốn</label><input type="number" step="any" name="Input.ContractPrice" class="form-control" value="0" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Giá bán</label><input type="number" step="any" name="Input.PublicPrice" class="form-control" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Giá hợp đồng <span class="text-danger">*</span></label><input type="number" step="any" name="Input.ContractPrice" class="form-control" placeholder="0" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Giá công bố <span class="text-danger">*</span></label><input type="number" step="any" name="Input.PublicPrice" class="form-control" placeholder="0" value="0" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Tiền tệ</label><input type="text" name="Input.CurrencyCode" class="form-control" placeholder="VND" value="VND" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Số khách</label><input type="number" name="Input.AmountOfPeople" class="form-control" value="1" /></div>
+        <div class="col-6 mb-3">
+          <label class="form-label">Tiền tệ giá vốn</label>
+          <select name="Input.CurrencyCode" class="form-select tk-s2" data-placeholder="Chọn tiền tệ">
+            <option value="VND">VND</option>
+            @foreach (var c in Model.Currencies.Where(c => !string.Equals(c.Code, "VND", StringComparison.OrdinalIgnoreCase)))
+            {
+              <option value="@c.Code">@c.Code — @c.Name</option>
+            }
+          </select>
+        </div>
+        <div class="col-6 mb-3"><label class="form-label">Số khách <span class="text-danger">*</span></label><input type="number" name="Input.AmountOfPeople" class="form-control" placeholder="1" value="1" /></div>
       </div>
       <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Nhập ghi chú"></textarea></div>
-      <div class="mb-3"><label class="form-label">Trạng thái</label><input type="number" name="Input.Status" class="form-control" value="1" /></div>
+      <div class="mb-3">
+        <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+        <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
+      </div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
     </form>
@@ -83,16 +108,91 @@
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt;
+    function collectFilters(d) {
+      var v = $('#f-providerId').val(); if (v) { d.providerId = v; }
+    }
+    // Select2 ajax dùng chung cho 2 ô chọn NCC (danh sách lớn → lọc ở SERVER, không nạp sẵn).
+    function providerAjax() {
+      return {
+        url: '?handler=ProviderOptions',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) { return { q: params.term }; },
+        processResults: function (data) { return { results: data.results }; }
+      };
+    }
+
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [4] }] });
+      $('#f-providerId').select2({ width: '100%', allowClear: true, placeholder: 'Lọc theo nhà cung cấp', ajax: providerAjax() });
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: 'providerName', render: function (v) { return '<span class="fw-medium">' + tk.escape(v) + '</span>'; } },
+          { data: null, render: function (r) {
+              return '<div>' + tk.escape(r.priceName || '—') + '</div>' +
+                     (r.serviceItemName ? '<div class="small text-muted">' + tk.escape(r.serviceItemName) + '</div>' : '');
+            } },
+          { data: null, className: 'text-end', render: function (r) {
+              // Ngoại tệ: hiện nguyên tệ + quy đổi VND (bám cột "Giá hợp đồng" hệ cũ).
+              if (r.currencyCode && r.currencyCode !== 'VND') {
+                return '<div>' + tk.money(r.contractPrice) + ' ' + tk.escape(r.currencyCode) + '</div>' +
+                       '<div class="small text-muted">= ' + tk.money(r.contractPriceVnd) + '</div>';
+              }
+              return tk.money(r.contractPriceVnd);
+            } },
+          { data: 'publicPriceVnd', className: 'text-end', render: function (v) { return tk.money(v); } },
+          { data: 'amountOfPeople', className: 'text-center' },
+          { data: 'currencyCode' },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end', render: function () {
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' +
+          '<span class="me-3 text-muted">Giá hợp đồng (VND): <span class="fw-medium">' + tk.money(s.contractPriceVnd) + '</span></span>' +
+          '<span class="me-3 text-muted">Giá công bố (VND): <span class="fw-medium">' + tk.money(s.publicPriceVnd) + '</span></span>');
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'bảng giá NCC',
-        rules: { 'Input.ProviderId': { required: true } }, messages: { 'Input.ProviderId': { required: 'Bắt buộc chọn NCC' } } });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+        rules: { 'Input.ProviderId': { required: true }, 'Input.ContractPrice': { required: true }, 'Input.PublicPrice': { required: true }, 'Input.AmountOfPeople': { required: true } },
+        messages: { 'Input.ProviderId': { required: 'Bắt buộc chọn NCC' }, 'Input.ContractPrice': { required: 'Bắt buộc nhập giá hợp đồng' }, 'Input.PublicPrice': { required: 'Bắt buộc nhập giá công bố' }, 'Input.AmountOfPeople': { required: 'Bắt buộc nhập số khách' } },
+        fill: function ($form, data) {
+          // NCC dùng Select2 ajax → phải nạp option đã chọn thủ công; sửa thì KHOÁ (service không đổi NCC).
+          var $p = $('#in-provider');
+          $p.empty();
+          if (data && data.providerId) {
+            $p.append(new Option(data.providerName || '', data.providerId, true, true));
+          }
+          $p.val(data && data.providerId ? data.providerId : null).trigger('change');
+          $p.prop('disabled', !!(data && data.id));
+          $('#provider-lock-note').toggleClass('d-none', !(data && data.id));
+        }
+      });
+
+      // Select2 ajax cho ô NCC trong offcanvas (khởi tạo sau tk.form để dùng dropdownParent riêng).
+      $('#in-provider').select2({ width: '100%', allowClear: true, placeholder: 'Chọn nhà cung cấp',
+        dropdownParent: $('#oc'), ajax: providerAjax() });
+
+      // Server-side: dữ liệu dòng lấy từ DataTables API (không còn data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = this.getAttribute('data-id');
+        var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá bảng giá NCC?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
       });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-providerId').on('change', function () { dt.ajax.reload(); });
+      $('#btn-reset').on('click', function () { $('#f-providerId').val(null).trigger('change'); dt.ajax.reload(); });
     });
   </script>
 }

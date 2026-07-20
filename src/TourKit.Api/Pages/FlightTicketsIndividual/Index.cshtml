@@ -4,91 +4,141 @@
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Vé máy bay lẻ</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm vé lẻ</button>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Vé máy bay lẻ</h4>
+  <div class="d-flex gap-2">
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    @if (Model.CanManage)
+    {
+      <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm vé lẻ</button>
+    }
   </div>
+</div>
+
+@* 7 KPI P/L — bám StatGrid hệ cũ (footer P/L đưa lên thẻ) *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng thu</small><h5 class="mb-0" id="kpi-sell">@Model.Stats.TotalSell.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Thực thu</small><h5 class="mb-0 text-success" id="kpi-received">@Model.Stats.TotalReceived.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Còn nợ thu</small><h5 class="mb-0 text-danger" id="kpi-receivable">@Model.Stats.TotalReceivable.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chi</small><h5 class="mb-0" id="kpi-cost">@Model.Stats.TotalCost.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Thực chi</small><h5 class="mb-0" id="kpi-paid">@Model.Stats.TotalPaid.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Phải chi</small><h5 class="mb-0 text-danger" id="kpi-payable">@Model.Stats.TotalPayable.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Lợi nhuận</small><h5 class="mb-0 text-success" id="kpi-profit">@Model.Stats.TotalProfit.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — MỌI tiêu chí đẩy xuống server (FlightTicketIndividualListFilter) *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / PNR / khách / số vé" /></div>
+      <div class="col-md-3">
+        <select id="f-providerRef" class="form-select tk-s2f" data-placeholder="Nhà cung cấp / hãng"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
+      </div>
+      <div class="col-md-3">
+        <select id="f-status" class="form-select">
+          <option value="">Trạng thái duyệt</option>
+          <option value="0">Tạo mới</option><option value="1">Đã duyệt</option><option value="2">Không duyệt</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3"><label class="form-label small mb-1">Ngày đi từ</label><input type="text" id="f-departFrom" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="text" id="f-departTo" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+    </div>
+  </div>
+</div>
+
+@* Sub-tab bám hệ cũ (FI_TABS) — đếm lấy từ GetStatsAsync *@
+<input type="hidden" id="f-tab" value="" />
+<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
+  <li class="nav-item"><button type="button" class="nav-link active" data-val="">Tất cả (<span data-count="total">@Model.Stats.Total.ToString("#,##0")</span>)</button></li>
+  @foreach (var t in TourKit.Api.Pages.FlightTicketsIndividual.IndexModel.Tabs)
+  {
+    <li class="nav-item"><button type="button" class="nav-link" data-val="@t.Value">@t.Label (<span data-count="@t.StatKey">@Model.TabCount(t.StatKey).ToString("#,##0")</span>)</button></li>
+  }
+</ul>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Danh sách vé máy bay lẻ</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Mã vé</th><th>Khách</th><th>Chặng</th><th>Chiều</th><th>Ngày đi</th><th class="text-end">Giá bán</th><th>Trạng thái</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new {
-              id = x.Id, code = x.Code, ticketCode = x.TicketCode, pnr = x.Pnr, customerName = x.CustomerName,
-              tripType = x.TripType, route = x.Route, departDate = x.DepartDate, returnDate = x.ReturnDate,
-              sellAmount = x.SellAmount, receivedAmount = x.ReceivedAmount, totalCost = x.TotalCost, paidAmount = x.PaidAmount,
-              paymentDueDate = x.PaymentDueDate, status = x.Status, note = x.Note,
-              orderRef = x.OrderRef, providerRef = x.ProviderRef, assigneeRef = x.AssigneeRef })'>
-          <td class="fw-medium">@x.Code</td>
-          <td>@x.CustomerName</td>
-          <td>@(x.Route ?? "—")</td>
-          <td>@TourKit.Api.Pages.FlightTicketsIndividual.IndexModel.TripTypeLabel(x.TripType)</td>
-          <td>@(x.DepartDate?.ToString("dd/MM/yyyy") ?? "—")</td>
-          <td class="text-end">@x.SellAmount.ToString("#,##0")</td>
-          <td><span class="badge bg-label-@TourKit.Api.Pages.FlightTicketsIndividual.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.FlightTicketsIndividual.IndexModel.StatusLabel(x.Status)</span></td>
-          <td class="text-end">
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
+      <thead>
+        <tr>
+          <th class="text-center">#</th><th>Vé / Khách</th><th>NCC / Đơn hàng</th><th>Hành trình</th>
+          <th class="text-end">Thu / còn nợ</th><th class="text-end">Chi / phải chi</th><th class="text-end">Lợi nhuận</th>
+          <th>Trạng thái</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="9" class="small"></td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
 
-<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+@Html.AntiForgeryToken()
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:560px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">vé lẻ</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
   <div class="offcanvas-body">
-    @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
       <input type="hidden" name="Id" />
+      @* Passthrough (không có editor): giữ nguyên để sửa không xoá dữ liệu *@
       <input type="hidden" name="Input.OrderRef" />
-      <input type="hidden" name="Input.ProviderRef" />
       <input type="hidden" name="Input.AssigneeRef" />
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Mã vé <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã vé" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Mã hệ thống <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã vé" /></div>
         <div class="col-6 mb-3"><label class="form-label">Số vé (ticket)</label><input type="text" name="Input.TicketCode" class="form-control" placeholder="Số vé của hãng" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Khách <span class="text-danger">*</span></label><input type="text" name="Input.CustomerName" class="form-control" placeholder="Tên khách" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Khách đi vé <span class="text-danger">*</span></label><input type="text" name="Input.CustomerName" class="form-control" placeholder="Tên khách" /></div>
         <div class="col-6 mb-3"><label class="form-label">PNR <span class="text-danger">*</span></label><input type="text" name="Input.Pnr" class="form-control" placeholder="Mã PNR" /></div>
       </div>
+      <div class="mb-3">
+        <label class="form-label">Nhà cung cấp / hãng</label>
+        <select name="Input.ProviderRef" class="form-select tk-s2" data-placeholder="Chọn nhà cung cấp">
+          <option value=""></option>
+          @foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }
+        </select>
+      </div>
       <div class="row">
-        <div class="col-8 mb-3"><label class="form-label">Chặng</label><input type="text" name="Input.Route" class="form-control" placeholder="Ví dụ: SGN-HAN-SGN" /></div>
+        <div class="col-8 mb-3"><label class="form-label">Hành trình</label><input type="text" name="Input.Route" class="form-control" placeholder="VD: SGN-HAN-SGN" /></div>
         <div class="col-4 mb-3">
-          <label class="form-label">Chiều</label>
+          <label class="form-label">Loại vé</label>
           <select name="Input.TripType" class="form-select"><option value="0">Một chiều</option><option value="1">Khứ hồi</option></select>
         </div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Ngày đi</label><input type="text" name="Input.DepartDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Ngày về</label><input type="text" name="Input.ReturnDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Ngày đi (CI)</label><input type="text" name="Input.DepartDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Ngày về (CO)</label><input type="text" name="Input.ReturnDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Giá bán</label><input type="number" step="any" name="Input.SellAmount" class="form-control" value="0" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Đã thu</label><input type="number" step="any" name="Input.ReceivedAmount" class="form-control" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Tổng thu</label><input type="number" step="any" name="Input.SellAmount" class="form-control" placeholder="0" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Thực thu</label><input type="number" step="any" name="Input.ReceivedAmount" class="form-control" placeholder="0" value="0" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Tổng chi (giá vốn)</label><input type="number" step="any" name="Input.TotalCost" class="form-control" value="0" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Đã chi</label><input type="number" step="any" name="Input.PaidAmount" class="form-control" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Tổng chi (giá vốn)</label><input type="number" step="any" name="Input.TotalCost" class="form-control" placeholder="0" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Thực chi</label><input type="number" step="any" name="Input.PaidAmount" class="form-control" placeholder="0" value="0" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Hạn thanh toán</label><input type="text" name="Input.PaymentDueDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Hạn chi</label><input type="text" name="Input.PaymentDueDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
         <div class="col-6 mb-3">
           <label class="form-label">Trạng thái</label>
           <select name="Input.Status" class="form-select"><option value="0">Tạo mới</option><option value="1">Đã duyệt</option><option value="2">Không duyệt</option></select>
         </div>
       </div>
-      <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2"></textarea></div>
+      <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Ghi chú thêm"></textarea></div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
     </form>
@@ -97,6 +147,7 @@
 
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
@@ -104,16 +155,158 @@
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt;
+    var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['providerRef', 'status', 'tab', 'departFrom', 'departTo'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+    function refreshStats() {
+      var p = new URLSearchParams(filterValues());
+      var q = $('#f-q').val(); if (q) { p.set('search', q); }
+      $.getJSON('?handler=Stats&' + p.toString(), function (s) {
+        $('#kpi-sell').text(tk.money(s.totalSell));
+        $('#kpi-received').text(tk.money(s.totalReceived));
+        $('#kpi-receivable').text(tk.money(s.totalReceivable));
+        $('#kpi-cost').text(tk.money(s.totalCost));
+        $('#kpi-paid').text(tk.money(s.totalPaid));
+        $('#kpi-payable').text(tk.money(s.totalPayable));
+        $('#kpi-profit').text(tk.money(s.totalProfit));
+        $('#tabs [data-count]').each(function () { $(this).text(tk.money(s[$(this).data('count')] || 0)); });
+      });
+    }
+    function reload() { dt.ajax.reload(); refreshStats(); }
+
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [7] }] });
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'vé lẻ',
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          // Vé / Khách: tên khách + mã hệ thống + (số vé · PNR)
+          { data: null, render: function (r) {
+              var bits = [];
+              if (r.ticketCode) { bits.push('Vé ' + r.ticketCode); }
+              if (r.pnr) { bits.push('PNR ' + r.pnr); }
+              return '<div class="fw-medium">' + tk.trunc(r.customerName, 190) + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.code) + (bits.length ? ' · ' + tk.escape(bits.join(' · ')) : '') + '</div>';
+            } },
+          // NCC / Đơn hàng
+          { data: null, render: function (r) {
+              return '<div>' + (r.providerName ? tk.trunc(r.providerName, 160) : '—') + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.orderCode || '—') + '</div>';
+            } },
+          // Hành trình: chặng + loại vé · CI · CO
+          { data: null, render: function (r) {
+              return '<div>' + (r.route ? tk.trunc(r.route, 200) : '—') + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.tripTypeLabel) + ' · CI ' + tk.escape(r.departDateText) + ' · CO ' + tk.escape(r.returnDateText) + '</div>';
+            } },
+          // Thu / còn nợ
+          { data: null, className: 'text-end', render: function (r) {
+              return '<div class="fw-medium" title="Tổng thu">' + tk.money(r.sellAmount) + '</div>' +
+                     '<div class="small ' + (r.receivableRemaining > 0 ? 'text-danger' : 'text-muted') + '" title="Còn nợ thu">còn ' + tk.money(r.receivableRemaining) + '</div>';
+            } },
+          // Chi / phải chi
+          { data: null, className: 'text-end', render: function (r) {
+              return '<div class="fw-medium" title="Tổng chi">' + tk.money(r.totalCost) + '</div>' +
+                     '<div class="small ' + (r.payableRemaining > 0 ? 'text-danger' : 'text-muted') + '" title="Phải chi">phải chi ' + tk.money(r.payableRemaining) + '</div>';
+            } },
+          { data: 'profit', className: 'text-end', render: function (v) {
+              return '<span class="fw-medium ' + (v < 0 ? 'text-danger' : 'text-success') + '">' + tk.money(v) + '</span>';
+            } },
+          // Trạng thái + hạn chi
+          { data: null, render: function (r) {
+              return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>' +
+                     (r.paymentDueDateText ? '<div class="small text-muted mt-1">Hạn chi ' + tk.escape(r.paymentDueDateText) + '</div>' : '');
+            } },
+          { data: null, className: 'text-end text-nowrap', render: function () {
+              if (!CAN_MANAGE) { return ''; }
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
+      // Dòng "Tổng cộng (trang này)" — bám footer P/L hệ cũ.
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        var parts = [['Tổng thu', s.sell, ''], ['Thực thu', s.received, 'text-success'], ['Còn nợ thu', s.receivable, s.receivable > 0 ? 'text-danger' : ''],
+                     ['Tổng chi', s.cost, ''], ['Thực chi', s.paid, ''], ['Phải chi', s.payable, s.payable > 0 ? 'text-danger' : ''],
+                     ['Lợi nhuận', s.profit, s.profit < 0 ? 'text-danger' : 'text-success']];
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' + parts.map(function (p) {
+          return '<span class="me-3 text-muted">' + p[0] + ': <span class="fw-medium ' + p[2] + '">' + tk.money(p[1]) + '</span></span>';
+        }).join(''));
+      });
+
+      oc = tk.form({
+        offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'vé lẻ',
         rules: { 'Input.Code': { required: true }, 'Input.CustomerName': { required: true }, 'Input.Pnr': { required: true } },
-        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã vé' }, 'Input.CustomerName': { required: 'Bắt buộc nhập tên khách' }, 'Input.Pnr': { required: 'Bắt buộc nhập PNR' } } });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã vé' }, 'Input.CustomerName': { required: 'Bắt buộc nhập tên khách' }, 'Input.Pnr': { required: 'Bắt buộc nhập PNR' } },
+        // Ref NCC có thể là id legacy KHÔNG nằm trong danh mục → thêm option tạm để không mất giá trị khi lưu.
+        fill: function ($form, data) {
+          var $sel = $form.find('[name="Input.ProviderRef"]');
+          var val = data ? data.providerRef : '';
+          if (val && !$sel.find('option[value="' + val + '"]').length) {
+            $sel.append(new Option(data.providerName || val, val, true, true));
+          }
+          $sel.val(val || null).trigger('change');
+        }
+      });
+
+      $('#btn-search').on('click', reload);
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { reload(); } });
+      $('#f-status').on('change', reload);
+      $('.tk-s2f').on('change', reload);
+      $('.tk-datef').on('change', reload);
+      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        $('#tabs .nav-link').removeClass('active').first().addClass('active');
+        reload();
+      });
+      $('#tabs').on('click', '.nav-link', function () {
+        $('#tabs .nav-link').removeClass('active');
+        $(this).addClass('active');
+        $('#f-tab').val($(this).data('val'));
+        reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
+      });
+
+      // Sau khi lưu qua tk.form (bảng tự reload) → làm tươi KPI + số đếm sub-tab.
+      $('#frm').on('submit', function () { setTimeout(refreshStats, 600); });
+
+      // Server-side: dữ liệu dòng lấy từ DataTables API.
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = this.getAttribute('data-id');
-        tk.confirmDelete({ title: 'Xoá vé lẻ?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+        var r = dt.row($(this).closest('tr')).data();
+        tk.confirmDelete({ title: 'Xoá vé lẻ ' + r.code + '?' }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData(); fd.append('id', r.id);
+          tk.post('?handler=Delete', fd).then(function (res) {
+            if (res && res.isSuccess) { dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã xoá.'); }
+            else { tk.error((res && res.message) || 'Xoá thất bại.'); }
+          });
+        });
       });
     });
   </script>

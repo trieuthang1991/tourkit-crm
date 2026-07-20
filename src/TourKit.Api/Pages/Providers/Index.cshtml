@@ -1,37 +1,80 @@
 @page
 @model TourKit.Api.Pages.Providers.IndexModel
-@using TourKit.Shared.Enums
 @{ ViewData["Title"] = "Nhà cung cấp"; }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Nhà cung cấp</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm NCC</button>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Nhà cung cấp</h4>
+  <div class="d-flex gap-2">
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm NCC</button>
   </div>
+</div>
+
+@* 3 thẻ thống kê — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng số NCC</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đang hoạt động</small><h5 class="mb-0 text-success">@Model.Stats.Active.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Ngừng hoạt động</small><h5 class="mb-0 text-muted">@Model.Stats.Inactive.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — đủ 7 tiêu chí của bản cũ, tất cả đẩy xuống SERVER *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / tên / SĐT / email / người liên hệ" /></div>
+      <div class="col-md-2"><input type="text" id="f-province" class="form-control" placeholder="Tỉnh thành" /></div>
+      <div class="col-md-2">
+        <select id="f-branchId" class="form-select tk-s2f" data-placeholder="Chi nhánh"><option value=""></option>@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }</select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-marketTypeId" class="form-select tk-s2f" data-placeholder="Thị trường"><option value=""></option>@foreach (var m in Model.MarketTypes) { <option value="@m.Id">@m.Name</option> }</select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3"><label class="form-label small mb-1">Ngày tạo từ</label><input type="text" id="f-createdFrom" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
+      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="text" id="f-createdTo" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Trạng thái</label>
+        <select id="f-status" class="form-select"><option value="">Tất cả</option><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Tabs loại NCC — bám SegmentTabs hệ cũ (lọc ở SERVER qua tiêu chí type) *@
+<ul class="nav nav-pills flex-wrap gap-1 mb-3" id="type-tabs">
+  <li class="nav-item"><button type="button" class="nav-link active" data-type="">Tất cả</button></li>
+  @foreach (var t in TourKit.Api.Pages.Providers.IndexModel.TypeOptions)
+  {
+    <li class="nav-item"><button type="button" class="nav-link" data-type="@t.Value">@t.Label</button></li>
+  }
+</ul>
+
+<div class="card">
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Mã</th><th>Tên</th><th>Loại</th><th>SĐT</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, code = x.Code, name = x.Name, type = (int)x.Type, phone = x.Phone, email = x.Email, address = x.Address, taxCode = x.TaxCode, contactPerson = x.ContactPerson, bankName = x.BankName, bankAccount = x.BankAccount, paymentTermId = x.PaymentTermId, branchId = x.BranchId, marketTypeId = x.MarketTypeId, rate = x.Rate, status = x.Status })'>
-          <td class="fw-medium">@x.Code</td>
-          <td>@x.Name</td>
-          <td>@TourKit.Api.Pages.Providers.IndexModel.TypeLabel(x.Type)</td>
-          <td>@x.Phone</td>
-          <td class="text-end">
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
+      <thead>
+        <tr>
+          <th class="text-center">#</th><th>Nhà cung cấp</th><th>Người liên hệ</th><th>Email &amp; địa chỉ</th>
+          <th class="text-end">Tổng mua</th><th class="text-end">Còn nợ</th><th>Đánh giá &amp; TT</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="8" class="small"></td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
@@ -49,14 +92,12 @@
         <div class="col-6 mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên NCC" /></div>
       </div>
       <div class="mb-3">
-        <label class="form-label">Loại</label>
+        <label class="form-label">Loại <span class="text-danger">*</span></label>
         <select name="Input.Type" class="form-select">
-          <option value="1">Khách sạn</option>
-          <option value="2">Vận chuyển</option>
-          <option value="3">Nhà hàng</option>
-          <option value="4">Hướng dẫn viên</option>
-          <option value="5">Hàng không</option>
-          <option value="6">Khác</option>
+          @foreach (var t in TourKit.Api.Pages.Providers.IndexModel.TypeOptions)
+          {
+            <option value="@t.Value">@t.Label</option>
+          }
         </select>
       </div>
       <div class="row">
@@ -64,6 +105,7 @@
         <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" placeholder="Nhập email" /></div>
       </div>
       <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.Address" class="form-control" placeholder="Nhập địa chỉ" /></div>
+      <div class="mb-3"><label class="form-label">Tỉnh thành</label><input type="text" name="Input.Province" class="form-control" placeholder="Nhập tỉnh thành" /></div>
       <div class="row">
         <div class="col-6 mb-3"><label class="form-label">Mã số thuế</label><input type="text" name="Input.TaxCode" class="form-control" placeholder="Nhập MST" /></div>
         <div class="col-6 mb-3"><label class="form-label">Người liên hệ</label><input type="text" name="Input.ContactPerson" class="form-control" placeholder="Nhập người liên hệ" /></div>
@@ -94,8 +136,11 @@
         </select>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Đánh giá</label><input type="number" name="Input.Rate" class="form-control" value="0" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Trạng thái</label><input type="number" name="Input.Status" class="form-control" value="1" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Đánh giá</label><input type="number" name="Input.Rate" class="form-control" placeholder="0" value="0" /></div>
+        <div class="col-6 mb-3">
+          <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+          <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
+        </div>
       </div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
@@ -106,22 +151,116 @@
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt, typeFilter = '';
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['province', 'branchId', 'marketTypeId', 'createdFrom', 'createdTo', 'status'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      if (typeFilter) { o.type = typeFilter; }
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [4] }] });
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: null, render: function (r) {
+              return '<div class="fw-medium">' + tk.escape(r.name) + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.code) + ' · ' + tk.escape(r.typeLabel) + '</div>';
+            } },
+          { data: null, render: function (r) {
+              return '<div>' + tk.escape(r.contactPerson || '—') + '</div>' +
+                     '<div class="small text-muted font-monospace">' + tk.escape(r.phone || '') + '</div>';
+            } },
+          { data: null, render: function (r) {
+              return '<div>' + tk.escape(r.email || '—') + '</div>' +
+                     '<div class="small text-muted">' + tk.trunc(r.address, 220) + '</div>';
+            } },
+          { data: null, className: 'text-end', render: function (r) {
+              return '<div title="Tổng mua">' + tk.money(r.totalCost) + '</div>' +
+                     '<div class="small text-success" title="Đã trả">' + tk.money(r.paid) + '</div>';
+            } },
+          { data: 'outstanding', className: 'text-end', render: function (v) {
+              return '<span class="fw-medium ' + (v > 0 ? 'text-danger' : '') + '">' + tk.money(v) + '</span>';
+            } },
+          { data: null, render: function (r) {
+              return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>' +
+                     '<div class="small text-muted mt-1">Đánh giá: ' + (r.rate || 0) + '</div>';
+            } },
+          { data: null, className: 'text-end', render: function () {
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
+      // Dòng tổng cộng trang: đọc khối pageSum trả kèm (ngoài contract DataTables) qua xhr.dt.
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        var parts = [['Tổng mua', s.totalCost, ''], ['Đã trả', s.paid, 'text-success'], ['Còn nợ', s.outstanding, 'text-danger']];
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' + parts.map(function (p) {
+          return '<span class="me-3 text-muted">' + p[0] + ': <span class="fw-medium ' + p[2] + '">' + tk.money(p[1]) + '</span></span>';
+        }).join(''));
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'nhà cung cấp',
         rules: { 'Input.Code': { required: true }, 'Input.Name': { required: true } },
-        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã' }, 'Input.Name': { required: 'Bắt buộc nhập tên' } } });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã' }, 'Input.Name': { required: 'Bắt buộc nhập tên' } },
+        // Mã NCC không đổi được khi sửa (UpdateProviderDto không nhận Code).
+        fill: function ($form, data) { $form.find('[name="Input.Code"]').prop('readonly', !!(data && data.id)); } });
+
+      // Server-side: dữ liệu dòng lấy từ DataTables API (không còn data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = this.getAttribute('data-id');
+        var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá nhà cung cấp?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q, #f-province').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#f-province').on('blur', function () { dt.ajax.reload(); });
+      $('#f-status').on('change', function () { dt.ajax.reload(); });
+      $('.tk-s2f, .tk-datef').on('change', function () { dt.ajax.reload(); });
+      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      $('#type-tabs').on('click', '.nav-link', function () {
+        $('#type-tabs .nav-link').removeClass('active');
+        $(this).addClass('active');
+        typeFilter = this.getAttribute('data-type') || '';
+        dt.ajax.reload();
+      });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        typeFilter = '';
+        $('#type-tabs .nav-link').removeClass('active').first().addClass('active');
+        dt.ajax.reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
       });
     });
   </script>

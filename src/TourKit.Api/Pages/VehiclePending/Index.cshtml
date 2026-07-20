@@ -4,38 +4,135 @@
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Lịch xe chờ duyệt</h5>
-    <span class="text-muted small">Phân xe đã điều nhưng chưa đưa vào vận hành</span>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-0">Lịch xe chờ duyệt</h4>
+    <small class="text-muted">Phân xe đã điều nhưng chưa đưa vào vận hành — mỗi dòng là một chuyến (kèm tài xế).</small>
   </div>
+  <a class="btn btn-label-secondary" href="/VehicleAssignments"><i class="ti ti-calendar me-1"></i> Mở Lịch điều xe</a>
+</div>
+
+@* 4 KPI — bám StatGrid màn Lịch điều xe (cùng nguồn VehicleAssignmentStatsDto) *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng phân xe</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chờ duyệt</small><h5 class="mb-0 text-warning" id="kpi-created">@Model.Stats.Created.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã điều</small><h5 class="mb-0 text-success" id="kpi-active">@Model.Stats.Active.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số xe</small><h5 class="mb-0" id="kpi-vehicles">@Model.Stats.VehicleCount.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — đúng các tiêu chí VehicleAssignmentListFilter, đẩy hết xuống SERVER *@
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-3">
+        <select id="f-vehicleId" class="form-select tk-s2f" data-placeholder="Xe"><option value=""></option>@foreach (var v in Model.Vehicles) { <option value="@v.Id">@v.Label</option> }</select>
+      </div>
+      <div class="col-md-3">
+        <select id="f-departureId" class="form-select tk-s2f" data-placeholder="Chuyến"><option value=""></option>@foreach (var d in Model.Departures) { <option value="@d.Id">@d.Label</option> }</select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-status" class="form-select">
+          <option value="1" selected>Chờ duyệt</option>
+          <option value="2">Đã điều</option>
+        </select>
+      </div>
+      <div class="col-md-2"><input type="text" id="f-dateFrom" class="form-control tk-datef" placeholder="Ngày đón từ" autocomplete="off" /></div>
+      <div class="col-md-2 d-flex gap-2">
+        <input type="text" id="f-dateTo" class="form-control tk-datef" placeholder="đến" autocomplete="off" />
+        <button type="button" class="btn btn-primary" id="btn-search" title="Tìm kiếm"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Danh sách phân xe chờ duyệt</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Xe</th><th>Chuyến</th><th>Tài xế</th><th>Ngày đón</th><th>Ngày trả</th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
+      <thead>
         <tr>
-          <td class="fw-medium">@(string.IsNullOrEmpty(x.VehicleName) ? "—" : x.VehicleName)</td>
-          <td>@(x.DepartureCode ?? "—")@(string.IsNullOrEmpty(x.DepartureTitle) ? "" : $" — {x.DepartureTitle}")</td>
-          <td>@(string.IsNullOrEmpty(x.DriverName) ? "—" : x.DriverName)@(string.IsNullOrEmpty(x.DriverPhone) ? "" : $" · {x.DriverPhone}")</td>
-          <td data-order="@(x.TimeGo?.ToUnixTimeSeconds() ?? 0)">@(x.TimeGo?.ToString("dd/MM/yyyy") ?? "—")</td>
-          <td>@(x.TimeCome?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <th class="text-center">#</th><th>Xe</th><th>Chuyến</th><th>Tài xế</th>
+          <th>Thời gian</th><th>Trạng thái</th>
         </tr>
-      }
-      </tbody>
+      </thead>
     </table>
   </div>
 </div>
 
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
 }
 
 @section PageScripts {
   <script>
-    $(function () { tk.tableClient('#tbl', { order: [[3, 'desc']] }); });
+    var dt;
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (VehicleAssignmentListFilter) — không lọc ở client, không get-all.
+    var FILTERS = ['vehicleId', 'departureId', 'status', 'dateFrom', 'dateTo'];
+
+    function collectFilters(d) {
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
+    }
+    function applyStats(s) {
+      if (!s) { return; }
+      $('#kpi-total').text(tk.money(s.total));
+      $('#kpi-created').text(tk.money(s.created));
+      $('#kpi-active').text(tk.money(s.active));
+      $('#kpi-vehicles').text(tk.money(s.vehicleCount));
+    }
+
+    $(function () {
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: 'vehicleName', render: function (v) { return '<span class="fw-medium">' + tk.trunc(v, 180) + '</span>'; } },
+          // Chuyến: tên + mã
+          { data: null, render: function (r) {
+              return '<div>' + tk.trunc(r.departureTitle, 220) + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.departureCode) + '</div>';
+            } },
+          // Tài xế: tên + SĐT
+          { data: null, render: function (r) {
+              return '<div>' + tk.trunc(r.driverName || '—', 160) + '</div>' +
+                     (r.driverPhone ? '<div class="small text-muted">' + tk.escape(r.driverPhone) + '</div>' : '');
+            } },
+          // Thời gian: ngày đón + "Trả: ..."
+          { data: null, render: function (r) {
+              return '<div>' + tk.escape(r.timeGoText) + '</div>' +
+                     (r.timeComeText ? '<div class="small text-muted">Trả: ' + tk.escape(r.timeComeText) + '</div>' : '');
+            } },
+          { data: null, render: function (r) {
+              return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>' +
+                     (r.note ? '<div class="small text-muted">' + tk.trunc(r.note, 200) + '</div>' : '');
+            } }
+        ]
+      });
+
+      // KPI lấy từ khối stats kèm theo mỗi lần tải bảng.
+      $('#tbl').on('xhr.dt', function (e, settings, json) { applyStats(json && json.stats); });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('.tk-s2f, #f-status').on('change', function () { dt.ajax.reload(); });
+      $('.tk-datef').on('change', function () { dt.ajax.reload(); });
+      $('#btn-reset').on('click', function () {
+        ['vehicleId', 'departureId', 'dateFrom', 'dateTo'].forEach(function (k) {
+          var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); }
+        });
+        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        $('#f-status').val('1');
+        dt.ajax.reload();
+      });
+    });
   </script>
 }

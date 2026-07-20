@@ -7,28 +7,20 @@
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
+@* IVehicleService.ListAsync KHÔNG nhận keyword/bộ lọc → ẩn ô tìm mặc định của DataTables
+   để không tạo cảm giác tìm được mà thực tế server không lọc. *@
+<style>#tbl_filter { display: none; }</style>
+
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h5 class="mb-0">Kho xe</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm</button>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm xe</button>
   </div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th style="width:50%">Tên xe</th><th style="width:30%">Hãng</th><th class="text-end" style="width:15%">Số ghế</th><th style="width:5%"></th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, name = x.Name, firmName = x.FirmName, seatType = x.SeatType, status = x.Status })'>
-          <td class="fw-medium">@x.Name</td>
-          <td>@x.FirmName</td>
-          <td class="text-end">@x.SeatType</td>
-          <td class="text-end">
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
-        </tr>
-      }
-      </tbody>
+      <thead>
+        <tr><th class="text-center">#</th><th>Tên xe</th><th>Hãng</th><th class="text-center">Số chỗ</th><th>Trạng thái</th><th></th></tr>
+      </thead>
     </table>
   </div>
 </div>
@@ -43,8 +35,11 @@
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Tên xe / biển số <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên xe / biển số" /></div>
       <div class="mb-3"><label class="form-label">Hãng xe</label><input type="text" name="Input.FirmName" class="form-control" placeholder="Nhập hãng xe" /></div>
-      <div class="mb-3"><label class="form-label">Số ghế</label><input type="number" name="Input.SeatType" class="form-control" value="0" /></div>
-      <div class="mb-3"><label class="form-label">Trạng thái</label><input type="number" name="Input.Status" class="form-control" value="1" /></div>
+      <div class="mb-3"><label class="form-label">Số chỗ <span class="text-danger">*</span></label><input type="number" name="Input.SeatType" class="form-control" placeholder="0" value="0" /></div>
+      <div class="mb-3">
+        <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+        <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
+      </div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
     </form>
@@ -59,14 +54,32 @@
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt;
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [3] }] });
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: 'name', className: 'fw-medium' },
+          { data: 'firmName', render: function (v) { return tk.escape(v || '—'); } },
+          { data: 'seatType', className: 'text-center' },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end', render: function () {
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'xe',
-        rules: { 'Input.Name': { required: true } }, messages: { 'Input.Name': { required: 'Bắt buộc nhập tên xe' } } });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+        rules: { 'Input.Name': { required: true }, 'Input.SeatType': { required: true } },
+        messages: { 'Input.Name': { required: 'Bắt buộc nhập tên xe' }, 'Input.SeatType': { required: 'Bắt buộc nhập số chỗ' } } });
+
+      // Server-side: dữ liệu dòng lấy từ DataTables API (không còn data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = this.getAttribute('data-id');
+        var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá xe?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
       });
     });

@@ -6,29 +6,74 @@
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Service không nhận từ khoá → ẩn ô search mặc định của DataTables (không lọc client). *@
+  <style>#tbl_filter { display: none; }</style>
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">HH theo loại khách</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm</button>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Hoa hồng theo loại khách</h4>
+  <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm quy tắc</button>
+</div>
+
+@* 4 KPI — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body d-flex align-items-center">
+      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ti ti-percentage"></i></span></div>
+      <div><small class="text-muted d-block">Tổng quy tắc</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div>
+    </div></div>
   </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body d-flex align-items-center">
+      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-success"><i class="ti ti-check"></i></span></div>
+      <div><small class="text-muted d-block">Đang áp dụng</small><h5 class="mb-0">@Model.Stats.Active.ToString("#,##0")</h5></div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body d-flex align-items-center">
+      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-secondary"><i class="ti ti-player-pause"></i></span></div>
+      <div><small class="text-muted d-block">Tạm ngừng</small><h5 class="mb-0">@Model.Stats.Inactive.ToString("#,##0")</h5></div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body d-flex align-items-center">
+      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-info"><i class="ti ti-chart-bar"></i></span></div>
+      <div><small class="text-muted d-block">Tỉ lệ TB</small><h5 class="mb-0">@Model.Stats.AvgPercentage.ToString("0.##")%</h5></div>
+    </div></div>
+  </div>
+</div>
+
+@* Thanh lọc — đủ tiêu chí CustomerCommissionRuleListFilter (CustomerType · Status), đẩy hết xuống service. *@
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4">
+        <select id="f-customerType" class="form-select tk-s2f" data-placeholder="Loại khách">
+          <option value=""></option>
+          @foreach (var t in Model.Types) { <option value="@t.Code">@t.Name</option> }
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate me-1"></i>Đặt lại</button>
+      </div>
+    </div>
+
+    @* Segmented trạng thái của hệ cũ *@
+    <div class="btn-group btn-group-sm mt-3" role="group" id="seg-status">
+      <button type="button" class="btn btn-primary" data-status="">Tất cả (@Model.Stats.Total.ToString("#,##0"))</button>
+      <button type="button" class="btn btn-label-primary" data-status="1">Đang áp dụng</button>
+      <button type="button" class="btn btn-label-primary" data-status="0">Tạm ngừng</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h5 class="card-header">Danh sách hoa hồng theo khách</h5>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th style="width:55%">Loại khách</th><th class="text-end" style="width:30%">%</th><th style="width:15%"></th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, customerType = x.CustomerType, percentage = x.Percentage, status = x.Status })'>
-          <td class="fw-medium">@(x.CustomerTypeName ?? x.CustomerType.ToString())</td>
-          <td class="text-end">@x.Percentage.ToString("0.##")</td>
-          <td class="text-end">
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
-        </tr>
-      }
-      </tbody>
+      <thead>
+        <tr><th class="text-center">#</th><th style="width:50%">Loại khách</th><th class="text-end" style="width:18%">Hoa hồng (%)</th><th style="width:16%">Trạng thái</th><th></th></tr>
+      </thead>
     </table>
   </div>
 </div>
@@ -44,14 +89,19 @@
       <div class="mb-3">
         <label class="form-label">Loại khách <span class="text-danger">*</span></label>
         <select name="Input.CustomerType" class="form-select tk-s2" data-placeholder="Chọn loại khách">
+          <option value=""></option>
           @foreach (var t in Model.Types)
           {
             <option value="@t.Code">@t.Name</option>
           }
         </select>
+        <small class="text-muted">Không đổi được loại khách khi sửa quy tắc đã có.</small>
       </div>
-      <div class="mb-3"><label class="form-label">% hoa hồng</label><input type="number" step="any" name="Input.Percentage" class="form-control" placeholder="Nhập % hoa hồng" /></div>
-      <div class="mb-3"><label class="form-label">Trạng thái</label><input type="number" name="Input.Status" class="form-control" value="1" /></div>
+      <div class="mb-3"><label class="form-label">Hoa hồng (%) <span class="text-danger">*</span></label><input type="number" step="any" min="0" name="Input.Percentage" class="form-control" placeholder="Nhập % hoa hồng" /></div>
+      <div class="mb-3">
+        <label class="form-label">Trạng thái</label>
+        <select name="Input.Status" class="form-select"><option value="1">Đang áp dụng</option><option value="0">Tạm ngừng</option></select>
+      </div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
     </form>
@@ -67,14 +117,58 @@
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt, segStatus = '';
+
+    function collectFilters(d) {
+      var t = $('#f-customerType').val(); if (t) { d.customerType = t; }
+      if (segStatus !== '') { d.status = segStatus; }
+    }
+
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [2] }] });
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: 'customerTypeName', render: function (v) { return '<span class="fw-medium">' + tk.escape(v) + '</span>'; } },
+          { data: 'percentage', className: 'text-end', render: function (v) { return (Number(v) || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + '%'; } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end text-nowrap', render: function () {
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'hoa hồng theo loại khách',
-        rules: { 'Input.CustomerType': { required: true } }, messages: { 'Input.CustomerType': { required: 'Bắt buộc chọn loại khách' } } });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+        rules: { 'Input.CustomerType': { required: true }, 'Input.Percentage': { required: true, number: true, min: 0 } },
+        messages: { 'Input.CustomerType': { required: 'Bắt buộc chọn loại khách' }, 'Input.Percentage': { required: 'Bắt buộc nhập %' } },
+        // Sửa: UpdateCustomerCommissionRuleDto không nhận CustomerType → khoá ô loại khách.
+        afterOpen: function (data) { $('#frm [name="Input.CustomerType"]').prop('disabled', !!data).trigger('change.select2'); }
+      });
+
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('#seg-status button').on('click', function () {
+        segStatus = this.getAttribute('data-status');
+        $('#seg-status button').removeClass('btn-primary').addClass('btn-label-primary');
+        $(this).removeClass('btn-label-primary').addClass('btn-primary');
+        dt.ajax.reload();
+      });
+      $('#btn-reset').on('click', function () {
+        $('#f-customerType').val('').trigger('change.select2');
+        segStatus = '';
+        $('#seg-status button').removeClass('btn-primary').addClass('btn-label-primary');
+        $('#seg-status button[data-status=""]').removeClass('btn-label-primary').addClass('btn-primary');
+        dt.ajax.reload();
+      });
+
+      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = this.getAttribute('data-id');
+        var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá hoa hồng theo loại khách?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
       });
     });

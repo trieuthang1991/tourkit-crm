@@ -4,36 +4,301 @@
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Đặt chỗ đại lý</h5>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Đặt chỗ Đại lý (B2B)</h4>
+  <div class="d-flex gap-2">
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    @if (Model.CanManage)
+    {
+      <button type="button" class="btn btn-primary" id="btn-create"><i class="ti ti-plus me-1"></i> Tạo từ báo giá</button>
+    }
   </div>
+</div>
+
+@* 6 KPI — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng đặt chỗ</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0" id="kpi-amount">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chờ</small><h5 class="mb-0 text-warning" id="kpi-pending">@Model.Stats.Pending.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Xác nhận</small><h5 class="mb-0 text-info" id="kpi-confirmed">@Model.Stats.Confirmed.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Hoàn tất</small><h5 class="mb-0 text-success" id="kpi-done">@Model.Stats.Done.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Huỷ</small><h5 class="mb-0 text-secondary" id="kpi-cancelled">@Model.Stats.Cancelled.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — MỌI tiêu chí đẩy xuống server (AgentBookingListFilter) *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Mã booking" /></div>
+      <div class="col-md-4">
+        <select id="f-agentId" class="form-select tk-s2f" data-placeholder="Đại lý"><option value=""></option>@foreach (var a in Model.Agents) { <option value="@a.Id">@a.Name</option> }</select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Tab theo trạng thái — bám Segmented hệ cũ *@
+<input type="hidden" id="f-status" value="" />
+<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
+  <li class="nav-item"><button type="button" class="nav-link active" data-val="">Tất cả (<span data-count="total">@Model.Stats.Total.ToString("#,##0")</span>)</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-val="0">Chờ (<span data-count="pending">@Model.Stats.Pending.ToString("#,##0")</span>)</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-val="1">Đã xác nhận (<span data-count="confirmed">@Model.Stats.Confirmed.ToString("#,##0")</span>)</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-val="2">Đã huỷ (<span data-count="cancelled">@Model.Stats.Cancelled.ToString("#,##0")</span>)</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-val="3">Hoàn tất (<span data-count="done">@Model.Stats.Done.ToString("#,##0")</span>)</button></li>
+</ul>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Danh sách đặt chỗ đại lý</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Mã</th><th>Đại lý</th><th>Trạng thái</th><th class="text-end">Tổng tiền</th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr>
-          <td class="fw-medium">@x.Code</td>
-          <td>@(x.AgentName ?? "—")</td>
-          <td><span class="badge bg-label-@TourKit.Api.Pages.AgentBookings.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.AgentBookings.IndexModel.StatusLabel(x.Status)</span></td>
-          <td class="text-end">@x.TotalAmount.ToString("#,##0")</td>
-        </tr>
-      }
-      </tbody>
+      <thead>
+        <tr><th class="text-center">#</th><th>Booking · Đại lý</th><th class="text-end">Tổng tiền</th><th>Trạng thái</th><th></th></tr>
+      </thead>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="5" class="small"></td></tr>
+      </tfoot>
     </table>
+  </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@* Modal tạo booking từ yêu cầu báo giá đã xác nhận *@
+<div class="modal fade" id="create-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Tạo booking từ báo giá đã xác nhận</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="frm-create" onsubmit="return false">
+          <div class="mb-3">
+            <label class="form-label">Yêu cầu báo giá (đã xác nhận) <span class="text-danger">*</span></label>
+            <select name="quoteRequestId" id="cr-quote" class="form-select" data-placeholder="Chọn yêu cầu báo giá">
+              <option value=""></option>
+              @foreach (var q in Model.ConfirmedQuotes) { <option value="@q.Id">@q.Text</option> }
+            </select>
+          </div>
+          <div class="mb-3"><label class="form-label">Mã booking</label><input type="text" name="code" class="form-control" placeholder="Để trống = hệ thống tự sinh" /></div>
+          <div class="mb-1"><label class="form-label">Ghi chú</label><textarea name="note" class="form-control" rows="2" placeholder="Ghi chú thêm"></textarea></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Huỷ</button>
+        <button type="button" class="btn btn-primary" id="cr-submit">Tạo booking</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Modal hành khách *@
+<div class="modal fade" id="pax-modal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Hành khách — <span id="pax-code"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="pax-booking-id" />
+        @if (Model.CanManage)
+        {
+          <button type="button" class="btn btn-label-primary btn-sm mb-3" id="btn-pax-add"><i class="ti ti-plus me-1"></i> Thêm hành khách</button>
+          <form id="frm-pax" class="border rounded p-3 mb-3 d-none" onsubmit="return false">
+            <div class="row">
+              <div class="col-md-6 mb-3"><label class="form-label">Họ tên <span class="text-danger">*</span></label><input type="text" name="fullName" class="form-control" placeholder="Nhập họ tên hành khách" /></div>
+              <div class="col-md-6 mb-3"><label class="form-label">Ngày sinh</label><input type="text" name="dateOfBirth" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3"><label class="form-label">Số hộ chiếu</label><input type="text" name="passportNo" class="form-control" placeholder="Số hộ chiếu" /></div>
+              <div class="col-md-6 mb-3"><label class="form-label">Quốc tịch</label><input type="text" name="nationality" class="form-control" placeholder="Ví dụ: Việt Nam" /></div>
+            </div>
+            <div class="mb-3"><label class="form-label">Ghi chú</label><input type="text" name="note" class="form-control" placeholder="Ghi chú thêm" /></div>
+            <button type="submit" class="btn btn-primary btn-sm">Lưu hành khách</button>
+          </form>
+        }
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Họ tên</th><th>Ngày sinh</th><th>Hộ chiếu</th><th>Quốc tịch</th><th>Ghi chú</th><th></th></tr></thead>
+            <tbody id="pax-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
   <script>
-    $(function () { tk.tableClient('#tbl'); });
+    var dt;
+    var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['agentId', 'status'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+    function refreshStats() {
+      $.getJSON('?handler=Stats', function (s) {
+        $('#kpi-total').text(tk.money(s.total));
+        $('#kpi-amount').text(tk.money(s.totalAmount));
+        $('#kpi-pending').text(tk.money(s.pending));
+        $('#kpi-confirmed').text(tk.money(s.confirmed));
+        $('#kpi-done').text(tk.money(s.done));
+        $('#kpi-cancelled').text(tk.money(s.cancelled));
+        $('#tabs [data-count]').each(function () { $(this).text(tk.money(s[$(this).data('count')] || 0)); });
+      });
+    }
+    function loadPassengers(id) {
+      $.getJSON('?handler=Passengers&id=' + id, function (res) {
+        if (!res || !res.isSuccess) { tk.error((res && res.message) || 'Không tải được hành khách.'); return; }
+        $('#pax-code').text(res.data.code || '');
+        var rows = (res.data.passengers || []).map(function (p) {
+          return '<tr data-pid="' + p.id + '">' +
+            '<td class="fw-medium">' + tk.escape(p.fullName) + '</td>' +
+            '<td>' + tk.escape(p.dateOfBirth || '—') + '</td>' +
+            '<td>' + tk.escape(p.passportNo || '—') + '</td>' +
+            '<td>' + tk.escape(p.nationality || '—') + '</td>' +
+            '<td>' + tk.escape(p.note || '—') + '</td>' +
+            '<td class="text-end">' + (CAN_MANAGE ? '<button type="button" class="btn btn-icon btn-sm text-danger js-pax-del" title="Xoá"><i class="ti ti-trash"></i></button>' : '') + '</td>' +
+          '</tr>';
+        }).join('');
+        $('#pax-body').html(rows || '<tr><td colspan="6" class="text-center text-muted">Chưa có hành khách</td></tr>');
+      });
+    }
+
+    $(function () {
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      $('#cr-quote').select2({ width: '100%', allowClear: true, placeholder: 'Chọn yêu cầu báo giá', dropdownParent: $('#create-modal') });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          // Booking · Đại lý
+          { data: null, render: function (r) {
+              return '<div class="fw-medium">' + tk.escape(r.code) + '</div>' +
+                     '<div class="small text-muted">' + (r.agentName ? tk.trunc(r.agentName, 220) : '—') + '</div>';
+            } },
+          { data: 'totalAmount', className: 'text-end', render: function (v) { return '<span class="fw-medium text-primary">' + tk.money(v) + '</span>'; } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end text-nowrap', render: function () {
+              return '<button type="button" class="btn btn-sm btn-label-secondary js-pax"><i class="ti ti-users me-1"></i> Hành khách</button>';
+            } }
+        ]
+      });
+
+      // Dòng "Tổng cộng (trang này)".
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' +
+          '<span class="me-3 text-muted">Tổng tiền: <span class="fw-medium">' + tk.money(s.amount) + '</span></span>');
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        $('#tabs .nav-link').removeClass('active').first().addClass('active');
+        dt.ajax.reload();
+      });
+      $('#tabs').on('click', '.nav-link', function () {
+        $('#tabs .nav-link').removeClass('active');
+        $(this).addClass('active');
+        $('#f-status').val($(this).data('val'));
+        dt.ajax.reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
+      });
+
+      // ---- Tạo booking từ báo giá ----
+      $('#btn-create').on('click', function () {
+        $('#frm-create')[0].reset();
+        $('#cr-quote').val(null).trigger('change');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('create-modal')).show();
+      });
+      $('#cr-submit').on('click', function () {
+        if (!$('#cr-quote').val()) { tk.error('Chọn yêu cầu báo giá đã xác nhận.'); return; }
+        tk.post('?handler=Create', new FormData(document.getElementById('frm-create'))).then(function (res) {
+          if (res && res.isSuccess) {
+            bootstrap.Modal.getInstance(document.getElementById('create-modal')).hide();
+            dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã tạo booking.');
+          } else { tk.error((res && res.message) || 'Tạo booking thất bại.'); }
+        });
+      });
+
+      // ---- Hành khách ----
+      $('#tbl tbody').on('click', '.js-pax', function () {
+        var r = dt.row($(this).closest('tr')).data();
+        $('#pax-booking-id').val(r.id);
+        $('#pax-body').html('');
+        $('#frm-pax').addClass('d-none');
+        loadPassengers(r.id);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('pax-modal')).show();
+      });
+      $('#btn-pax-add').on('click', function () { $('#frm-pax').toggleClass('d-none'); });
+      if ($.fn.validate) {
+        $('#frm-pax').validate({
+          ignore: ':hidden', errorElement: 'span', errorClass: 'text-danger d-block small mt-1',
+          rules: { fullName: { required: true } }, messages: { fullName: { required: 'Bắt buộc nhập họ tên' } },
+          highlight: function (el) { $(el).addClass('is-invalid'); }, unhighlight: function (el) { $(el).removeClass('is-invalid'); }
+        });
+      }
+      $('#frm-pax').on('submit', function (e) {
+        e.preventDefault();
+        if ($.fn.validate && !$(this).valid()) { return; }
+        var fd = new FormData(this);
+        fd.append('bookingId', $('#pax-booking-id').val());
+        tk.post('?handler=AddPassenger', fd).then(function (res) {
+          if (res && res.isSuccess) {
+            document.getElementById('frm-pax').reset();
+            $('#frm-pax').addClass('d-none');
+            loadPassengers($('#pax-booking-id').val());
+            tk.toast(res.message || 'Đã thêm hành khách.');
+          } else { tk.error((res && res.message) || 'Thêm hành khách thất bại.'); }
+        });
+      });
+      $('#pax-body').on('click', '.js-pax-del', function () {
+        var pid = $(this).closest('tr').data('pid');
+        tk.confirmDelete({ title: 'Xoá hành khách?' }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData();
+          fd.append('bookingId', $('#pax-booking-id').val());
+          fd.append('passengerId', pid);
+          tk.post('?handler=RemovePassenger', fd).then(function (res) {
+            if (res && res.isSuccess) { loadPassengers($('#pax-booking-id').val()); tk.toast(res.message || 'Đã xoá.'); }
+            else { tk.error((res && res.message) || 'Xoá thất bại.'); }
+          });
+        });
+      });
+    });
   </script>
 }

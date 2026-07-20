@@ -4,77 +4,227 @@
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-@{
-    (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Quỹ vé ứng</h4>
+  <div class="d-flex gap-2">
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    @if (Model.CanManage)
     {
-        ("Tổng quỹ vé", Model.Stats.Total.ToString("#,##0"), "ti ti-ticket", "primary", "toàn bộ series"),
-        ("Đã đóng", Model.Stats.Closed.ToString("#,##0"), "ti ti-lock", "secondary", "quỹ vé đã đóng"),
-        ("Đang mở", Model.Stats.Open.ToString("#,##0"), "ti ti-lock-open", "success", "quỹ vé đang mở"),
-    };
-}
-<div class="row g-4 mb-4">
-  @foreach (var s in statCards)
-  {
-    <div class="col-sm-6 col-lg-4">
-      <div class="card h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="avatar flex-shrink-0 me-3">
-              <span class="avatar-initial rounded-3 bg-label-@s.Color">
-                <i class="@s.Icon ti-md"></i>
-              </span>
-            </div>
-            <div>
-              <span class="d-block text-muted small">@s.Label</span>
-              <h4 class="mb-0">@s.Value</h4>
-            </div>
-          </div>
-          <div class="text-muted small mt-2">@s.Sub</div>
-        </div>
-      </div>
-    </div>
-  }
+      <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm quỹ vé</button>
+    }
+  </div>
 </div>
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Series vé / Quỹ vé ứng</h5>
+@* 3 KPI — bám StatGrid hệ cũ *@
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="d-flex align-items-center">
+        <div class="avatar flex-shrink-0 me-3"><span class="avatar-initial rounded-3 bg-label-primary"><i class="ti ti-ticket ti-md"></i></span></div>
+        <div><span class="d-block text-muted small">Tổng quỹ vé</span><h4 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h4></div>
+      </div>
+      <div class="text-muted small mt-2">toàn bộ series</div>
+    </div></div>
   </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="d-flex align-items-center">
+        <div class="avatar flex-shrink-0 me-3"><span class="avatar-initial rounded-3 bg-label-secondary"><i class="ti ti-lock ti-md"></i></span></div>
+        <div><span class="d-block text-muted small">Đã đóng</span><h4 class="mb-0" id="kpi-closed">@Model.Stats.Closed.ToString("#,##0")</h4></div>
+      </div>
+      <div class="text-muted small mt-2">quỹ vé đã đóng</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="d-flex align-items-center">
+        <div class="avatar flex-shrink-0 me-3"><span class="avatar-initial rounded-3 bg-label-success"><i class="ti ti-lock-open ti-md"></i></span></div>
+        <div><span class="d-block text-muted small">Chưa đóng</span><h4 class="mb-0" id="kpi-open">@Model.Stats.Open.ToString("#,##0")</h4></div>
+      </div>
+      <div class="text-muted small mt-2">quỹ vé đang mở</div>
+    </div></div>
+  </div>
+</div>
+
+@* Thanh lọc — MỌI tiêu chí đẩy xuống server (TicketFundListFilter) *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Mã vé" /></div>
+      <div class="col-md-4">
+        <select id="f-providerId" class="form-select tk-s2f" data-placeholder="Nhà cung cấp"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3"><label class="form-label small mb-1">Trạng thái (mã số)</label><input type="number" id="f-status" class="form-control" placeholder="Ví dụ: 0" /></div>
+    </div>
+  </div>
+</div>
+
+@* Tab Tất cả / Chưa đóng / Đã đóng — bám SegmentTabs hệ cũ *@
+<input type="hidden" id="f-isClosed" value="" />
+<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
+  <li class="nav-item"><button type="button" class="nav-link active" data-val="">Tất cả (<span id="tab-total">@Model.Stats.Total.ToString("#,##0")</span>)</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-val="false">Chưa đóng (<span id="tab-open">@Model.Stats.Open.ToString("#,##0")</span>)</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-val="true">Đã đóng (<span id="tab-closed">@Model.Stats.Closed.ToString("#,##0")</span>)</button></li>
+</ul>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Danh sách quỹ vé ứng</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Mã vé</th><th>Mã đơn</th><th>Nhà cung cấp</th><th class="text-center">Trạng thái</th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
+      <thead>
         <tr>
-          <td class="fw-medium">@(string.IsNullOrEmpty(x.TicketCode) ? "—" : x.TicketCode)</td>
-          <td>@(string.IsNullOrEmpty(x.OrderCode) ? "—" : x.OrderCode)</td>
-          <td>@(string.IsNullOrEmpty(x.ProviderName) ? "—" : x.ProviderName)</td>
-          <td class="text-center">
-            @if (x.IsClosed)
-            {
-              <span class="badge bg-label-secondary">Đã đóng</span>
-            }
-            else
-            {
-              <span class="badge bg-label-success">Đang mở</span>
-            }
-          </td>
+          <th class="text-center">#</th><th>Mã đơn</th><th>Mã vé</th><th>Nhà cung cấp</th>
+          <th class="text-center">Trạng thái</th><th>Đóng quỹ</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
     </table>
+  </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">quỹ vé</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3">
+        <label class="form-label">Mã đơn (orderId) <span class="text-danger">*</span></label>
+        <input type="text" name="Input.OrderId" class="form-control" placeholder="Dán ID đơn hàng (GUID)" />
+        <div class="form-text">Quỹ vé gắn theo đơn — không đổi được sau khi tạo.</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Nhà cung cấp</label>
+        <select name="Input.ProviderId" class="form-select tk-s2" data-placeholder="Chọn nhà cung cấp">
+          <option value=""></option>
+          @foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }
+        </select>
+      </div>
+      <div class="mb-3"><label class="form-label">Mã giá dịch vụ (providerServiceId)</label><input type="text" name="Input.ProviderServiceId" class="form-control" placeholder="Dán ID giá dịch vụ (GUID)" /></div>
+      <div class="mb-3"><label class="form-label">Mã vé</label><input type="text" name="Input.TicketCode" class="form-control" placeholder="Nhập mã vé" /></div>
+      <div class="mb-3"><label class="form-label">Trạng thái (mã số)</label><input type="number" name="Input.Status" class="form-control" placeholder="0" value="0" /></div>
+      <div class="form-check form-switch mb-4">
+        <input class="form-check-input" type="checkbox" name="Input.IsClosed" value="true" id="chk-closed" />
+        <label class="form-check-label" for="chk-closed">Đã đóng quỹ</label>
+      </div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
   </div>
 </div>
 
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
   <script>
-    $(function () { tk.tableClient('#tbl'); });
+    var oc, dt;
+    var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
+    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+    var FILTERS = ['providerId', 'status', 'isClosed'];
+
+    function filterValues() {
+      var o = {};
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+    function refreshStats() {
+      $.getJSON('?handler=Stats', function (s) {
+        $('#kpi-total').text(tk.money(s.total));
+        $('#kpi-closed').text(tk.money(s.closed));
+        $('#kpi-open').text(tk.money(s.open));
+        $('#tab-total').text(tk.money(s.total));
+        $('#tab-open').text(tk.money(s.open));
+        $('#tab-closed').text(tk.money(s.closed));
+      });
+    }
+
+    $(function () {
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: 'orderCode', render: function (v) { return v ? tk.escape(v) : '—'; } },
+          { data: 'ticketCode', render: function (v) { return '<span class="fw-medium">' + (v ? tk.escape(v) : '—') + '</span>'; } },
+          { data: 'providerName', render: function (v) { return v ? tk.trunc(v, 200) : '—'; } },
+          { data: 'status', className: 'text-center', render: function (v) { return '<span class="badge bg-label-secondary">' + v + '</span>'; } },
+          { data: 'isClosed', render: function (v) {
+              return v ? '<span class="badge bg-label-secondary">Đã đóng</span>' : '<span class="badge bg-label-success">Đang mở</span>';
+            } },
+          { data: null, className: 'text-end text-nowrap', render: function () {
+              if (!CAN_MANAGE) { return ''; }
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'quỹ vé',
+        rules: { 'Input.OrderId': { required: true } }, messages: { 'Input.OrderId': { required: 'Bắt buộc nhập mã đơn' } } });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#f-status').on('change', function () { dt.ajax.reload(); });
+      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
+        $('#tabs .nav-link').removeClass('active').first().addClass('active');
+        dt.ajax.reload();
+      });
+      $('#tabs').on('click', '.nav-link', function () {
+        $('#tabs .nav-link').removeClass('active');
+        $(this).addClass('active');
+        $('#f-isClosed').val($(this).data('val'));
+        dt.ajax.reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
+      });
+
+      // Server-side: dữ liệu dòng lấy từ DataTables API.
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var r = dt.row($(this).closest('tr')).data();
+        tk.confirmDelete({ title: 'Xoá quỹ vé ' + (r.ticketCode || '') + '?' }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData(); fd.append('id', r.id);
+          tk.post('?handler=Delete', fd).then(function (res) {
+            if (res && res.isSuccess) { dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã xoá.'); }
+            else { tk.error((res && res.message) || 'Xoá thất bại.'); }
+          });
+        });
+      });
+      // Sau khi lưu qua tk.form (server-side reload) → làm tươi KPI.
+      $('#frm').on('submit', function () { setTimeout(refreshStats, 600); });
+    });
   </script>
 }

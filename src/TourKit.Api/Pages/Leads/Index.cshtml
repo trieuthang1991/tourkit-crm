@@ -7,11 +7,21 @@
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/jkanban/jkanban.css" />
+}
+
+@section PageStyles {
+  <link rel="stylesheet" href="~/vendor/css/pages/app-kanban.css" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
   <h4 class="mb-0">Cơ hội bán hàng (Lead)</h4>
   <div class="d-flex gap-2">
+    @* Chuyển Bảng / Kanban — bám nút List/Kanban hệ cũ *@
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-label-secondary active" id="view-list" title="Dạng bảng"><i class="ti ti-list"></i></button>
+      <button type="button" class="btn btn-label-secondary" id="view-kanban" title="Dạng Kanban"><i class="ti ti-layout-kanban"></i></button>
+    </div>
     <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
     <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm cơ hội</button>
   </div>
@@ -62,7 +72,7 @@
   </div>
 </div>
 
-<div class="card">
+<div class="card" id="pane-list">
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
       <thead>
@@ -73,6 +83,12 @@
       </thead>
     </table>
   </div>
+</div>
+
+@* Kanban dùng jKanban của template (kéo–thả sẵn có). MỖI CỘT chỉ tải TOP N theo trạng thái
+   của nó + nút "Tải thêm" — KHÔNG get-all. *@
+<div id="pane-kanban" class="app-kanban d-none">
+  <div class="kanban-wrapper"></div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
@@ -123,6 +139,7 @@
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+  <script src="~/vendor/libs/jkanban/jkanban.js"></script>
 }
 
 @section PageScripts {
@@ -130,6 +147,114 @@
     var oc, dt;
     // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
     var FILTERS = ['status', 'source', 'assignedToUserId', 'createdByUserId', 'branchId', 'createdFrom', 'createdTo'];
+
+    // ---- Kanban (jKanban của template) ----
+    // Mỗi cột = 1 trạng thái, chỉ tải TOP N của cột đó + nút "Tải thêm". KHÔNG get-all.
+    var KB_STATUSES = [
+      { id: 1, name: 'Mới', color: 'secondary' },
+      { id: 2, name: 'Đã liên hệ', color: 'info' },
+      { id: 3, name: 'Tiềm năng', color: 'warning' },
+      { id: 4, name: 'Chốt', color: 'success' },
+      { id: 5, name: 'Mất', color: 'danger' }
+    ];
+    var KB_SIZE = 15;
+    var kanban = null, kbPage = {}, kbCards = {};
+
+    function kbQuery(status, page) {
+      var p = new URLSearchParams(filterValues());
+      p.delete('status');                       // cột tự quyết trạng thái
+      var q = $('#f-q').val(); if (q) { p.set('q', q); }
+      p.set('status', status); p.set('page', page); p.set('size', KB_SIZE);
+      return '?handler=KanbanColumn&' + p.toString();
+    }
+
+    function kbCardHtml(c) {
+      var sub = [c.phone, c.assigneeName].filter(Boolean).map(tk.escape).join(' · ');
+      return '<div class="fw-medium kanban-text">' + tk.escape(c.fullName) + '</div>' +
+        (sub ? '<div class="small text-muted">' + sub + '</div>' : '') +
+        (c.convertedCustomerId ? '<span class="badge bg-label-success mt-1">Đã chuyển KH</span>' : '');
+    }
+
+    function kbBoardEl(status) {
+      return document.querySelector('.kanban-board[data-id="st-' + status + '"]');
+    }
+
+    // Gắn/cập nhật nút "Tải thêm" ở chân cột.
+    function kbSyncMore(status, hasMore, total) {
+      var board = kbBoardEl(status); if (!board) { return; }
+      var head = board.querySelector('.kanban-title-board');
+      if (head && head.dataset.base) { head.textContent = head.dataset.base + ' (' + total + ')'; }
+      var btn = board.querySelector('.kb-more');
+      if (!hasMore) { if (btn) { btn.remove(); } return; }
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-label-primary w-100 kb-more mt-2';
+        btn.textContent = 'Tải thêm';
+        btn.addEventListener('click', function () { kbLoadMore(status); });
+        board.appendChild(btn);
+      }
+    }
+
+    function kbLoadMore(status) {
+      var next = (kbPage[status] || 1) + 1;
+      $.getJSON(kbQuery(status, next), function (res) {
+        kbPage[status] = next;
+        res.cards.forEach(function (c) {
+          kbCards[c.id] = c;
+          kanban.addElement('st-' + status, { id: c.id, title: kbCardHtml(c) });
+        });
+        kbSyncMore(status, res.hasMore, res.total);
+      });
+    }
+
+    function kbRender() {
+      $('.kanban-wrapper').empty();
+      kbPage = {}; kbCards = {};
+      var reqs = KB_STATUSES.map(function (s) { return $.getJSON(kbQuery(s.id, 1)); });
+      $.when.apply($, reqs).done(function () {
+        var results = KB_STATUSES.length === 1 ? [arguments] : Array.prototype.slice.call(arguments);
+        var boards = KB_STATUSES.map(function (s, i) {
+          var res = results[i][0];
+          kbPage[s.id] = 1;
+          res.cards.forEach(function (c) { kbCards[c.id] = c; });
+          return {
+            id: 'st-' + s.id,
+            title: tk.escape(s.name) + ' (' + res.total + ')',
+            class: 'bg-label-' + s.color,
+            item: res.cards.map(function (c) { return { id: c.id, title: kbCardHtml(c) }; })
+          };
+        });
+
+        kanban = new jKanban({
+          element: '.kanban-wrapper', gutter: '12px', widthBoard: '260px',
+          dragItems: true, dragBoards: false, boards: boards,
+          // Kéo–thả sang cột khác → đổi trạng thái ở SERVER.
+          dropEl: function (el, target) {
+            var id = el.getAttribute('data-eid');
+            var toStatus = target.parentElement.getAttribute('data-id').replace('st-', '');
+            var fd = new FormData(); fd.append('id', id); fd.append('status', toStatus);
+            tk.post('?handler=Move', fd).then(function (r) {
+              if (r && r.isSuccess) { tk.toast(r.message); if (dt) { dt.ajax.reload(null, false); } }
+              else { tk.error((r && r.message) || 'Không đổi được trạng thái.'); kbRender(); }
+            });
+          },
+          // Bấm thẻ → mở offcanvas sửa (dùng lại dữ liệu đã tải, không gọi thêm).
+          click: function (el) {
+            var c = kbCards[el.getAttribute('data-eid')];
+            if (c) { oc.open(c); }
+          }
+        });
+
+        // Ghi nhãn gốc để cập nhật số đếm + gắn nút "Tải thêm".
+        KB_STATUSES.forEach(function (s, i) {
+          var board = kbBoardEl(s.id);
+          var head = board && board.querySelector('.kanban-title-board');
+          if (head) { head.dataset.base = s.name; }
+          kbSyncMore(s.id, results[i][0].hasMore, results[i][0].total);
+        });
+      });
+    }
 
     function filterValues() {
       var o = {};
@@ -190,17 +315,34 @@
           .then(function (ok) { if (ok) { var f = document.getElementById('convert-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
       });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('#f-status').on('change', function () { dt.ajax.reload(); });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('.tk-datef').on('change', function () { dt.ajax.reload(); });
+      // Áp bộ lọc cho ĐÚNG khung đang xem (bảng hoặc kanban).
+      function applyFilters() {
+        if ($('#pane-kanban').hasClass('d-none')) { dt.ajax.reload(); } else { kbRender(); }
+      }
+
+      $('#btn-search').on('click', applyFilters);
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { applyFilters(); } });
+      $('#f-status').on('change', applyFilters);
+      $('.tk-s2f').on('change', applyFilters);
+      $('.tk-datef').on('change', applyFilters);
       $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
       $('#btn-reset').on('click', function () {
         $('#f-q').val('');
         FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
         $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
-        dt.ajax.reload();
+        applyFilters();
+      });
+
+      // Chuyển khung Bảng ↔ Kanban (kanban chỉ tải khi mở lần đầu).
+      $('#view-list').on('click', function () {
+        $('#pane-kanban').addClass('d-none'); $('#pane-list').removeClass('d-none');
+        $(this).addClass('active'); $('#view-kanban').removeClass('active');
+        if (dt) { dt.columns.adjust(); }
+      });
+      $('#view-kanban').on('click', function () {
+        $('#pane-list').addClass('d-none'); $('#pane-kanban').removeClass('d-none');
+        $(this).addClass('active'); $('#view-list').removeClass('active');
+        if (!kanban) { kbRender(); }
       });
       $('#btn-export').on('click', function (e) {
         e.preventDefault();

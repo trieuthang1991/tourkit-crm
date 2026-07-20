@@ -1,6 +1,7 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
 using TourKit.Application.Marketing;
 using TourKit.Application.Marketing.Dtos;
@@ -8,15 +9,18 @@ using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Pages.MarketingCampaigns;
 
+// Danh sách chiến dịch: DataTables SERVER-SIDE (không get-all) + giữ đủ thông tin bản cũ
+// (web/src/features/marketing/MarketingPage.tsx — phần DANH SÁCH CHIẾN DỊCH): 4 KPI, lọc
+// từ khoá + kênh + trạng thái (CampaignListFilter), cột ghép Chiến dịch (tên+kênh) / Nội dung
+// (chủ đề+trích nội dung), nút Log (nhật ký gửi), Sửa, Xoá.
 // CRUD offcanvas: CampaignDto scalar (Name/Channel enum/Subject/Body/Status), không FK/collection con.
-// Create bỏ qua Status (mặc định nháp); Update dùng Status. Gửi (SendAsync) không đưa vào màn này.
+// Create bỏ qua Status (mặc định nháp); Update dùng Status.
 [Authorize(Policy = "marketing.view")]
-public class IndexModel : PageModel
+public class IndexModel : TkListPageModel
 {
     private readonly ICampaignService _svc;
     public IndexModel(ICampaignService svc) => _svc = svc;
 
-    public IReadOnlyList<CampaignDto> Items { get; private set; } = [];
     public CampaignStatsDto Stats { get; private set; } = new(0, 0, 0, 0);
 
     [BindProperty] public Guid? Id { get; set; }
@@ -39,10 +43,58 @@ public class IndexModel : PageModel
         _ => c.ToString(),
     };
 
-    public async Task OnGetAsync()
+    public static string ChannelColor(MarketingChannel c) => c switch
     {
-        Items = (await _svc.ListAsync(1, 1000)).Items;
-        Stats = await _svc.GetStatsAsync();
+        MarketingChannel.Email => "primary",
+        MarketingChannel.Sms => "warning",
+        MarketingChannel.Zalo => "info",
+        _ => "secondary",
+    };
+
+    public async Task OnGetAsync() => Stats = await _svc.GetStatsAsync();
+
+    /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang, mọi tiêu chí đẩy xuống service.</summary>
+    public async Task<IActionResult> OnGetDataAsync()
+    {
+        var dt = ParseDataTables();
+        var q = Request.Query;
+        int? channel = int.TryParse(q["channel"], out var ch) ? ch : null;
+        int? status = int.TryParse(q["status"], out var st) ? st : null;
+
+        var result = await _svc.ListAsync(dt.Page, dt.Size, new CampaignListFilter(dt.Keyword, channel, status));
+        var stats = await _svc.GetStatsAsync();
+
+        var data = result.Items.Select(x => new
+        {
+            id = x.Id,
+            name = x.Name,
+            channel = (int)x.Channel,
+            channelLabel = ChannelLabel(x.Channel),
+            channelColor = ChannelColor(x.Channel),
+            subject = x.Subject,
+            subjectText = string.IsNullOrWhiteSpace(x.Subject) ? "—" : x.Subject,
+            body = x.Body,
+            bodyPreview = x.Body.Length > 80 ? string.Concat(x.Body.AsSpan(0, 80), "…") : x.Body,
+            status = x.Status,
+            statusLabel = x.Status == 1 ? "Đã gửi" : "Nháp",
+            statusColor = x.Status == 1 ? "success" : "secondary",
+        });
+
+        return DtJson(dt.Draw, stats.Total, result.Total, data);
+    }
+
+    /// <summary>Nhật ký gửi của 1 chiến dịch (drawer "Log" của bản cũ).</summary>
+    public async Task<IActionResult> OnGetLogsAsync(Guid campaignId)
+    {
+        var logs = await _svc.ListLogsAsync(campaignId);
+        return new JsonResult(logs.Select(l => new
+        {
+            id = l.Id,
+            recipient = l.Recipient,
+            statusLabel = l.Status == 1 ? "Thành công" : "Lỗi",
+            statusColor = l.Status == 1 ? "success" : "danger",
+            sentAtText = l.SentAt.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture),
+        }));
     }
 
     public async Task<IActionResult> OnPostSaveAsync()

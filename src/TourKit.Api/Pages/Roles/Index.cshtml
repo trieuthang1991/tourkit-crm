@@ -96,7 +96,9 @@
       });
       $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = $(this).data('id'); tk.confirmDelete($(this).data('name'), function () { $('#del-id').val(id); $('#delete-form').submit(); });
+        var id = $(this).data('id');
+        tk.confirmDelete({ title: 'Xoá vai trò ' + $(this).data('name') + '?' })
+          .then(function (ok) { if (ok) { $('#del-id').val(id); $('#delete-form').submit(); } });
       });
       $('#chk-all').on('click', function (e) { e.preventDefault(); $('.js-perm').prop('checked', true); });
       $('#chk-none').on('click', function (e) { e.preventDefault(); $('.js-perm').prop('checked', false); });

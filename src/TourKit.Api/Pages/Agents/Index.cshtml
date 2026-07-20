@@ -7,30 +7,54 @@
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Đại lý (B2B)</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm đại lý</button>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Danh sách đại lý (B2B)</h4>
+  <div class="d-flex gap-2">
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm đại lý</button>
   </div>
+</div>
+
+@* 4 thẻ thống kê — bám StatGrid hệ cũ *@
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng đại lý</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đang hoạt động</small><h5 class="mb-0 text-success">@Model.Stats.Active.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Ngừng</small><h5 class="mb-0 text-muted">@Model.Stats.Inactive.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng hạn mức</small><h5 class="mb-0">@Model.Stats.TotalCreditLimit.ToString("#,##0")</h5></div></div></div>
+</div>
+
+@* Thanh lọc — bám bản cũ: ô tìm kiếm + nút Tìm kiếm/Đặt lại (lọc ở SERVER) *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-6"><input type="text" id="f-q" class="form-control" placeholder="Mã / tên / liên hệ / SĐT" /></div>
+      <div class="col-md-6 d-flex gap-2">
+        <button type="button" class="btn btn-primary" id="btn-search"><i class="ti ti-search me-1"></i> Tìm kiếm</button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset"><i class="ti ti-rotate me-1"></i> Đặt lại</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Tab trạng thái kèm số đếm — bám Segmented hệ cũ (lọc ở SERVER qua tiêu chí status) *@
+<ul class="nav nav-pills flex-wrap gap-1 mb-3" id="status-tabs">
+  <li class="nav-item"><button type="button" class="nav-link active" data-status="">Tất cả (@Model.Stats.Total)</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-status="1">Hoạt động (@Model.Stats.Active)</button></li>
+  <li class="nav-item"><button type="button" class="nav-link" data-status="0">Ngừng (@Model.Stats.Inactive)</button></li>
+</ul>
+
+<div class="card">
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Mã</th><th>Tên đại lý</th><th>Liên hệ</th><th>SĐT</th><th class="text-end">Hạn mức</th><th></th></tr></thead>
-      <tbody>
-      @foreach (var x in Model.Items)
-      {
-        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, code = x.Code, name = x.Name, contactPerson = x.ContactPerson, phone = x.Phone, email = x.Email, taxCode = x.TaxCode, address = x.Address, creditLimit = x.CreditLimit, status = x.Status })'>
-          <td>@x.Code</td>
-          <td class="fw-medium">@x.Name</td>
-          <td>@x.ContactPerson</td>
-          <td>@x.Phone</td>
-          <td class="text-end">@x.CreditLimit.ToString("#,##0")</td>
-          <td class="text-end">
-            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
-            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
-          </td>
+      <thead>
+        <tr>
+          <th class="text-center">#</th><th>Đại lý</th><th>Liên hệ</th><th>MST</th><th>Địa chỉ</th>
+          <th class="text-end">Hạn mức</th><th>Trạng thái</th><th></th>
         </tr>
-      }
-      </tbody>
+      </thead>
+      <tfoot>
+        <tr id="page-sum" class="fw-medium"><td colspan="8" class="small"></td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
@@ -44,19 +68,25 @@
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
       <input type="hidden" name="Id" />
       <div class="row">
-        <div class="col-4 mb-3"><label class="form-label">Mã <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" /></div>
-        <div class="col-8 mb-3"><label class="form-label">Tên đại lý <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" /></div>
+        <div class="col-4 mb-3"><label class="form-label">Mã <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã" /></div>
+        <div class="col-8 mb-3"><label class="form-label">Tên đại lý <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên đại lý" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Người liên hệ</label><input type="text" name="Input.ContactPerson" class="form-control" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Người liên hệ</label><input type="text" name="Input.ContactPerson" class="form-control" placeholder="Nhập người liên hệ" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" placeholder="Nhập số điện thoại" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Mã số thuế</label><input type="text" name="Input.TaxCode" class="form-control" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" placeholder="Nhập email" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Mã số thuế</label><input type="text" name="Input.TaxCode" class="form-control" placeholder="Nhập MST" /></div>
       </div>
-      <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.Address" class="form-control" /></div>
-      <div class="mb-3"><label class="form-label">Hạn mức công nợ</label><input type="number" step="any" name="Input.CreditLimit" class="form-control" value="0" /></div>
+      <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.Address" class="form-control" placeholder="Nhập địa chỉ" /></div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Hạn mức tín dụng <span class="text-danger">*</span></label><input type="number" step="any" name="Input.CreditLimit" class="form-control" placeholder="0" value="0" /></div>
+        <div class="col-6 mb-3">
+          <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+          <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
+        </div>
+      </div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
     </form>
@@ -71,16 +101,83 @@
 
 @section PageScripts {
   <script>
-    var oc;
+    var oc, dt, statusFilter = '';
+    // Tiêu chí lọc đẩy xuống SERVER (AgentListFilter: Q + Status) — không lọc ở client, không get-all.
+    function filterValues() {
+      var o = {};
+      if (statusFilter) { o.status = statusFilter; }
+      return o;
+    }
+    function collectFilters(d) {
+      var o = filterValues();
+      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
+      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [5] }] });
+      dt = tk.table('#tbl', {
+        url: '?handler=Data',
+        extraData: collectFilters,
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: null, render: function (r) {
+              return '<div class="fw-medium">' + tk.escape(r.name) + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(r.code) + '</div>';
+            } },
+          { data: null, render: function (r) {
+              var sub = [r.phone, r.email].filter(function (x) { return x; }).join(' · ');
+              return '<div>' + tk.escape(r.contactPerson || '—') + '</div>' +
+                     '<div class="small text-muted">' + tk.escape(sub) + '</div>';
+            } },
+          { data: 'taxCode', className: 'font-monospace', render: function (v) { return tk.escape(v || '—'); } },
+          { data: 'address', render: function (v) { return tk.trunc(v, 240); } },
+          { data: 'creditLimit', className: 'text-end', render: function (v) { return '<span class="fw-medium">' + tk.money(v) + '</span>'; } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end', render: function () {
+              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+            } }
+        ]
+      });
+
+      // Dòng tổng cộng trang: khối pageSum trả kèm (ngoài contract DataTables) đọc qua xhr.dt.
+      $('#tbl').on('xhr.dt', function (e, settings, json) {
+        var s = json && json.pageSum;
+        if (!s) { return; }
+        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' +
+          '<span class="me-3 text-muted">Hạn mức: <span class="fw-medium">' + tk.money(s.creditLimit) + '</span></span>');
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'đại lý',
         rules: { 'Input.Code': { required: true }, 'Input.Name': { required: true } },
         messages: { 'Input.Code': { required: 'Bắt buộc nhập mã' }, 'Input.Name': { required: 'Bắt buộc nhập tên' } } });
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+
+      // Server-side: dữ liệu dòng lấy từ DataTables API (không còn data-json trên <tr>).
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-del', function () {
-        var id = this.getAttribute('data-id');
+        var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá đại lý?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#status-tabs').on('click', '.nav-link', function () {
+        $('#status-tabs .nav-link').removeClass('active');
+        $(this).addClass('active');
+        statusFilter = this.getAttribute('data-status') || '';
+        dt.ajax.reload();
+      });
+      $('#btn-reset').on('click', function () {
+        $('#f-q').val('');
+        statusFilter = '';
+        $('#status-tabs .nav-link').removeClass('active').first().addClass('active');
+        dt.ajax.reload();
+      });
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(filterValues());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
       });
     });
   </script>

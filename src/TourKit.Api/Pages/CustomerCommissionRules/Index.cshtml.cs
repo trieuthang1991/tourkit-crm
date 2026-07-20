@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
 using TourKit.Application.Catalog;
 using TourKit.Application.Catalog.Dtos;
@@ -9,8 +9,13 @@ using TourKit.Application.Commission.Dtos;
 
 namespace TourKit.Api.Pages.CustomerCommissionRules;
 
+// Danh sách HH theo loại khách: DataTables SERVER-SIDE (không get-all) + giữ đủ thông tin bản cũ
+// (web/src/features/customerCommissionRules/CustomerCommissionRulesPage.tsx): 4 KPI, lọc loại khách +
+// trạng thái (CustomerCommissionRuleListFilter), cột Loại khách / Hoa hồng (%) / Trạng thái, Sửa + Xoá.
+// ListAsync KHÔNG nhận từ khoá → ẩn ô search mặc định của DataTables.
+// Update chỉ đổi Percentage/Status (UpdateCustomerCommissionRuleDto không nhận CustomerType).
 [Authorize(Policy = "commission.view")]
-public class IndexModel : PageModel
+public class IndexModel : TkListPageModel
 {
     private readonly ICustomerCommissionRuleService _svc;
     private readonly ICustomerTypeService _types;
@@ -20,8 +25,9 @@ public class IndexModel : PageModel
         _types = types;
     }
 
-    public IReadOnlyList<CustomerCommissionRuleDto> Items { get; private set; } = [];
     public IReadOnlyList<CustomerTypeDto> Types { get; private set; } = [];
+    public CustomerCommissionRuleStatsDto Stats { get; private set; } = new(0, 0, 0, 0m);
+
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
 
@@ -34,8 +40,33 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        Items = (await _svc.ListAsync(1, 1000)).Items;
         Types = await _types.ListAsync();
+        Stats = await _svc.GetStatsAsync();
+    }
+
+    /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang, mọi tiêu chí đẩy xuống service.</summary>
+    public async Task<IActionResult> OnGetDataAsync()
+    {
+        var dt = ParseDataTables();
+        var q = Request.Query;
+        int? customerType = int.TryParse(q["customerType"], out var ct) ? ct : null;
+        int? status = int.TryParse(q["status"], out var st) ? st : null;
+
+        var result = await _svc.ListAsync(dt.Page, dt.Size, new CustomerCommissionRuleListFilter(customerType, status));
+        var stats = await _svc.GetStatsAsync();
+
+        var data = result.Items.Select(x => new
+        {
+            id = x.Id,
+            customerType = x.CustomerType,
+            customerTypeName = x.CustomerTypeName ?? ("#" + x.CustomerType.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            percentage = x.Percentage,
+            status = x.Status,
+            statusLabel = x.Status == 1 ? "Đang áp dụng" : "Tạm ngừng",
+            statusColor = x.Status == 1 ? "success" : "secondary",
+        });
+
+        return DtJson(dt.Draw, stats.Total, result.Total, data);
     }
 
     public async Task<IActionResult> OnPostSaveAsync()

@@ -125,6 +125,58 @@ public class IndexModel : TkListPageModel
         return DtJson(dt.Draw, stats.Total, result.Total, items);
     }
 
+    /// <summary>
+    /// Một CỘT Kanban: lấy TOP N lead của đúng 1 trạng thái (kèm bộ lọc đang áp), có phân trang
+    /// "Tải thêm". KHÔNG get-all — mỗi cột chỉ tải trang của riêng nó.
+    /// </summary>
+    public async Task<IActionResult> OnGetKanbanColumnAsync(int status, int page = 1, int size = 15)
+    {
+        if (size is < 1 or > 50)
+        {
+            size = 15;
+        }
+
+        var f = BuildFilter(string.IsNullOrWhiteSpace(Request.Query["q"]) ? null : Request.Query["q"].ToString());
+        var result = await _svc.ListAsync(page, size, f with { Status = status });
+
+        var userNames = (await _users.ListAsync()).ToDictionary(u => u.Id, u => u.FullName);
+        var cards = result.Items.Select(l => new
+        {
+            id = l.Id,
+            fullName = l.FullName,
+            phone = l.Phone,
+            email = l.Email,
+            source = l.Source,
+            status = (int)l.Status,
+            assigneeName = l.AssignedToUserId is Guid u && userNames.TryGetValue(u, out var un) ? un : null,
+            convertedCustomerId = l.ConvertedCustomerId,
+        });
+
+        return new JsonResult(new { total = result.Total, page, size, hasMore = page * size < result.Total, cards });
+    }
+
+    /// <summary>Kéo–thả đổi trạng thái trên Kanban (giữ nguyên các field khác).</summary>
+    public async Task<IActionResult> OnPostMoveAsync(Guid id, int status)
+    {
+        if (!Enum.IsDefined(typeof(LeadStatus), status))
+        {
+            return new JsonResult(Result.Error("Trạng thái không hợp lệ."));
+        }
+
+        try
+        {
+            var lead = await _svc.GetAsync(id);
+            await _svc.UpdateAsync(id, new UpdateLeadDto(
+                lead.FullName, lead.Phone, lead.Email, lead.Source, (LeadStatus)status, lead.AssignedToUserId, lead.BranchId));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+
+        return new JsonResult(Result.Success("Đã chuyển trạng thái."));
+    }
+
     /// <summary>Xuất CSV theo đúng bộ lọc đang áp (giới hạn 5000 dòng).</summary>
     public async Task<IActionResult> OnGetExportAsync()
     {
