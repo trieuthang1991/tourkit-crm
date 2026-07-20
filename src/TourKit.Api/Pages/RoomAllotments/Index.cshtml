@@ -1,0 +1,115 @@
+@page
+@model TourKit.Api.Pages.RoomAllotments.IndexModel
+@{ ViewData["Title"] = "Quỹ phòng"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Số ô quỹ</p><h4 class="mb-0">@Model.Stats.Cells</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng tồn</p><h4 class="mb-0">@Model.Stats.TotalQuota.ToString("#,##0")</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Đã đặt</p><h4 class="mb-0 text-warning">@Model.Stats.TotalBooked.ToString("#,##0")</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Còn lại</p><h4 class="mb-0 text-success">@Model.Stats.TotalAvailable.ToString("#,##0")</h4></div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Quỹ phòng / Allotment</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm ô quỹ</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>NCC</th><th>Dịch vụ / Phòng</th><th>Ngày</th><th>Loại ngày</th><th class="text-center">Tồn</th><th class="text-center">Đặt</th><th class="text-center">Còn</th><th class="text-end">Giá</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, providerRef = x.ProviderRef, serviceName = x.ServiceName, projectName = x.ProjectName, province = x.Province, market = x.Market, date = x.Date.ToString("yyyy-MM-dd"), dayType = x.DayType, quota = x.Quota, booked = x.Booked, price = x.Price, rating = x.Rating, note = x.Note })'>
+          <td class="fw-medium">@(string.IsNullOrEmpty(x.ProviderName) ? x.ProviderRef : x.ProviderName)</td>
+          <td>@x.ServiceName@(string.IsNullOrEmpty(x.ProjectName) ? "" : $" · {x.ProjectName}")</td>
+          <td data-order="@x.Date.ToUnixTimeSeconds()">@x.Date.ToString("dd/MM/yyyy")</td>
+          <td><span class="badge bg-label-@TourKit.Api.Pages.RoomAllotments.IndexModel.DayTypeColor(x.DayType)">@TourKit.Api.Pages.RoomAllotments.IndexModel.DayTypeLabel(x.DayType)</span></td>
+          <td class="text-center">@x.Quota</td>
+          <td class="text-center">@x.Booked</td>
+          <td class="text-center fw-medium">@x.Available</td>
+          <td class="text-end">@x.Price.ToString("#,##0")</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:560px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">ô quỹ phòng</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Mã NCC <span class="text-danger">*</span></label><input type="text" name="Input.ProviderRef" class="form-control" placeholder="VD: KS001" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Tên dịch vụ / Phòng <span class="text-danger">*</span></label><input type="text" name="Input.ServiceName" class="form-control" placeholder="VD: Deluxe Double" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Dự án</label><input type="text" name="Input.ProjectName" class="form-control" placeholder="Tên dự án/khách sạn" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Tỉnh thành</label><input type="text" name="Input.Province" class="form-control" placeholder="VD: Đà Nẵng" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Thị trường</label><input type="text" name="Input.Market" class="form-control" placeholder="VD: Nội địa" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Ngày <span class="text-danger">*</span></label><input type="text" name="Input.Date" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3">
+          <label class="form-label">Loại ngày</label>
+          <select name="Input.DayType" class="form-select"><option value="0">Thường</option><option value="1">Cuối tuần</option><option value="2">Lễ tết</option><option value="3">Cao điểm</option></select>
+        </div>
+        <div class="col-6 mb-3">
+          <label class="form-label">Hạng (sao)</label>
+          <select name="Input.Rating" class="form-select"><option value="">— Không —</option><option value="1">1 sao</option><option value="2">2 sao</option><option value="3">3 sao</option><option value="4">4 sao</option><option value="5">5 sao</option></select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-4 mb-3"><label class="form-label">Tồn (quota)</label><input type="number" name="Input.Quota" class="form-control" placeholder="0" min="0" /></div>
+        <div class="col-4 mb-3"><label class="form-label">Đã đặt</label><input type="number" name="Input.Booked" class="form-control" placeholder="0" min="0" /></div>
+        <div class="col-4 mb-3"><label class="form-label">Giá</label><input type="number" name="Input.Price" class="form-control" placeholder="0" min="0" step="1000" /></div>
+      </div>
+      <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Ghi chú quỹ phòng"></textarea></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { order: [[2, 'desc']], columnDefs: [{ orderable: false, targets: [8] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'ô quỹ phòng',
+        rules: { 'Input.ProviderRef': { required: true }, 'Input.ServiceName': { required: true }, 'Input.Date': { required: true } },
+        messages: { 'Input.ProviderRef': { required: 'Bắt buộc nhập mã NCC' }, 'Input.ServiceName': { required: 'Bắt buộc nhập tên dịch vụ/phòng' }, 'Input.Date': { required: 'Bắt buộc chọn ngày' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá ô quỹ phòng?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}

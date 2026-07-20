@@ -1,0 +1,41 @@
+@page
+@model TourKit.Api.Pages.VehiclePending.IndexModel
+@{ ViewData["Title"] = "Lịch xe chờ duyệt"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Lịch xe chờ duyệt</h5>
+    <span class="text-muted small">Phân xe đã điều nhưng chưa đưa vào vận hành</span>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Xe</th><th>Chuyến</th><th>Tài xế</th><th>Ngày đón</th><th>Ngày trả</th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr>
+          <td class="fw-medium">@(string.IsNullOrEmpty(x.VehicleName) ? "—" : x.VehicleName)</td>
+          <td>@(x.DepartureCode ?? "—")@(string.IsNullOrEmpty(x.DepartureTitle) ? "" : $" — {x.DepartureTitle}")</td>
+          <td>@(string.IsNullOrEmpty(x.DriverName) ? "—" : x.DriverName)@(string.IsNullOrEmpty(x.DriverPhone) ? "" : $" · {x.DriverPhone}")</td>
+          <td data-order="@(x.TimeGo?.ToUnixTimeSeconds() ?? 0)">@(x.TimeGo?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td>@(x.TimeCome?.ToString("dd/MM/yyyy") ?? "—")</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () { tk.tableClient('#tbl', { order: [[3, 'desc']] }); });
+  </script>
+}

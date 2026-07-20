@@ -1,0 +1,81 @@
+@page
+@model TourKit.Api.Pages.ServiceOperations.IndexModel
+@{ ViewData["Title"] = "Phiếu điều hành dịch vụ"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng phiếu</p><h4 class="mb-0">@Model.Stats.Total</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng chi</p><h4 class="mb-0">@Model.Stats.TotalCost.ToString("#,##0")</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Đã thanh toán</p><h4 class="mb-0 text-success">@Model.Stats.TotalPaid.ToString("#,##0")</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Còn thiếu</p><h4 class="mb-0 text-danger">@Model.Stats.TotalRemaining.ToString("#,##0")</h4></div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Phiếu điều hành dịch vụ</h5>
+    <span class="text-muted small">Chờ chi: @Model.Stats.Unpaid · Chưa chi hết: @Model.Stats.Partial · Hoàn thành: @Model.Stats.Done</span>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Mã phiếu</th><th>NCC</th><th>Mô tả</th><th>Ngày dùng</th><th class="text-end">Tổng chi</th><th class="text-end">Đã TT</th><th class="text-end">Còn thiếu</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = x.Id, paidAmount = x.PaidAmount })'>
+          <td class="fw-medium">@x.Code</td>
+          <td>@(string.IsNullOrEmpty(x.ProviderName) ? "—" : x.ProviderName)</td>
+          <td>@(string.IsNullOrEmpty(x.Description) ? "—" : x.Description)</td>
+          <td data-order="@(x.UsageDate?.ToUnixTimeSeconds() ?? 0)">@(x.UsageDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td class="text-end">@x.TotalAmount.ToString("#,##0")</td>
+          <td class="text-end">@x.PaidAmount.ToString("#,##0")</td>
+          <td class="text-end">@x.RemainingAmount.ToString("#,##0")</td>
+          <td><span class="badge bg-label-@TourKit.Api.Pages.ServiceOperations.IndexModel.PaymentColor(x.PaymentStatus)">@TourKit.Api.Pages.ServiceOperations.IndexModel.PaymentLabel(x.PaymentStatus)</span></td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-pay" title="Ghi nhận thanh toán"><i class="ti ti-cash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:480px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">Ghi nhận thanh toán</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Pay" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3">
+        <label class="form-label">Số đã thanh toán NCC <span class="text-danger">*</span></label>
+        <input type="number" name="Input.PaidAmount" class="form-control" placeholder="0" min="0" step="1000" />
+        <span class="text-muted small">Ghi nhận tổng số tiền đã chi cho NCC của phiếu này.</span>
+      </div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { order: [[3, 'desc']], columnDefs: [{ orderable: false, targets: [8] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Pay',
+        rules: { 'Input.PaidAmount': { required: true, min: 0 } },
+        messages: { 'Input.PaidAmount': { required: 'Bắt buộc nhập số tiền', min: 'Số tiền phải >= 0' } } });
+      $('#tbl tbody').on('click', '.js-pay', function () { oc.open($(this).closest('tr').data('json')); });
+    });
+  </script>
+}

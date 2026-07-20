@@ -63,7 +63,7 @@ public static class MenuData
         }),
         new("g-booking", "Booking Phòng/Khách sạn", "ti ti-building-skyscraper", Children: new List<MenuNode>
         {
-            new("b-roomfund", "Quỹ phòng", To: "#", Perm: "roomfund.view"),
+            new("b-roomfund", "Quỹ phòng", To: "/RoomAllotments", Perm: "roomfund.view"),
             new("b-list", "Danh sách Booking", To: "/ServiceBookings", Perm: "servicebooking.view"),
             new("b-roomclass", "Hạng phòng (danh mục)", To: "/RoomClasses", Perm: "servicebooking.view"),
         }),
@@ -76,20 +76,20 @@ public static class MenuData
         new("g-guide", "Hướng dẫn viên", "ti ti-id-badge-2", Children: new List<MenuNode>
         {
             new("gd-provider", "Hướng dẫn viên", To: "/Providers", Perm: "guide.view"),
-            new("gd-calendar", "Lịch điều Hướng dẫn viên", To: "#", Perm: "guide.view"),
+            new("gd-calendar", "Lịch điều Hướng dẫn viên", To: "/GuideAssignments", Perm: "guide.view"),
             new("gd-report", "Báo cáo", To: "/GuideReport", Perm: "guide.view"),
         }),
         new("g-vehicle", "Quản lý xe", "ti ti-car", Children: new List<MenuNode>
         {
             new("v-store", "Kho xe", To: "/Vehicles", Perm: "vehicle.view"),
-            new("v-waiting", "Lịch xe chờ duyệt", To: "#", Perm: "vehicle.view"),
-            new("v-manage", "Lịch điều xe", To: "#", Perm: "vehicle.view"),
+            new("v-waiting", "Lịch xe chờ duyệt", To: "/VehiclePending", Perm: "vehicle.view"),
+            new("v-manage", "Lịch điều xe", To: "/VehicleAssignments", Perm: "vehicle.view"),
             new("v-report", "Báo cáo", To: "/VehicleReport", Perm: "vehicle.view"),
         }),
         new("g-operation", "Điều hành Tour", "ti ti-clipboard-list", Children: new List<MenuNode>
         {
-            new("op-voucher", "Phiếu điều hành dịch vụ", To: "#", Perm: "servicebooking.view"),
-            new("op-calendar", "Lịch điều hành", To: "#", Perm: "departure.view"),
+            new("op-voucher", "Phiếu điều hành dịch vụ", To: "/ServiceOperations", Perm: "servicebooking.view"),
+            new("op-calendar", "Lịch điều hành", To: "/OperationCalendar", Perm: "departure.view"),
         }),
         new("g-finance", "Tài chính/Kế toán", "ti ti-building-bank", Children: new List<MenuNode>
         {
