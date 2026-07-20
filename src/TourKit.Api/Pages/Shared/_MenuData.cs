@@ -14,7 +14,7 @@ public static class MenuData
         new("g-workspace", "Workspace", "ti ti-layout-dashboard", Children: new List<MenuNode>
         {
             new("w-social", "Mạng Nội Bộ", To: "#", Perm: "post.view"),
-            new("w-workspace", "Bàn làm việc", To: "#", Perm: "report.dashboard.view"),
+            new("w-workspace", "Bàn làm việc", To: "/Workspace", Perm: "report.dashboard.view"),
             new("w-dashboard", "Tổng quan", To: "/Dashboard", Perm: "report.dashboard.view"),
             new("w-noti", "Thông báo", To: "/Notifications", Perm: "report.dashboard.view"),
         }),
