@@ -1,0 +1,217 @@
+@page "{id:guid?}"
+@model TourKit.Api.Pages.Quotes.EditModel
+@{
+  var q = Model.Quote;
+  ViewData["Title"] = q == null ? "Tạo báo giá" : $"Báo giá {q.Code}";
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">@(q == null ? "Tạo báo giá mới" : $"Báo giá {q.Code}")</h4>
+  <a href="/Quotes" class="btn btn-label-secondary"><i class="ti ti-arrow-left me-1"></i> Danh sách</a>
+</div>
+
+@Html.AntiForgeryToken()
+<form id="frm" data-action="?handler=Save" onsubmit="return false">
+  <input type="hidden" name="Id" value="@(q?.Id)" />
+  <input type="hidden" name="Input.CustomerId" id="CustomerId" value="@(q?.CustomerId)" />
+  <input type="hidden" name="LinesJson" id="LinesJson" value="[]" />
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-header"><h5 class="mb-0">Thông tin báo giá</h5></div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label">Mã báo giá</label><input type="text" name="Input.Code" class="form-control" value="@(q?.Code)" placeholder="Để trống sẽ tự sinh" /></div>
+            <div class="col-md-8 mb-3"><label class="form-label">Khách hàng <span class="text-danger">*</span></label>
+              <select id="cust-picker" class="form-select"></select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-8 mb-3"><label class="form-label">Tên khách (hiển thị) <span class="text-danger">*</span></label><input type="text" name="Input.CustomerName" id="CustomerName" class="form-control" value="@(q?.CustomerName)" placeholder="Tên khách trên báo giá" /></div>
+            <div class="col-md-4 mb-3"><label class="form-label">Loại báo giá</label>
+              <select name="Input.QuoteType" class="form-select">
+                <option value="0">Tour</option><option value="1">Combo</option><option value="2">GIT</option>
+                <option value="3">Landtour</option><option value="4">Booking phòng</option><option value="5">Dịch vụ lẻ</option><option value="6">Visa</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label">Tiêu đề <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" value="@(q?.Title)" placeholder="VD: Báo giá Đà Nẵng 3N2Đ" /></div>
+            <div class="col-md-3 mb-3"><label class="form-label">Hiệu lực đến</label><input type="text" name="Input.ValidUntil" id="ValidUntil" class="form-control tk-date" value="@(q?.ValidUntil?.ToString("dd/MM/yyyy"))" placeholder="dd/mm/yyyy" /></div>
+            <div class="col-md-3 mb-3"><label class="form-label">Trạng thái</label>
+              <select name="Input.Status" class="form-select">
+                <option value="0">Nháp</option><option value="1">Đã gửi</option><option value="2">Chấp nhận</option><option value="3">Từ chối</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-1"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Điều khoản, ghi chú...">@(q?.Note)</textarea></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Chi phí &amp; dịch vụ</h5>
+          <button type="button" class="btn btn-sm btn-primary" id="add-line"><i class="ti ti-plus me-1"></i> Thêm dòng</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0" id="lines">
+            <thead><tr>
+              <th style="min-width:160px">Mô tả</th><th style="min-width:110px">Loại</th><th style="min-width:120px">Phạm vi</th>
+              <th class="text-end" style="width:70px">SL</th><th class="text-end" style="width:110px">Giá vốn</th><th class="text-end" style="width:80px">%LN</th>
+              <th class="text-end" style="width:110px">Đơn giá bán</th><th class="text-end" style="width:70px">VAT%</th><th class="text-end" style="width:100px">Phụ thu</th><th class="text-end" style="width:80px">Tỉ giá</th>
+              <th class="text-end" style="min-width:120px">Thành tiền</th><th style="width:40px"></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card mb-4">
+        <div class="card-header"><h5 class="mb-0">Số khách</h5></div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-4 mb-3"><label class="form-label">Người lớn</label><input type="number" name="Input.Adults" id="Adults" class="form-control js-pax" value="@(q?.Adults ?? 0)" min="0" /></div>
+            <div class="col-4 mb-3"><label class="form-label">Trẻ em</label><input type="number" name="Input.Children" id="Children" class="form-control js-pax" value="@(q?.Children ?? 0)" min="0" /></div>
+            <div class="col-4 mb-3"><label class="form-label">Em bé</label><input type="number" name="Input.Infants" id="Infants" class="form-control js-pax" value="@(q?.Infants ?? 0)" min="0" /></div>
+          </div>
+          <div class="row">
+            <div class="col-6 mb-1"><label class="form-label">% giá trẻ em</label><input type="number" name="Input.ChildPercent" id="ChildPercent" class="form-control js-pax" value="@((q?.ChildPercent ?? 75m))" step="0.01" /></div>
+            <div class="col-6 mb-1"><label class="form-label">% giá em bé</label><input type="number" name="Input.InfantPercent" id="InfantPercent" class="form-control js-pax" value="@((q?.InfantPercent ?? 50m))" step="0.01" /></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h5 class="mb-0">Kết quả dự trù</h5></div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Giá người lớn</span><span class="fw-medium" id="r-adult">0</span></div>
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Giá trẻ em</span><span id="r-child">0</span></div>
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Giá em bé</span><span id="r-infant">0</span></div>
+          <hr />
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tổng giá vốn</span><span id="r-cost">0</span></div>
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tổng giá bán</span><span class="fw-medium text-primary" id="r-amount">0</span></div>
+          <div class="d-flex justify-content-between mb-3"><span class="text-muted">Lợi nhuận</span><span class="fw-medium text-success" id="r-profit">0</span></div>
+          <button type="submit" class="btn btn-primary w-100"><i class="ti ti-device-floppy me-1"></i> Lưu báo giá</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var SEED = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model.Quote?.Lines ?? System.Array.Empty<TourKit.Application.Sales.Dtos.QuoteLineDto>()).Select(l => new {
+      description = l.Description, serviceType = l.ServiceType, scope = l.Scope, quantity = l.Quantity,
+      unitCost = l.UnitCost, marginPercent = l.MarginPercent, unitPrice = l.UnitPrice, vatPercent = l.VatPercent, surcharge = l.Surcharge, exchangeRate = l.ExchangeRate
+    })));
+    var TYPES = ['Khác','Khách sạn','Vận chuyển','HDV','Ăn uống','Vé tham quan','Visa','Vé máy bay','Bảo hiểm'];
+
+    function num(v){ var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+    function fmt(n){ return Math.round(n).toLocaleString('vi-VN'); }
+
+    function lineRow(d){
+      d = d || {};
+      var opts = TYPES.map(function(t,i){ return '<option value="'+i+'"'+(i==(d.serviceType||0)?' selected':'')+'>'+t+'</option>'; }).join('');
+      var sc = d.scope || 0;
+      return $('<tr>').html(
+        '<td><input class="form-control form-control-sm l-desc" value="'+ (d.description? tk.escape(d.description):'') +'" placeholder="Dịch vụ..."></td>'+
+        '<td><select class="form-select form-select-sm l-type">'+opts+'</select></td>'+
+        '<td><select class="form-select form-select-sm l-scope"><option value="0"'+(sc==0?' selected':'')+'>Theo đoàn</option><option value="1"'+(sc==1?' selected':'')+'>Theo khách</option></select></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-qty" value="'+(d.quantity||1)+'" min="0"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-cost" value="'+(d.unitCost||0)+'" min="0"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-margin" value="'+(d.marginPercent||0)+'"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-price" value="'+(d.unitPrice||0)+'" min="0"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-vat" value="'+(d.vatPercent||0)+'"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-sur" value="'+(d.surcharge||0)+'"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-rate" value="'+(d.exchangeRate||1)+'"></td>'+
+        '<td class="text-end l-total">0</td>'+
+        '<td class="text-center"><button type="button" class="btn btn-icon btn-sm text-danger l-del"><i class="ti ti-x"></i></button></td>'
+      );
+    }
+
+    function sellUnit(r){ var c = num(r.find('.l-cost').val()); return c>0 ? c*(1+num(r.find('.l-margin').val())/100) : num(r.find('.l-price').val()); }
+    function rate(r){ var e = num(r.find('.l-rate').val()); return e>0 ? e : 1; }
+
+    function recompute(){
+      var perPaxCost=0, perPaxSell=0, groupCost=0, groupSell=0;
+      $('#lines tbody tr').each(function(){
+        var r=$(this), qty=num(r.find('.l-qty').val());
+        var cost=qty*num(r.find('.l-cost').val())*rate(r);
+        var sell=qty*sellUnit(r)*rate(r)*(1+num(r.find('.l-vat').val())/100)+num(r.find('.l-sur').val());
+        r.find('.l-total').text(fmt(sell));
+        if (r.find('.l-scope').val()=='1'){ perPaxCost+=cost; perPaxSell+=sell; } else { groupCost+=cost; groupSell+=sell; }
+      });
+      var a=num($('#Adults').val()), c=num($('#Children').val()), i=num($('#Infants').val());
+      var cp=num($('#ChildPercent').val()), ip=num($('#InfantPercent').val());
+      var paxEq = a + c*cp/100 + i*ip/100;
+      var totalCost = perPaxCost*paxEq + groupCost;
+      var totalAmount = perPaxSell*paxEq + groupSell;
+      var adult = perPaxSell + (paxEq>0 ? groupSell/paxEq : 0);
+      $('#r-adult').text(fmt(adult)); $('#r-child').text(fmt(adult*cp/100)); $('#r-infant').text(fmt(adult*ip/100));
+      $('#r-cost').text(fmt(totalCost)); $('#r-amount').text(fmt(totalAmount)); $('#r-profit').text(fmt(totalAmount-totalCost));
+    }
+
+    function collect(){
+      return $('#lines tbody tr').map(function(){
+        var r=$(this);
+        return { description: r.find('.l-desc').val()||'—', serviceType: parseInt(r.find('.l-type').val()), scope: parseInt(r.find('.l-scope').val()),
+          quantity: num(r.find('.l-qty').val()), unitCost: num(r.find('.l-cost').val()), marginPercent: num(r.find('.l-margin').val()),
+          unitPrice: num(r.find('.l-price').val()), vatPercent: num(r.find('.l-vat').val()), surcharge: num(r.find('.l-sur').val()), exchangeRate: num(r.find('.l-rate').val())||1 };
+      }).get();
+    }
+
+    $(function(){
+      $('#cust-picker').select2({ theme:'bootstrap-5', placeholder:'Tìm khách hàng...', allowClear:true, width:'100%',
+        ajax:{ url:'?handler=CustomerSearch', dataType:'json', delay:250, data:function(p){return {q:p.term};}, processResults:function(d){return d;} } });
+      @if (q?.CustomerId != null) {
+        <text>$('#cust-picker').append(new Option(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(q!.CustomerName)), '@q!.CustomerId', true, true)).trigger('change');</text>
+      }
+      $('#cust-picker').on('select2:select', function(e){ $('#CustomerId').val(e.params.data.id); $('#CustomerName').val((e.params.data.text||'').split(' - ')[0]); });
+      $('#cust-picker').on('select2:clear', function(){ $('#CustomerId').val(''); });
+      if (window.flatpickr) { flatpickr('#ValidUntil', { dateFormat:'d/m/Y', allowInput:true }); }
+
+      var seed = SEED.length ? SEED : [{}];
+      seed.forEach(function(d){ $('#lines tbody').append(lineRow(d)); });
+
+      $('#add-line').on('click', function(){ $('#lines tbody').append(lineRow()); recompute(); });
+      $('#lines').on('click', '.l-del', function(){ if ($('#lines tbody tr').length>1){ $(this).closest('tr').remove(); } recompute(); });
+      $('#lines').on('input change', 'input,select', recompute);
+      $('.js-pax').on('input change', recompute);
+
+      // prefill status/quoteType selects
+      @if (q != null) {
+        <text>$('select[name="Input.Status"]').val('@q!.Status'); $('select[name="Input.QuoteType"]').val('@q!.QuoteType');</text>
+      }
+
+      $('#frm').validate({ rules:{ 'Input.CustomerName':{required:true}, 'Input.Title':{required:true} },
+        messages:{ 'Input.CustomerName':{required:'Bắt buộc nhập tên khách'}, 'Input.Title':{required:'Bắt buộc nhập tiêu đề'} },
+        errorClass:'text-danger small', submitHandler:function(){ save(); return false; } });
+
+      recompute();
+    });
+
+    function save(){
+      $('#LinesJson').val(JSON.stringify(collect()));
+      tk.post('?handler=Save', $('#frm').serialize()).then(function(res){
+        if (res && res.isSuccess){ tk.toast(res.message||'Đã lưu'); setTimeout(function(){ location.href = '/Quotes/Edit/' + res.data.id; }, 600); }
+        else { tk.error((res && res.message) || 'Lưu thất bại'); }
+      });
+    }
+  </script>
+}

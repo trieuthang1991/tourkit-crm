@@ -24,7 +24,7 @@ public static class MenuData
             new("p-services", "Danh mục dịch vụ", To: "/ServiceItems", Perm: "service.view"),
             new("p-pricing", "Bảng giá NCC", To: "/ProviderServices", Perm: "service.view"),
             new("p-terms", "Điều khoản TT NCC", To: "/PaymentTerms", Perm: "provider.view"),
-            new("p-series", "Series Vé / Quỹ vé", To: "#", Perm: "ticketfund.view"),
+            new("p-series", "Series Vé / Quỹ vé", To: "/TicketFunds", Perm: "ticketfund.view"),
         }),
         new("g-crm", "CRM", "ti ti-users", Children: new List<MenuNode>
         {
@@ -42,7 +42,7 @@ public static class MenuData
         }),
         new("g-quote", "Báo Giá", "ti ti-calculator", Children: new List<MenuNode>
         {
-            new("q-tour", "Tính giá Tour", To: "#", Perm: "quote.view"),
+            new("q-tour", "Tính giá Tour", To: "/Quotes", Perm: "quote.view"),
             new("q-combo", "Tính giá Combo", To: "#", Perm: "quote.view"),
             new("q-git", "Tour GIT/Combo", To: "#", Perm: "quote.view"),
             new("q-landtour", "Landtour", To: "#", Perm: "quote.view"),
@@ -77,14 +77,14 @@ public static class MenuData
         {
             new("gd-provider", "Hướng dẫn viên", To: "/Providers", Perm: "guide.view"),
             new("gd-calendar", "Lịch điều Hướng dẫn viên", To: "#", Perm: "guide.view"),
-            new("gd-report", "Báo cáo", To: "#", Perm: "guide.view"),
+            new("gd-report", "Báo cáo", To: "/GuideReport", Perm: "guide.view"),
         }),
         new("g-vehicle", "Quản lý xe", "ti ti-car", Children: new List<MenuNode>
         {
             new("v-store", "Kho xe", To: "/Vehicles", Perm: "vehicle.view"),
             new("v-waiting", "Lịch xe chờ duyệt", To: "#", Perm: "vehicle.view"),
             new("v-manage", "Lịch điều xe", To: "#", Perm: "vehicle.view"),
-            new("v-report", "Báo cáo", To: "#", Perm: "vehicle.view"),
+            new("v-report", "Báo cáo", To: "/VehicleReport", Perm: "vehicle.view"),
         }),
         new("g-operation", "Điều hành Tour", "ti ti-clipboard-list", Children: new List<MenuNode>
         {
@@ -93,7 +93,7 @@ public static class MenuData
         }),
         new("g-finance", "Tài chính/Kế toán", "ti ti-building-bank", Children: new List<MenuNode>
         {
-            new("fi-waiting", "Phiếu thu chờ", To: "#", Perm: "receipt.view"),
+            new("fi-waiting", "Phiếu thu chờ", To: "/PendingReceipts", Perm: "receipt.view"),
             new("fi-receipt", "Phiếu thu", To: "/Receipts", Perm: "receipt.view"),
             new("fi-payment", "Phiếu chi", To: "/Payments", Perm: "payment.view"),
             new("fi-invoice", "Danh sách hoá đơn (VAT)", To: "/Invoices", Perm: "invoice.view"),
@@ -118,7 +118,7 @@ public static class MenuData
             new("pj-project", "Dự án", To: "/Workflows", Perm: "workflow.view"),
             new("pj-mytask", "Công việc của tôi", To: "/WorkTasks", Perm: "task.view"),
             new("pj-tasks", "Danh sách Công việc", To: "/WorkTasks", Perm: "task.view"),
-            new("pj-perf", "Báo cáo Hiệu suất", To: "#", Perm: "task.view"),
+            new("pj-perf", "Báo cáo Hiệu suất", To: "/TaskPerformance", Perm: "task.view"),
         }),
         new("g-marketing", "Marketing", "ti ti-speakerphone", Children: new List<MenuNode>
         {
@@ -142,7 +142,7 @@ public static class MenuData
             new("rp-money", "Tài chính", To: "/FinanceReport", Perm: "report.turnover.view"),
             new("rp-tourtype", "Thu chi theo loại tour", To: "/TourTypeReport", Perm: "report.turnover.view"),
             new("rp-export", "Xuất báo cáo", To: "#", Perm: "report.turnover.view"),
-            new("rp-system", "Báo cáo tổng hợp", To: "#", Perm: "report.turnover.view"),
+            new("rp-system", "Báo cáo tổng hợp", To: "/SystemReport", Perm: "report.turnover.view"),
         }),
         new("g-agent", "Đại lý (B2B)", "ti ti-heart-handshake", Children: new List<MenuNode>
         {

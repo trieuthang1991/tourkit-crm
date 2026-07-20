@@ -1,0 +1,81 @@
+@page
+@model TourKit.Api.Pages.SystemReport.IndexModel
+@{ ViewData["Title"] = "Báo cáo tổng hợp"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+@{
+    (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+    {
+        ("Số báo giá", Model.Kpi.QuoteCount.ToString("#,##0"), "ti ti-file-text", "secondary", "tổng báo giá"),
+        ("Tỉ lệ chấp nhận", (Model.Kpi.AcceptanceRate * 100).ToString("0.#") + "%", "ti ti-thumb-up", "info", "báo giá được chấp nhận"),
+        ("Tỉ lệ chuyển đơn", (Model.Kpi.ConversionRate * 100).ToString("0.#") + "%", "ti ti-transfer-in", "primary", "báo giá → đơn"),
+        ("Số đơn", Model.Kpi.OrderCount.ToString("#,##0"), "ti ti-file-invoice", "secondary", "tổng số đơn"),
+        ("Doanh thu", Model.Kpi.TotalRevenue.ToString("#,##0"), "ti ti-report-money", "primary", "tổng doanh thu"),
+        ("Giá trị TB/đơn", Model.Kpi.AvgOrderValue.ToString("#,##0"), "ti ti-calculator", "info", "trung bình mỗi đơn"),
+        ("Đã thu", Model.Kpi.TotalReceived.ToString("#,##0"), "ti ti-cash", "success", "phiếu thu đã duyệt"),
+        ("Tỉ lệ thu tiền", (Model.Kpi.CollectionRate * 100).ToString("0.#") + "%", "ti ti-progress-check", "success", "đã thu / doanh thu"),
+    };
+}
+<div class="row g-4 mb-4">
+  @foreach (var s in statCards)
+  {
+    <div class="col-sm-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar flex-shrink-0 me-3">
+              <span class="avatar-initial rounded-3 bg-label-@s.Color">
+                <i class="@s.Icon ti-md"></i>
+              </span>
+            </div>
+            <div>
+              <span class="d-block text-muted small">@s.Label</span>
+              <h4 class="mb-0">@s.Value</h4>
+            </div>
+          </div>
+          <div class="text-muted small mt-2">@s.Sub</div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Top khách hàng theo doanh thu</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead>
+        <tr>
+          <th>Khách hàng</th>
+          <th class="text-end">Doanh thu</th>
+          <th class="text-end">Đã thu</th>
+        </tr>
+      </thead>
+      <tbody>
+      @foreach (var x in Model.TopList)
+      {
+        <tr>
+          <td class="fw-medium">@(string.IsNullOrEmpty(x.CustomerName) ? "—" : x.CustomerName)</td>
+          <td class="text-end">@x.Revenue.ToString("#,##0")</td>
+          <td class="text-end text-success">@x.Received.ToString("#,##0")</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () { tk.tableClient('#tbl'); });
+  </script>
+}

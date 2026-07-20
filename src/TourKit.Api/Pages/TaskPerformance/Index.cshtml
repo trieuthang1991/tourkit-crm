@@ -1,0 +1,38 @@
+@page
+@model TourKit.Api.Pages.TaskPerformance.IndexModel
+@{ ViewData["Title"] = "Báo cáo Hiệu suất"; }
+
+@{
+    (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+    {
+        ("Tổng công việc", Model.Stats.Total.ToString("#,##0"), "ti ti-checklist", "primary", "toàn bộ công việc"),
+        ("Cần làm", Model.Stats.Todo.ToString("#,##0"), "ti ti-hourglass", "secondary", "chưa bắt đầu"),
+        ("Đang làm", Model.Stats.InProgress.ToString("#,##0"), "ti ti-progress", "info", "đang xử lý"),
+        ("Hoàn thành", Model.Stats.Done.ToString("#,##0"), "ti ti-circle-check", "success", "đã hoàn tất"),
+        ("Đã huỷ", Model.Stats.Cancelled.ToString("#,##0"), "ti ti-circle-x", "secondary", "đã huỷ bỏ"),
+        ("Quá hạn", Model.Stats.Overdue.ToString("#,##0"), "ti ti-alert-triangle", "danger", "trễ hạn xử lý"),
+    };
+}
+<div class="row g-4 mb-4">
+  @foreach (var s in statCards)
+  {
+    <div class="col-sm-6 col-lg-4 col-xxl-2">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar flex-shrink-0 me-3">
+              <span class="avatar-initial rounded-3 bg-label-@s.Color">
+                <i class="@s.Icon ti-md"></i>
+              </span>
+            </div>
+            <div>
+              <span class="d-block text-muted small">@s.Label</span>
+              <h4 class="mb-0">@s.Value</h4>
+            </div>
+          </div>
+          <div class="text-muted small mt-2">@s.Sub</div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

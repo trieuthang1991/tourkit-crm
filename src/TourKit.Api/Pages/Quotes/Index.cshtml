@@ -1,0 +1,67 @@
+@page
+@model TourKit.Api.Pages.Quotes.IndexModel
+@{ ViewData["Title"] = "Báo giá"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng báo giá</p><h4 class="mb-0">@Model.Stats.Total</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Đã gửi</p><h4 class="mb-0 text-info">@Model.Stats.Sent</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Chấp nhận</p><h4 class="mb-0 text-success">@Model.Stats.Accepted</h4></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><p class="mb-1 text-muted">Tổng giá trị</p><h4 class="mb-0">@Model.Stats.TotalAmount.ToString("#,##0")</h4></div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Danh sách báo giá</h5>
+    <a href="/Quotes/Edit" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Tạo báo giá</a>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Mã</th><th>Khách hàng</th><th>Tiêu đề</th><th class="text-center">Khách</th><th class="text-end">Tổng giá</th><th class="text-end">Lợi nhuận</th><th>Hiệu lực</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var q in Model.Items)
+      {
+        <tr>
+          <td><a href="/Quotes/Edit/@q.Id" class="fw-medium">@q.Code</a></td>
+          <td>@q.CustomerName</td>
+          <td>@q.Title</td>
+          <td class="text-center">@(q.Adults + q.Children + q.Infants)</td>
+          <td class="text-end">@q.TotalAmount.ToString("#,##0")</td>
+          <td class="text-end @(q.TotalProfit >= 0 ? "text-success" : "text-danger")">@q.TotalProfit.ToString("#,##0")</td>
+          <td>@(q.ValidUntil?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td>
+            <span class="badge bg-label-@TourKit.Api.Pages.Quotes.IndexModel.StatusColor(q.Status)">@TourKit.Api.Pages.Quotes.IndexModel.StatusLabel(q.Status)</span>
+            @if (q.ConvertedOrderId != null) { <span class="badge bg-label-primary ms-1" title="Đã chuyển đơn">→ đơn</span> }
+          </td>
+          <td class="text-end">
+            <a href="/Quotes/Edit/@q.Id" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>
+            <button type="button" class="btn btn-icon btn-sm js-del" data-id="@q.Id" data-name="@q.Code" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" id="del-id" /></form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [8] }] });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = $(this).data('id'); tk.confirmDelete({ title: 'Xoá báo giá ' + $(this).data('name') + '?' }).then(function (ok) { if (ok) { $('#del-id').val(id); $('#delete-form').submit(); } });
+      });
+    });
+  </script>
+}
