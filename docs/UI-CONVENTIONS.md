@@ -20,6 +20,14 @@ Stack UI: ASP.NET Core Razor Pages + Bootstrap 5 + jQuery + Vuexy. Icon: **Table
 | Rule động (vd Tên đơn vị bắt buộc chỉ khi Loại khách = Doanh nghiệp) phải chạy được | ✅ |
 | Label nằm TRÊN field; nhóm 2 cột `col-md-6` cho gọn | ✅ |
 
+## 2b. Search (bắt buộc — bám hệ cũ có bỏ dấu)
+
+- **Text search phải KHÔNG DẤU**: dùng cột `SearchName` (lower + bỏ dấu, set khi Create/Update qua `VietnameseText.NormalizeSearch`) + so `ILIKE/Contains`. KHÔNG search thẳng cột gốc (case/accent-sensitive). Postgres: GIN `gin_trgm_ops`.
+- **Search SĐT**: input toàn số (≥4) → khớp cột `PhoneNormalized` (`VietnameseText.NormalizePhone`, +84→0) để gõ `0901` ra cả `+84901`.
+- **Phân trang ở SQL** (fast-path `PageAsync`) khi không có filter phải lọc in-memory; tránh kéo cả bảng rồi Skip/Take.
+- **Đếm/thống kê ở SQL** (`CountAsync`/GROUP BY qua query riêng) — KHÔNG `ListAsync()` rồi `.Count()`.
+- Mẫu: `CustomerService.ListAsync/GetStatsAsync/FindByPhoneAsync`. Áp pattern này cho MỌI service list mới.
+
 ## 2. Danh mục (dropdown) — KHÔNG bịa, KHÔNG distinct-từ-data
 
 - Loại khách / Nguồn / Thẻ / Thị trường / Tỉnh thành… = **danh mục cố định hoặc catalog** (bám hệ cũ dùng bảng danh mục). Nạp từ service catalog (`ICustomerTypeService`, `ICustomerSourceService`…) hoặc reference cố định (`VietnamProvinces`).
