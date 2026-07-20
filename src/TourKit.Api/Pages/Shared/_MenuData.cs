@@ -23,7 +23,7 @@ public static class MenuData
             new("p-all", "Tất cả Nhà cung cấp", To: "#", Perm: "provider.view"),
             new("p-services", "Danh mục dịch vụ", To: "#", Perm: "service.view"),
             new("p-pricing", "Bảng giá NCC", To: "#", Perm: "service.view"),
-            new("p-terms", "Điều khoản TT NCC", To: "#", Perm: "provider.view"),
+            new("p-terms", "Điều khoản TT NCC", To: "/PaymentTerms", Perm: "provider.view"),
             new("p-series", "Series Vé / Quỹ vé", To: "#", Perm: "ticketfund.view"),
         }),
         new("g-crm", "CRM", "ti ti-users", Children: new List<MenuNode>
@@ -65,7 +65,7 @@ public static class MenuData
         {
             new("b-roomfund", "Quỹ phòng", To: "#", Perm: "roomfund.view"),
             new("b-list", "Danh sách Booking", To: "#", Perm: "servicebooking.view"),
-            new("b-roomclass", "Hạng phòng (danh mục)", To: "#", Perm: "servicebooking.view"),
+            new("b-roomclass", "Hạng phòng (danh mục)", To: "/RoomClasses", Perm: "servicebooking.view"),
         }),
         new("g-flight", "Vé Máy Bay", "ti ti-plane", Children: new List<MenuNode>
         {
@@ -153,7 +153,7 @@ public static class MenuData
         {
             new("sys-users", "Thành viên", To: "#", Perm: "user.view"),
             new("sys-roles", "Vai trò & quyền", To: "#", Perm: "user.view"),
-            new("sys-config", "Cấu hình", To: "#", Perm: "user.view"),
+            new("sys-config", "Cấu hình", To: "/ConfigHub", Perm: "user.view"),
             new("sys-billing", "Gói dịch vụ", To: "#", Perm: "subscription.view"),
         }),
         new("g-log", "Log hệ thống", "ti ti-history", Children: new List<MenuNode>

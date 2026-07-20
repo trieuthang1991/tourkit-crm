@@ -1,0 +1,62 @@
+@page
+@model TourKit.Api.Pages.ConfigHub.IndexModel
+@{ ViewData["Title"] = "Cấu hình hệ thống"; }
+
+@{
+    (string Group, (string Label, string Icon, string Href, string Desc)[] Items)[] sections =
+    {
+        ("Khách hàng", new[]
+        {
+            ("Loại khách hàng", "ti ti-users", "/CustomerTypes", "Phân loại khách (lẻ/doanh nghiệp/đại lý/CTV)"),
+            ("Nguồn khách hàng", "ti ti-broadcast", "/CustomerSources", "Kênh đến của khách (Facebook, Hotline…)"),
+            ("Thẻ khách hàng", "ti ti-tag", "/CustomerTags", "Nhãn phân loại khách (VIP, thân thiết…)"),
+            ("Nhóm/Thị trường", "ti ti-map-2", "/MarketTypes", "Thị trường khách theo vùng/nhóm"),
+        }),
+        ("Dịch vụ & Booking", new[]
+        {
+            ("Loại xe", "ti ti-car", "/CarTypes", "Danh mục loại xe điều động"),
+            ("Ngôn ngữ", "ti ti-language", "/LanguageTypes", "Ngôn ngữ hướng dẫn viên"),
+            ("Hạng phòng", "ti ti-bed", "/RoomClasses", "Hạng phòng khách sạn"),
+            ("Phụ thu", "ti ti-plus", "/Surcharges", "Khoản phụ thu áp cho đơn/tour"),
+            ("Nhóm tour", "ti ti-map-pin", "/TourGroups", "Nhóm phân loại tour"),
+        }),
+        ("Tài chính", new[]
+        {
+            ("Tiền tệ", "ti ti-coin", "/Currencies", "Loại tiền + tỷ giá quy đổi VND"),
+            ("Tài khoản thanh toán", "ti ti-building-bank", "/PaymentAccounts", "Tài khoản ngân hàng nhận/chi"),
+            ("Điều khoản thanh toán", "ti ti-file-text", "/PaymentTerms", "Điều khoản TT với NCC/khách"),
+        }),
+        ("Tổ chức & Khác", new[]
+        {
+            ("Phòng ban", "ti ti-building", "/Departments", "Cơ cấu phòng ban"),
+            ("Chức danh", "ti ti-badge", "/Positions", "Chức danh nhân sự"),
+            ("Chi nhánh", "ti ti-building-store", "/Branches", "Chi nhánh công ty"),
+            ("Lý do chuyển khách", "ti ti-transfer", "/TransferReasons", "Lý do chuyển khách giữa tour"),
+            ("Mẫu tin nhắn", "ti ti-mail", "/MessageTemplates", "Mẫu email/SMS/ZNS"),
+        }),
+    };
+}
+
+<h4 class="fw-bold py-3 mb-2">Cấu hình hệ thống</h4>
+<p class="text-muted mb-4">Quản lý các danh mục dùng chung toàn hệ thống.</p>
+
+@foreach (var sec in sections)
+{
+  <h6 class="text-muted text-uppercase small mt-2 mb-3">@sec.Group</h6>
+  <div class="row g-4 mb-3">
+    @foreach (var it in sec.Items)
+    {
+      <div class="col-sm-6 col-lg-3">
+        <a href="@it.Href" class="card h-100 text-decoration-none">
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2">
+              <div class="avatar flex-shrink-0 me-3"><span class="avatar-initial rounded bg-label-primary"><i class="@it.Icon"></i></span></div>
+              <h6 class="mb-0 text-heading">@it.Label</h6>
+            </div>
+            <small class="text-muted">@it.Desc</small>
+          </div>
+        </a>
+      </div>
+    }
+  </div>
+}
