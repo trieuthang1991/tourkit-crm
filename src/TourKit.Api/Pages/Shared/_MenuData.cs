@@ -13,7 +13,7 @@ public static class MenuData
     {
         new("g-workspace", "Workspace", "ti ti-layout-dashboard", Children: new List<MenuNode>
         {
-            new("w-social", "Mạng Nội Bộ", To: "#", Perm: "post.view"),
+            new("w-social", "Mạng Nội Bộ", To: "/ComingSoon?f=social", Perm: "post.view"),
             new("w-workspace", "Bàn làm việc", To: "/Workspace", Perm: "report.dashboard.view"),
             new("w-dashboard", "Tổng quan", To: "/Dashboard", Perm: "report.dashboard.view"),
             new("w-noti", "Thông báo", To: "/Notifications", Perm: "report.dashboard.view"),
@@ -37,7 +37,7 @@ public static class MenuData
             {
                 new("fb-general", "Feedback chung", To: "/TourRatings", Perm: "rating.view"),
                 new("fb-tour", "Feedback theo Tour", To: "/TourRatings", Perm: "rating.view"),
-                new("fb-zns", "Feedback ZNS", To: "#", Perm: "rating.view"),
+                new("fb-zns", "Feedback ZNS", To: "/ComingSoon?f=fb-zns", Perm: "rating.view"),
             }),
         }),
         new("g-quote", "Báo Giá", "ti ti-calculator", Children: new List<MenuNode>
@@ -129,9 +129,9 @@ public static class MenuData
             }),
             new("mkt-zalo", "Zalo OA/ZBS", Children: new List<MenuNode>
             {
-                new("zalo-oa", "Thông tin OA", To: "#", Perm: "marketing.view"),
-                new("zalo-zns", "ZNS", To: "#", Perm: "marketing.view"),
-                new("zalo-uid", "Zalo UID (Tin follow OA)", To: "#", Perm: "marketing.view"),
+                new("zalo-oa", "Thông tin OA", To: "/ComingSoon?f=zalo-oa", Perm: "marketing.view"),
+                new("zalo-zns", "ZNS", To: "/ComingSoon?f=zalo-zns", Perm: "marketing.view"),
+                new("zalo-uid", "Zalo UID (Tin follow OA)", To: "/ComingSoon?f=zalo-uid", Perm: "marketing.view"),
             }),
             new("mkt-posts", "Bài viết", To: "/Posts", Perm: "post.view"),
             new("mkt-postcat", "Chuyên mục bài viết", To: "/PostCategories", Perm: "post.view"),
@@ -141,7 +141,7 @@ public static class MenuData
             new("rp-seller", "Nhân viên", To: "/SellerReport", Perm: "report.turnover.view"),
             new("rp-money", "Tài chính", To: "/FinanceReport", Perm: "report.turnover.view"),
             new("rp-tourtype", "Thu chi theo loại tour", To: "/TourTypeReport", Perm: "report.turnover.view"),
-            new("rp-export", "Xuất báo cáo", To: "#", Perm: "report.turnover.view"),
+            new("rp-export", "Xuất báo cáo", To: "/ComingSoon?f=export", Perm: "report.turnover.view"),
             new("rp-system", "Báo cáo tổng hợp", To: "/SystemReport", Perm: "report.turnover.view"),
         }),
         new("g-agent", "Đại lý (B2B)", "ti ti-heart-handshake", Children: new List<MenuNode>

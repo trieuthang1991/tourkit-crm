@@ -1,0 +1,12 @@
+@page
+@model TourKit.Api.Pages.ComingSoonModel
+@{ ViewData["Title"] = Model.Title; }
+
+<div class="card">
+  <div class="card-body text-center py-5">
+    <div class="mb-3"><span class="badge bg-label-primary rounded-circle p-3"><i class="ti @Model.Icon" style="font-size:2rem"></i></span></div>
+    <h4 class="mb-2">@Model.Title</h4>
+    <p class="text-muted mb-4 mx-auto" style="max-width:520px">@Model.Note</p>
+    <span class="badge bg-label-warning"><i class="ti ti-clock me-1"></i> Đang phát triển / cần cấu hình tích hợp</span>
+  </div>
+</div>
