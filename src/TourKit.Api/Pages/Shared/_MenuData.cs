@@ -64,14 +64,14 @@ public static class MenuData
         new("g-booking", "Booking Phòng/Khách sạn", "ti ti-building-skyscraper", Children: new List<MenuNode>
         {
             new("b-roomfund", "Quỹ phòng", To: "#", Perm: "roomfund.view"),
-            new("b-list", "Danh sách Booking", To: "#", Perm: "servicebooking.view"),
+            new("b-list", "Danh sách Booking", To: "/ServiceBookings", Perm: "servicebooking.view"),
             new("b-roomclass", "Hạng phòng (danh mục)", To: "/RoomClasses", Perm: "servicebooking.view"),
         }),
         new("g-flight", "Vé Máy Bay", "ti ti-plane", Children: new List<MenuNode>
         {
             new("f-provider", "Nhà cung cấp vé", To: "/Providers", Perm: "provider.view"),
-            new("f-group", "Vé máy bay đoàn", To: "#", Perm: "ticketfund.view"),
-            new("f-individual", "Vé máy bay lẻ", To: "#", Perm: "ticketfund.view"),
+            new("f-group", "Vé máy bay đoàn", To: "/FlightTickets", Perm: "ticketfund.view"),
+            new("f-individual", "Vé máy bay lẻ", To: "/FlightTicketsIndividual", Perm: "ticketfund.view"),
         }),
         new("g-guide", "Hướng dẫn viên", "ti ti-id-badge-2", Children: new List<MenuNode>
         {
@@ -151,7 +151,7 @@ public static class MenuData
         }),
         new("g-system", "Cài đặt hệ thống", "ti ti-settings", Children: new List<MenuNode>
         {
-            new("sys-users", "Thành viên", To: "#", Perm: "user.view"),
+            new("sys-users", "Thành viên", To: "/Users", Perm: "user.view"),
             new("sys-roles", "Vai trò & quyền", To: "#", Perm: "user.view"),
             new("sys-config", "Cấu hình", To: "/ConfigHub", Perm: "user.view"),
             new("sys-billing", "Gói dịch vụ", To: "/Billing", Perm: "subscription.view"),

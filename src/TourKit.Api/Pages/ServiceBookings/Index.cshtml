@@ -1,0 +1,42 @@
+@page
+@model TourKit.Api.Pages.ServiceBookings.IndexModel
+@{ ViewData["Title"] = "Danh sách Booking"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Danh sách Booking</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Mã</th><th>Loại</th><th>Mô tả</th><th>Ngày BĐ</th><th class="text-end">SL × Đơn giá</th><th class="text-end">Thành tiền</th><th class="text-end">Trạng thái</th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr>
+          <td class="fw-medium">@x.Code</td>
+          <td>@TourKit.Api.Pages.ServiceBookings.IndexModel.TypeLabel(x.Type)</td>
+          <td>@(string.IsNullOrEmpty(x.Description) ? "—" : x.Description)</td>
+          <td>@(x.StartDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td class="text-end">@x.Quantity × @x.UnitPrice.ToString("#,##0")</td>
+          <td class="text-end">@x.TotalAmount.ToString("#,##0")</td>
+          <td class="text-end"><span class="badge bg-label-secondary">@x.Status</span></td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () { tk.tableClient('#tbl'); });
+  </script>
+}

@@ -1,0 +1,120 @@
+@page
+@model TourKit.Api.Pages.FlightTicketsIndividual.IndexModel
+@{ ViewData["Title"] = "Vé máy bay lẻ"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Vé máy bay lẻ</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm vé lẻ</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Mã vé</th><th>Khách</th><th>Chặng</th><th>Chiều</th><th>Ngày đi</th><th class="text-end">Giá bán</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new {
+              id = x.Id, code = x.Code, ticketCode = x.TicketCode, pnr = x.Pnr, customerName = x.CustomerName,
+              tripType = x.TripType, route = x.Route, departDate = x.DepartDate, returnDate = x.ReturnDate,
+              sellAmount = x.SellAmount, receivedAmount = x.ReceivedAmount, totalCost = x.TotalCost, paidAmount = x.PaidAmount,
+              paymentDueDate = x.PaymentDueDate, status = x.Status, note = x.Note,
+              orderRef = x.OrderRef, providerRef = x.ProviderRef, assigneeRef = x.AssigneeRef })'>
+          <td class="fw-medium">@x.Code</td>
+          <td>@x.CustomerName</td>
+          <td>@(x.Route ?? "—")</td>
+          <td>@TourKit.Api.Pages.FlightTicketsIndividual.IndexModel.TripTypeLabel(x.TripType)</td>
+          <td>@(x.DepartDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td class="text-end">@x.SellAmount.ToString("#,##0")</td>
+          <td><span class="badge bg-label-@TourKit.Api.Pages.FlightTicketsIndividual.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.FlightTicketsIndividual.IndexModel.StatusLabel(x.Status)</span></td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">vé lẻ</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <input type="hidden" name="Input.OrderRef" />
+      <input type="hidden" name="Input.ProviderRef" />
+      <input type="hidden" name="Input.AssigneeRef" />
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Mã vé <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã vé" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Số vé (ticket)</label><input type="text" name="Input.TicketCode" class="form-control" placeholder="Số vé của hãng" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Khách <span class="text-danger">*</span></label><input type="text" name="Input.CustomerName" class="form-control" placeholder="Tên khách" /></div>
+        <div class="col-6 mb-3"><label class="form-label">PNR <span class="text-danger">*</span></label><input type="text" name="Input.Pnr" class="form-control" placeholder="Mã PNR" /></div>
+      </div>
+      <div class="row">
+        <div class="col-8 mb-3"><label class="form-label">Chặng</label><input type="text" name="Input.Route" class="form-control" placeholder="Ví dụ: SGN-HAN-SGN" /></div>
+        <div class="col-4 mb-3">
+          <label class="form-label">Chiều</label>
+          <select name="Input.TripType" class="form-select"><option value="0">Một chiều</option><option value="1">Khứ hồi</option></select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Ngày đi</label><input type="text" name="Input.DepartDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Ngày về</label><input type="text" name="Input.ReturnDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Giá bán</label><input type="number" step="any" name="Input.SellAmount" class="form-control" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Đã thu</label><input type="number" step="any" name="Input.ReceivedAmount" class="form-control" value="0" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Tổng chi (giá vốn)</label><input type="number" step="any" name="Input.TotalCost" class="form-control" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Đã chi</label><input type="number" step="any" name="Input.PaidAmount" class="form-control" value="0" /></div>
+      </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Hạn thanh toán</label><input type="text" name="Input.PaymentDueDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
+        <div class="col-6 mb-3">
+          <label class="form-label">Trạng thái</label>
+          <select name="Input.Status" class="form-select"><option value="0">Tạo mới</option><option value="1">Đã duyệt</option><option value="2">Không duyệt</option></select>
+        </div>
+      </div>
+      <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2"></textarea></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [7] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'vé lẻ',
+        rules: { 'Input.Code': { required: true }, 'Input.CustomerName': { required: true }, 'Input.Pnr': { required: true } },
+        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã vé' }, 'Input.CustomerName': { required: 'Bắt buộc nhập tên khách' }, 'Input.Pnr': { required: 'Bắt buộc nhập PNR' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá vé lẻ?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}

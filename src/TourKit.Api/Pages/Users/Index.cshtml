@@ -1,0 +1,88 @@
+@page
+@model TourKit.Api.Pages.Users.IndexModel
+@{ ViewData["Title"] = "Thành viên"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Thành viên</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm người dùng</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>Họ tên</th><th>Email</th><th>Phòng ban</th><th>Vai trò</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var u in Model.Items)
+      {
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new { id = u.Id, email = u.Email, fullName = u.FullName, departmentId = u.DepartmentId, positionId = u.PositionId, roleId = u.RoleId, isActive = u.IsActive })'>
+          <td class="fw-medium">@u.FullName</td>
+          <td>@u.Email</td>
+          <td>@u.DepartmentName</td>
+          <td>@u.RoleName</td>
+          <td><span class="badge bg-label-@(u.IsActive ? "success" : "secondary")">@(u.IsActive ? "Hoạt động" : "Khoá")</span></td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <form method="post" asp-page-handler="Toggle" asp-route-id="@u.Id" class="d-inline">
+              <button type="submit" class="btn btn-icon btn-sm" title="@(u.IsActive ? "Khoá" : "Mở khoá")"><i class="ti ti-@(u.IsActive ? "lock" : "lock-open")"></i></button>
+            </form>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">người dùng</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <div class="mb-3"><label class="form-label">Email <span class="text-danger">*</span></label><input type="text" name="Input.Email" class="form-control" placeholder="email@congty.vn" /></div>
+      <div class="mb-3"><label class="form-label">Họ tên <span class="text-danger">*</span></label><input type="text" name="Input.FullName" class="form-control" /></div>
+      <div class="mb-3" id="row-pass"><label class="form-label">Mật khẩu <span class="text-danger">*</span></label><input type="password" name="Input.Password" class="form-control" placeholder="Chỉ nhập khi tạo mới" /></div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Phòng ban</label>
+          <select name="Input.DepartmentId" class="form-select tk-s2" data-placeholder="Chọn"><option value="">—</option>@foreach (var d in Model.Departments) { <option value="@d.Id">@d.Name</option> }</select>
+        </div>
+        <div class="col-6 mb-3"><label class="form-label">Chức danh</label>
+          <select name="Input.PositionId" class="form-select tk-s2" data-placeholder="Chọn"><option value="">—</option>@foreach (var p in Model.Positions) { <option value="@p.Id">@p.Name</option> }</select>
+        </div>
+      </div>
+      <div class="mb-3"><label class="form-label">Vai trò</label>
+        <select name="Input.RoleId" class="form-select tk-s2" data-placeholder="Chọn vai trò"><option value="">—</option>@foreach (var r in Model.Roles) { <option value="@r.Id">@r.Name</option> }</select>
+      </div>
+      <div class="form-check mb-3"><input type="checkbox" name="Input.IsActive" value="true" class="form-check-input" id="chk-active" checked /><label class="form-check-label" for="chk-active">Kích hoạt</label></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [5] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'người dùng',
+        rules: { 'Input.Email': { required: true }, 'Input.FullName': { required: true } },
+        messages: { 'Input.Email': { required: 'Bắt buộc nhập email' }, 'Input.FullName': { required: 'Bắt buộc nhập họ tên' } },
+        afterOpen: function (data) { $('#row-pass').toggle(!data); }
+      });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+    });
+  </script>
+}

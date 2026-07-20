@@ -1,0 +1,102 @@
+@page
+@model TourKit.Api.Pages.FlightTickets.IndexModel
+@{ ViewData["Title"] = "Vé máy bay đoàn"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Vé máy bay đoàn</h5>
+    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm vé đoàn</button>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead><tr><th>PNR</th><th>Chặng / Hãng</th><th>Loại hình</th><th>Ngày đi</th><th class="text-end">SL (còn/tổng)</th><th class="text-end">Tổng chi</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var x in Model.Items)
+      {
+        var route = string.Join(" · ", x.Segments.Select(s => $"{s.From}-{s.To} {s.FlightNo}".Trim()));
+        <tr data-json='@System.Text.Json.JsonSerializer.Serialize(new {
+              id = x.Id, pnr = x.Pnr, tourType = x.TourType, days = x.Days, departureDate = x.DepartureDate,
+              quantity = x.Quantity, usedQuantity = x.UsedQuantity, totalCost = x.TotalCost, paidAmount = x.PaidAmount,
+              reservedAmount = x.ReservedAmount, status = x.Status, note = x.Note,
+              marketRef = x.MarketRef, providerRef = x.ProviderRef, orderRef = x.OrderRef,
+              segmentsJson = System.Text.Json.JsonSerializer.Serialize(x.Segments) })'>
+          <td class="fw-medium">@x.Pnr</td>
+          <td>@(string.IsNullOrEmpty(route) ? "—" : route)@(string.IsNullOrEmpty(x.ProviderName) ? "" : $" · {x.ProviderName}")</td>
+          <td>@(x.TourType ?? "—")</td>
+          <td>@(x.DepartureDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+          <td class="text-end">@x.RemainingQuantity/@x.Quantity</td>
+          <td class="text-end">@x.TotalCost.ToString("#,##0")</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
+            <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">vé đoàn</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body">
+    @Html.AntiForgeryToken()
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <input type="hidden" name="Id" />
+      <input type="hidden" name="Input.MarketRef" />
+      <input type="hidden" name="Input.ProviderRef" />
+      <input type="hidden" name="Input.OrderRef" />
+      <input type="hidden" name="Input.SegmentsJson" />
+      <div class="mb-3"><label class="form-label">PNR <span class="text-danger">*</span></label><input type="text" name="Input.Pnr" class="form-control" placeholder="Nhập mã PNR" /></div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Loại hình</label><input type="text" name="Input.TourType" class="form-control" placeholder="Ví dụ: Tour Âu" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Số ngày</label><input type="number" name="Input.Days" class="form-control" value="0" /></div>
+      </div>
+      <div class="mb-3"><label class="form-label">Ngày đi</label><input type="text" name="Input.DepartureDate" class="form-control tk-date" placeholder="dd/mm/yyyy" /></div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Số lượng vé</label><input type="number" name="Input.Quantity" class="form-control" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Đã dùng</label><input type="number" name="Input.UsedQuantity" class="form-control" value="0" /></div>
+      </div>
+      <div class="row">
+        <div class="col-4 mb-3"><label class="form-label">Tổng chi phí</label><input type="number" step="any" name="Input.TotalCost" class="form-control" value="0" /></div>
+        <div class="col-4 mb-3"><label class="form-label">Đã thanh toán</label><input type="number" step="any" name="Input.PaidAmount" class="form-control" value="0" /></div>
+        <div class="col-4 mb-3"><label class="form-label">Bảo lưu</label><input type="number" step="any" name="Input.ReservedAmount" class="form-control" value="0" /></div>
+      </div>
+      <div class="mb-3"><label class="form-label">Trạng thái (mã số)</label><input type="number" name="Input.Status" class="form-control" value="0" /></div>
+      <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2"></textarea></div>
+      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var oc;
+    $(function () {
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [6] }] });
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'vé đoàn',
+        rules: { 'Input.Pnr': { required: true } }, messages: { 'Input.Pnr': { required: 'Bắt buộc nhập PNR' } } });
+      $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      $('#tbl tbody').on('click', '.js-del', function () {
+        var id = this.getAttribute('data-id');
+        tk.confirmDelete({ title: 'Xoá vé đoàn?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+    });
+  </script>
+}
