@@ -1,0 +1,36 @@
+@model TourKit.Api.Pages.Customers.CustomerFormInput
+<div class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label">Họ tên <span class="text-danger">*</span></label>
+    <input asp-for="FullName" class="form-control" />
+    <span asp-validation-for="FullName" class="text-danger"></span>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Số điện thoại</label>
+    <input asp-for="Phone" class="form-control" />
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Email</label>
+    <input asp-for="Email" class="form-control" />
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Loại khách</label>
+    <select asp-for="CustomerType" class="form-select">
+      <option value="0">Khách lẻ</option>
+      <option value="1">Khách đoàn</option>
+      <option value="2">Đại lý</option>
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Nguồn</label>
+    <input asp-for="Source" class="form-control" />
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Tỉnh/TP</label>
+    <input asp-for="City" class="form-control" />
+  </div>
+  <div class="col-12">
+    <label class="form-label">Địa chỉ</label>
+    <input asp-for="Address" class="form-control" />
+  </div>
+</div>

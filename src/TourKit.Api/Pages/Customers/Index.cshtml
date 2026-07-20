@@ -2,6 +2,10 @@
 @model TourKit.Api.Pages.Customers.IndexModel
 @{ ViewData["Title"] = "Data khách hàng"; }
 
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+}
+
 <div class="row g-4 mb-4">
   <div class="col-6 col-md-3">
     <div class="card"><div class="card-body py-3">
@@ -30,96 +34,100 @@
 </div>
 
 <div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
     <h5 class="mb-0">Data khách hàng</h5>
-    <a asp-page="Create" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Thêm khách</a>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <select id="f-source" class="form-select form-select-sm" style="min-width:150px">
+        <option value="">— Nguồn —</option>
+        @foreach (var s in Model.Options.Sources)
+        {
+            <option value="@s">@s</option>
+        }
+      </select>
+      <select id="f-city" class="form-select form-select-sm" style="min-width:150px">
+        <option value="">— Tỉnh/TP —</option>
+        @foreach (var c in Model.Options.Cities)
+        {
+            <option value="@c">@c</option>
+        }
+      </select>
+      <a asp-page="Create" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Thêm khách</a>
+    </div>
   </div>
-  <div class="card-body border-bottom">
-    <form method="get" class="row g-2">
-      <div class="col-md-4">
-        <input name="q" value="@Model.Q" class="form-control" placeholder="Tên / SĐT / email" />
-      </div>
-      <div class="col-md-3">
-        <select name="source" class="form-select">
-          <option value="">— Nguồn —</option>
-          @foreach (var s in Model.Options.Sources)
-          {
-              <option value="@s" selected="@(Model.Source == s)">@s</option>
-          }
-        </select>
-      </div>
-      <div class="col-md-3">
-        <select name="city" class="form-select">
-          <option value="">— Tỉnh/TP —</option>
-          @foreach (var c in Model.Options.Cities)
-          {
-              <option value="@c" selected="@(Model.City == c)">@c</option>
-          }
-        </select>
-      </div>
-      <div class="col-md-2">
-        <button class="btn btn-outline-primary w-100"><i class="ti ti-filter me-1"></i> Lọc</button>
-      </div>
-    </form>
-  </div>
-  <div class="table-responsive text-nowrap">
-    <table class="table table-hover">
+  <div class="card-datatable table-responsive">
+    <table id="tbl-customers" class="table table-hover">
       <thead>
         <tr>
           <th>Mã</th><th>Họ tên</th><th>SĐT</th><th>Nguồn</th><th>Tag</th>
           <th class="text-end">Doanh thu</th><th>Ngày tạo</th><th></th>
         </tr>
       </thead>
-      <tbody>
-      @foreach (var c in Model.Result.Items)
-      {
-        <tr>
-          <td>@c.Code</td>
-          <td class="fw-medium">@c.FullName</td>
-          <td>@c.Phone</td>
-          <td>@c.Source</td>
-          <td>@c.Tag</td>
-          <td class="text-end">@c.Revenue.ToString("#,##0")</td>
-          <td>@c.CreatedAt.ToString("dd/MM/yyyy")</td>
-          <td class="text-end">
-            <a asp-page="Edit" asp-route-id="@c.Id" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>
-            <form method="post" asp-page-handler="Delete" asp-route-id="@c.Id" class="d-inline js-delete">
-              <button type="submit" class="btn btn-icon btn-sm text-danger" title="Xoá"><i class="ti ti-trash"></i></button>
-            </form>
-          </td>
-        </tr>
-      }
-      @if (Model.Result.Items.Count == 0)
-      {
-        <tr><td colspan="8" class="text-center text-muted py-4">Không có khách hàng.</td></tr>
-      }
-      </tbody>
+      <tbody></tbody>
     </table>
-  </div>
-  <div class="card-footer d-flex justify-content-between align-items-center">
-    <span class="text-muted small">Tổng @Model.Result.Total khách</span>
-    @if (Model.TotalPages > 1)
-    {
-      <nav>
-        <ul class="pagination pagination-sm mb-0">
-          @for (var p = 1; p <= Model.TotalPages; p++)
-          {
-            <li class="page-item @(p == Model.PageNo ? "active" : "")">
-              <a class="page-link" asp-route-page="@p" asp-route-q="@Model.Q"
-                 asp-route-source="@Model.Source" asp-route-city="@Model.City">@p</a>
-            </li>
-          }
-        </ul>
-      </nav>
-    }
   </div>
 </div>
 
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none">
+  <input type="hidden" name="id" />
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
 @section PageScripts {
   <script>
-    document.querySelectorAll('.js-delete').forEach(function (f) {
-      f.addEventListener('submit', function (e) {
-        if (!confirm('Xoá khách hàng này?')) { e.preventDefault(); }
+    $(function () {
+      var table = $('#tbl-customers').DataTable({
+        processing: true,
+        serverSide: true,
+        ordering: false,
+        ajax: {
+          url: '?handler=Data',
+          data: function (d) {
+            d.source = $('#f-source').val();
+            d.city = $('#f-city').val();
+          }
+        },
+        columns: [
+          { data: 'code' },
+          { data: 'fullName', render: function (d) { return '<span class="fw-medium">' + (d || '') + '</span>'; } },
+          { data: 'phone' },
+          { data: 'source' },
+          { data: 'tag' },
+          { data: 'revenue', className: 'text-end', render: function (d) { return (d || 0).toLocaleString('vi-VN'); } },
+          { data: 'createdAt' },
+          {
+            data: 'id', orderable: false, searchable: false, className: 'text-end',
+            render: function (id) {
+              return '<a href="/Customers/Edit/' + id + '" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="' + id + '" title="Xoá"><i class="ti ti-trash"></i></button>';
+            }
+          }
+        ],
+        lengthMenu: [10, 20, 50, 100],
+        pageLength: 20,
+        language: {
+          processing: 'Đang tải...',
+          search: 'Tìm:',
+          lengthMenu: 'Hiện _MENU_ dòng',
+          info: 'Hiện _START_–_END_ trên _TOTAL_ khách',
+          infoEmpty: 'Không có khách',
+          infoFiltered: '(lọc từ _MAX_)',
+          zeroRecords: 'Không tìm thấy khách phù hợp',
+          emptyTable: 'Chưa có khách hàng',
+          paginate: { first: '«', last: '»', next: '›', previous: '‹' }
+        }
+      });
+
+      $('#f-source, #f-city').on('change', function () { table.ajax.reload(); });
+
+      $('#tbl-customers tbody').on('click', '.js-del', function () {
+        if (confirm('Xoá khách hàng này?')) {
+          var f = document.getElementById('delete-form');
+          f.querySelector('input[name="id"]').value = this.getAttribute('data-id');
+          f.submit();
+        }
       });
     });
   </script>
