@@ -15,12 +15,12 @@
 
 @* 6 KPI — bám StatGrid hệ cũ *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng hoá đơn</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0" id="kpi-amount">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng VAT</small><h5 class="mb-0 text-info" id="kpi-vat">@Model.Stats.TotalVat.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã phát hành</small><h5 class="mb-0 text-success" id="kpi-issued">@Model.Stats.Issued.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Nháp</small><h5 class="mb-0" id="kpi-draft">@Model.Stats.Draft.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Huỷ</small><h5 class="mb-0 text-danger" id="kpi-cancelled">@Model.Stats.Cancelled.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng hoá đơn</small><h5 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0 tk-num" id="kpi-amount">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng VAT</small><h5 class="mb-0 text-info tk-num" id="kpi-vat">@Model.Stats.TotalVat.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã phát hành</small><h5 class="mb-0 text-success tk-num" id="kpi-issued">@Model.Stats.Issued.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Nháp</small><h5 class="mb-0 tk-num" id="kpi-draft">@Model.Stats.Draft.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Huỷ</small><h5 class="mb-0 text-danger tk-num" id="kpi-cancelled">@Model.Stats.Cancelled.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — MỌI tiêu chí đẩy xuống server *@

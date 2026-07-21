@@ -34,10 +34,10 @@
 
 @* 4 KPI — bám StatGrid màn Chuyến đi (cùng nguồn DepartureStatsDto) *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chuyến</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Sắp khởi hành</small><h5 class="mb-0 text-success" id="kpi-upcoming">@Model.Stats.Upcoming.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã đóng</small><h5 class="mb-0 text-danger" id="kpi-closed">@Model.Stats.Closed.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chỗ</small><h5 class="mb-0" id="kpi-slots">@Model.Stats.TotalSlots.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chuyến</small><h5 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Sắp khởi hành</small><h5 class="mb-0 text-success tk-num" id="kpi-upcoming">@Model.Stats.Upcoming.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã đóng</small><h5 class="mb-0 text-danger tk-num" id="kpi-closed">@Model.Stats.Closed.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chỗ</small><h5 class="mb-0 tk-num" id="kpi-slots">@Model.Stats.TotalSlots.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — đúng các tiêu chí DepartureListFilter, đẩy hết xuống SERVER *@

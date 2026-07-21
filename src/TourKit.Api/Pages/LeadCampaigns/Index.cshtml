@@ -18,10 +18,10 @@
 
 @* 4 thẻ KPI — bám StatGrid hệ cũ *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chiến dịch</small><h5 class="mb-0">@Model.Stats.TotalCampaigns.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng Leads</small><h5 class="mb-0">@Model.Stats.TotalLeads.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chiến dịch</small><h5 class="mb-0 tk-num">@Model.Stats.TotalCampaigns.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng Leads</small><h5 class="mb-0 tk-num">@Model.Stats.TotalLeads.ToString("#,##0")</h5></div></div></div>
   <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tỷ lệ chốt TB</small><h5 class="mb-0 text-success">@Model.Stats.AvgCloseRate.ToString("0.##")%</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Hoàn thành</small><h5 class="mb-0">@Model.Stats.Completed.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Hoàn thành</small><h5 class="mb-0 tk-num">@Model.Stats.Completed.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — đủ 2 tiêu chí service hỗ trợ *@

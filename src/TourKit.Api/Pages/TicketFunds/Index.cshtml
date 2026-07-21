@@ -25,7 +25,7 @@
     <div class="card h-100"><div class="card-body">
       <div class="d-flex align-items-center">
         <div class="avatar flex-shrink-0 me-3"><span class="avatar-initial rounded-3 bg-label-primary"><i class="ti ti-ticket ti-md"></i></span></div>
-        <div><span class="d-block text-muted small">Tổng quỹ vé</span><h4 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h4></div>
+        <div><span class="d-block text-muted small">Tổng quỹ vé</span><h4 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h4></div>
       </div>
       <div class="text-muted small mt-2">toàn bộ series</div>
     </div></div>
@@ -34,7 +34,7 @@
     <div class="card h-100"><div class="card-body">
       <div class="d-flex align-items-center">
         <div class="avatar flex-shrink-0 me-3"><span class="avatar-initial rounded-3 bg-label-secondary"><i class="ti ti-lock ti-md"></i></span></div>
-        <div><span class="d-block text-muted small">Đã đóng</span><h4 class="mb-0" id="kpi-closed">@Model.Stats.Closed.ToString("#,##0")</h4></div>
+        <div><span class="d-block text-muted small">Đã đóng</span><h4 class="mb-0 tk-num" id="kpi-closed">@Model.Stats.Closed.ToString("#,##0")</h4></div>
       </div>
       <div class="text-muted small mt-2">quỹ vé đã đóng</div>
     </div></div>
@@ -43,7 +43,7 @@
     <div class="card h-100"><div class="card-body">
       <div class="d-flex align-items-center">
         <div class="avatar flex-shrink-0 me-3"><span class="avatar-initial rounded-3 bg-label-success"><i class="ti ti-lock-open ti-md"></i></span></div>
-        <div><span class="d-block text-muted small">Chưa đóng</span><h4 class="mb-0" id="kpi-open">@Model.Stats.Open.ToString("#,##0")</h4></div>
+        <div><span class="d-block text-muted small">Chưa đóng</span><h4 class="mb-0 tk-num" id="kpi-open">@Model.Stats.Open.ToString("#,##0")</h4></div>
       </div>
       <div class="text-muted small mt-2">quỹ vé đang mở</div>
     </div></div>

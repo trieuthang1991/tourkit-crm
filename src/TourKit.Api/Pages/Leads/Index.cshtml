@@ -29,13 +29,13 @@
 
 @* 7 thẻ pipeline — bám StatGrid hệ cũ *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng cơ hội</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Mới</small><h5 class="mb-0">@Model.Stats.New.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã liên hệ</small><h5 class="mb-0 text-warning">@Model.Stats.Contacted.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tiềm năng</small><h5 class="mb-0 text-info">@Model.Stats.Qualified.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chốt</small><h5 class="mb-0 text-success">@Model.Stats.Won.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Mất</small><h5 class="mb-0 text-danger">@Model.Stats.Lost.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã chuyển KH</small><h5 class="mb-0">@Model.Stats.Converted.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng cơ hội</small><h5 class="mb-0 tk-num">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Mới</small><h5 class="mb-0 tk-num">@Model.Stats.New.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã liên hệ</small><h5 class="mb-0 text-warning tk-num">@Model.Stats.Contacted.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tiềm năng</small><h5 class="mb-0 text-info tk-num">@Model.Stats.Qualified.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chốt</small><h5 class="mb-0 text-success tk-num">@Model.Stats.Won.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Mất</small><h5 class="mb-0 text-danger tk-num">@Model.Stats.Lost.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã chuyển KH</small><h5 class="mb-0 tk-num">@Model.Stats.Converted.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — đủ 7 tiêu chí service hỗ trợ (4 lọc nhanh + panel nâng cao) *@

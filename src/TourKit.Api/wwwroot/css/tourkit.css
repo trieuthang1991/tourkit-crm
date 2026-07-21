@@ -1,3 +1,19 @@
 /* Override/tinh chỉnh theme TourKit trên nền Vuexy theme-default (primary tím #7367f0).
    Vuexy default đã là tím nên phần lớn để trống; đắp dần khi cần. */
 .app-brand-logo b { color: var(--bs-primary); }
+
+/* Số tiền/số lượng ở thẻ thống kê: KHÔNG được ngắt giữa số.
+   Trên mobile "94,323,595,000" từng bị bẻ thành "94,323,595," + "000" — đọc ra số khác hẳn.
+   Giữ NGUYÊN số đầy đủ (không rút gọn kiểu "94 tỷ" vì đây là số liệu tài chính), chỉ thu nhỏ
+   cỡ chữ trên màn hẹp cho vừa khung. */
+.tk-num { white-space: nowrap; }
+@media (max-width: 767.98px) {
+  .tk-num { font-size: 1rem; }
+}
+@media (max-width: 399.98px) {
+  .tk-num { font-size: .9rem; }
+}
+/* 1400-1599: mốc xxl vừa bật 6 thẻ/hàng nên thẻ hẹp nhất ở đây — hạ 1 nấc cho số vừa khung. */
+@media (min-width: 1400px) and (max-width: 1599.98px) {
+  .tk-num { font-size: 1rem; }
+}

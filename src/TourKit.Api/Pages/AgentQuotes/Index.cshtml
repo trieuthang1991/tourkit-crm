@@ -22,12 +22,12 @@
 
 @* 6 KPI — bám StatGrid hệ cũ *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng yêu cầu</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chờ chào</small><h5 class="mb-0 text-warning" id="kpi-requested">@Model.Stats.Requested.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã chào</small><h5 class="mb-0 text-info" id="kpi-quoted">@Model.Stats.Quoted.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Xác nhận</small><h5 class="mb-0 text-success" id="kpi-confirmed">@Model.Stats.Confirmed.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Từ chối</small><h5 class="mb-0 text-danger" id="kpi-rejected">@Model.Stats.Rejected.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng giá chào</small><h5 class="mb-0" id="kpi-totalquoted">@Model.Stats.TotalQuoted.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng yêu cầu</small><h5 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chờ chào</small><h5 class="mb-0 text-warning tk-num" id="kpi-requested">@Model.Stats.Requested.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã chào</small><h5 class="mb-0 text-info tk-num" id="kpi-quoted">@Model.Stats.Quoted.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Xác nhận</small><h5 class="mb-0 text-success tk-num" id="kpi-confirmed">@Model.Stats.Confirmed.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Từ chối</small><h5 class="mb-0 text-danger tk-num" id="kpi-rejected">@Model.Stats.Rejected.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng giá chào</small><h5 class="mb-0 tk-num" id="kpi-totalquoted">@Model.Stats.TotalQuoted.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — MỌI tiêu chí đẩy xuống server (AgentQuoteRequestListFilter) *@

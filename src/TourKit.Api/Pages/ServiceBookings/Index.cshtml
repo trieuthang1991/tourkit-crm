@@ -14,12 +14,12 @@
 
 @* 6 KPI — bám StatGrid hệ cũ *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng dịch vụ</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Khách sạn</small><h5 class="mb-0">@Model.Stats.Hotel.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Vé máy bay</small><h5 class="mb-0">@Model.Stats.Flight.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Visa</small><h5 class="mb-0">@Model.Stats.Visa.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Vé / Khác</small><h5 class="mb-0">@((Model.Stats.Ticket + Model.Stats.Other).ToString("#,##0"))</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng dịch vụ</small><h5 class="mb-0 tk-num">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0 tk-num">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Khách sạn</small><h5 class="mb-0 tk-num">@Model.Stats.Hotel.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Vé máy bay</small><h5 class="mb-0 tk-num">@Model.Stats.Flight.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Visa</small><h5 class="mb-0 tk-num">@Model.Stats.Visa.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Vé / Khác</small><h5 class="mb-0 tk-num">@((Model.Stats.Ticket + Model.Stats.Other).ToString("#,##0"))</h5></div></div></div>
 </div>
 
 @* Thanh lọc — đủ 4 tiêu chí hệ cũ (q · NCC · trạng thái · khoảng ngày bắt đầu) *@

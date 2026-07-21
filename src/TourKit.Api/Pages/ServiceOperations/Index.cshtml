@@ -14,10 +14,10 @@
 
 @* 4 KPI — bám StatGrid hệ cũ, cập nhật theo bộ lọc đang áp *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng đơn hàng</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chưa thanh toán</small><h5 class="mb-0 text-danger" id="kpi-unpaid">@Model.Stats.Unpaid.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chưa chi hết</small><h5 class="mb-0 text-warning" id="kpi-partial">@Model.Stats.Partial.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Hoàn thành</small><h5 class="mb-0 text-success" id="kpi-done">@Model.Stats.Done.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng đơn hàng</small><h5 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chưa thanh toán</small><h5 class="mb-0 text-danger tk-num" id="kpi-unpaid">@Model.Stats.Unpaid.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chưa chi hết</small><h5 class="mb-0 text-warning tk-num" id="kpi-partial">@Model.Stats.Partial.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Hoàn thành</small><h5 class="mb-0 text-success tk-num" id="kpi-done">@Model.Stats.Done.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — đủ 2 tiêu chí hệ cũ (q · NCC) *@

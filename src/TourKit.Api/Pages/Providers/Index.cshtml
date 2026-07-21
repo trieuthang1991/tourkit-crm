@@ -19,9 +19,9 @@
 
 @* 3 thẻ thống kê — bám StatGrid hệ cũ *@
 <div class="row g-3 mb-4">
-  <div class="col-12 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng số NCC</small><h5 class="mb-0">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đang hoạt động</small><h5 class="mb-0 text-success">@Model.Stats.Active.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Ngừng hoạt động</small><h5 class="mb-0 text-muted">@Model.Stats.Inactive.ToString("#,##0")</h5></div></div></div>
+  <div class="col-12 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng số NCC</small><h5 class="mb-0 tk-num">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đang hoạt động</small><h5 class="mb-0 text-success tk-num">@Model.Stats.Active.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Ngừng hoạt động</small><h5 class="mb-0 text-muted tk-num">@Model.Stats.Inactive.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — đủ 7 tiêu chí của bản cũ, tất cả đẩy xuống SERVER *@

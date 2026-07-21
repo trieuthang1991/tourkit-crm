@@ -22,13 +22,13 @@
 
 @* 7 KPI — bám StatGrid hệ cũ *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số lượng vé</small><h5 class="mb-0" id="kpi-qty">@Model.Stats.TotalQuantity.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã sử dụng</small><h5 class="mb-0 text-warning" id="kpi-used">@Model.Stats.TotalUsed.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Vé còn lại</small><h5 class="mb-0 text-success" id="kpi-remain">@Model.Stats.TotalRemaining.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chi</small><h5 class="mb-0" id="kpi-cost">@Model.Stats.TotalCost.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã thanh toán</small><h5 class="mb-0 text-success" id="kpi-paid">@Model.Stats.TotalPaid.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Còn lại</small><h5 class="mb-0 text-danger" id="kpi-remaincost">@Model.Stats.TotalRemainingCost.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tiền bảo lưu</small><h5 class="mb-0" id="kpi-reserved">@Model.Stats.TotalReserved.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số lượng vé</small><h5 class="mb-0 tk-num" id="kpi-qty">@Model.Stats.TotalQuantity.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã sử dụng</small><h5 class="mb-0 text-warning tk-num" id="kpi-used">@Model.Stats.TotalUsed.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Vé còn lại</small><h5 class="mb-0 text-success tk-num" id="kpi-remain">@Model.Stats.TotalRemaining.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chi</small><h5 class="mb-0 tk-num" id="kpi-cost">@Model.Stats.TotalCost.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã thanh toán</small><h5 class="mb-0 text-success tk-num" id="kpi-paid">@Model.Stats.TotalPaid.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Còn lại</small><h5 class="mb-0 text-danger tk-num" id="kpi-remaincost">@Model.Stats.TotalRemainingCost.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tiền bảo lưu</small><h5 class="mb-0 tk-num" id="kpi-reserved">@Model.Stats.TotalReserved.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — MỌI tiêu chí đẩy xuống server (FlightTicketListFilter) *@

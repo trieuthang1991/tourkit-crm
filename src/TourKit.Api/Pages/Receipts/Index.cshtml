@@ -16,11 +16,11 @@
 
 @* 5 KPI — bám StatGrid hệ cũ *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng số phiếu</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0 text-success" id="kpi-amount">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chờ duyệt</small><h5 class="mb-0 text-warning" id="kpi-pending">@Model.Stats.Pending.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã duyệt</small><h5 class="mb-0 text-success" id="kpi-approved">@Model.Stats.Approved.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Từ chối</small><h5 class="mb-0 text-danger" id="kpi-rejected">@Model.Stats.Rejected.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng số phiếu</small><h5 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tiền</small><h5 class="mb-0 text-success tk-num" id="kpi-amount">@Model.Stats.TotalAmount.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chờ duyệt</small><h5 class="mb-0 text-warning tk-num" id="kpi-pending">@Model.Stats.Pending.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã duyệt</small><h5 class="mb-0 text-success tk-num" id="kpi-approved">@Model.Stats.Approved.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Từ chối</small><h5 class="mb-0 text-danger tk-num" id="kpi-rejected">@Model.Stats.Rejected.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — đủ 9 tiêu chí hệ cũ, MỌI tiêu chí đẩy xuống server *@

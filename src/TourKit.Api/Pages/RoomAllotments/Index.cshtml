@@ -36,11 +36,11 @@
 
 @* 5 KPI — bám StatGrid hệ cũ, cập nhật theo bộ lọc đang áp *@
 <div class="row g-3 mb-3">
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số ô lịch</small><h5 class="mb-0" id="kpi-cells">@Model.Stats.Cells.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số NCC</small><h5 class="mb-0" id="kpi-providers">@Model.Stats.Providers.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tồn</small><h5 class="mb-0" id="kpi-quota">@Model.Stats.TotalQuota.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã đặt</small><h5 class="mb-0 text-warning" id="kpi-booked">@Model.Stats.TotalBooked.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Còn lại</small><h5 class="mb-0 text-success" id="kpi-available">@Model.Stats.TotalAvailable.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số ô lịch</small><h5 class="mb-0 tk-num" id="kpi-cells">@Model.Stats.Cells.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số NCC</small><h5 class="mb-0 tk-num" id="kpi-providers">@Model.Stats.Providers.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tồn</small><h5 class="mb-0 tk-num" id="kpi-quota">@Model.Stats.TotalQuota.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã đặt</small><h5 class="mb-0 text-warning tk-num" id="kpi-booked">@Model.Stats.TotalBooked.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Còn lại</small><h5 class="mb-0 text-success tk-num" id="kpi-available">@Model.Stats.TotalAvailable.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Chú giải loại ngày — bám card "Loại ngày" hệ cũ *@

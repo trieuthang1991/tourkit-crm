@@ -19,10 +19,10 @@
 
 @* 4 KPI — bám StatGrid hệ cũ *@
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng phân xe</small><h5 class="mb-0" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã điều</small><h5 class="mb-0 text-info" id="kpi-created">@Model.Stats.Created.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đang thực hiện</small><h5 class="mb-0 text-success" id="kpi-active">@Model.Stats.Active.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số xe</small><h5 class="mb-0" id="kpi-vehicles">@Model.Stats.VehicleCount.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng phân xe</small><h5 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã điều</small><h5 class="mb-0 text-info tk-num" id="kpi-created">@Model.Stats.Created.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đang thực hiện</small><h5 class="mb-0 text-success tk-num" id="kpi-active">@Model.Stats.Active.ToString("#,##0")</h5></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số xe</small><h5 class="mb-0 tk-num" id="kpi-vehicles">@Model.Stats.VehicleCount.ToString("#,##0")</h5></div></div></div>
 </div>
 
 @* Thanh lọc — đúng các tiêu chí VehicleAssignmentListFilter (xe · chuyến · khoảng ngày đón), đẩy hết xuống SERVER *@
