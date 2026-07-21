@@ -13,31 +13,24 @@ namespace TourKit.Application.Rooms;
 public sealed class RoomAllotmentService(
     IRepository<RoomAllotment> repo,
     IRepository<Provider> providerRepo,
+    IRoomAllotmentQueries queries,
     IValidator<CreateRoomAllotmentDto> createValidator,
     IValidator<UpdateRoomAllotmentDto> updateValidator) : IRoomAllotmentService
 {
+    /// <summary>
+    /// Lọc/sắp/cắt trang đẩy hết xuống SQL qua <see cref="IRoomAllotmentQueries"/>. Bảng này ~36.000
+    /// dòng và màn lưới lịch gọi hàm này NHIỀU LƯỢT để quét theo lô — nạp cả bảng mỗi lượt là sập.
+    /// </summary>
     public async Task<PagedResult<RoomAllotmentDto>> ListAsync(int page, int size, RoomAllotmentListFilter? filter = null)
     {
-        var filtered = await QueryAsync(filter);
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
-        var dtos = await MapManyAsync(pageItems);
-        return new PagedResult<RoomAllotmentDto>(dtos, filtered.Count, page, size);
+        var (items, total) = await queries.PageAsync(filter ?? new RoomAllotmentListFilter(), page, size);
+        var dtos = await MapManyAsync(items);
+        return new PagedResult<RoomAllotmentDto>(dtos, total, page, size);
     }
 
-    public async Task<RoomAllotmentStatsDto> GetStatsAsync(RoomAllotmentListFilter? filter = null)
-    {
-        var all = await QueryAsync(filter);
-        return new RoomAllotmentStatsDto(
-            all.Count,
-            all.Select(a => a.ProviderRef).Distinct().Count(),
-            all.Sum(a => a.Quota),
-            all.Sum(a => a.Booked),
-            all.Sum(a => Math.Max(0, a.Quota - a.Booked)),
-            all.Count(a => a.DayType == 0),
-            all.Count(a => a.DayType == 1),
-            all.Count(a => a.DayType == 2),
-            all.Count(a => a.DayType == 3));
-    }
+    /// <summary>Gộp bằng COUNT/SUM ở SQL — không kéo dòng nào về bộ nhớ.</summary>
+    public Task<RoomAllotmentStatsDto> GetStatsAsync(RoomAllotmentListFilter? filter = null)
+        => queries.StatsAsync(filter ?? new RoomAllotmentListFilter());
 
     public async Task<RoomAllotmentDto> GetAsync(Guid id)
     {
@@ -105,33 +98,17 @@ public sealed class RoomAllotmentService(
         await repo.SaveChangesAsync();
     }
 
-    private async Task<List<RoomAllotment>> QueryAsync(RoomAllotmentListFilter? filter)
-    {
-        var f = filter ?? new RoomAllotmentListFilter();
-        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
-
-        var all = await repo.ListAsync(a =>
-            (f.ProviderRef == null || a.ProviderRef == f.ProviderRef) &&
-            (f.Province == null || a.Province == f.Province) &&
-            (f.Market == null || a.Market == f.Market) &&
-            (f.Rating == null || a.Rating == f.Rating) &&
-            (f.DateFrom == null || a.Date >= f.DateFrom) &&
-            (f.DateTo == null || a.Date <= f.DateTo));
-
-        return all
-            .Where(a => kw == null
-                || a.ServiceName.Contains(kw, StringComparison.OrdinalIgnoreCase)
-                || (a.ProjectName != null && a.ProjectName.Contains(kw, StringComparison.OrdinalIgnoreCase))
-                || (a.Province != null && a.Province.Contains(kw, StringComparison.OrdinalIgnoreCase)))
-            .OrderBy(a => a.ProviderRef)
-            .ThenBy(a => a.ServiceName)
-            .ThenBy(a => a.Date)
-            .ToList();
-    }
-
     private async Task<List<RoomAllotmentDto>> MapManyAsync(IReadOnlyList<RoomAllotment> items)
     {
-        var providerNames = (await providerRepo.ListAsync()).ToDictionary(p => p.Id.ToString(), p => p.Name);
+        // Chỉ tra tên cho những NCC XUẤT HIỆN trong tập truyền vào (một trang), thay vì nạp cả bảng NCC.
+        var refIds = items
+            .Select(a => a.ProviderRef)
+            .Where(r => Guid.TryParse(r, out _))
+            .Select(Guid.Parse)
+            .ToHashSet();
+        var providerNames = refIds.Count == 0
+            ? []
+            : (await providerRepo.ListAsync(p => refIds.Contains(p.Id))).ToDictionary(p => p.Id.ToString(), p => p.Name);
 
         return items.Select(a => new RoomAllotmentDto(
             a.Id, a.ProviderRef, ResolveRef(a.ProviderRef, providerNames), a.ServiceName,

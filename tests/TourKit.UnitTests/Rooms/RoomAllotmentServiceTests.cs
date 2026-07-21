@@ -9,11 +9,65 @@ namespace TourKit.UnitTests.Rooms;
 public sealed class RoomAllotmentServiceTests
 {
     private static RoomAllotmentService NewService(FakeRepository<RoomAllotment>? repo = null)
-        => new(
-            repo ?? new FakeRepository<RoomAllotment>(),
+    {
+        var r = repo ?? new FakeRepository<RoomAllotment>();
+        return new(
+            r,
             new FakeRepository<Provider>(),
+            new FakeRoomAllotmentQueries(r),
             new CreateRoomAllotmentValidator(),
             new UpdateRoomAllotmentValidator());
+    }
+
+    /// <summary>
+    /// Bản giả của IRoomAllotmentQueries: đọc từ CHÍNH fake repo của bài test và lặp lại đúng ngữ
+    /// nghĩa của bản SQL (lọc → sắp NCC/dịch vụ/ngày → cắt trang; thống kê gộp). Nhờ vậy các bài
+    /// test hành vi vẫn kiểm được kết quả mà không cần cơ sở dữ liệu thật.
+    /// </summary>
+    private sealed class FakeRoomAllotmentQueries(FakeRepository<RoomAllotment> repo) : IRoomAllotmentQueries
+    {
+        private async Task<List<RoomAllotment>> MatchAsync(RoomAllotmentListFilter f)
+        {
+            var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+            var all = await repo.ListAsync(a =>
+                (f.ProviderRef == null || a.ProviderRef == f.ProviderRef) &&
+                (f.Province == null || a.Province == f.Province) &&
+                (f.Market == null || a.Market == f.Market) &&
+                (f.Rating == null || a.Rating == f.Rating) &&
+                (f.DateFrom == null || a.Date >= f.DateFrom) &&
+                (f.DateTo == null || a.Date <= f.DateTo));
+
+            return all
+                .Where(a => kw == null
+                    || a.ServiceName.Contains(kw, StringComparison.OrdinalIgnoreCase)
+                    || (a.ProjectName != null && a.ProjectName.Contains(kw, StringComparison.OrdinalIgnoreCase))
+                    || (a.Province != null && a.Province.Contains(kw, StringComparison.OrdinalIgnoreCase)))
+                .OrderBy(a => a.ProviderRef).ThenBy(a => a.ServiceName).ThenBy(a => a.Date)
+                .ToList();
+        }
+
+        public async Task<(IReadOnlyList<RoomAllotment> Items, int Total)> PageAsync(
+            RoomAllotmentListFilter filter, int page, int size)
+        {
+            var m = await MatchAsync(filter);
+            return (m.Skip((page - 1) * size).Take(size).ToList(), m.Count);
+        }
+
+        public async Task<RoomAllotmentStatsDto> StatsAsync(RoomAllotmentListFilter filter)
+        {
+            var m = await MatchAsync(filter);
+            return new RoomAllotmentStatsDto(
+                m.Count,
+                m.Select(a => a.ProviderRef).Distinct().Count(),
+                m.Sum(a => a.Quota),
+                m.Sum(a => a.Booked),
+                m.Sum(a => Math.Max(0, a.Quota - a.Booked)),
+                m.Count(a => a.DayType == 0),
+                m.Count(a => a.DayType == 1),
+                m.Count(a => a.DayType == 2),
+                m.Count(a => a.DayType == 3));
+        }
+    }
 
     private static CreateRoomAllotmentDto NewDto(
         string provider = "NCC1", string room = "Deluxe", string? province = null, int dayType = 0,

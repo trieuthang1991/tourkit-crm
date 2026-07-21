@@ -27,7 +27,8 @@ public sealed class FakeRepository<T> : IRepository<T> where T : BaseEntity
     {
         var query = predicate is null ? _items.AsEnumerable() : _items.AsQueryable().Where(predicate);
         var list = query.ToList();
-        var pageItems = list.Skip((page - 1) * size).Take(size).ToList();
+        // Bám Repository.PageAsync thật: sắp CreatedAt giảm dần TRƯỚC khi cắt trang.
+        var pageItems = list.OrderByDescending(e => e.CreatedAt).Skip((page - 1) * size).Take(size).ToList();
         return Task.FromResult<(IReadOnlyList<T> Items, int Total)>((pageItems, list.Count));
     }
 

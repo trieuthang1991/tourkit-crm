@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using FluentValidation;
 using TourKit.Application.Common;
 using TourKit.Application.Finance.Dtos;
@@ -98,49 +99,72 @@ public sealed class ReceiptService(
         var f = filter ?? new ReceiptListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        // Lọc cột thật (trạng thái, ngày, hình thức, số tiền) ở DB; q (mã phiếu/mã đơn/khách/người nộp) sau khi làm giàu.
         var pm = string.IsNullOrWhiteSpace(f.PaymentMethod) ? null : f.PaymentMethod.Trim();
-        var all = await receiptRepo.ListAsync(r =>
+
+        // Chi nhánh/sale nằm ở bảng Orders: giải trước ra danh sách OrderId khớp rồi đẩy xuống SQL
+        // bằng IN (...), thay vì kéo mọi phiếu thu về RAM chỉ để đối chiếu với đơn.
+        var scopeByOrder = f.BranchId != null || f.SalesUserId != null;
+        var scopedOrderIds = scopeByOrder
+            ? (await orderRepo.ListAsync(o =>
+                (f.BranchId == null || o.BranchId == f.BranchId) &&
+                (f.SalesUserId == null || o.SalesUserId == f.SalesUserId))).Select(o => o.Id).ToArray()
+            : [];
+
+        // Lọc cột thật (trạng thái, ngày, hình thức, số tiền, đơn) ở DB.
+        Expression<Func<ReceiptVoucher, bool>> predicate = r =>
             (f.Status == null || r.Status == f.Status) &&
             (f.From == null || r.IssuedAt >= f.From) &&
             (f.To == null || r.IssuedAt <= f.To) &&
             (pm == null || r.PaymentMethod.Contains(pm)) &&
             (f.AmountFrom == null || r.Amount >= f.AmountFrom) &&
-            (f.AmountTo == null || r.Amount <= f.AmountTo));
+            (f.AmountTo == null || r.Amount <= f.AmountTo) &&
+            (!scopeByOrder || scopedOrderIds.Contains(r.OrderId));
 
-        // Nạp theo lô: mã đơn + tên khách của các đơn liên quan (để danh sách tổng hiển thị được).
-        var orderIds = all.Select(r => r.OrderId).ToHashSet();
-        var orders = (await orderRepo.ListAsync(o => orderIds.Contains(o.Id)))
-            .ToDictionary(o => o.Id, o => o);
-        var customerIds = orders.Values.Select(o => o.CustomerId).ToHashSet();
-        var customerNames = (await customerRepo.ListAsync(c => customerIds.Contains(c.Id)))
-            .ToDictionary(c => c.Id, c => c.FullName);
-
-        var rows = all.Select(r =>
+        // Không có từ khoá → cắt trang NGAY Ở SQL rồi mới tra mã đơn/tên khách cho ĐÚNG mấy dòng
+        // của trang. PageAsync đã sắp CreatedAt giảm dần, trùng thứ tự cũ nên kết quả không đổi.
+        if (kw == null)
         {
-            orders.TryGetValue(r.OrderId, out var order);
-            var customerName = order is not null ? customerNames.GetValueOrDefault(order.CustomerId) : null;
-            var dto = new ReceiptListItemDto(
-                r.Id, r.Code, r.OrderId, order?.Code, customerName,
-                r.Amount, r.PaymentMethod, r.IssuedAt, r.Partner, r.Status, r.IsRecognized);
-            return (r.CreatedAt, Dto: dto);
-        });
+            var (pageEntities, total) = await receiptRepo.PageAsync(page, size, predicate);
+            return new PagedResult<ReceiptListItemDto>(await ToRowsAsync(pageEntities), total, page, size);
+        }
+
+        // Từ khoá đụng cả cột của ĐƠN (mã đơn, tên khách) và so khớp không phân biệt hoa/thường —
+        // không dịch được sang SQL, nên đành làm giàu rồi lọc trong RAM. Bù lại tập đầu vào đã bị
+        // predicate ở trên thu hẹp, không còn là toàn bảng.
+        var all = (await receiptRepo.ListAsync(predicate)).OrderByDescending(r => r.CreatedAt).ToList();
+        var rows = await ToRowsAsync(all);
 
         bool MatchQ(ReceiptListItemDto d) =>
-            kw == null ||
             d.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
             (d.OrderCode?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
             (d.CustomerName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
             (d.Partner?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
 
-        var filtered = rows
-            .Where(x => MatchQ(x.Dto)
-                && (f.BranchId == null || (orders.TryGetValue(x.Dto.OrderId, out var ord) && ord.BranchId == f.BranchId))
-                && (f.SalesUserId == null || (orders.TryGetValue(x.Dto.OrderId, out var os) && os.SalesUserId == f.SalesUserId)))
-            .OrderByDescending(x => x.CreatedAt)
-            .ToList();
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(x => x.Dto).ToList();
+        var filtered = rows.Where(MatchQ).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
         return new PagedResult<ReceiptListItemDto>(pageItems, filtered.Count, page, size);
+    }
+
+    /// <summary>Làm giàu mã đơn + tên khách CHỈ cho tập phiếu truyền vào (thường là 1 trang).</summary>
+    private async Task<List<ReceiptListItemDto>> ToRowsAsync(IReadOnlyList<ReceiptVoucher> receipts)
+    {
+        var orderIds = receipts.Select(r => r.OrderId).ToHashSet();
+        var orders = orderIds.Count == 0
+            ? []
+            : (await orderRepo.ListAsync(o => orderIds.Contains(o.Id))).ToDictionary(o => o.Id, o => o);
+        var customerIds = orders.Values.Select(o => o.CustomerId).ToHashSet();
+        var customerNames = customerIds.Count == 0
+            ? []
+            : (await customerRepo.ListAsync(c => customerIds.Contains(c.Id))).ToDictionary(c => c.Id, c => c.FullName);
+
+        return receipts.Select(r =>
+        {
+            orders.TryGetValue(r.OrderId, out var order);
+            return new ReceiptListItemDto(
+                r.Id, r.Code, r.OrderId, order?.Code,
+                order is not null ? customerNames.GetValueOrDefault(order.CustomerId) : null,
+                r.Amount, r.PaymentMethod, r.IssuedAt, r.Partner, r.Status, r.IsRecognized);
+        }).ToList();
     }
 
     public async Task<ReceiptStatsDto> GetStatsAsync()

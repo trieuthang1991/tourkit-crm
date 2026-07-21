@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using FluentValidation;
 using TourKit.Application.Common;
 using TourKit.Application.Sales.Dtos;
@@ -23,26 +24,34 @@ public sealed class QuoteService(
         var f = filter ?? new QuoteListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        // Lọc cột thật (trạng thái, hạn hiệu lực, đã chuyển đơn) ở DB; q (mã/khách/tiêu đề) sau.
-        var all = await quoteRepo.ListAsync(q =>
+        // Lọc cột thật (loại, trạng thái, hạn hiệu lực, đã chuyển đơn) đẩy hết xuống SQL.
+        Expression<Func<Quote, bool>> predicate = q =>
             (f.QuoteType == null || q.QuoteType == f.QuoteType) &&
             (f.Status == null || q.Status == f.Status) &&
             (f.ValidFrom == null || q.ValidUntil >= f.ValidFrom) &&
             (f.ValidTo == null || q.ValidUntil <= f.ValidTo) &&
-            (f.Converted == null || (f.Converted == true ? q.ConvertedOrderId != null : q.ConvertedOrderId == null)));
+            (f.Converted == null || (f.Converted == true ? q.ConvertedOrderId != null : q.ConvertedOrderId == null));
+
+        // Không có từ khoá (mặc định khi mở màn) → cắt trang NGAY Ở SQL. PageAsync đã sắp CreatedAt
+        // giảm dần, đúng bằng thứ tự cũ, nên kết quả không đổi mà khỏi kéo cả bảng báo giá về RAM.
+        if (kw == null)
+        {
+            var (pageEntities, total) = await quoteRepo.PageAsync(page, size, predicate);
+            return new PagedResult<QuoteSummaryDto>(pageEntities.Select(ToSummary).ToList(), total, page, size);
+        }
+
+        // Còn từ khoá: so khớp không phân biệt hoa/thường (OrdinalIgnoreCase) không dịch được sang SQL
+        // (Npgsql lẫn provider InMemory đều chịu), nên vẫn phải lọc trong RAM — nhưng chỉ trên tập
+        // đã được predicate ở trên thu hẹp, không còn quét toàn bảng.
+        var all = await quoteRepo.ListAsync(predicate);
 
         bool MatchQ(Quote q) =>
-            kw == null ||
             q.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
             q.CustomerName.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
             q.Title.Contains(kw, StringComparison.OrdinalIgnoreCase);
 
         var filtered = all.Where(MatchQ).OrderByDescending(q => q.CreatedAt).ToList();
-        var pageItems = filtered.Skip((page - 1) * size).Take(size)
-            .Select(q => new QuoteSummaryDto(
-                q.Id, q.Code, q.CustomerName, q.Title, q.ValidUntil, q.Status, q.TotalAmount, q.ConvertedOrderId,
-                q.Adults, q.Children, q.Infants, q.TotalCost, q.TotalProfit, q.QuoteType))
-            .ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(ToSummary).ToList();
         return new PagedResult<QuoteSummaryDto>(pageItems, filtered.Count, page, size);
     }
 
@@ -178,6 +187,10 @@ public sealed class QuoteService(
         quote.TotalAmount = pricing.TotalAmount;
         quote.TotalProfit = pricing.TotalProfit;
     }
+
+    private static QuoteSummaryDto ToSummary(Quote q) => new(
+        q.Id, q.Code, q.CustomerName, q.Title, q.ValidUntil, q.Status, q.TotalAmount, q.ConvertedOrderId,
+        q.Adults, q.Children, q.Infants, q.TotalCost, q.TotalProfit, q.QuoteType);
 
     private static QuoteLine NewLine(Guid quoteId, CreateQuoteLineDto line) => new()
     {

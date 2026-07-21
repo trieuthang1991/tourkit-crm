@@ -21,6 +21,10 @@ public sealed class InvoiceService(
         var f = filter ?? new InvoiceListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
+        // Lọc cột thật (trạng thái, khoảng ngày) đã đẩy xuống SQL.
+        // CHƯA cắt trang được ở SQL: màn hoá đơn sắp theo NGÀY HOÁ ĐƠN giảm dần, trong khi
+        // IRepository.PageAsync ép sắp theo CreatedAt giảm dần — dùng vào là đổi thứ tự hiển thị.
+        // Muốn phân trang ở SQL phải bổ sung overload PageAsync nhận khoá sắp xếp (ngoài phạm vi sửa này).
         var all = await invoiceRepo.ListAsync(i =>
             (f.Status == null || i.Status == f.Status) &&
             (f.DateFrom == null || i.InvoiceDate >= f.DateFrom) &&

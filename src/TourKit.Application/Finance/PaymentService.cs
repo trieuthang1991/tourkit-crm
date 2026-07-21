@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using FluentValidation;
 using TourKit.Application.Common;
 using TourKit.Application.Finance.Dtos;
@@ -102,51 +103,68 @@ public sealed class PaymentService(
         var f = filter ?? new PaymentListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        // Lọc cột thật (trạng thái, ngày, hình thức, số tiền) ở DB; q (mã phiếu/mã đơn/NCC/người nhận) sau khi làm giàu.
         var pm = string.IsNullOrWhiteSpace(f.PaymentMethod) ? null : f.PaymentMethod.Trim();
-        var all = await paymentRepo.ListAsync(p =>
+
+        // Chi nhánh/sale nằm ở bảng Orders: giải trước ra danh sách OrderId khớp rồi đẩy xuống SQL
+        // bằng IN (...), thay vì kéo mọi phiếu chi về RAM chỉ để đối chiếu với đơn.
+        var scopeByOrder = f.BranchId != null || f.SalesUserId != null;
+        var scopedOrderIds = scopeByOrder
+            ? (await orderRepo.ListAsync(o =>
+                (f.BranchId == null || o.BranchId == f.BranchId) &&
+                (f.SalesUserId == null || o.SalesUserId == f.SalesUserId))).Select(o => o.Id).ToArray()
+            : [];
+
+        // Lọc cột thật (trạng thái, ngày, hình thức, số tiền, đơn) ở DB.
+        Expression<Func<PaymentVoucher, bool>> predicate = p =>
             (f.Status == null || p.Status == f.Status) &&
             (f.From == null || p.IssuedAt >= f.From) &&
             (f.To == null || p.IssuedAt <= f.To) &&
             (pm == null || p.PaymentMethod.Contains(pm)) &&
             (f.AmountFrom == null || p.Amount >= f.AmountFrom) &&
-            (f.AmountTo == null || p.Amount <= f.AmountTo));
+            (f.AmountTo == null || p.Amount <= f.AmountTo) &&
+            (!scopeByOrder || scopedOrderIds.Contains(p.OrderId));
 
-        // Nạp theo lô: mã đơn + tên NCC (phiếu chi trả cho NCC) để danh sách tổng hiển thị được.
-        var orderIds = all.Select(p => p.OrderId).ToHashSet();
-        var providerIds = all.Where(p => p.ProviderId != null).Select(p => p.ProviderId!.Value).ToHashSet();
-        var relatedOrders = await orderRepo.ListAsync(o => orderIds.Contains(o.Id));
-        var orderCodes = relatedOrders.ToDictionary(o => o.Id, o => o.Code);
-        var orderBranch = relatedOrders.ToDictionary(o => o.Id, o => o.BranchId);
-        var orderSales = relatedOrders.ToDictionary(o => o.Id, o => o.SalesUserId);
-        var providerNames = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id)))
-            .ToDictionary(p => p.Id, p => p.Name);
-
-        var rows = all.Select(p =>
+        // Không có từ khoá → cắt trang NGAY Ở SQL rồi mới tra mã đơn/tên NCC cho ĐÚNG mấy dòng
+        // của trang. PageAsync đã sắp CreatedAt giảm dần, trùng thứ tự cũ nên kết quả không đổi.
+        if (kw == null)
         {
-            var dto = new PaymentListItemDto(
-                p.Id, p.Code, p.OrderId, orderCodes.GetValueOrDefault(p.OrderId),
-                p.ProviderId, p.ProviderId is { } pid ? providerNames.GetValueOrDefault(pid) : null,
-                p.Amount, p.PaymentMethod, p.IssuedAt, p.Partner, p.ReceiverName, p.Status, p.IsRecognized);
-            return (p.CreatedAt, Dto: dto);
-        });
+            var (pageEntities, total) = await paymentRepo.PageAsync(page, size, predicate);
+            return new PagedResult<PaymentListItemDto>(await ToRowsAsync(pageEntities), total, page, size);
+        }
+
+        // Từ khoá đụng cả cột của ĐƠN/NCC và so khớp không phân biệt hoa/thường — không dịch được
+        // sang SQL, nên đành làm giàu rồi lọc trong RAM trên tập đã bị predicate trên thu hẹp.
+        var all = (await paymentRepo.ListAsync(predicate)).OrderByDescending(p => p.CreatedAt).ToList();
+        var rows = await ToRowsAsync(all);
 
         bool MatchQ(PaymentListItemDto d) =>
-            kw == null ||
             d.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
             (d.OrderCode?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
             (d.ProviderName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
             (d.Partner?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
             (d.ReceiverName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
 
-        var filtered = rows
-            .Where(x => MatchQ(x.Dto)
-                && (f.BranchId == null || orderBranch.GetValueOrDefault(x.Dto.OrderId) == f.BranchId)
-                && (f.SalesUserId == null || orderSales.GetValueOrDefault(x.Dto.OrderId) == f.SalesUserId))
-            .OrderByDescending(x => x.CreatedAt)
-            .ToList();
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(x => x.Dto).ToList();
+        var filtered = rows.Where(MatchQ).ToList();
+        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
         return new PagedResult<PaymentListItemDto>(pageItems, filtered.Count, page, size);
+    }
+
+    /// <summary>Làm giàu mã đơn + tên NCC CHỈ cho tập phiếu truyền vào (thường là 1 trang).</summary>
+    private async Task<List<PaymentListItemDto>> ToRowsAsync(IReadOnlyList<PaymentVoucher> payments)
+    {
+        var orderIds = payments.Select(p => p.OrderId).ToHashSet();
+        var providerIds = payments.Where(p => p.ProviderId != null).Select(p => p.ProviderId!.Value).ToHashSet();
+        var orderCodes = orderIds.Count == 0
+            ? []
+            : (await orderRepo.ListAsync(o => orderIds.Contains(o.Id))).ToDictionary(o => o.Id, o => o.Code);
+        var providerNames = providerIds.Count == 0
+            ? []
+            : (await providerRepo.ListAsync(p => providerIds.Contains(p.Id))).ToDictionary(p => p.Id, p => p.Name);
+
+        return payments.Select(p => new PaymentListItemDto(
+            p.Id, p.Code, p.OrderId, orderCodes.GetValueOrDefault(p.OrderId),
+            p.ProviderId, p.ProviderId is { } pid ? providerNames.GetValueOrDefault(pid) : null,
+            p.Amount, p.PaymentMethod, p.IssuedAt, p.Partner, p.ReceiverName, p.Status, p.IsRecognized)).ToList();
     }
 
     public async Task<PaymentStatsDto> GetStatsAsync()

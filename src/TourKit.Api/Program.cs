@@ -120,6 +120,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 // Repo riêng cho query phức tạp/nhiều bảng (báo cáo GROUP BY) — không dịch được bằng IRepository<T> generic.
 builder.Services.AddScoped<IReportQueries, ReportQueries>();
 builder.Services.AddScoped<TourKit.Application.Booking.IOrderQueries, TourKit.Infrastructure.Booking.OrderQueries>();
+builder.Services.AddScoped<TourKit.Application.Rooms.IRoomAllotmentQueries, TourKit.Infrastructure.Rooms.RoomAllotmentQueries>();
 builder.Services.AddScoped<TourKit.Application.Customers.ICustomerQueries, TourKit.Infrastructure.Customers.CustomerQueries>();
 // Ghi bảng nối RBAC bằng hard-delete (thay tập quyền/vai trò) — repo generic chỉ soft-delete.
 builder.Services.AddScoped<TourKit.Application.Admin.IRbacStore, TourKit.Infrastructure.Admin.RbacStore>();
