@@ -44,9 +44,26 @@ public class IndexModel : TkListPageModel
 
     [BindProperty(SupportsGet = true, Name = "bookingType")] public int? BookingType { get; set; }
 
+    /// <summary>
+    /// Loại đơn hiệu lực: ưu tiên đoạn "loai" trong route mới (/don-hang/loai/tour-fit) rồi mới tới
+    /// query cũ (?bookingType=0). Route giữ được khi DataTables gọi ?handler=Data trên cùng URL.
+    /// </summary>
+    private int? EffectiveBookingType
+    {
+        get
+        {
+            if (RouteData.Values.TryGetValue("loai", out var raw) && raw is string slug
+                && TourKit.Api.Routing.RouteMap.OrderLoai.TryGetValue(slug, out var t))
+            {
+                return t;
+            }
+            return BookingType;
+        }
+    }
+
     // Loại tour (BookingType): 0 FIT · 1 GIT · 2 LandTour/Combo · 3 Booking phòng · 4 Dịch vụ lẻ · 5 Visa · 6 Xe.
     public static readonly string[] BookingTypeLabels = ["Tour FIT", "Tour GIT/Combo", "LandTour", "Booking phòng", "Dịch vụ lẻ", "Visa", "Xe"];
-    public string TypeLabel => BookingType is int t && t >= 0 && t < BookingTypeLabels.Length ? BookingTypeLabels[t] : "Tất cả";
+    public string TypeLabel => EffectiveBookingType is int t && t >= 0 && t < BookingTypeLabels.Length ? BookingTypeLabels[t] : "Tất cả";
 
     public static string StatusLabel(OrderStatus s) => s switch
     {
@@ -96,7 +113,7 @@ public class IndexModel : TkListPageModel
             CreatedByUserId: G("createdByUserId"), DepartmentId: G("departmentId"),
             TourType: S("tourType"), ProviderId: G("providerId"),
             MarketTypeId: G("marketTypeId"), TourGroupId: G("tourGroupId"),
-            BookingType: I("bookingType") ?? BookingType,
+            BookingType: I("bookingType") ?? EffectiveBookingType,
             CommissionSettled: B("commissionSettled"),
             OperationalStatus: I("operationalStatus"),
             CollaboratorId: G("collaboratorId"),

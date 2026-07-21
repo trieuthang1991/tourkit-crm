@@ -24,7 +24,7 @@
       <button type="button" class="btn btn-label-secondary active" id="view-cal" title="Dạng lịch"><i class="ti ti-calendar"></i></button>
       <button type="button" class="btn btn-label-secondary" id="view-table" title="Dạng bảng"><i class="ti ti-list"></i></button>
     </div>
-    <a class="btn btn-label-secondary" href="/VehicleAssignments"><i class="ti ti-car me-1"></i> Mở Lịch điều xe</a>
+    <a class="btn btn-label-secondary" href="/dieu-xe"><i class="ti ti-car me-1"></i> Mở Lịch điều xe</a>
   </div>
 </div>
 
@@ -149,7 +149,7 @@
         eventClick: function (arg) {
           // Chưa có trang chi tiết phân xe → mở màn Lịch điều xe (nơi sửa/kích hoạt phân xe).
           arg.jsEvent.preventDefault();
-          window.location.href = '/VehicleAssignments';
+          window.location.href = '/dieu-xe';
         }
       });
       cal.render();

@@ -34,11 +34,28 @@ public class IndexModel : TkListPageModel
 
     public bool CanManage => User.HasClaim("perm", "quote.manage");
 
+    /// <summary>
+    /// Loại báo giá hiệu lực: ưu tiên đoạn "loai" trong route mới (/bao-gia/loai/combo) rồi mới tới
+    /// query cũ (?type=1). Route giữ được khi DataTables gọi ?handler=Data trên cùng URL.
+    /// </summary>
+    private int? EffectiveType
+    {
+        get
+        {
+            if (RouteData.Values.TryGetValue("loai", out var raw) && raw is string slug
+                && TourKit.Api.Routing.RouteMap.QuoteLoai.TryGetValue(slug, out var t))
+            {
+                return t;
+            }
+            return QuoteType;
+        }
+    }
+
     // Loại báo giá — bám QUOTE_TYPE_LABEL của bản cũ.
     public static readonly string[] TypeLabels =
         ["Tính giá Tour", "Tính giá Combo", "Tour GIT/Combo", "Landtour", "Booking Phòng", "Dịch vụ lẻ", "Visa"];
 
-    public string TypeLabel => QuoteType is int t && t >= 0 && t < TypeLabels.Length ? TypeLabels[t] : "Tất cả";
+    public string TypeLabel => EffectiveType is int t && t >= 0 && t < TypeLabels.Length ? TypeLabels[t] : "Tất cả";
 
     public static string TypeName(int t) => t >= 0 && t < TypeLabels.Length ? TypeLabels[t] : "—";
 
@@ -61,7 +78,7 @@ public class IndexModel : TkListPageModel
 
     public async Task OnGetAsync()
     {
-        Stats = await _svc.GetStatsAsync(QuoteType);
+        Stats = await _svc.GetStatsAsync(EffectiveType);
         Departures = (await _departures.ListAsync(1, 200))
             .Items.Select(d => (d.Id, Text: $"{d.Code} — {d.Title}")).ToList();
     }
@@ -80,7 +97,7 @@ public class IndexModel : TkListPageModel
             ValidFrom: D("validFrom"),
             ValidTo: D("validTo"),
             Converted: B("converted"),
-            QuoteType: I("quoteType") ?? QuoteType);
+            QuoteType: I("quoteType") ?? EffectiveType);
     }
 
     /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
@@ -88,7 +105,7 @@ public class IndexModel : TkListPageModel
     {
         var dt = ParseDataTables();
         var result = await _svc.ListAsync(dt.Page, dt.Size, BuildFilter(dt.Keyword));
-        var stats = await _svc.GetStatsAsync(int.TryParse(Request.Query["quoteType"], out var qt) ? qt : QuoteType);
+        var stats = await _svc.GetStatsAsync(int.TryParse(Request.Query["quoteType"], out var qt) ? qt : EffectiveType);
 
         var items = result.Items.Select(x => new
         {
@@ -132,7 +149,7 @@ public class IndexModel : TkListPageModel
     /// <summary>Thẻ thống kê dạng JSON — làm tươi KPI sau khi xoá/chuyển đơn mà không tải lại trang.</summary>
     public async Task<IActionResult> OnGetStatsAsync()
     {
-        var s = await _svc.GetStatsAsync(int.TryParse(Request.Query["quoteType"], out var qt) ? qt : QuoteType);
+        var s = await _svc.GetStatsAsync(int.TryParse(Request.Query["quoteType"], out var qt) ? qt : EffectiveType);
         return new JsonResult(new
         {
             total = s.Total,

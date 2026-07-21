@@ -211,7 +211,7 @@
           { data: null, width: '44px', className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
           { data: null, width: '210px', render: function (r) {
               var sub = [r.code, r.customerTypeName].filter(function (x) { return !!x; }).join(' · ');
-              return '<a href="/Customers/Details/' + r.id + '" class="fw-medium text-heading d-inline-block text-truncate align-middle" style="max-width:200px" title="' + tk.escape(r.fullName) + '">' + tk.escape(r.fullName) + '</a>' +
+              return '<a href="/khach-hang/' + r.id + '" class="fw-medium text-heading d-inline-block text-truncate align-middle" style="max-width:200px" title="' + tk.escape(r.fullName) + '">' + tk.escape(r.fullName) + '</a>' +
                      (sub ? '<div class="small text-muted text-truncate" title="' + tk.escape(sub) + '">' + tk.escape(sub) + '</div>' : '');
             } },
           { data: null, width: '170px', render: function (r) { return stack(r.phone, r.email); } },

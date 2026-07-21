@@ -27,12 +27,12 @@
   </div>
   @* Thao tác nhanh — bám dải nút QUICK của bản cũ, chỉ hiện nút có quyền. *@
   <div class="d-flex flex-wrap gap-2">
-    @if (Model.CanBooking)  { <a href="/Orders" class="btn btn-label-primary btn-sm"><i class="ti ti-shopping-cart me-1"></i> Tạo đơn</a> }
-    @if (Model.CanDeparture){ <a href="/Departures" class="btn btn-label-primary btn-sm"><i class="ti ti-flag me-1"></i> Tạo tour / LKH</a> }
-    @if (Model.CanQuote)    { <a href="/Quotes/Edit" class="btn btn-label-primary btn-sm"><i class="ti ti-file-description me-1"></i> Tạo báo giá</a> }
-    @if (Model.CanCustomer) { <a href="/Customers" class="btn btn-label-primary btn-sm"><i class="ti ti-user-plus me-1"></i> Tạo Data khách</a> }
-    @if (Model.CanLead)     { <a href="/Leads" class="btn btn-label-primary btn-sm"><i class="ti ti-target me-1"></i> Tạo cơ hội</a> }
-    @if (Model.CanTask)     { <a href="/WorkTasks" class="btn btn-label-primary btn-sm"><i class="ti ti-checkbox me-1"></i> Tạo công việc</a> }
+    @if (Model.CanBooking)  { <a href="/don-hang" class="btn btn-label-primary btn-sm"><i class="ti ti-shopping-cart me-1"></i> Tạo đơn</a> }
+    @if (Model.CanDeparture){ <a href="/chuyen-di" class="btn btn-label-primary btn-sm"><i class="ti ti-flag me-1"></i> Tạo tour / LKH</a> }
+    @if (Model.CanQuote)    { <a href="/bao-gia/soan" class="btn btn-label-primary btn-sm"><i class="ti ti-file-description me-1"></i> Tạo báo giá</a> }
+    @if (Model.CanCustomer) { <a href="/khach-hang" class="btn btn-label-primary btn-sm"><i class="ti ti-user-plus me-1"></i> Tạo Data khách</a> }
+    @if (Model.CanLead)     { <a href="/co-hoi" class="btn btn-label-primary btn-sm"><i class="ti ti-target me-1"></i> Tạo cơ hội</a> }
+    @if (Model.CanTask)     { <a href="/cong-viec" class="btn btn-label-primary btn-sm"><i class="ti ti-checkbox me-1"></i> Tạo công việc</a> }
   </div>
 </div>
 
@@ -278,7 +278,7 @@
           <h5 class="mb-0">Top khách hàng</h5>
           <small class="text-muted">Theo doanh thu</small>
         </div>
-        <a href="/Customers" class="btn btn-sm btn-label-primary">Tất cả</a>
+        <a href="/khach-hang" class="btn btn-sm btn-label-primary">Tất cả</a>
       </div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
@@ -291,7 +291,7 @@
           @foreach (var c in Model.TopCustomers)
           {
             <tr>
-              <td><a href="/Customers/Details/@c.CustomerId" class="fw-medium">@c.CustomerName</a></td>
+              <td><a href="/khach-hang/@c.CustomerId" class="fw-medium">@c.CustomerName</a></td>
               <td class="text-end">@c.Revenue.ToString("#,##0")</td>
               <td class="text-end">@c.Received.ToString("#,##0")</td>
             </tr>
@@ -309,7 +309,7 @@
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">Quản lý lịch hẹn</h5>
-      <a href="/CustomerCares" class="btn btn-sm btn-label-primary">Tất cả</a>
+      <a href="/lich-hen" class="btn btn-sm btn-label-primary">Tất cả</a>
     </div>
     <div class="table-responsive">
       <table class="table table-hover mb-0">
@@ -369,7 +369,7 @@
 <div class="card mb-4">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h5 class="mb-0">Vinh danh chiến binh sales</h5>
-    <a href="/CommissionBySourceReport" class="btn btn-sm btn-label-primary">Báo cáo hoa hồng</a>
+    <a href="/hoa-hong-theo-nguon" class="btn btn-sm btn-label-primary">Báo cáo hoa hồng</a>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
@@ -397,7 +397,7 @@
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">Lịch khởi hành</h5>
-      <a href="/OperationCalendar" class="small">Xem lịch điều hành →</a>
+      <a href="/lich-dieu-hanh" class="small">Xem lịch điều hành →</a>
     </div>
     <div class="card-body"><div id="cal"></div></div>
   </div>
@@ -483,7 +483,7 @@
                 { label: 'Tổng số chỗ', value: p.totalSlots != null ? tk.money(p.totalSlots) : null },
                 { label: 'Trạng thái', value: p.statusLabel }
               ],
-              actionUrl: '/Departures/Detail/' + i.event.id,
+              actionUrl: '/chuyen-di/' + i.event.id,
               actionText: 'Mở chi tiết chuyến'
             });
           }

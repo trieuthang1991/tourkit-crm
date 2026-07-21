@@ -4,17 +4,45 @@
     bool Has(string p) => User.HasClaim("perm", p);
     var groups = MenuData.FilterByPerm(MenuData.Groups, Has);
     var current = ViewContext.HttpContext.Request.Path.Value ?? "/";
+
+    // Route KHỚP DÀI NHẤT với đường dẫn hiện tại là route "đúng" đang mở. Chỉ tô đậm route đó.
+    // Nếu không: "/don-hang" (Tất cả đơn hàng) là tiền tố của "/don-hang/loai/tour-fit" nên cả hai
+    // cùng sáng — đúng lỗi nhập nhằng cần trị. So khớp theo ĐOẠN (segment) để "/don" không khớp bừa.
+    var bestRoute = BestMatch(groups, current);
 }
 @functions {
-    static bool IsActive(MenuNode n, string path) =>
-        n.To is { } to && to != "#" && (path.Equals(to, StringComparison.OrdinalIgnoreCase)
+    static bool Matches(string to, string path) =>
+        to != "#" && (path.Equals(to, StringComparison.OrdinalIgnoreCase)
             || path.StartsWith(to + "/", StringComparison.OrdinalIgnoreCase));
-    static bool GroupActive(MenuNode g, string path) =>
-        g.Children?.Any(c => IsActive(c, path) || GroupActive(c, path)) ?? false;
+
+    static string? BestMatch(IReadOnlyList<MenuNode> nodes, string path)
+    {
+        string? best = null;
+        void Walk(IReadOnlyList<MenuNode> ns)
+        {
+            foreach (var n in ns)
+            {
+                if (n.Children is { Count: > 0 }) { Walk(n.Children); }
+                else if (n.To is { } to && Matches(to, path) && (best is null || to.Length > best.Length))
+                {
+                    best = to;
+                }
+            }
+        }
+        Walk(nodes);
+        return best;
+    }
+
+    static bool IsActive(MenuNode n, string? bestRoute) =>
+        n.To is { } to && to != "#" && bestRoute is not null
+            && to.Equals(bestRoute, StringComparison.OrdinalIgnoreCase);
+
+    static bool GroupActive(MenuNode g, string? bestRoute) =>
+        g.Children?.Any(c => IsActive(c, bestRoute) || GroupActive(c, bestRoute)) ?? false;
 }
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
   <div class="app-brand demo">
-    <a href="/Dashboard" class="app-brand-link">
+    <a href="/tong-quan" class="app-brand-link">
       <span class="app-brand-logo demo">
         <span class="fw-bold fs-3 text-primary">T</span>
       </span>
@@ -27,7 +55,7 @@
   <ul class="menu-inner py-1">
     @foreach (var g in groups)
     {
-        var gActive = GroupActive(g, current);
+        var gActive = GroupActive(g, bestRoute);
         <li class="menu-item @(gActive ? "active open" : "")">
             <a href="javascript:void(0)" class="menu-link menu-toggle">
                 @if (g.Icon != null) { <i class="menu-icon tf-icons @g.Icon"></i> }
@@ -38,12 +66,12 @@
                 {
                     if (c.Children is { Count: > 0 })
                     {
-                        <li class="menu-item @(GroupActive(c, current) ? "active open" : "")">
+                        <li class="menu-item @(GroupActive(c, bestRoute) ? "active open" : "")">
                             <a href="javascript:void(0)" class="menu-link menu-toggle"><div>@c.Label</div></a>
                             <ul class="menu-sub">
                                 @foreach (var sub in c.Children)
                                 {
-                                    <li class="menu-item @(IsActive(sub, current) ? "active" : "")">
+                                    <li class="menu-item @(IsActive(sub, bestRoute) ? "active" : "")">
                                         <a href="@sub.To" class="menu-link"><div>@sub.Label</div></a>
                                     </li>
                                 }
@@ -52,7 +80,7 @@
                     }
                     else
                     {
-                        <li class="menu-item @(IsActive(c, current) ? "active" : "")">
+                        <li class="menu-item @(IsActive(c, bestRoute) ? "active" : "")">
                             <a href="@c.To" class="menu-link"><div>@c.Label</div></a>
                         </li>
                     }

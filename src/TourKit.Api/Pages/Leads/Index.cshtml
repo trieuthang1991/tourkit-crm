@@ -291,7 +291,7 @@
           { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
           { data: null, className: 'text-end', render: function (r) {
               var act = r.convertedCustomerId
-                ? '<a href="/Customers/Details/' + r.convertedCustomerId + '" class="btn btn-icon btn-sm" title="Xem khách"><i class="ti ti-user"></i></a>'
+                ? '<a href="/khach-hang/' + r.convertedCustomerId + '" class="btn btn-icon btn-sm" title="Xem khách"><i class="ti ti-user"></i></a>'
                 : '<button type="button" class="btn btn-icon btn-sm text-success js-convert" title="Chuyển thành khách"><i class="ti ti-user-check"></i></button>';
               return act +
                 '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +

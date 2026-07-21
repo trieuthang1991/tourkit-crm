@@ -97,9 +97,13 @@ public class IndexModel : TkListPageModel
         // Mốc "đến": người dùng chọn NGÀY → lấy hết ngày đó.
         DateTimeOffset? DEnd(string k) => D(k) is { } d ? (d.TimeOfDay == TimeSpan.Zero ? d.AddDays(1).AddTicks(-1) : d) : null;
 
+        // Loại NCC ưu tiên đoạn "loai" trong route (/nha-cung-cap/loai/hdv) rồi mới tới query ?type.
+        int? loaiType = RouteData.Values.TryGetValue("loai", out var raw) && raw is string slug
+            && TourKit.Api.Routing.RouteMap.ProviderLoai.TryGetValue(slug, out var t) ? t : null;
+
         return new ProviderListFilter(
             Q: keyword,
-            Type: I("type"),
+            Type: I("type") ?? loaiType,
             Status: I("status"),
             Province: S("province"),
             BranchId: G("branchId"),

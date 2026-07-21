@@ -24,11 +24,11 @@
 
 @* Thao tác nhanh — chỉ hiện nút mà người dùng có quyền (bám quickActions hệ cũ). *@
 <div class="d-flex flex-wrap gap-2 mb-4">
-  @if (Model.CanTask)     { <a href="/WorkTasks" class="btn btn-label-primary btn-sm"><i class="ti ti-checkbox me-1"></i> Tạo việc</a> }
-  @if (Model.CanLead)     { <a href="/Leads" class="btn btn-label-primary btn-sm"><i class="ti ti-target me-1"></i> Tạo cơ hội</a> }
-  @if (Model.CanCare)     { <a href="/CustomerCares" class="btn btn-label-primary btn-sm"><i class="ti ti-calendar-event me-1"></i> Tạo lịch hẹn</a> }
-  @if (Model.CanCustomer) { <a href="/Customers" class="btn btn-label-primary btn-sm"><i class="ti ti-user-plus me-1"></i> Tạo Data khách</a> }
-  @if (Model.CanBooking)  { <a href="/Orders" class="btn btn-label-primary btn-sm"><i class="ti ti-shopping-cart me-1"></i> Tạo đơn</a> }
+  @if (Model.CanTask)     { <a href="/cong-viec" class="btn btn-label-primary btn-sm"><i class="ti ti-checkbox me-1"></i> Tạo việc</a> }
+  @if (Model.CanLead)     { <a href="/co-hoi" class="btn btn-label-primary btn-sm"><i class="ti ti-target me-1"></i> Tạo cơ hội</a> }
+  @if (Model.CanCare)     { <a href="/lich-hen" class="btn btn-label-primary btn-sm"><i class="ti ti-calendar-event me-1"></i> Tạo lịch hẹn</a> }
+  @if (Model.CanCustomer) { <a href="/khach-hang" class="btn btn-label-primary btn-sm"><i class="ti ti-user-plus me-1"></i> Tạo Data khách</a> }
+  @if (Model.CanBooking)  { <a href="/don-hang" class="btn btn-label-primary btn-sm"><i class="ti ti-shopping-cart me-1"></i> Tạo đơn</a> }
 </div>
 
 @if (Model.CanDashboard)
@@ -86,7 +86,7 @@
     <div class="card h-100">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Thông báo bạn cần quan tâm</h5>
-        <a href="/Notifications" class="small">Xem tất cả</a>
+        <a href="/thong-bao" class="small">Xem tất cả</a>
       </div>
       <div class="card-body p-0" style="max-height:340px;overflow-y:auto">
         @if (Model.Notifications.Count == 0)
@@ -135,7 +135,7 @@
       <div class="card h-100">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Công nợ khách hàng</h5>
-          <a href="/CustomerDebtReport" class="small">Xem báo cáo</a>
+          <a href="/cong-no-khach" class="small">Xem báo cáo</a>
         </div>
         <div class="card-body p-0" style="max-height:340px;overflow-y:auto">
           @if (Model.TopDebt.Count == 0)
@@ -174,7 +174,7 @@
       <div class="card h-100">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Lịch hẹn hôm nay</h5>
-          <a href="/CustomerCares" class="small">Xem tất cả →</a>
+          <a href="/lich-hen" class="small">Xem tất cả →</a>
         </div>
         <div class="card-body">
           @if (Model.TodayCares.Count == 0)
@@ -232,7 +232,7 @@
                   {
                     <div class="d-flex justify-content-between align-items-center gap-2 py-2 border-bottom">
                       <div style="min-width:0">
-                        <a href="/Receipts" class="fw-medium d-block text-truncate">@r.Code</a>
+                        <a href="/phieu-thu" class="fw-medium d-block text-truncate">@r.Code</a>
                         <small class="text-muted">@(r.CustomerName ?? r.OrderCode ?? "—")</small>
                       </div>
                       <div class="text-end flex-shrink-0">
@@ -257,7 +257,7 @@
                   {
                     <div class="d-flex justify-content-between align-items-center gap-2 py-2 border-bottom">
                       <div style="min-width:0">
-                        <a href="/Payments" class="fw-medium d-block text-truncate">@p.Code</a>
+                        <a href="/phieu-chi" class="fw-medium d-block text-truncate">@p.Code</a>
                         <small class="text-muted">@(p.ProviderName ?? p.OrderCode ?? "—")</small>
                       </div>
                       <div class="text-end flex-shrink-0">
@@ -281,7 +281,7 @@
       <div class="card h-100">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Thông tin doanh nghiệp</h5>
-          <a href="/Posts" class="small">Xem thêm</a>
+          <a href="/bai-viet" class="small">Xem thêm</a>
         </div>
         <div class="card-body p-0" style="max-height:300px;overflow-y:auto">
           @if (Model.Posts.Count == 0)
@@ -296,7 +296,7 @@
                 <li class="list-group-item d-flex align-items-start">
                   <div class="avatar avatar-sm me-3 flex-shrink-0"><span class="avatar-initial rounded-circle bg-label-info"><i class="ti ti-article"></i></span></div>
                   <div style="min-width:0">
-                    <a href="/Posts" class="fw-medium d-block text-truncate">@p.Title</a>
+                    <a href="/bai-viet" class="fw-medium d-block text-truncate">@p.Title</a>
                     <small class="text-muted">
                       @if (!string.IsNullOrWhiteSpace(p.CategoryName))
                       {
@@ -320,7 +320,7 @@
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">Công việc của tôi</h5>
-      <a href="/WorkTasks" class="small">Xem tất cả →</a>
+      <a href="/cong-viec" class="small">Xem tất cả →</a>
     </div>
     <div class="card-body pb-0">
       <div class="d-flex flex-wrap gap-2 mb-3">
@@ -362,7 +362,7 @@
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">Lịch chăm sóc của tôi</h5>
-      <a href="/CustomerCares" class="small">Xem tất cả →</a>
+      <a href="/lich-hen" class="small">Xem tất cả →</a>
     </div>
     <div class="table-responsive">
       <table class="table table-hover mb-0">
@@ -395,7 +395,7 @@
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">Lịch khởi hành</h5>
-      <a href="/OperationCalendar" class="small">Xem lịch điều hành →</a>
+      <a href="/lich-dieu-hanh" class="small">Xem lịch điều hành →</a>
     </div>
     <div class="card-body"><div id="cal"></div></div>
   </div>
@@ -468,7 +468,7 @@
                 { label: 'Tổng số chỗ', value: p.totalSlots != null ? tk.money(p.totalSlots) : null },
                 { label: 'Trạng thái', value: p.statusLabel }
               ],
-              actionUrl: '/Departures/Detail/' + i.event.id,
+              actionUrl: '/chuyen-di/' + i.event.id,
               actionText: 'Mở chi tiết chuyến'
             });
           }

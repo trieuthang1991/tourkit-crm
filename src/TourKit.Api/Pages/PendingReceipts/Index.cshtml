@@ -15,7 +15,7 @@
     <small class="text-muted">Hàng chờ xử lý — mặc định lọc trạng thái Chờ duyệt.</small>
   </div>
   <div class="d-flex gap-2">
-    <a class="btn btn-label-secondary" href="/Receipts"><i class="ti ti-list me-1"></i> Tất cả phiếu thu</a>
+    <a class="btn btn-label-secondary" href="/phieu-thu"><i class="ti ti-list me-1"></i> Tất cả phiếu thu</a>
     <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
   </div>
 </div>
@@ -237,7 +237,7 @@
         $('#dm-partner').text(r.partner);
         $('#dm-method').text(r.paymentMethod);
         $('#dm-recognized').text(r.isRecognized ? 'Đã ghi nhận' : 'Chưa ghi nhận');
-        $('#dm-order-link').attr('href', '/Orders/Detail/' + r.orderId);
+        $('#dm-order-link').attr('href', '/don-hang/' + r.orderId);
         var $a = $('#dm-actions').empty();
         if (CAN_APPROVE && r.status === 0) {
           $a.append('<button type="button" class="btn btn-label-danger me-2" id="dm-reject">Từ chối</button>' +

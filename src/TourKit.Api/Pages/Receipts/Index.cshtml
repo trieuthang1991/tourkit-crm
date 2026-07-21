@@ -230,7 +230,7 @@
         $('#dm-partner').text(r.partner);
         $('#dm-method').text(r.paymentMethod);
         $('#dm-recognized').text(r.isRecognized ? 'Đã ghi nhận' : 'Chưa ghi nhận');
-        $('#dm-order-link').attr('href', '/Orders/Detail/' + r.orderId);
+        $('#dm-order-link').attr('href', '/don-hang/' + r.orderId);
         var $a = $('#dm-actions').empty();
         if (CAN_APPROVE && r.status === 0) {
           $a.append('<button type="button" class="btn btn-label-danger me-2" id="dm-reject">Từ chối</button>' +

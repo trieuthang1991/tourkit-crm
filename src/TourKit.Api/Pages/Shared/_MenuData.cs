@@ -14,118 +14,118 @@ public static class MenuData
         new("g-workspace", "Workspace", "ti ti-layout-dashboard", Children: new List<MenuNode>
         {
             new("w-social", "Mạng Nội Bộ", To: "/ComingSoon?f=social", Perm: "post.view"),
-            new("w-workspace", "Bàn làm việc", To: "/Workspace", Perm: "report.dashboard.view"),
-            new("w-dashboard", "Tổng quan", To: "/Dashboard", Perm: "report.dashboard.view"),
-            new("w-noti", "Thông báo", To: "/Notifications", Perm: "report.dashboard.view"),
+            new("w-workspace", "Bàn làm việc", To: "/ban-lam-viec", Perm: "report.dashboard.view"),
+            new("w-dashboard", "Tổng quan", To: "/tong-quan", Perm: "report.dashboard.view"),
+            new("w-noti", "Thông báo", To: "/thong-bao", Perm: "report.dashboard.view"),
         }),
         new("g-provider", "Nhà cung cấp", "ti ti-building-store", Children: new List<MenuNode>
         {
-            new("p-all", "Tất cả Nhà cung cấp", To: "/Providers", Perm: "provider.view"),
-            new("p-services", "Danh mục dịch vụ", To: "/ServiceItems", Perm: "service.view"),
-            new("p-pricing", "Bảng giá NCC", To: "/ProviderServices", Perm: "service.view"),
-            new("p-terms", "Điều khoản TT NCC", To: "/PaymentTerms", Perm: "provider.view"),
-            new("p-series", "Series Vé / Quỹ vé", To: "/TicketFunds", Perm: "ticketfund.view"),
+            new("p-all", "Tất cả Nhà cung cấp", To: "/nha-cung-cap", Perm: "provider.view"),
+            new("p-services", "Danh mục dịch vụ", To: "/danh-muc-dich-vu", Perm: "service.view"),
+            new("p-pricing", "Bảng giá NCC", To: "/bang-gia-ncc", Perm: "service.view"),
+            new("p-terms", "Điều khoản TT NCC", To: "/dieu-khoan-thanh-toan", Perm: "provider.view"),
+            new("p-series", "Series Vé / Quỹ vé", To: "/quy-ve", Perm: "ticketfund.view"),
         }),
         new("g-crm", "CRM", "ti ti-users", Children: new List<MenuNode>
         {
-            new("crm-share", "Chia số Sale", To: "/LeadCampaigns", Perm: "lead.view"),
-            new("crm-opp", "Cơ hội bán hàng", To: "/Leads", Perm: "lead.view"),
-            new("crm-data", "Data khách hàng", To: "/Customers", Perm: "customer.view"),
-            new("crm-dedup", "Rà khách trùng", To: "/Customers/Duplicates", Perm: "customer.view"),
-            new("crm-care", "Quản lý lịch hẹn", To: "/CustomerCares", Perm: "care.view"),
+            new("crm-share", "Chia số Sale", To: "/chia-so-sale", Perm: "lead.view"),
+            new("crm-opp", "Cơ hội bán hàng", To: "/co-hoi", Perm: "lead.view"),
+            new("crm-data", "Data khách hàng", To: "/khach-hang", Perm: "customer.view"),
+            new("crm-dedup", "Rà khách trùng", To: "/khach-hang/trung-lap", Perm: "customer.view"),
+            new("crm-care", "Quản lý lịch hẹn", To: "/lich-hen", Perm: "care.view"),
             new("crm-feedback", "Feedback", Children: new List<MenuNode>
             {
-                new("fb-general", "Feedback chung", To: "/TourRatings", Perm: "rating.view"),
-                new("fb-tour", "Feedback theo Tour", To: "/TourRatings", Perm: "rating.view"),
+                new("fb-general", "Feedback chung", To: "/danh-gia", Perm: "rating.view"),
+                new("fb-tour", "Feedback theo Tour", To: "/danh-gia", Perm: "rating.view"),
                 new("fb-zns", "Feedback ZNS", To: "/ComingSoon?f=fb-zns", Perm: "rating.view"),
             }),
         }),
         new("g-quote", "Báo Giá", "ti ti-calculator", Children: new List<MenuNode>
         {
-            new("q-tour", "Tính giá Tour", To: "/Quotes", Perm: "quote.view"),
-            new("q-combo", "Tính giá Combo", To: "/Quotes?type=1", Perm: "quote.view"),
-            new("q-git", "Tour GIT/Combo", To: "/Quotes?type=2", Perm: "quote.view"),
-            new("q-landtour", "Landtour", To: "/Quotes?type=3", Perm: "quote.view"),
-            new("q-booking", "Booking Phòng", To: "/Quotes?type=4", Perm: "quote.view"),
-            new("q-service", "Dịch vụ lẻ", To: "/Quotes?type=5", Perm: "quote.view"),
-            new("q-visa", "Visa", To: "/Quotes?type=6", Perm: "quote.view"),
-            new("q-agent", "Báo giá Đại lý (B2B)", To: "/AgentQuotes", Perm: "agentquote.view"),
+            new("q-tour", "Tính giá Tour", To: "/bao-gia", Perm: "quote.view"),
+            new("q-combo", "Tính giá Combo", To: "/bao-gia/loai/combo", Perm: "quote.view"),
+            new("q-git", "Tour GIT/Combo", To: "/bao-gia/loai/git", Perm: "quote.view"),
+            new("q-landtour", "Landtour", To: "/bao-gia/loai/landtour", Perm: "quote.view"),
+            new("q-booking", "Booking Phòng", To: "/bao-gia/loai/booking", Perm: "quote.view"),
+            new("q-service", "Dịch vụ lẻ", To: "/bao-gia/loai/dich-vu-le", Perm: "quote.view"),
+            new("q-visa", "Visa", To: "/bao-gia/loai/visa", Perm: "quote.view"),
+            new("q-agent", "Báo giá Đại lý (B2B)", To: "/bao-gia-dai-ly", Perm: "agentquote.view"),
         }),
         new("g-order", "Đơn hàng/LKH", "ti ti-shopping-cart", Children: new List<MenuNode>
         {
-            new("o-all", "Tất cả đơn hàng", To: "/Orders", Perm: "booking.view"),
-            new("o-tours", "Tất cả Tour/LKH", To: "/Departures", Perm: "departure.view"),
-            new("o-fit", "Tour FIT", To: "/Orders?bookingType=0", Perm: "booking.view"),
-            new("o-git", "Tour GIT/Combo", To: "/Orders?bookingType=1", Perm: "booking.view"),
-            new("o-landtour", "LandTour", To: "/Orders?bookingType=2", Perm: "booking.view"),
-            new("o-visa", "Visa", To: "/Orders?bookingType=5", Perm: "booking.view"),
-            new("o-service", "Dịch vụ lẻ", To: "/Orders?bookingType=4", Perm: "booking.view"),
+            new("o-all", "Tất cả đơn hàng", To: "/don-hang", Perm: "booking.view"),
+            new("o-tours", "Tất cả Tour/LKH", To: "/chuyen-di", Perm: "departure.view"),
+            new("o-fit", "Tour FIT", To: "/don-hang/loai/tour-fit", Perm: "booking.view"),
+            new("o-git", "Tour GIT/Combo", To: "/don-hang/loai/git", Perm: "booking.view"),
+            new("o-landtour", "LandTour", To: "/don-hang/loai/landtour", Perm: "booking.view"),
+            new("o-visa", "Visa", To: "/don-hang/loai/visa", Perm: "booking.view"),
+            new("o-service", "Dịch vụ lẻ", To: "/don-hang/loai/dich-vu-le", Perm: "booking.view"),
         }),
         new("g-booking", "Booking Phòng/Khách sạn", "ti ti-building-skyscraper", Children: new List<MenuNode>
         {
-            new("b-roomfund", "Quỹ phòng", To: "/RoomAllotments", Perm: "roomfund.view"),
-            new("b-list", "Danh sách Booking", To: "/ServiceBookings", Perm: "servicebooking.view"),
-            new("b-roomclass", "Hạng phòng (danh mục)", To: "/RoomClasses", Perm: "servicebooking.view"),
+            new("b-roomfund", "Quỹ phòng", To: "/quy-phong", Perm: "roomfund.view"),
+            new("b-list", "Danh sách Booking", To: "/booking-dich-vu", Perm: "servicebooking.view"),
+            new("b-roomclass", "Hạng phòng (danh mục)", To: "/hang-phong", Perm: "servicebooking.view"),
         }),
         new("g-flight", "Vé Máy Bay", "ti ti-plane", Children: new List<MenuNode>
         {
-            new("f-provider", "Nhà cung cấp vé", To: "/Providers", Perm: "provider.view"),
-            new("f-group", "Vé máy bay đoàn", To: "/FlightTickets", Perm: "ticketfund.view"),
-            new("f-individual", "Vé máy bay lẻ", To: "/FlightTicketsIndividual", Perm: "ticketfund.view"),
+            new("f-provider", "Nhà cung cấp vé", To: "/nha-cung-cap/loai/ve", Perm: "provider.view"),
+            new("f-group", "Vé máy bay đoàn", To: "/ve-may-bay-doan", Perm: "ticketfund.view"),
+            new("f-individual", "Vé máy bay lẻ", To: "/ve-may-bay-le", Perm: "ticketfund.view"),
         }),
         new("g-guide", "Hướng dẫn viên", "ti ti-id-badge-2", Children: new List<MenuNode>
         {
-            new("gd-provider", "Hướng dẫn viên", To: "/Providers", Perm: "guide.view"),
-            new("gd-calendar", "Lịch điều Hướng dẫn viên", To: "/GuideAssignments", Perm: "guide.view"),
-            new("gd-report", "Báo cáo", To: "/GuideReport", Perm: "guide.view"),
+            new("gd-provider", "Hướng dẫn viên", To: "/nha-cung-cap/loai/hdv", Perm: "guide.view"),
+            new("gd-calendar", "Lịch điều Hướng dẫn viên", To: "/dieu-hdv", Perm: "guide.view"),
+            new("gd-report", "Báo cáo", To: "/bao-cao-hdv", Perm: "guide.view"),
         }),
         new("g-vehicle", "Quản lý xe", "ti ti-car", Children: new List<MenuNode>
         {
-            new("v-store", "Kho xe", To: "/Vehicles", Perm: "vehicle.view"),
-            new("v-waiting", "Lịch xe chờ duyệt", To: "/VehiclePending", Perm: "vehicle.view"),
-            new("v-manage", "Lịch điều xe", To: "/VehicleAssignments", Perm: "vehicle.view"),
-            new("v-report", "Báo cáo", To: "/VehicleReport", Perm: "vehicle.view"),
+            new("v-store", "Kho xe", To: "/kho-xe", Perm: "vehicle.view"),
+            new("v-waiting", "Lịch xe chờ duyệt", To: "/lich-xe-cho", Perm: "vehicle.view"),
+            new("v-manage", "Lịch điều xe", To: "/dieu-xe", Perm: "vehicle.view"),
+            new("v-report", "Báo cáo", To: "/bao-cao-xe", Perm: "vehicle.view"),
         }),
         new("g-operation", "Điều hành Tour", "ti ti-clipboard-list", Children: new List<MenuNode>
         {
-            new("op-voucher", "Phiếu điều hành dịch vụ", To: "/ServiceOperations", Perm: "servicebooking.view"),
-            new("op-calendar", "Lịch điều hành", To: "/OperationCalendar", Perm: "departure.view"),
+            new("op-voucher", "Phiếu điều hành dịch vụ", To: "/phieu-dieu-hanh", Perm: "servicebooking.view"),
+            new("op-calendar", "Lịch điều hành", To: "/lich-dieu-hanh", Perm: "departure.view"),
         }),
         new("g-finance", "Tài chính/Kế toán", "ti ti-building-bank", Children: new List<MenuNode>
         {
-            new("fi-waiting", "Phiếu thu chờ", To: "/PendingReceipts", Perm: "receipt.view"),
-            new("fi-receipt", "Phiếu thu", To: "/Receipts", Perm: "receipt.view"),
-            new("fi-payment", "Phiếu chi", To: "/Payments", Perm: "payment.view"),
-            new("fi-invoice", "Danh sách hoá đơn (VAT)", To: "/Invoices", Perm: "invoice.view"),
-            new("fi-cashflow", "Thống kê dòng tiền", To: "/CashFlowReport", Perm: "report.cashflow.view"),
-            new("fi-debt-c", "Công nợ khách", To: "/CustomerDebtReport", Perm: "report.debt.view"),
-            new("fi-debt-p", "Công nợ NCC", To: "/ProviderDebtReport", Perm: "report.providerdebt.view"),
+            new("fi-waiting", "Phiếu thu chờ", To: "/phieu-thu-cho", Perm: "receipt.view"),
+            new("fi-receipt", "Phiếu thu", To: "/phieu-thu", Perm: "receipt.view"),
+            new("fi-payment", "Phiếu chi", To: "/phieu-chi", Perm: "payment.view"),
+            new("fi-invoice", "Danh sách hoá đơn (VAT)", To: "/hoa-don", Perm: "invoice.view"),
+            new("fi-cashflow", "Thống kê dòng tiền", To: "/dong-tien", Perm: "report.cashflow.view"),
+            new("fi-debt-c", "Công nợ khách", To: "/cong-no-khach", Perm: "report.debt.view"),
+            new("fi-debt-p", "Công nợ NCC", To: "/cong-no-ncc", Perm: "report.providerdebt.view"),
         }),
         new("g-kpi", "KPIs", "ti ti-trending-up", Children: new List<MenuNode>
         {
-            new("kpi-config", "Thiết lập KPIs", To: "/KpiConfig", Perm: "report.dashboard.view"),
+            new("kpi-config", "Thiết lập KPIs", To: "/thiet-lap-kpi", Perm: "report.dashboard.view"),
         }),
         new("g-commission", "Hoa Hồng", "ti ti-percentage", Children: new List<MenuNode>
         {
-            new("hh-config", "Thiết lập hoa hồng", To: "/CommissionConfig", Perm: "commission.view"),
-            new("hh-campaign", "Chính sách hoa hồng (bậc thang)", To: "/CommissionTiers", Perm: "commission.view"),
-            new("hh-customer", "HH theo loại khách", To: "/CustomerCommissionRules", Perm: "commission.view"),
-            new("hh-source", "Báo cáo theo nguồn", To: "/CommissionBySourceReport", Perm: "report.commission.view"),
-            new("hh-milestone", "Báo cáo theo cột mốc", To: "/CommissionByMilestoneReport", Perm: "report.commission.view"),
+            new("hh-config", "Thiết lập hoa hồng", To: "/thiet-lap-hoa-hong", Perm: "commission.view"),
+            new("hh-campaign", "Chính sách hoa hồng (bậc thang)", To: "/chinh-sach-hoa-hong", Perm: "commission.view"),
+            new("hh-customer", "HH theo loại khách", To: "/hoa-hong-loai-khach", Perm: "commission.view"),
+            new("hh-source", "Báo cáo theo nguồn", To: "/hoa-hong-theo-nguon", Perm: "report.commission.view"),
+            new("hh-milestone", "Báo cáo theo cột mốc", To: "/hoa-hong-theo-moc", Perm: "report.commission.view"),
         }),
         new("g-project", "Dự án & Công việc", "ti ti-checklist", Children: new List<MenuNode>
         {
-            new("pj-project", "Dự án", To: "/Workflows", Perm: "workflow.view"),
-            new("pj-mytask", "Công việc của tôi", To: "/WorkTasks", Perm: "task.view"),
-            new("pj-tasks", "Danh sách Công việc", To: "/WorkTasks", Perm: "task.view"),
-            new("pj-perf", "Báo cáo Hiệu suất", To: "/TaskPerformance", Perm: "task.view"),
+            new("pj-project", "Dự án", To: "/du-an", Perm: "workflow.view"),
+            new("pj-mytask", "Công việc của tôi", To: "/cong-viec", Perm: "task.view"),
+            new("pj-tasks", "Danh sách Công việc", To: "/cong-viec", Perm: "task.view"),
+            new("pj-perf", "Báo cáo Hiệu suất", To: "/hieu-suat-cong-viec", Perm: "task.view"),
         }),
         new("g-marketing", "Marketing", "ti ti-speakerphone", Children: new List<MenuNode>
         {
             new("mkt-email", "Email Marketing", Children: new List<MenuNode>
             {
-                new("mkt-campaign", "Chiến dịch", To: "/MarketingCampaigns", Perm: "marketing.view"),
-                new("mkt-store", "Kho Email Mẫu", To: "/MessageTemplates", Perm: "marketing.view"),
+                new("mkt-campaign", "Chiến dịch", To: "/chien-dich", Perm: "marketing.view"),
+                new("mkt-store", "Kho Email Mẫu", To: "/mau-tin-nhan", Perm: "marketing.view"),
             }),
             new("mkt-zalo", "Zalo OA/ZBS", Children: new List<MenuNode>
             {
@@ -133,32 +133,32 @@ public static class MenuData
                 new("zalo-zns", "ZNS", To: "/ComingSoon?f=zalo-zns", Perm: "marketing.view"),
                 new("zalo-uid", "Zalo UID (Tin follow OA)", To: "/ComingSoon?f=zalo-uid", Perm: "marketing.view"),
             }),
-            new("mkt-posts", "Bài viết", To: "/Posts", Perm: "post.view"),
-            new("mkt-postcat", "Chuyên mục bài viết", To: "/PostCategories", Perm: "post.view"),
+            new("mkt-posts", "Bài viết", To: "/bai-viet", Perm: "post.view"),
+            new("mkt-postcat", "Chuyên mục bài viết", To: "/chuyen-muc", Perm: "post.view"),
         }),
         new("g-report", "Báo cáo", "ti ti-chart-bar", Children: new List<MenuNode>
         {
-            new("rp-seller", "Nhân viên", To: "/SellerReport", Perm: "report.turnover.view"),
-            new("rp-money", "Tài chính", To: "/FinanceReport", Perm: "report.turnover.view"),
-            new("rp-tourtype", "Thu chi theo loại tour", To: "/TourTypeReport", Perm: "report.turnover.view"),
+            new("rp-seller", "Nhân viên", To: "/bao-cao-nhan-vien", Perm: "report.turnover.view"),
+            new("rp-money", "Tài chính", To: "/bao-cao-tai-chinh", Perm: "report.turnover.view"),
+            new("rp-tourtype", "Thu chi theo loại tour", To: "/thu-chi-theo-tour", Perm: "report.turnover.view"),
             new("rp-export", "Xuất báo cáo", To: "/ComingSoon?f=export", Perm: "report.turnover.view"),
-            new("rp-system", "Báo cáo tổng hợp", To: "/SystemReport", Perm: "report.turnover.view"),
+            new("rp-system", "Báo cáo tổng hợp", To: "/bao-cao-tong-hop", Perm: "report.turnover.view"),
         }),
         new("g-agent", "Đại lý (B2B)", "ti ti-heart-handshake", Children: new List<MenuNode>
         {
-            new("ag-list", "Danh sách đại lý", To: "/Agents", Perm: "agent.view"),
-            new("ag-booking", "Đặt chỗ đại lý", To: "/AgentBookings", Perm: "agentquote.view"),
+            new("ag-list", "Danh sách đại lý", To: "/dai-ly", Perm: "agent.view"),
+            new("ag-booking", "Đặt chỗ đại lý", To: "/dat-cho-dai-ly", Perm: "agentquote.view"),
         }),
         new("g-system", "Cài đặt hệ thống", "ti ti-settings", Children: new List<MenuNode>
         {
-            new("sys-users", "Thành viên", To: "/Users", Perm: "user.view"),
-            new("sys-roles", "Vai trò & quyền", To: "/Roles", Perm: "user.view"),
-            new("sys-config", "Cấu hình", To: "/ConfigHub", Perm: "user.view"),
-            new("sys-billing", "Gói dịch vụ", To: "/Billing", Perm: "subscription.view"),
+            new("sys-users", "Thành viên", To: "/thanh-vien", Perm: "user.view"),
+            new("sys-roles", "Vai trò & quyền", To: "/vai-tro", Perm: "user.view"),
+            new("sys-config", "Cấu hình", To: "/cau-hinh", Perm: "user.view"),
+            new("sys-billing", "Gói dịch vụ", To: "/goi-dich-vu", Perm: "subscription.view"),
         }),
         new("g-log", "Log hệ thống", "ti ti-history", Children: new List<MenuNode>
         {
-            new("log-system", "Log hệ thống", To: "/ActivityLogs", Perm: "activitylog.view"),
+            new("log-system", "Log hệ thống", To: "/nhat-ky", Perm: "activitylog.view"),
         }),
     };
 

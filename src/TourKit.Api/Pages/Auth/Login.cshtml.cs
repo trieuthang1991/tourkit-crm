@@ -43,6 +43,6 @@ public class LoginModel : PageModel
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
             new AuthenticationProperties { IsPersistent = Input.RememberMe });
-        return LocalRedirect(returnUrl ?? "/Dashboard");
+        return LocalRedirect(returnUrl ?? "/tong-quan");
     }
 }

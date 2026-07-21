@@ -39,6 +39,17 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/");            // mọi trang cần đăng nhập
     options.Conventions.AllowAnonymousToFolder("/Auth"); // trừ đăng nhập/đăng xuất
     options.Conventions.AllowAnonymousToPage("/Ping");   // trang smoke hạ tầng
+
+    // Route tiếng Việt thân thiện (RouteMap là nguồn duy nhất). AddPageRoute THÊM route mới, route
+    // mặc định PascalCase vẫn còn nhưng bị LegacyRouteRedirectMiddleware 301 sang route này.
+    foreach (var (page, route) in TourKit.Api.Routing.RouteMap.Pages)
+    {
+        options.Conventions.AddPageRoute(page, route);
+    }
+    foreach (var (page, route) in TourKit.Api.Routing.RouteMap.ExtraRoutes)
+    {
+        options.Conventions.AddPageRoute(page, route);
+    }
 });
 
 // CORS cho SPA (Vite dev mặc định 5173/4173; prod cấu hình qua Cors:Origins).
@@ -222,9 +233,9 @@ builder.Services.AddAuthentication(options =>
     })
     .AddCookie(options =>
     {
-        options.LoginPath = "/Auth/Login";
-        options.LogoutPath = "/Auth/Logout";
-        options.AccessDeniedPath = "/Auth/Login";
+        options.LoginPath = "/dang-nhap";
+        options.LogoutPath = "/dang-xuat";
+        options.AccessDeniedPath = "/dang-nhap";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
@@ -303,7 +314,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseCors("web");   // trước Authentication để preflight OPTIONS không cần token
 
-app.UseStaticFiles();   // phục vụ wwwroot (assets Vuexy)
+app.UseStaticFiles();   // phục vụ wwwroot (assets Vuexy) — đặt trước redirect để asset không bị 301
+
+// 301 URL cũ (PascalCase) → route tiếng Việt. Sau static files (asset không dính), trước auth/routing.
+app.UseMiddleware<TourKit.Api.Routing.LegacyRouteRedirectMiddleware>();
 
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();   // sau Authentication để đọc được claim

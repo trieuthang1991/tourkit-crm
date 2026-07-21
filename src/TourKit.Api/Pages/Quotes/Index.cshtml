@@ -15,7 +15,7 @@
     <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
     @if (Model.CanManage)
     {
-      <a href="/Quotes/Edit@(Model.QuoteType is int t ? $"?type={t}" : "")" class="btn btn-primary"><i class="ti ti-plus me-1"></i> Thêm báo giá</a>
+      <a href="/bao-gia/Edit@(Model.QuoteType is int t ? $"?type={t}" : "")" class="btn btn-primary"><i class="ti ti-plus me-1"></i> Thêm báo giá</a>
     }
   </div>
 </div>
@@ -163,7 +163,7 @@
           { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
           // Báo giá: mã (link sửa) + loại báo giá
           { data: null, render: function (r) {
-              return '<a href="/Quotes/Edit/' + r.id + '" class="fw-medium">' + tk.escape(r.code) + '</a>' +
+              return '<a href="/bao-gia/soan/' + r.id + '" class="fw-medium">' + tk.escape(r.code) + '</a>' +
                      '<div class="small text-muted">' + tk.escape(r.typeLabel) + '</div>';
             } },
           // Khách / Tour
@@ -188,12 +188,12 @@
               return h;
             } },
           { data: null, className: 'text-end text-nowrap', render: function (r) {
-              var h = '<a href="/Quotes/Edit/' + r.id + '" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>';
+              var h = '<a href="/bao-gia/soan/' + r.id + '" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>';
               if (CAN_MANAGE && r.status === 2 && !r.convertedOrderId) {
                 h += '<button type="button" class="btn btn-sm btn-label-primary ms-1 js-convert" title="Chuyển đơn">Chuyển đơn</button>';
               }
               if (r.convertedOrderId) {
-                h += '<a href="/Orders/Detail/' + r.convertedOrderId + '" class="btn btn-icon btn-sm" title="Mở đơn"><i class="ti ti-external-link"></i></a>';
+                h += '<a href="/don-hang/' + r.convertedOrderId + '" class="btn btn-icon btn-sm" title="Mở đơn"><i class="ti ti-external-link"></i></a>';
               }
               if (CAN_MANAGE) {
                 h += '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
