@@ -2,7 +2,7 @@ namespace TourKit.Application.Notifications;
 
 public interface INotificationService
 {
-    Task<IReadOnlyList<NotificationDto>> ListMineAsync(bool unreadOnly);
+    Task<IReadOnlyList<NotificationDto>> ListMineAsync(bool unreadOnly, int? take = null);
     Task<int> UnreadCountAsync();
     Task MarkReadAsync(Guid id);
     Task MarkAllReadAsync();

@@ -41,16 +41,15 @@ public sealed class CampaignService(
         return new PagedResult<CampaignDto>(pageItems, filtered.Count, page, size);
     }
 
-    public async Task<CampaignStatsDto> GetStatsAsync()
-    {
-        var all = await repo.ListAsync();
-        var messages = (await logRepo.ListAsync()).Count(l => l.Status == StatusSent);
-        return new CampaignStatsDto(
-            all.Count,
-            all.Count(c => c.Status == 0),
-            all.Count(c => c.Status == 1),
-            messages);
-    }
+    /// <summary>
+    /// Đếm bằng COUNT ở SQL. Bảng nhật ký gửi phình theo từng địa chỉ của mỗi lần gửi chiến dịch,
+    /// nạp cả bảng chỉ để đếm là hỏng ngay khi gửi vài chiến dịch lớn.
+    /// </summary>
+    public async Task<CampaignStatsDto> GetStatsAsync() => new(
+        await repo.CountAsync(),
+        await repo.CountAsync(c => c.Status == 0),
+        await repo.CountAsync(c => c.Status == 1),
+        await logRepo.CountAsync(l => l.Status == StatusSent));
 
     public async Task<CampaignDto> GetAsync(Guid id)
     {

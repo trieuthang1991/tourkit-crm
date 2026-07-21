@@ -38,7 +38,28 @@ public sealed class BookingServiceTests
             providerRepo ?? new FakeRepository<Provider>(),
             paymentRepo ?? new FakeRepository<PaymentVoucher>(),
             marketRepo ?? new FakeRepository<MarketType>(),
-            invoiceRepo ?? new FakeRepository<Invoice>());
+            invoiceRepo ?? new FakeRepository<Invoice>(),
+            new FakeOrderQueries(orderRepo ?? new FakeRepository<Order>(), receiptRepo ?? new FakeRepository<ReceiptVoucher>()));
+
+    /// <summary>
+    /// Bản giả của IOrderQueries: đọc từ CHÍNH các fake repo của bài test, dựng ra đúng bộ dòng thô
+    /// mà bản SQL thật trả về. Nhờ vậy phần LOGIC GỘP trong BookingService vẫn được test như cũ.
+    /// </summary>
+    private sealed class FakeOrderQueries(
+        FakeRepository<Order> orders, FakeRepository<ReceiptVoucher> receipts) : IOrderQueries
+    {
+        public async Task<IReadOnlyList<OrderStatsRowDto>> GetOrderStatsRowsAsync()
+        {
+            var paid = (await receipts.ListAsync(r => r.IsRecognized))
+                .GroupBy(r => r.OrderId)
+                .ToDictionary(g => g.Key, g => g.Sum(r => r.Amount));
+
+            return (await orders.ListAsync())
+                .Select(o => new OrderStatsRowDto(
+                    (int)o.Status, (int)o.OperationalStatus, o.TotalRevenue, paid.GetValueOrDefault(o.Id)))
+                .ToList();
+        }
+    }
 
     private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
     {

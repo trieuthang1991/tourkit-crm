@@ -17,9 +17,11 @@ public static class CachingServiceCollectionExtensions
     public const string InstanceName = "tourkit:";
 
     /// <summary>
-    /// Có chuỗi kết nối Redis → dùng Redis (nhiều tiến trình/nhiều máy chủ dùng CHUNG bộ nhớ đệm).
-    /// Không có → rơi về cache trong bộ nhớ tiến trình, ứng dụng vẫn chạy bình thường (máy lập trình,
-    /// môi trường kiểm thử, hoặc khi cố tình tắt Redis).
+    /// Dựng HybridCache (mặc định từ .NET 9): L1 trong bộ nhớ tiến trình, L2 là Redis nếu có cấu hình.
+    ///
+    /// Có chuỗi kết nối Redis → L2 = Redis, nhiều tiến trình/nhiều máy chủ dùng CHUNG bộ nhớ đệm.
+    /// Không có → chỉ còn L1, ứng dụng vẫn chạy bình thường (máy lập trình, môi trường kiểm thử,
+    /// hoặc khi cố tình tắt Redis).
     /// </summary>
     public static IServiceCollection AddTourKitCaching(this IServiceCollection services, IConfiguration configuration)
     {
@@ -28,12 +30,9 @@ public static class CachingServiceCollectionExtensions
         // Chuỗi kết nối để dạng "ENC:..." trong appsettings, giải mã bằng Crypton như cấu hình SMTP.
         var connection = Crypton.Unwrap(configuration[ConnectionStringKey]);
 
-        if (string.IsNullOrWhiteSpace(connection))
+        if (!string.IsNullOrWhiteSpace(connection))
         {
-            services.AddDistributedMemoryCache();
-        }
-        else
-        {
+            // Đăng ký IDistributedCache = Redis TRƯỚC; HybridCache tự nhận nó làm tầng L2.
             services.AddStackExchangeRedisCache(o =>
             {
                 o.Configuration = connection;
@@ -41,7 +40,11 @@ public static class CachingServiceCollectionExtensions
             });
         }
 
-        services.AddScoped<ITkCache, DistributedTkCache>();
+#pragma warning disable EXTEXP0018 // HybridCache còn gắn nhãn thử nghiệm nhưng đã là cách làm khuyến nghị của .NET 9+.
+        services.AddHybridCache();
+#pragma warning restore EXTEXP0018
+
+        services.AddScoped<ITkCache, HybridTkCache>();
         return services;
     }
 }

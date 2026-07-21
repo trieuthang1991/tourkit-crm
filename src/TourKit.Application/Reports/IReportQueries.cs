@@ -22,4 +22,5 @@ public interface IReportQueries
     Task<IReadOnlyList<TurnoverByBranchRowDto>> GetTurnoverByBranchAsync();
     Task<IReadOnlyList<TopCustomerRowDto>> GetTopCustomersAsync(int top = 10);
     Task<KpiSummaryDto> GetKpiSummaryAsync();
+
 }

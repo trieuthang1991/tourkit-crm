@@ -12,18 +12,27 @@ public sealed class NotificationService(
     IRepository<Notification> repo,
     ICurrentUserContext currentUser) : INotificationService
 {
-    public async Task<IReadOnlyList<NotificationDto>> ListMineAsync(bool unreadOnly)
+    public async Task<IReadOnlyList<NotificationDto>> ListMineAsync(bool unreadOnly, int? take = null)
     {
         var userId = RequireUser();
-        var items = await repo.ListAsync(n => n.UserId == userId && (!unreadOnly || !n.IsRead));
-        return items.OrderByDescending(n => n.CreatedAt).Select(Map).ToList();
+
+        // Có giới hạn → PageAsync sắp xếp và cắt NGAY Ở SQL (PageAsync đã OrderByDescending CreatedAt),
+        // thay vì kéo toàn bộ thông báo của user về rồi sắp trong bộ nhớ.
+        if (take is int n && n > 0)
+        {
+            var (page, _) = await repo.PageAsync(1, n, x => x.UserId == userId && (!unreadOnly || !x.IsRead));
+            return page.Select(Map).ToList();
+        }
+
+        var items = await repo.ListAsync(x => x.UserId == userId && (!unreadOnly || !x.IsRead));
+        return items.OrderByDescending(x => x.CreatedAt).Select(Map).ToList();
     }
 
-    public async Task<int> UnreadCountAsync()
+    /// <summary>Đếm bằng COUNT ở SQL — hàm này chạy MỖI LẦN render trang (chuông thông báo).</summary>
+    public Task<int> UnreadCountAsync()
     {
         var userId = RequireUser();
-        var items = await repo.ListAsync(n => n.UserId == userId && !n.IsRead);
-        return items.Count;
+        return repo.CountAsync(n => n.UserId == userId && !n.IsRead);
     }
 
     public async Task MarkReadAsync(Guid id)

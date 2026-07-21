@@ -149,7 +149,7 @@ public class IndexModel : PageModel
             }
         }
 
-        Notifications = (await _notifications.ListMineAsync(unreadOnly: false)).Take(10).ToList();
+        Notifications = (await _notifications.ListMineAsync(unreadOnly: false, take: 10)).ToList();
 
         if (CanDashboard)
         {

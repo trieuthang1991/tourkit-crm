@@ -26,7 +26,8 @@ public sealed class BookingService(
     IRepository<Provider> providerRepo,
     IRepository<PaymentVoucher> paymentRepo,
     IRepository<MarketType> marketRepo,
-    IRepository<Invoice> invoiceRepo) : IBookingService
+    IRepository<Invoice> invoiceRepo,
+    IOrderQueries orderQueries) : IBookingService
 {
     public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null)
     {
@@ -267,23 +268,20 @@ public sealed class BookingService(
 
     public async Task<OrderStatsDto> GetOrderStatsAsync()
     {
-        var orders = await orderRepo.ListAsync();
-        var orderIds = orders.Select(o => o.Id).ToHashSet();
-        var paidByOrder = (await receiptRepo.ListAsync(r => orderIds.Contains(r.OrderId) && r.IsRecognized))
-            .GroupBy(r => r.OrderId)
-            .ToDictionary(g => g.Key, g => g.Sum(r => r.Amount));
+        // Dữ liệu thô lấy qua IReportQueries: Orders chỉ chiếu 4 cột, phiếu thu đã GỘP sẵn ở SQL.
+        // (Trước đây nạp nguyên entity Order của cả bảng + từng dòng phiếu thu về bộ nhớ.)
+        var rows = await orderQueries.GetOrderStatsRowsAsync();
 
         decimal revenue = 0m, paid = 0m, outstanding = 0m;
         int draft = 0, confirmed = 0, cancelled = 0;
         int unpaid = 0, deposit = 0, fullyPaid = 0;
         int opUpcoming = 0, opRunning = 0, opDone = 0, opCancelled = 0;
-        foreach (var o in orders)
+        foreach (var o in rows)
         {
-            var p = paidByOrder.GetValueOrDefault(o.Id);
             revenue += o.TotalRevenue;
-            paid += p;
-            outstanding += OrderMath.Outstanding(o.TotalRevenue, p);
-            switch (o.Status)
+            paid += o.Paid;
+            outstanding += OrderMath.Outstanding(o.TotalRevenue, o.Paid);
+            switch ((OrderStatus)o.Status)
             {
                 case OrderStatus.Draft: draft++; break;
                 case OrderStatus.Confirmed: confirmed++; break;
@@ -291,7 +289,7 @@ public sealed class BookingService(
                 default: break;
             }
 
-            switch (PaymentBucketOf(p, o.TotalRevenue))
+            switch (PaymentBucketOf(o.Paid, o.TotalRevenue))
             {
                 case 0: unpaid++; break;
                 case 1: deposit++; break;
@@ -300,7 +298,7 @@ public sealed class BookingService(
             }
 
             // Thẻ vận hành: đang chạy · sắp chạy · hoàn thành (Xong/Đã QT) · huỷ (Hủy/Hủy không đi).
-            switch (o.OperationalStatus)
+            switch ((OrderOperationalStatus)o.OperationalStatus)
             {
                 case OrderOperationalStatus.Upcoming: opUpcoming++; break;
                 case OrderOperationalStatus.Running: opRunning++; break;
@@ -313,7 +311,7 @@ public sealed class BookingService(
         }
 
         return new OrderStatsDto(
-            orders.Count, revenue, paid, outstanding, draft, confirmed, cancelled, unpaid, deposit, fullyPaid,
+            rows.Count, revenue, paid, outstanding, draft, confirmed, cancelled, unpaid, deposit, fullyPaid,
             opUpcoming, opRunning, opDone, opCancelled);
     }
 

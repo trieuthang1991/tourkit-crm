@@ -20,7 +20,7 @@ public class WorkTaskServiceTests
             return Task.CompletedTask;
         }
 
-        public Task<IReadOnlyList<NotificationDto>> ListMineAsync(bool unreadOnly) => Task.FromResult<IReadOnlyList<NotificationDto>>([]);
+        public Task<IReadOnlyList<NotificationDto>> ListMineAsync(bool unreadOnly, int? take = null) => Task.FromResult<IReadOnlyList<NotificationDto>>([]);
         public Task<int> UnreadCountAsync() => Task.FromResult(0);
         public Task MarkReadAsync(Guid id) => Task.CompletedTask;
         public Task MarkAllReadAsync() => Task.CompletedTask;

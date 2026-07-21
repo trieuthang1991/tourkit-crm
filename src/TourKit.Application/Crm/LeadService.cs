@@ -51,18 +51,18 @@ public sealed class LeadService(
         return new LeadFilterOptionsDto(sources);
     }
 
-    public async Task<LeadStatsDto> GetStatsAsync()
-    {
-        var all = await repo.ListAsync();
-        return new LeadStatsDto(
-            all.Count,
-            all.Count(l => l.Status == LeadStatus.New),
-            all.Count(l => l.Status == LeadStatus.Contacted),
-            all.Count(l => l.Status == LeadStatus.Qualified),
-            all.Count(l => l.Status == LeadStatus.Won),
-            all.Count(l => l.Status == LeadStatus.Lost),
-            all.Count(l => l.ConvertedCustomerId != null));
-    }
+    /// <summary>
+    /// Đếm bằng COUNT ở SQL, mỗi bậc một truy vấn nhẹ — thay vì kéo cả bảng Cơ hội (3.000 dòng)
+    /// về rồi đếm 7 lần trong bộ nhớ. Thẻ thống kê này chạy cùng MỌI lần mở màn Cơ hội.
+    /// </summary>
+    public async Task<LeadStatsDto> GetStatsAsync() => new(
+        await repo.CountAsync(),
+        await repo.CountAsync(l => l.Status == LeadStatus.New),
+        await repo.CountAsync(l => l.Status == LeadStatus.Contacted),
+        await repo.CountAsync(l => l.Status == LeadStatus.Qualified),
+        await repo.CountAsync(l => l.Status == LeadStatus.Won),
+        await repo.CountAsync(l => l.Status == LeadStatus.Lost),
+        await repo.CountAsync(l => l.ConvertedCustomerId != null));
 
     public async Task<LeadDto> GetAsync(Guid id)
     {

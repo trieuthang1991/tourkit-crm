@@ -23,17 +23,27 @@ public sealed class CustomerCareService(
             (f.AssignedToUserId == null || c.AssignedToUserId == f.AssignedToUserId) &&
             (f.Status == null || c.Status == f.Status));
 
-        var customerNames = (await customerRepo.ListAsync()).ToDictionary(x => x.Id, x => x.FullName);
-        var userNames = (await userRepo.ListAsync()).ToDictionary(x => x.Id, x => x.FullName);
-
         var filtered = all
             .Where(c => kw == null || c.Title.Contains(kw, StringComparison.OrdinalIgnoreCase))
             .OrderBy(c => c.Status)
             .ThenBy(c => c.RemindAt ?? DateTimeOffset.MaxValue)
-            .Select(c => Map(c, customerNames, userNames))
             .ToList();
 
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
+        // Cắt trang TRƯỚC rồi mới tra tên: chỉ nạp khách/nhân viên xuất hiện trong đúng trang này.
+        // Trước đây nạp TOÀN BỘ bảng Customers (3.000 dòng) chỉ để đặt tên cho vài dòng hiển thị.
+        var pageEntities = filtered.Skip((page - 1) * size).Take(size).ToList();
+        var customerIds = pageEntities.Select(c => c.CustomerId).ToHashSet();
+        var userIds = pageEntities.Where(c => c.AssignedToUserId is not null)
+            .Select(c => c.AssignedToUserId!.Value).ToHashSet();
+
+        var customerNames = customerIds.Count == 0
+            ? []
+            : (await customerRepo.ListAsync(x => customerIds.Contains(x.Id))).ToDictionary(x => x.Id, x => x.FullName);
+        var userNames = userIds.Count == 0
+            ? []
+            : (await userRepo.ListAsync(x => userIds.Contains(x.Id))).ToDictionary(x => x.Id, x => x.FullName);
+
+        var pageItems = pageEntities.Select(c => Map(c, customerNames, userNames)).ToList();
         return new PagedResult<CustomerCareDto>(pageItems, filtered.Count, page, size);
     }
 
