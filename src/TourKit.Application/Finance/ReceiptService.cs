@@ -167,13 +167,13 @@ public sealed class ReceiptService(
         }).ToList();
     }
 
-    public async Task<ReceiptStatsDto> GetStatsAsync()
-    {
-        var all = await receiptRepo.ListAsync();
-        return new ReceiptStatsDto(
-            all.Count, all.Sum(r => r.Amount),
-            all.Count(r => r.Status == 0), all.Count(r => r.Status == 1), all.Count(r => r.Status == 2));
-    }
+    /// <summary>Đếm và cộng ở SQL — không nạp bảng phiếu thu về bộ nhớ.</summary>
+    public async Task<ReceiptStatsDto> GetStatsAsync() => new(
+        await receiptRepo.CountAsync(),
+        await receiptRepo.SumAsync(r => r.Amount),
+        await receiptRepo.CountAsync(r => r.Status == 0),
+        await receiptRepo.CountAsync(r => r.Status == 1),
+        await receiptRepo.CountAsync(r => r.Status == 2));
 
     public async Task<OrderBalanceDto> GetBalanceAsync(Guid orderId)
     {

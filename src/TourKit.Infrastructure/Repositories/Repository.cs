@@ -39,4 +39,22 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
     public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate) => Set.AnyAsync(predicate);
     public Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
         => (predicate is null ? Set : Set.Where(predicate)).CountAsync();
+
+    /// <summary>Cắt trang ở SQL theo khoá sắp xếp truyền vào (thay vì ép CreatedAt giảm dần).</summary>
+    public async Task<(IReadOnlyList<T> Items, int Total)> PageAsync<TKey>(
+        int page, int size, Expression<Func<T, TKey>> orderBy, bool descending,
+        Expression<Func<T, bool>>? predicate = null)
+    {
+        var q = predicate is null ? Set : Set.Where(predicate);
+        var p = page < PaginationDefaults.FirstPage ? PaginationDefaults.FirstPage : page;
+        var s = size is < 1 or > PaginationDefaults.MaxPageSize ? PaginationDefaults.DefaultPageSize : size;
+        var total = await q.CountAsync();
+        var ordered = descending ? q.OrderByDescending(orderBy) : q.OrderBy(orderBy);
+        var items = await ordered.AsNoTracking().Skip((p - 1) * s).Take(s).ToListAsync();
+        return (items, total);
+    }
+
+    public Task<decimal> SumAsync(Expression<Func<T, decimal>> selector, Expression<Func<T, bool>>? predicate = null)
+        => (predicate is null ? Set : Set.Where(predicate)).SumAsync(selector);
+
 }

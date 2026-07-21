@@ -24,6 +24,14 @@ public class IndexModel : PageModel
         _users = users; _depts = depts; _positions = positions; _roles = roles; _hasher = hasher; _directory = directory;
     }
 
+    /// <summary>
+    /// Quyền GHI của màn này. Lớp chỉ gắn [Authorize("user.view")] nên nếu handler ghi không tự
+    /// kiểm thì người chỉ có quyền XEM vẫn đổi được mật khẩu người khác (kể cả quản trị) rồi đăng
+    /// nhập bằng tài khoản đó. UsersController phía API vốn đã đòi user.manage — thiếu ở đây là
+    /// đường vòng qua chính luật của API.
+    /// </summary>
+    public bool CanManage => User.HasClaim("perm", "user.manage");
+
     public IReadOnlyList<UserListDto> Items { get; private set; } = [];
     public IReadOnlyList<DepartmentDto> Departments { get; private set; } = [];
     public IReadOnlyList<PositionDto> Positions { get; private set; } = [];
@@ -53,6 +61,11 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostSaveAsync()
     {
+        if (!CanManage)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền sửa người dùng."));
+        }
+
         if (!ModelState.IsValid)
         {
             return new JsonResult(Result.Error(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault() ?? "Dữ liệu không hợp lệ."));
@@ -80,6 +93,12 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostToggleAsync(Guid id)
     {
+        if (!CanManage)
+        {
+            TempData["err"] = "Bạn không có quyền khoá/mở người dùng.";
+            return RedirectToPage();
+        }
+
         await _users.ToggleActiveAsync(id);
         await _directory.InvalidateAsync();
         TempData["ok"] = "Đã đổi trạng thái người dùng.";
@@ -89,6 +108,11 @@ public class IndexModel : PageModel
     /// <summary>Quản trị đặt lại mật khẩu hộ (khác luồng tự quên mật khẩu qua email ở /Auth/ForgotPassword).</summary>
     public async Task<IActionResult> OnPostResetPasswordAsync(Guid id, string newPassword)
     {
+        if (!CanManage)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền đặt lại mật khẩu."));
+        }
+
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
         {
             return new JsonResult(Result.Error("Mật khẩu mới tối thiểu 8 ký tự."));

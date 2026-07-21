@@ -6,7 +6,9 @@ using TourKit.Application.Settings;
 
 namespace TourKit.Api.Pages.CompanyProfile;
 
-[Authorize]
+// Sửa hồ sơ công ty = sửa số tài khoản ngân hàng in trên hoá đơn/hợp đồng → đường chuyển hướng
+// dòng tiền. [Authorize] trần cho phép BẤT KỲ người đăng nhập nào sửa; API vốn đã đòi company.manage.
+[Authorize(Policy = "company.manage")]
 public class IndexModel : PageModel
 {
     private readonly ICompanyProfileService _svc;

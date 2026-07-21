@@ -167,13 +167,13 @@ public sealed class PaymentService(
             p.Amount, p.PaymentMethod, p.IssuedAt, p.Partner, p.ReceiverName, p.Status, p.IsRecognized)).ToList();
     }
 
-    public async Task<PaymentStatsDto> GetStatsAsync()
-    {
-        var all = await paymentRepo.ListAsync();
-        return new PaymentStatsDto(
-            all.Count, all.Sum(p => p.Amount),
-            all.Count(p => p.Status == 0), all.Count(p => p.Status == 1), all.Count(p => p.Status == 2));
-    }
+    /// <summary>Đếm và cộng ở SQL — không nạp bảng phiếu chi về bộ nhớ.</summary>
+    public async Task<PaymentStatsDto> GetStatsAsync() => new(
+        await paymentRepo.CountAsync(),
+        await paymentRepo.SumAsync(p => p.Amount),
+        await paymentRepo.CountAsync(p => p.Status == 0),
+        await paymentRepo.CountAsync(p => p.Status == 1),
+        await paymentRepo.CountAsync(p => p.Status == 2));
 
     private static async Task Validate<T>(IValidator<T> validator, T dto)
     {

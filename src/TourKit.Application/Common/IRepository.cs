@@ -17,4 +17,17 @@ public interface IRepository<T> where T : BaseEntity
 
     /// <summary>Đếm ở SQL (COUNT) — KHÔNG materialize bảng.</summary>
     Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
+
+    /// <summary>
+    /// Cắt trang ở SQL với KHOÁ SẮP XẾP tuỳ chọn. Bản <see cref="PageAsync(int,int,Expression{Func{T,bool}})"/>
+    /// ép sắp theo CreatedAt giảm dần, không dùng được cho màn cần sắp theo cột nghiệp vụ
+    /// (vd hoá đơn sắp theo ngày hoá đơn) — trước đây các màn đó buộc phải nạp cả bảng rồi sắp ở bộ nhớ.
+    /// </summary>
+    Task<(IReadOnlyList<T> Items, int Total)> PageAsync<TKey>(
+        int page, int size, Expression<Func<T, TKey>> orderBy, bool descending,
+        Expression<Func<T, bool>>? predicate = null);
+
+    /// <summary>Cộng ở SQL (SUM) — KHÔNG materialize bảng. Dùng cho thẻ thống kê có tổng tiền.</summary>
+    Task<decimal> SumAsync(Expression<Func<T, decimal>> selector, Expression<Func<T, bool>>? predicate = null);
+
 }

@@ -21,37 +21,45 @@ public sealed class InvoiceService(
         var f = filter ?? new InvoiceListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        // Lọc cột thật (trạng thái, khoảng ngày) đã đẩy xuống SQL.
-        // CHƯA cắt trang được ở SQL: màn hoá đơn sắp theo NGÀY HOÁ ĐƠN giảm dần, trong khi
-        // IRepository.PageAsync ép sắp theo CreatedAt giảm dần — dùng vào là đổi thứ tự hiển thị.
-        // Muốn phân trang ở SQL phải bổ sung overload PageAsync nhận khoá sắp xếp (ngoài phạm vi sửa này).
-        var all = await invoiceRepo.ListAsync(i =>
+        System.Linq.Expressions.Expression<Func<Invoice, bool>> where = i =>
             (f.Status == null || i.Status == f.Status) &&
             (f.DateFrom == null || i.InvoiceDate >= f.DateFrom) &&
-            (f.DateTo == null || i.InvoiceDate <= f.DateTo));
+            (f.DateTo == null || i.InvoiceDate <= f.DateTo);
+
+        // Không có từ khoá (mặc định khi mở màn) → cắt trang NGAY Ở SQL, sắp theo NGÀY HOÁ ĐƠN
+        // giảm dần đúng như màn hình cần (nhờ overload PageAsync nhận khoá sắp xếp).
+        if (kw == null)
+        {
+            var (rows, count) = await invoiceRepo.PageAsync(page, size, i => i.InvoiceDate, descending: true, where);
+            return new PagedResult<InvoiceSummaryDto>(rows.Select(ToSummary).ToList(), count, page, size);
+        }
+
+        // Có từ khoá: so khớp không phân biệt hoa thường trên 4 cột — EF không dịch được
+        // StringComparison, nên phần này vẫn lọc ở bộ nhớ, nhưng chạy trên tập ĐÃ bị where thu hẹp.
+        var all = await invoiceRepo.ListAsync(where);
 
         bool MatchQ(Invoice i) =>
-            kw == null ||
             i.Series.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
             i.Number.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
             i.BuyerName.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
             (i.BuyerTaxCode?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
 
         var filtered = all.Where(MatchQ).OrderByDescending(i => i.InvoiceDate).ToList();
-        var dtos = filtered.Skip((page - 1) * size).Take(size)
-            .Select(i => new InvoiceSummaryDto(i.Id, i.Series, i.Number, i.InvoiceDate, i.BuyerName, i.TotalAmount, i.Status, i.BuyerTaxCode, i.VatAmount))
-            .ToList();
+        var dtos = filtered.Skip((page - 1) * size).Take(size).Select(ToSummary).ToList();
         return new PagedResult<InvoiceSummaryDto>(dtos, filtered.Count, page, size);
     }
 
-    public async Task<InvoiceStatsDto> GetStatsAsync()
-    {
-        var all = await invoiceRepo.ListAsync();
-        return new InvoiceStatsDto(
-            all.Count,
-            all.Count(i => i.Status == 0), all.Count(i => i.Status == 1), all.Count(i => i.Status == 2),
-            all.Sum(i => i.TotalAmount), all.Sum(i => i.VatAmount));
-    }
+    private static InvoiceSummaryDto ToSummary(Invoice i) => new(
+        i.Id, i.Series, i.Number, i.InvoiceDate, i.BuyerName, i.TotalAmount, i.Status, i.BuyerTaxCode, i.VatAmount);
+
+    /// <summary>Đếm và cộng ở SQL — không nạp bảng hoá đơn về bộ nhớ.</summary>
+    public async Task<InvoiceStatsDto> GetStatsAsync() => new(
+        await invoiceRepo.CountAsync(),
+        await invoiceRepo.CountAsync(i => i.Status == 0),
+        await invoiceRepo.CountAsync(i => i.Status == 1),
+        await invoiceRepo.CountAsync(i => i.Status == 2),
+        await invoiceRepo.SumAsync(i => i.TotalAmount),
+        await invoiceRepo.SumAsync(i => i.VatAmount));
 
     public async Task<InvoiceDto> GetAsync(Guid id)
     {

@@ -151,6 +151,36 @@ if (enableBackgroundJobs)
 }
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+
+// CHỐT CHẶN KHỞI ĐỘNG — khoá ký JWT là thứ duy nhất giữ ranh giới giữa các tenant: ai biết khoá thì
+// tự ký được token với tenant_id bất kỳ + toàn bộ quyền, đọc/ghi dữ liệu của MỌI đơn vị. Khoá mẫu
+// trong appsettings.json nằm sẵn trong git, nên chạy production bằng nó là mất trắng cách ly.
+// Thà hỏng lúc deploy còn hơn âm thầm chạy với khoá ai cũng biết.
+if (!builder.Environment.IsDevelopment())
+{
+    var weak = string.IsNullOrWhiteSpace(jwt.Secret)
+        || jwt.Secret.Length < 32
+        || jwt.Secret.Contains("change-me", StringComparison.OrdinalIgnoreCase);
+    if (weak)
+    {
+        throw new InvalidOperationException(
+            "Jwt:Secret đang là khoá mẫu/quá ngắn. Đặt biến môi trường Jwt__Secret bằng chuỗi ngẫu nhiên >= 32 ký tự " +
+            "rồi khởi động lại. KHÔNG để khoá thật trong appsettings.json (file này nằm trong git).");
+    }
+
+    // Chuỗi ENC: chỉ là che mắt (khoá Crypton hardcode trong mã nguồn) — không được dùng cho bí mật
+    // thật ở môi trường chạy thật. Đặt giá trị thật qua biến môi trường; Crypton.Unwrap trả nguyên văn.
+    foreach (var key in new[] { "Redis:ConnectionString", "Email:User", "Email:Password", "ConnectionStrings:Default" })
+    {
+        if (builder.Configuration[key]?.StartsWith("ENC:", StringComparison.Ordinal) == true)
+        {
+            throw new InvalidOperationException(
+                $"{key} vẫn ở dạng ENC: — khoá giải nằm trong mã nguồn nên đây KHÔNG phải mã hoá. " +
+                $"Đặt giá trị thật qua biến môi trường {key.Replace(":", "__", StringComparison.Ordinal)}.");
+        }
+    }
+}
+
 builder.Services.AddAuthentication(options =>
     {
         // "smart": chọn scheme theo request — API gửi Bearer → JWT; trang HTML (không Bearer) → Cookie.
@@ -195,6 +225,13 @@ builder.Services.AddAuthentication(options =>
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
         options.Cookie.Name = "tourkit_auth";
+        // Mặc định của SecurePolicy là SameAsRequest → chỉ cần MỘT lần điều hướng qua HTTP là cookie
+        // phiên đi ra ngoài dạng rõ và ai đứng giữa mạng cũng nhặt được (quán cà phê, ISP, chặng đầu
+        // trước reverse proxy). Ép Always. SameSite=Lax chặn cookie bị gửi kèm request từ trang khác.
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest   // dev chạy http://localhost, ép Always sẽ mất phiên
+            : CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
     });
 builder.Services.AddAuthorization(options =>
 {
@@ -239,6 +276,26 @@ using (var scope = app.Services.CreateScope())
 app.UseSerilogRequestLogging();   // log mỗi request (method/path/status/thời gian) có cấu trúc
 app.UseMiddleware<ExceptionHandlingMiddleware>();   // thay UseExceptionHandler: map AppException → HTTP + ProblemDetails
 app.UseStatusCodePages();
+
+// Header an toàn cho MỌI phản hồi (đặt sớm để áp cả trang lỗi lẫn file tĩnh).
+// - nosniff: chặn trình duyệt tự đoán kiểu nội dung (đi kèm với việc file tải lên giữ nguyên content-type).
+// - X-Frame-Options DENY: chặn nhúng iframe → chặn clickjacking, tức chặn việc lừa quản trị bấm nhầm
+//   vào thao tác trên màn Người dùng/Vai trò.
+// - Referrer-Policy: không rò đường dẫn nội bộ (có id bản ghi) sang site ngoài.
+app.Use(async (ctx, next) =>
+{
+    var h = ctx.Response.Headers;
+    h["X-Content-Type-Options"] = "nosniff";
+    h["X-Frame-Options"] = "DENY";
+    h["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    await next();
+});
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("web");   // trước Authentication để preflight OPTIONS không cần token
 

@@ -62,6 +62,23 @@ public class CustomerServiceTests
 
         public Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
             => Task.FromResult(predicate is null ? _items.Count : _items.AsQueryable().Count(predicate));
+
+        public Task<(IReadOnlyList<T> Items, int Total)> PageAsync<TKey>(
+            int page, int size, Expression<Func<T, TKey>> orderBy, bool descending,
+            Expression<Func<T, bool>>? predicate = null)
+        {
+            var query = predicate is null ? _items.AsQueryable() : _items.AsQueryable().Where(predicate);
+            var total = query.Count();
+            var ordered = descending ? query.OrderByDescending(orderBy) : query.OrderBy(orderBy);
+            return Task.FromResult<(IReadOnlyList<T> Items, int Total)>(
+                (ordered.Skip((page - 1) * size).Take(size).ToList(), total));
+        }
+
+        public Task<decimal> SumAsync(Expression<Func<T, decimal>> selector, Expression<Func<T, bool>>? predicate = null)
+        {
+            var query = predicate is null ? _items.AsQueryable() : _items.AsQueryable().Where(predicate);
+            return Task.FromResult(query.Sum(selector));
+        }
     }
 
     private sealed class FakeCurrentUser : ICurrentUserContext

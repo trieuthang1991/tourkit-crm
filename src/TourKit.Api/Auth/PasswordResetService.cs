@@ -125,7 +125,27 @@ public sealed class PasswordResetService : IPasswordResetService
         // Request ẩn danh chưa có tenant context → set theo user vừa tra, nếu không guard chéo tenant sẽ chặn lưu.
         _tenant.SetTenant(user.TenantId);
         user.PasswordHash = _hasher.Hash(newPassword);
+
+        // THU HỒI refresh token đang sống. Người ta đặt lại mật khẩu chính vì nghi bị chiếm tài khoản;
+        // nếu không thu hồi thì refresh token của kẻ chiếm vẫn dùng được thêm nhiều ngày, tức thao tác
+        // "khôi phục" không hề khôi phục được gì.
+        var now = DateTimeOffset.UtcNow;
+        var live = await _db.RefreshTokens.IgnoreQueryFilters()
+            .Where(r => r.UserId == user.Id && r.RevokedAt == null)
+            .ToListAsync(ct);
+        foreach (var rt in live)
+        {
+            rt.RevokedAt = now;
+        }
+
         await _db.SaveChangesAsync(ct);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Đặt lại mật khẩu thành công cho user {UserId}, thu hồi {Count} refresh token.", user.Id, live.Count);
+        }
+
         return null;
     }
 }

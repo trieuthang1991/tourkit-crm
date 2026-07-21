@@ -42,8 +42,19 @@ public class IndexModel : PageModel
         Items = rows;
     }
 
+    /// <summary>
+    /// Quyền GHI. Sửa ánh xạ vai trò→quyền là đường LEO THANG ĐẶC QUYỀN trực tiếp: chỉ có quyền
+    /// xem mà vẫn sửa được thì tự gán cho mình mọi quyền trong hệ thống.
+    /// </summary>
+    public bool CanManage => User.HasClaim("perm", "user.manage");
+
     public async Task<IActionResult> OnPostSaveAsync()
     {
+        if (!CanManage)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền sửa vai trò."));
+        }
+
         if (!ModelState.IsValid)
         {
             return new JsonResult(Result.Error(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault() ?? "Dữ liệu không hợp lệ."));
@@ -71,6 +82,12 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
+        if (!CanManage)
+        {
+            TempData["err"] = "Bạn không có quyền xoá vai trò.";
+            return RedirectToPage();
+        }
+
         try
         {
             await _roles.DeleteAsync(id);
