@@ -6,6 +6,11 @@
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/fullcalendar/fullcalendar.css" />
+}
+
+@section PageStyles {
+  <link rel="stylesheet" href="~/vendor/css/pages/app-calendar.css" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
@@ -14,9 +19,16 @@
     <small class="text-muted">Chuyến khởi hành theo ngày — mặc định xem tháng hiện tại.</small>
   </div>
   <div class="d-flex gap-2">
-    <button type="button" class="btn btn-label-secondary" id="btn-prev" title="Tháng trước"><i class="ti ti-chevron-left"></i></button>
-    <button type="button" class="btn btn-label-secondary" id="btn-today">Tháng này</button>
-    <button type="button" class="btn btn-label-secondary" id="btn-next" title="Tháng sau"><i class="ti ti-chevron-right"></i></button>
+    @* Chuyển Lịch / Bảng — lịch chỉ nạp chuyến trong khoảng đang xem *@
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-label-secondary active" id="view-cal" title="Dạng lịch"><i class="ti ti-calendar"></i></button>
+      <button type="button" class="btn btn-label-secondary" id="view-table" title="Dạng bảng"><i class="ti ti-list"></i></button>
+    </div>
+    <span id="tbl-nav" class="d-none">
+      <button type="button" class="btn btn-label-secondary" id="btn-prev" title="Tháng trước"><i class="ti ti-chevron-left"></i></button>
+      <button type="button" class="btn btn-label-secondary" id="btn-today">Tháng này</button>
+      <button type="button" class="btn btn-label-secondary" id="btn-next" title="Tháng sau"><i class="ti ti-chevron-right"></i></button>
+    </span>
   </div>
 </div>
 
@@ -56,7 +68,14 @@
   <li class="nav-item"><button type="button" class="nav-link" data-v="true">Đã đóng (@Model.Stats.Closed)</button></li>
 </ul>
 
-<div class="card">
+@* Khung LỊCH — FullCalendar của template; mỗi lần đổi tháng chỉ gọi handler Events cho đúng khoảng đó *@
+<div class="card app-calendar-wrapper" id="pane-cal">
+  <div class="card-body">
+    <div id="calendar"></div>
+  </div>
+</div>
+
+<div class="card d-none" id="pane-table">
   <div class="card-header"><h5 class="mb-0">Chuyến theo ngày khởi hành</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
@@ -77,12 +96,58 @@
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/fullcalendar/fullcalendar.js"></script>
 }
 
 @section PageScripts {
   <script>
-    var dt, isClosed = '';
+    var dt, cal = null, isClosed = '';
     var MONTH_FROM = '@Model.MonthFrom', MONTH_TO = '@Model.MonthTo';
+
+    // ---- Khung LỊCH (FullCalendar của template) ----
+    // events: FullCalendar truyền start/end của khung ĐANG XEM → server chỉ trả chuyến trong khoảng đó.
+    function calFilterParams() {
+      var p = {};
+      ['tourType', 'assignedToUserId'].forEach(function (k) { var v = $('#f-' + k).val(); if (v) { p[k] = v; } });
+      if (isClosed !== '') { p.isClosed = isClosed; }
+      var q = $('#f-q').val(); if (q) { p.q = q; }
+      return p;
+    }
+
+    function initCalendar() {
+      if (cal) { return; }
+      // Bundle fullcalendar.js của template expose global Calendar + các plugin (không có namespace FullCalendar).
+      cal = new Calendar(document.getElementById('calendar'), {
+        initialView: 'dayGridMonth',
+        plugins: [dayGridPlugin, listPlugin, interactionPlugin],
+        locale: 'vi',
+        height: 'auto',
+        firstDay: 1,
+        dayMaxEvents: 3,
+        headerToolbar: { start: 'prev,next today', center: 'title', end: 'dayGridMonth,listMonth' },
+        buttonText: { today: 'Hôm nay', month: 'Tháng', list: 'Danh sách' },
+        events: function (info, success, failure) {
+          var p = calFilterParams();
+          p.start = info.startStr; p.end = info.endStr;
+          $.getJSON('?handler=Events&' + $.param(p))
+            .done(function (res) {
+              if (res.truncated) { tk.error('Khoảng này có ' + res.total + ' chuyến, chỉ hiển thị 500. Hãy thu hẹp bộ lọc.'); }
+              success(res.events);
+            })
+            .fail(failure);
+        },
+        eventDidMount: function (arg) {
+          var e = arg.event.extendedProps;
+          arg.el.setAttribute('title',
+            arg.event.title + ' · ' + e.tourType + ' · ' + e.totalSlots + ' chỗ · ' + e.statusLabel);
+        },
+        eventClick: function (arg) {
+          // Chưa có trang chi tiết chuyến → mở danh sách Chuyến đi lọc theo mã.
+          window.location.href = '/Departures?q=' + encodeURIComponent(arg.event.extendedProps.code);
+        }
+      });
+      cal.render();
+    }
     // Toàn bộ tiêu chí lọc đẩy xuống SERVER (DepartureListFilter) — không lọc ở client, không get-all.
     var FILTERS = ['tourType', 'assignedToUserId', 'departureFrom', 'departureTo'];
 
@@ -153,9 +218,14 @@
           '<span class="text-muted">Tổng chỗ: <span class="fw-medium">' + tk.money(s.slots) + '</span></span>');
       });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      // Áp bộ lọc cho ĐÚNG khung đang xem.
+      function applyFilters() {
+        if ($('#pane-cal').hasClass('d-none')) { dt.ajax.reload(); } else if (cal) { cal.refetchEvents(); }
+      }
+
+      $('#btn-search').on('click', applyFilters);
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { applyFilters(); } });
+      $('.tk-s2f').on('change', applyFilters);
       $('.tk-datef').on('change', function () { dt.ajax.reload(); });
       $('#btn-prev').on('click', function () { shiftMonth(-1); });
       $('#btn-next').on('click', function () { shiftMonth(1); });
@@ -166,14 +236,32 @@
         setRange(MONTH_FROM, MONTH_TO);
         isClosed = '';
         $('#tabs .nav-link').removeClass('active').filter('[data-v=""]').addClass('active');
-        dt.ajax.reload();
+        applyFilters();
       });
       $('#tabs').on('click', '.nav-link', function () {
         $('#tabs .nav-link').removeClass('active');
         $(this).addClass('active');
         isClosed = this.getAttribute('data-v');
-        dt.ajax.reload();
+        applyFilters();
       });
+
+      // Chuyển khung Lịch ↔ Bảng (nút dịch tháng chỉ dùng cho khung bảng; lịch có sẵn prev/next).
+      $('#view-cal').on('click', function () {
+        $('#pane-table').addClass('d-none'); $('#pane-cal').removeClass('d-none');
+        $(this).addClass('active'); $('#view-table').removeClass('active');
+        $('#tbl-nav').addClass('d-none');
+        initCalendar();
+        cal.updateSize();
+      });
+      $('#view-table').on('click', function () {
+        $('#pane-cal').addClass('d-none'); $('#pane-table').removeClass('d-none');
+        $(this).addClass('active'); $('#view-cal').removeClass('active');
+        $('#tbl-nav').removeClass('d-none');
+        dt.columns.adjust();
+      });
+
+      // Mặc định mở khung LỊCH (đúng tên màn "Lịch điều hành").
+      initCalendar();
     });
   </script>
 }

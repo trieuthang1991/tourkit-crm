@@ -8,11 +8,10 @@ using TourKit.Application.Booking.Dtos;
 
 namespace TourKit.Api.Pages.OperationCalendar;
 
-// Lịch điều hành — DataTables SERVER-SIDE (không get-all).
-// Bản cũ (web/src/features/operations/OperationsCalendarPage.tsx → booking/DepartureCalendar.tsx) là LỊCH
-// THÁNG: nạp 500 chuyến rồi gom theo ngày ở client → vi phạm "không get-all". Ở đây thay bằng BẢNG
-// server-side sắp theo ngày khởi hành + lọc khoảng ngày (mặc định = tháng hiện tại), giữ đủ thông tin
-// ô lịch cũ (ngày · tên/mã chuyến · số chỗ · tổng "N chuyến · X chỗ" ở dòng tổng cộng).
+// Lịch điều hành — 2 khung: LỊCH (FullCalendar của template) và BẢNG (DataTables server-side).
+// Bản cũ nạp 500 chuyến rồi gom theo ngày ở client. Ở đây lịch dùng handler Events chỉ nạp chuyến
+// TRONG KHOẢNG ĐANG XEM (FullCalendar gửi start/end mỗi lần đổi tháng) → không get-all mà vẫn giữ
+// đúng dạng lịch; khung bảng giữ nguyên phân trang server + lọc.
 [Authorize(Policy = "departure.view")]
 public class IndexModel : TkListPageModel
 {
@@ -113,6 +112,52 @@ public class IndexModel : TkListPageModel
             // Khối stats ngoài contract DataTables → KPI tự làm tươi qua sự kiện xhr.dt (không thêm roundtrip).
             stats = new { total = stats.Total, upcoming = stats.Upcoming, closed = stats.Closed, totalSlots = stats.TotalSlots },
         });
+    }
+
+    /// <summary>
+    /// Nguồn sự kiện cho FullCalendar: CHỈ nạp chuyến nằm trong khoảng lịch đang xem
+    /// (FullCalendar gửi start/end của khung hiện tại) — không get-all. Trần 500 sự kiện/khung
+    /// để một tháng bất thường cũng không kéo sập trình duyệt.
+    /// </summary>
+    public async Task<IActionResult> OnGetEventsAsync(DateTimeOffset? start, DateTimeOffset? end)
+    {
+        const int max = 500;
+        var q = Request.Query;
+        Guid? G(string k) => Guid.TryParse(q[k], out var g) ? g : null;
+        bool? B(string k) => bool.TryParse(q[k], out var b) ? b : null;
+        string? S(string k) => string.IsNullOrWhiteSpace(q[k]) ? null : q[k].ToString();
+
+        var filter = new DepartureListFilter(
+            Q: S("q"),
+            TourType: S("tourType"),
+            Status: null,
+            AssignedToUserId: G("assignedToUserId"),
+            IsClosed: B("isClosed"),
+            DepartureFrom: start?.ToUniversalTime(),
+            DepartureTo: end?.ToUniversalTime());
+
+        var result = await _svc.ListAsync(1, max, filter);
+        var events = result.Items
+            .Where(d => d.DepartureDate is not null)
+            .Select(d => new
+            {
+                id = d.Id,
+                title = $"{d.Code} — {d.Title}",
+                start = d.DepartureDate!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                // FullCalendar coi 'end' là mốc loại trừ → +1 ngày để thanh phủ hết ngày về.
+                end = d.EndDate?.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                className = d.IsClosed ? "bg-label-secondary" : "bg-label-success",
+                extendedProps = new
+                {
+                    code = d.Code,
+                    tourType = d.TourType ?? "—",
+                    totalSlots = d.TotalSlots,
+                    statusLabel = StatusLabel(d.IsClosed),
+                },
+            })
+            .ToList();
+
+        return new JsonResult(new { events, truncated = result.Total > max, total = result.Total });
     }
 
     private static string WeekdayVi(DateTimeOffset d) => d.DayOfWeek switch
