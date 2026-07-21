@@ -22,8 +22,10 @@
   <input type="hidden" name="Input.OrderId" id="OrderId" value="@(inv?.OrderId)" />
   <input type="hidden" name="LinesJson" id="LinesJson" value="[]" />
 
-  <div class="row g-4">
-    <div class="col-lg-8">
+  @* Bố cục trên→dưới: thông tin → bảng hàng hoá FULL-WIDTH → tổng hợp. Trước đây bảng nằm trong
+     col-lg-8 nên 7 cột bị cuộn ngang. *@
+  <div class="row g-4 mb-1">
+    <div class="col-12">
       <div class="card mb-4">
         <div class="card-header"><h5 class="mb-0">Thông tin hoá đơn</h5></div>
         <div class="card-body">
@@ -74,40 +76,50 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Hàng hoá &amp; dịch vụ</h5>
-          <button type="button" class="btn btn-sm btn-primary" id="add-line"><i class="ti ti-plus me-1"></i> Thêm dòng</button>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0" id="lines">
-            <thead><tr>
-              <th style="min-width:220px">Mô tả</th>
-              <th class="text-end" style="width:90px">SL</th>
-              <th class="text-end" style="width:140px">Đơn giá</th>
-              <th class="text-end" style="width:90px">Thuế %</th>
-              <th class="text-end" style="min-width:130px">Tiền hàng</th>
-              <th class="text-end" style="min-width:120px">Tiền thuế</th>
-              <th style="width:40px"></th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
     </div>
+  </div>
 
-    <div class="col-lg-4">
-      <div class="card">
-        <div class="card-header"><h5 class="mb-0">Tổng hợp</h5></div>
-        <div class="card-body">
-          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Cộng tiền hàng</span><span class="fw-medium" id="r-subtotal">0</span></div>
-          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tiền thuế GTGT</span><span id="r-vat">0</span></div>
-          <hr />
-          <div class="d-flex justify-content-between mb-3"><span class="text-muted">Tổng thanh toán</span><span class="fw-medium text-primary fs-5" id="r-total">0</span></div>
+  @* Bảng hàng hoá FULL-WIDTH — 7 cột đủ chỗ, hết cuộn ngang. *@
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Hàng hoá &amp; dịch vụ</h5>
+      <button type="button" class="btn btn-sm btn-primary" id="add-line"><i class="ti ti-plus me-1"></i> Thêm dòng</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0" id="lines">
+        <thead><tr>
+          <th style="min-width:280px">Mô tả</th>
+          <th class="text-end" style="min-width:90px">SL</th>
+          <th class="text-end" style="min-width:150px">Đơn giá</th>
+          <th class="text-end" style="min-width:90px">Thuế %</th>
+          <th class="text-end" style="min-width:150px">Tiền hàng</th>
+          <th class="text-end" style="min-width:150px">Tiền thuế</th>
+          <th style="width:44px"></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  @* Tổng hợp + Lưu: thanh ngang cuối trang. *@
+  <div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0">Tổng hợp</h5></div>
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-6 col-md-3">
+          <small class="text-muted d-block">Cộng tiền hàng</small><span class="fw-medium fs-5" id="r-subtotal">0</span>
+        </div>
+        <div class="col-6 col-md-3">
+          <small class="text-muted d-block">Tiền thuế GTGT</small><span id="r-vat">0</span>
+        </div>
+        <div class="col-6 col-md-3">
+          <small class="text-muted d-block">Tổng thanh toán</small><span class="fw-medium text-primary fs-5" id="r-total">0</span>
+        </div>
+        <div class="col-6 col-md-3 text-md-end">
           <button type="submit" class="btn btn-primary w-100"><i class="ti ti-device-floppy me-1"></i> Lưu hoá đơn</button>
-          <div class="text-muted small mt-2">Số tiền do máy chủ tính lại khi lưu — bảng bên là số dự trù.</div>
         </div>
       </div>
+      <div class="text-muted small mt-2">Số tiền do máy chủ tính lại khi lưu — bảng trên là số dự trù.</div>
     </div>
   </div>
 </form>
