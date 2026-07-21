@@ -440,8 +440,15 @@
       if (calEl && window.Calendar) {
         new Calendar(calEl, {
           plugins: [dayGridPlugin, interactionPlugin],
-          initialView: 'dayGridMonth', locale: 'vi', height: 520,
+          initialView: 'dayGridMonth', locale: 'vi',
+          // height:'auto' — KHÔNG ép chiều cao. Lưới tháng cần ~710px; ép 520 thì thanh cuộn trong
+          // của FullCalendar bị overflow:hidden nên nội dung TRÀN ra ngoài card, đè lên chân trang.
+          // Giống hệt cấu hình màn Lịch điều hành đang chạy đúng.
+          height: 'auto',
+          firstDay: 1,        // tuần bắt đầu Thứ 2, đồng bộ với màn Lịch điều hành
+          dayMaxEvents: 3,    // ngày nhiều chuyến thì gộp "+n" thay vì kéo dãn hàng
           headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+          buttonText: { today: 'Hôm nay' },
           events: function (info, success, failure) {
             $.getJSON('/OperationCalendar?handler=Events&start=' + info.startStr + '&end=' + info.endStr)
               .done(function (d) { success((d && d.events) || []); })
