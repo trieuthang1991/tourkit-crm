@@ -52,6 +52,50 @@
   // dom KHÔNG có ô tìm — dùng khi trang đã có thanh lọc với ô từ khoá (#f-q). Ô "Tìm:" của DataTables
   // lúc đó là ô CHẾT: extraData ghi đè search[value] bằng #f-q nên gõ vào nó không có tác dụng, chỉ gây rối.
   tk.dtDomNoSearch = '<"row mx-2 mt-2"<"col-md-6 d-flex align-items-center"l>>t<"row mx-2 my-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-md-end"p>>';
+  // ---- Gộp cặp ngày "từ – đến" thành MỘT ô date-range ----
+  // Trước đây mỗi khoảng ngày chiếm 2 cột (Ngày tạo từ | đến) trông rời rạc, kém chuyên nghiệp.
+  // Helper tự tìm cặp #f-{k}From + #f-{k}To (đều là .tk-datef), gộp thành một ô flatpickr range,
+  // rồi GHI NGƯỢC giá trị (ISO) về 2 ô gốc (ẩn đi) — nhờ vậy toàn bộ code lọc cũ đọc f-…From/To
+  // không phải sửa gì. Chạy TRƯỚC lúc trang khởi tạo flatpickr('.tk-datef') nên không đụng nhau.
+  function isoDate(d) {
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+  }
+  tk.dateRanges = function () {
+    if (!window.flatpickr) { return; }
+    $('input.tk-datef[id$="From"]').each(function () {
+      var fromInput = this;
+      var toInput = document.getElementById(fromInput.id.replace(/From$/, 'To'));
+      if (!toInput || !$(toInput).hasClass('tk-datef')) { return; }
+
+      var $fromCol = $(fromInput).closest('[class*="col-"]');
+      var $toCol = $(toInput).closest('[class*="col-"]');
+      // Nhãn: bỏ chữ "từ" ở cuối ("Ngày tạo từ" → "Ngày tạo").
+      var $lbl = $fromCol.find('label').first();
+      if ($lbl.length) { $lbl.text($lbl.text().replace(/\s*từ\s*$/i, '').trim()); }
+
+      // Vô hiệu 2 ô gốc (gỡ tk-datef để trang không flatpickr chúng) và ẩn đi (giữ để chứa giá trị).
+      $(fromInput).add(toInput).removeClass('tk-datef').addClass('d-none');
+      $toCol.addClass('d-none');
+
+      var $range = $('<input type="text" class="form-control" placeholder="dd/mm/yyyy – dd/mm/yyyy" autocomplete="off">');
+      $(fromInput).after($range);
+
+      var fp = flatpickr($range[0], {
+        mode: 'range', dateFormat: 'd/m/Y', locale: { rangeSeparator: ' – ' }, allowInput: false,
+        onChange: function (sel) {
+          $(fromInput).val(sel[0] ? isoDate(sel[0]) : '').trigger('change');
+          $(toInput).val(sel[1] ? isoDate(sel[1]) : '').trigger('change');
+        }
+      });
+      // Nạp sẵn nếu vào trang đã có giá trị (vd lọc kèm tham số).
+      var seed = [fromInput.value, toInput.value].filter(Boolean);
+      if (seed.length) { fp.setDate(seed, false, 'Y-m-d'); }
+      // Nút "Đặt lại" xoá lọc → xoá luôn ô range.
+      $('#btn-reset').on('click', function () { setTimeout(function () { fp.clear(); }, 0); });
+    });
+  };
+
   // ---- Lọc nâng cao dùng chung ----
   // Trang có panel #adv (các lọc phụ, mặc định ẩn). Trước đây nút mở chỉ là icon trơn nên người
   // dùng không biết market/nhóm/CTV… nằm trong đó. Helper này: gắn/tạo nút "Lọc nâng cao" CÓ NHÃN,
@@ -76,7 +120,9 @@
     }
 
     function count() {
-      return $panel.find('input, select').filter(function () {
+      // Bỏ ô .d-none (2 ô gốc từ/đến đã bị gộp date-range ẩn đi) để một khoảng ngày chỉ tính LÀ 1,
+      // không tính thành 3 (ô range + 2 ô ẩn). Select2 ẩn native bằng class khác nên vẫn được đếm.
+      return $panel.find('input, select').not('.d-none').filter(function () {
         var v = $(this).val();
         return v != null && String(v).trim() !== '';
       }).length;
@@ -233,4 +279,8 @@
   };
 
   window.tk = tk;
+
+  // Gộp date-range TỰ ĐỘNG trên mọi trang. Đăng ký ở đây (tk.js nạp trước) nên callback này chạy
+  // TRƯỚC $(function) của từng trang → vô hiệu ô gốc xong mới tới lúc trang flatpickr('.tk-datef').
+  $(function () { tk.dateRanges(); });
 })();
