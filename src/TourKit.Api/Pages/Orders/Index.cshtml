@@ -38,10 +38,18 @@
         <select id="f-branchId" class="form-select tk-s2f" data-placeholder="Chi nhánh"><option value=""></option>@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }</select>
       </div>
       <div class="col-md-2 d-flex gap-2">
-        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại bộ lọc"><i class="ti ti-rotate"></i></button>
       </div>
+    </div>
+    @* Nút mở lọc nâng cao có NHÃN + badge đếm số lọc đang bật — trước đây chỉ là icon trơn nên
+       người dùng không biết thị trường/nhóm/CTV… nằm trong đó. *@
+    <div class="mt-2">
+      <button type="button" class="btn btn-sm btn-label-primary" id="btn-adv">
+        <i class="ti ti-adjustments-horizontal me-1"></i> Lọc nâng cao
+        <span class="badge bg-primary ms-1 d-none" id="adv-count">0</span>
+        <i class="ti ti-chevron-down ms-1" id="adv-caret"></i>
+      </button>
     </div>
 
     <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
@@ -182,11 +190,28 @@
       $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
       $('#f-status, #f-bookingType, #f-paymentStatus, #f-commissionSettled, #f-operationalStatus, #f-invoiceStatus').on('change', function () { dt.ajax.reload(); });
       $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      // Các lọc NẰM TRONG panel nâng cao = tất cả trừ 3 lọc hiện sẵn ở hàng trên (status/sales/chi nhánh).
+      var ADV = FILTERS.filter(function (k) { return k !== 'status' && k !== 'salesUserId' && k !== 'branchId'; });
+      function refreshAdvCount() {
+        var n = ADV.filter(function (k) { return !!$('#f-' + k).val(); }).length;
+        var $b = $('#adv-count');
+        if (n > 0) { $b.text(n).removeClass('d-none'); } else { $b.addClass('d-none'); }
+      }
+      function toggleAdv(open) {
+        var willOpen = open != null ? open : $('#adv').hasClass('d-none');
+        $('#adv').toggleClass('d-none', !willOpen);
+        $('#adv-caret').toggleClass('ti-chevron-up', willOpen).toggleClass('ti-chevron-down', !willOpen);
+      }
+      $('#btn-adv').on('click', function () { toggleAdv(); });
+      // Có lọc nâng cao đang bật (vd vào trang kèm sẵn tham số) → mở panel + hiện badge ngay.
+      refreshAdvCount();
+      if (ADV.some(function (k) { return !!$('#f-' + k).val(); })) { toggleAdv(true); }
+      $('#adv').on('change keyup', 'input, select', refreshAdvCount);
       $('#btn-reset').on('click', function () {
         $('#f-q').val('');
         FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
         $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        refreshAdvCount();
         dt.ajax.reload();
       });
       $('#btn-export').on('click', function (e) {

@@ -47,15 +47,21 @@
     zeroRecords: 'Không tìm thấy', emptyTable: 'Chưa có dữ liệu',
     paginate: { first: '«', last: '»', next: '›', previous: '‹' }
   };
+  // dom CÓ ô tìm (f) — dùng cho màn KHÔNG có thanh lọc riêng (ô tìm của DataTables là tra cứu duy nhất).
   tk.dtDom = '<"row mx-2 mt-2"<"col-md-6 d-flex align-items-center"l><"col-md-6 d-flex align-items-center justify-content-md-end"f>>t<"row mx-2 my-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-md-end"p>>';
+  // dom KHÔNG có ô tìm — dùng khi trang đã có thanh lọc với ô từ khoá (#f-q). Ô "Tìm:" của DataTables
+  // lúc đó là ô CHẾT: extraData ghi đè search[value] bằng #f-q nên gõ vào nó không có tác dụng, chỉ gây rối.
+  tk.dtDomNoSearch = '<"row mx-2 mt-2"<"col-md-6 d-flex align-items-center"l>>t<"row mx-2 my-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-md-end"p>>';
   // opts: { url, columns, extraData(d), pageLength }
   tk.table = function (selector, opts) {
+    // Trang có thanh lọc riêng (#f-q) → bỏ ô tìm chết của DataTables. Không cần sửa từng màn.
+    var hasFilterBar = document.getElementById('f-q') !== null;
     return $(selector).DataTable({
       processing: true, serverSide: true, ordering: false, autoWidth: false,
       ajax: { url: opts.url, data: function (d) { if (opts.extraData) { opts.extraData(d); } } },
       columns: opts.columns,
       lengthMenu: [10, 20, 50, 100], pageLength: opts.pageLength || 20,
-      dom: tk.dtDom, language: tk.dtLanguage
+      dom: hasFilterBar ? tk.dtDomNoSearch : tk.dtDom, language: tk.dtLanguage
     });
   };
 
