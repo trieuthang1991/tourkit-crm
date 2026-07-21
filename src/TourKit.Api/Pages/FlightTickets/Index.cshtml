@@ -50,7 +50,6 @@
       </div>
       <div class="col-md-2 d-flex gap-2">
         <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
         <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
@@ -302,7 +301,7 @@
       $('#f-tourType, #f-days').on('change', reload);
       $('.tk-s2f').on('change', reload);
       $('.tk-datef').on('change', reload);
-      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      tk.advFilter();
       $('#btn-reset').on('click', function () {
         $('#f-q').val('');
         FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });

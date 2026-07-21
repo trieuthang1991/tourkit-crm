@@ -52,6 +52,51 @@
   // dom KHÔNG có ô tìm — dùng khi trang đã có thanh lọc với ô từ khoá (#f-q). Ô "Tìm:" của DataTables
   // lúc đó là ô CHẾT: extraData ghi đè search[value] bằng #f-q nên gõ vào nó không có tác dụng, chỉ gây rối.
   tk.dtDomNoSearch = '<"row mx-2 mt-2"<"col-md-6 d-flex align-items-center"l>>t<"row mx-2 my-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-md-end"p>>';
+  // ---- Lọc nâng cao dùng chung ----
+  // Trang có panel #adv (các lọc phụ, mặc định ẩn). Trước đây nút mở chỉ là icon trơn nên người
+  // dùng không biết market/nhóm/CTV… nằm trong đó. Helper này: gắn/tạo nút "Lọc nâng cao" CÓ NHÃN,
+  // badge đếm số lọc đang bật, và tự mở panel khi có lọc (vd vào trang kèm tham số). Đếm dựa TRÊN
+  // DOM (ô có giá trị trong #adv) nên không phụ thuộc mảng FILTERS của từng màn.
+  tk.advFilter = function () {
+    var $panel = $('#adv');
+    if (!$panel.length) { return; }
+
+    var $btn = $('#btn-adv');
+    if (!$btn.length) {
+      var $wrap = $('<div class="mb-1"></div>');
+      $btn = $('<button type="button" class="btn btn-sm btn-label-primary" id="btn-adv">' +
+        '<i class="ti ti-adjustments-horizontal me-1"></i>Lọc nâng cao' +
+        '<span class="badge bg-primary ms-1 d-none" id="adv-count">0</span>' +
+        '<i class="ti ti-chevron-down ms-1" id="adv-caret"></i></button>');
+      $wrap.append($btn);
+      $panel.before($wrap);
+    }
+
+    function count() {
+      return $panel.find('input, select').filter(function () {
+        var v = $(this).val();
+        return v != null && String(v).trim() !== '';
+      }).length;
+    }
+    function refresh() {
+      var n = count(), $b = $('#adv-count');
+      if (n > 0) { $b.text(n).removeClass('d-none'); } else { $b.addClass('d-none'); }
+    }
+    function toggle(open) {
+      var willOpen = open != null ? open : $panel.hasClass('d-none');
+      $panel.toggleClass('d-none', !willOpen);
+      $('#adv-caret').toggleClass('ti-chevron-up', willOpen).toggleClass('ti-chevron-down', !willOpen);
+    }
+
+    $btn.on('click', function () { toggle(); });
+    $panel.on('change keyup', 'input, select', refresh);
+    // Bấm "Đặt lại" xoá lọc bằng val('') (không kích change) → đếm lại sau một nhịp.
+    $('#btn-reset').on('click', function () { setTimeout(refresh, 0); });
+
+    refresh();
+    if (count() > 0) { toggle(true); }
+  };
+
   // opts: { url, columns, extraData(d), pageLength }
   tk.table = function (selector, opts) {
     // Trang có thanh lọc riêng (#f-q) → bỏ ô tìm chết của DataTables. Không cần sửa từng màn.

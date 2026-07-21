@@ -37,7 +37,6 @@
       <div class="col-md-3"><input type="text" id="f-paymentMethod" class="form-control" placeholder="PT thanh toán" /></div>
       <div class="col-md-2 d-flex gap-2">
         <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
         <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
@@ -184,7 +183,7 @@
       $('#f-q, #f-paymentMethod').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
       $('#f-status').on('change', function () { dt.ajax.reload(); });
       $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('#btn-adv').on('click', function () { $('#adv').toggleClass('d-none'); });
+      tk.advFilter();
       $('#btn-reset').on('click', function () {
         $('#f-q').val('');
         FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
