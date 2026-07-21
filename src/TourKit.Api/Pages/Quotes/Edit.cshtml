@@ -22,9 +22,11 @@
   <input type="hidden" name="Input.CustomerId" id="CustomerId" value="@(q?.CustomerId)" />
   <input type="hidden" name="LinesJson" id="LinesJson" value="[]" />
 
-  <div class="row g-4">
+  @* Hàng trên: thông tin báo giá + số khách. Bảng chi phí tách xuống FULL-WIDTH bên dưới vì 11 cột
+     nhét vào khung 8/12 sẽ bị bóp còn ~40px/ô, không gõ nổi (lỗi cũ). *@
+  <div class="row g-4 mb-4">
     <div class="col-lg-8">
-      <div class="card mb-4">
+      <div class="card h-100">
         <div class="card-header"><h5 class="mb-0">Thông tin báo giá</h5></div>
         <div class="card-body">
           <div class="row">
@@ -54,28 +56,10 @@
           <div class="mb-1"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Điều khoản, ghi chú...">@(q?.Note)</textarea></div>
         </div>
       </div>
-
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Chi phí &amp; dịch vụ</h5>
-          <button type="button" class="btn btn-sm btn-primary" id="add-line"><i class="ti ti-plus me-1"></i> Thêm dòng</button>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0" id="lines">
-            <thead><tr>
-              <th style="min-width:160px">Mô tả</th><th style="min-width:110px">Loại</th><th style="min-width:120px">Phạm vi</th>
-              <th class="text-end" style="width:70px">SL</th><th class="text-end" style="width:110px">Giá vốn</th><th class="text-end" style="width:80px">%LN</th>
-              <th class="text-end" style="width:110px">Đơn giá bán</th><th class="text-end" style="width:70px">VAT%</th><th class="text-end" style="width:100px">Phụ thu</th><th class="text-end" style="width:80px">Tỉ giá</th>
-              <th class="text-end" style="min-width:120px">Thành tiền</th><th style="width:40px"></th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
     </div>
 
     <div class="col-lg-4">
-      <div class="card mb-4">
+      <div class="card h-100">
         <div class="card-header"><h5 class="mb-0">Số khách</h5></div>
         <div class="card-body">
           <div class="row">
@@ -84,22 +68,57 @@
             <div class="col-4 mb-3"><label class="form-label">Em bé</label><input type="number" name="Input.Infants" id="Infants" class="form-control js-pax" value="@(q?.Infants ?? 0)" min="0" /></div>
           </div>
           <div class="row">
-            <div class="col-6 mb-1"><label class="form-label">% giá trẻ em</label><input type="number" name="Input.ChildPercent" id="ChildPercent" class="form-control js-pax" value="@((q?.ChildPercent ?? 75m))" step="0.01" /></div>
-            <div class="col-6 mb-1"><label class="form-label">% giá em bé</label><input type="number" name="Input.InfantPercent" id="InfantPercent" class="form-control js-pax" value="@((q?.InfantPercent ?? 50m))" step="0.01" /></div>
+            <div class="col-6"><label class="form-label">% giá trẻ em</label><input type="number" name="Input.ChildPercent" id="ChildPercent" class="form-control js-pax" value="@((q?.ChildPercent ?? 75m))" step="0.01" /></div>
+            <div class="col-6"><label class="form-label">% giá em bé</label><input type="number" name="Input.InfantPercent" id="InfantPercent" class="form-control js-pax" value="@((q?.InfantPercent ?? 50m))" step="0.01" /></div>
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="card">
-        <div class="card-header"><h5 class="mb-0">Kết quả dự trù</h5></div>
-        <div class="card-body">
-          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Giá người lớn</span><span class="fw-medium" id="r-adult">0</span></div>
-          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Giá trẻ em</span><span id="r-child">0</span></div>
-          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Giá em bé</span><span id="r-infant">0</span></div>
-          <hr />
-          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tổng giá vốn</span><span id="r-cost">0</span></div>
-          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tổng giá bán</span><span class="fw-medium text-primary" id="r-amount">0</span></div>
-          <div class="d-flex justify-content-between mb-3"><span class="text-muted">Lợi nhuận</span><span class="fw-medium text-success" id="r-profit">0</span></div>
+  @* Bảng chi phí FULL-WIDTH — 11 cột giờ đủ chỗ, không còn cuộn ngang bóp ô. *@
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Chi phí &amp; dịch vụ</h5>
+      <button type="button" class="btn btn-sm btn-primary" id="add-line"><i class="ti ti-plus me-1"></i> Thêm dòng</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0" id="lines">
+        <thead><tr>
+          <th style="min-width:200px">Mô tả</th><th style="min-width:130px">Loại</th><th style="min-width:130px">Phạm vi</th>
+          <th class="text-end" style="min-width:80px">SL</th><th class="text-end" style="min-width:130px">Giá vốn</th><th class="text-end" style="min-width:90px">%LN</th>
+          <th class="text-end" style="min-width:130px">Đơn giá bán</th><th class="text-end" style="min-width:80px">VAT%</th><th class="text-end" style="min-width:110px">Phụ thu</th><th class="text-end" style="min-width:90px">Tỉ giá</th>
+          <th class="text-end" style="min-width:130px">Thành tiền</th><th style="width:44px"></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  @* Kết quả dự trù + Lưu: thanh tổng hợp ngang cuối trang, đọc theo dòng chảy trên→dưới. *@
+  <div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0">Kết quả dự trù</h5></div>
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-6 col-md">
+          <small class="text-muted d-block">Giá người lớn</small><span class="fw-medium fs-5" id="r-adult">0</span>
+        </div>
+        <div class="col-6 col-md">
+          <small class="text-muted d-block">Giá trẻ em</small><span id="r-child">0</span>
+        </div>
+        <div class="col-6 col-md">
+          <small class="text-muted d-block">Giá em bé</small><span id="r-infant">0</span>
+        </div>
+        <div class="col-6 col-md">
+          <small class="text-muted d-block">Tổng giá vốn</small><span id="r-cost">0</span>
+        </div>
+        <div class="col-6 col-md">
+          <small class="text-muted d-block">Tổng giá bán</small><span class="fw-medium text-primary fs-5" id="r-amount">0</span>
+        </div>
+        <div class="col-6 col-md">
+          <small class="text-muted d-block">Lợi nhuận</small><span class="fw-medium text-success fs-5" id="r-profit">0</span>
+        </div>
+        <div class="col-12 col-md-auto ms-md-auto">
           <button type="submit" class="btn btn-primary w-100"><i class="ti ti-device-floppy me-1"></i> Lưu báo giá</button>
         </div>
       </div>
