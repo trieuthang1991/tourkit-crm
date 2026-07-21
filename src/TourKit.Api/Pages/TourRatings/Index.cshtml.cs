@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
+using TourKit.Application.Booking;
 using TourKit.Application.Crm;
 using TourKit.Application.Crm.Dtos;
 
@@ -15,7 +16,12 @@ namespace TourKit.Api.Pages.TourRatings;
 public class IndexModel : TkListPageModel
 {
     private readonly ITourRatingService _svc;
-    public IndexModel(ITourRatingService svc) => _svc = svc;
+    private readonly IDepartureService _departures;
+    public IndexModel(ITourRatingService svc, IDepartureService departures)
+    {
+        _svc = svc;
+        _departures = departures;
+    }
 
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
@@ -40,10 +46,22 @@ public class IndexModel : TkListPageModel
         var dt = ParseDataTables();
         var result = await _svc.ListAsync(dt.Page, dt.Size, dt.Keyword);
 
+        // Tra TÊN chuyến cho các đánh giá xuất hiện TRONG TRANG (thay vì hiện GUID thô ở cột Chuyến đi).
+        // Chỉ tra đúng các id có mặt — không nạp cả bảng chuyến.
+        var depIds = result.Items.Where(r => r.TourDepartureId is not null)
+            .Select(r => r.TourDepartureId!.Value).Distinct().ToList();
+        var depNames = new Dictionary<Guid, string>();
+        foreach (var id in depIds)
+        {
+            try { var d = await _departures.GetAsync(id); depNames[id] = $"{d.Code} — {d.Title}"; }
+            catch (Exception) { /* chuyến đã xoá → để trống, cột hiện "—" */ }
+        }
+
         var items = result.Items.Select(r => new
         {
             id = r.Id,
             tourDepartureId = r.TourDepartureId,
+            departureName = r.TourDepartureId is Guid g && depNames.TryGetValue(g, out var n) ? n : null,
             orderId = r.OrderId,
             customerName = r.CustomerName,
             customerPhone = r.CustomerPhone,

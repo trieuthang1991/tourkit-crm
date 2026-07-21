@@ -73,7 +73,7 @@
         url: '?handler=Data',
         columns: [
           { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: 'tourDepartureId', render: function (v) { return v ? tk.trunc(v, 160) : '<span class="text-muted">—</span>'; } },
+          { data: null, render: function (r) { return r.departureName ? tk.escape(r.departureName) : '<span class="text-muted">—</span>'; } },
           { data: null, render: function (r) {
               // Cột ghép: tên khách + SĐT
               return '<div class="fw-medium">' + tk.escape(r.customerName || '—') + '</div>' +
