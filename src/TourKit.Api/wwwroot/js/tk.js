@@ -63,13 +63,16 @@
 
     var $btn = $('#btn-adv');
     if (!$btn.length) {
-      var $wrap = $('<div class="mb-1"></div>');
-      $btn = $('<button type="button" class="btn btn-sm btn-label-primary" id="btn-adv">' +
-        '<i class="ti ti-adjustments-horizontal me-1"></i>Lọc nâng cao' +
-        '<span class="badge bg-primary ms-1 d-none" id="adv-count">0</span>' +
-        '<i class="ti ti-chevron-down ms-1" id="adv-caret"></i></button>');
-      $wrap.append($btn);
-      $panel.before($wrap);
+      // Nút icon nhỏ, gọn — chỉ icon phễu + badge đếm nổi ở góc khi có lọc đang bật (giữ tín hiệu
+      // "đang lọc" mà không chiếm chỗ), tooltip "Lọc nâng cao". Đặt cạnh nút Tìm/Đặt lại nếu có
+      // nhóm nút (#btn-search), không thì đứng riêng trên panel.
+      $btn = $('<button type="button" class="btn btn-icon btn-sm btn-label-secondary position-relative" id="btn-adv" title="Lọc nâng cao" data-bs-toggle="tooltip">' +
+        '<i class="ti ti-filter"></i>' +
+        '<span class="badge rounded-pill bg-primary position-absolute top-0 start-100 translate-middle d-none" id="adv-count" style="font-size:.6rem;padding:.2em .4em">0</span>' +
+        '</button>');
+      var $group = $('#btn-search').parent();
+      if ($group.length && $group.hasClass('d-flex')) { $group.append($btn); }
+      else { $panel.before($('<div class="mb-1"></div>').append($btn)); }
     }
 
     function count() {
