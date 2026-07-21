@@ -10,7 +10,10 @@
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
   <h4 class="mb-0">Marketing</h4>
-  <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm chiến dịch</button>
+  @if (Model.CanCreate)
+  {
+    <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm chiến dịch</button>
+  }
 </div>
 
 @* 4 KPI — bám StatGrid hệ cũ *@
@@ -114,6 +117,40 @@
   </div>
 </div>
 
+@* Modal gửi chiến dịch — danh sách người nhận LUÔN hiển thị tường minh trước khi bấm gửi. *@
+<div class="modal fade" id="md-send" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Gửi chiến dịch</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="alert alert-warning d-flex align-items-start" role="alert">
+          <i class="ti ti-alert-triangle me-2 mt-1"></i>
+          <div>Hệ thống gửi <strong>thật</strong> tới từng địa chỉ trong ô dưới. Kiểm tra kỹ danh sách trước khi bấm gửi — đã gửi thì không thu hồi được.</div>
+        </div>
+        <div class="row g-2 align-items-end mb-3">
+          <div class="col-md-7">
+            <label class="form-label small mb-1">Lấy từ danh sách khách hàng (tuỳ chọn)</label>
+            <input type="text" id="s-q" class="form-control" placeholder="Từ khoá tên/điện thoại khách — để trống là lấy từ đầu danh sách" />
+          </div>
+          <div class="col-md-5">
+            <button type="button" class="btn btn-label-primary w-100" id="s-fill"><i class="ti ti-users me-1"></i> Nạp địa chỉ</button>
+          </div>
+        </div>
+        <label class="form-label">Danh sách người nhận <span class="text-danger">*</span> <span class="text-muted small">(mỗi dòng một địa chỉ)</span></label>
+        <textarea id="s-recipients" class="form-control font-monospace" rows="10" placeholder="vd@email.com"></textarea>
+        <div class="d-flex justify-content-between mt-2">
+          <span class="text-muted small" id="s-hint"></span>
+          <span class="small" id="s-count">0 địa chỉ</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Huỷ</button>
+        <button type="button" class="btn btn-primary" id="s-send"><i class="ti ti-send me-1"></i> Gửi ngay</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
@@ -123,7 +160,29 @@
 
 @section PageScripts {
   <script>
-    var oc, dt, segStatus = '';
+    var oc, dt, segStatus = '', sendRow = null;
+    var CAN_CREATE = @(Model.CanCreate ? "true" : "false");
+    var CAN_SEND = @(Model.CanSend ? "true" : "false");
+    var MAX_RECIPIENTS = @TourKit.Api.Pages.MarketingCampaigns.IndexModel.MaxRecipients;
+
+    function recipientLines() {
+      return ($('#s-recipients').val() || '').split(/[\n,;]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+
+    function refreshCount() {
+      var n = recipientLines().length;
+      $('#s-count').text(n + ' địa chỉ').toggleClass('text-danger', n > MAX_RECIPIENTS);
+    }
+
+    function openSend(row) {
+      sendRow = row;
+      $('#md-send .modal-title').text('Gửi chiến dịch — ' + row.name);
+      $('#s-recipients').val('');
+      $('#s-q').val('');
+      $('#s-hint').text('Kênh ' + row.channelLabel + ' · tối đa ' + MAX_RECIPIENTS + ' địa chỉ mỗi lần gửi');
+      refreshCount();
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('md-send')).show();
+    }
 
     function collectFilters(d) {
       var ch = $('#f-channel').val(); if (ch) { d.channel = ch; }
@@ -165,9 +224,10 @@
             } },
           { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
           { data: null, className: 'text-end text-nowrap', render: function () {
-              return '<button type="button" class="btn btn-sm btn-label-secondary js-log" title="Nhật ký gửi"><i class="ti ti-list me-1"></i>Log</button> ' +
-                     '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+              return (CAN_SEND ? '<button type="button" class="btn btn-sm btn-label-success js-send" title="Gửi chiến dịch"><i class="ti ti-send me-1"></i>Gửi</button> ' : '') +
+                     '<button type="button" class="btn btn-sm btn-label-secondary js-log" title="Nhật ký gửi"><i class="ti ti-list me-1"></i>Log</button> ' +
+                     (CAN_CREATE ? '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>' : '');
             } }
         ]
       });
@@ -197,6 +257,49 @@
       // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
       $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
       $('#tbl tbody').on('click', '.js-log', function () { openLogs(dt.row($(this).closest('tr')).data()); });
+      $('#tbl tbody').on('click', '.js-send', function () { openSend(dt.row($(this).closest('tr')).data()); });
+
+      $('#s-recipients').on('input', refreshCount);
+
+      $('#s-fill').on('click', function () {
+        var btn = $(this).prop('disabled', true);
+        $.getJSON('?handler=Recipients&channel=' + sendRow.channel + '&q=' + encodeURIComponent($('#s-q').val() || ''))
+          .always(function () { btn.prop('disabled', false); })
+          .done(function (res) {
+            if (!res || !res.isSuccess) { tk.error((res && res.message) || 'Không nạp được danh sách'); return; }
+            var items = res.data.items || [];
+            if (!items.length) { tk.error('Không có khách hàng nào có ' + res.data.channelLabel + ' khớp điều kiện.'); return; }
+            $('#s-recipients').val(items.map(function (i) { return i.contact; }).join('\n'));
+            refreshCount();
+            tk.toast('Đã nạp ' + items.length + ' địa chỉ' + (items.length >= res.data.max ? ' (chạm trần ' + res.data.max + ')' : ''));
+          });
+      });
+
+      $('#s-send').on('click', function () {
+        var list = recipientLines();
+        if (!list.length) { tk.error('Chưa có địa chỉ nhận nào.'); return; }
+        Swal.fire({
+          title: 'Gửi thật tới ' + list.length + ' địa chỉ?',
+          text: 'Chiến dịch "' + sendRow.name + '" qua kênh ' + sendRow.channelLabel + '. Đã gửi thì không thu hồi được.',
+          icon: 'warning', showCancelButton: true, confirmButtonText: 'Gửi ngay', cancelButtonText: 'Huỷ',
+          customClass: { confirmButton: 'btn btn-primary me-2', cancelButton: 'btn btn-label-secondary' }, buttonsStyling: false
+        }).then(function (r) {
+          if (!r.isConfirmed) { return; }
+          var btn = $('#s-send').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Đang gửi…');
+          var fd = new FormData();
+          fd.append('id', sendRow.id);
+          fd.append('recipients', list.join('\n'));
+          tk.post('?handler=Send', fd)
+            .then(function (res) {
+              btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> Gửi ngay');
+              if (res && res.isSuccess) {
+                tk.toast(res.message);
+                bootstrap.Modal.getInstance(document.getElementById('md-send')).hide();
+                dt.ajax.reload(null, false);
+              } else { tk.error((res && res.message) || 'Gửi thất bại'); }
+            });
+        });
+      });
       $('#tbl tbody').on('click', '.js-del', function () {
         var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá chiến dịch?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });

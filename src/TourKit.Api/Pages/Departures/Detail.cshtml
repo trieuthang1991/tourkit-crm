@@ -1,0 +1,186 @@
+@page "{id:guid}"
+@model TourKit.Api.Pages.Departures.DetailModel
+@{
+  var d = Model.Departure!;
+  ViewData["Title"] = $"Chuyến {d.Code}";
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+}
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-1">Chuyến đi @d.Code</h4>
+    <span class="text-muted">@d.Title</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/Departures" class="btn btn-label-secondary"><i class="ti ti-arrow-left me-1"></i> Danh sách</a>
+    @if (Model.CanClose && !d.IsClosed)
+    {
+      <button type="button" class="btn btn-danger" id="btn-close"><i class="ti ti-lock me-1"></i> Đóng chuyến</button>
+    }
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Thông tin chuyến</h5>
+        <span class="badge bg-label-@(d.IsClosed ? "danger" : "success")">@(d.IsClosed ? "Đã đóng" : "Đang mở")</span>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3"><small class="text-muted d-block">Mã chuyến</small><span class="fw-medium">@d.Code</span></div>
+          <div class="col-md-6 mb-3"><small class="text-muted d-block">Tên chuyến</small><span class="fw-medium">@d.Title</span></div>
+          <div class="col-md-6 mb-3"><small class="text-muted d-block">Ngày khởi hành</small><span class="fw-medium">@Model.DepartureDateText</span></div>
+          <div class="col-md-6 mb-3"><small class="text-muted d-block">Ngày kết thúc</small><span class="fw-medium">@Model.EndDateText</span></div>
+          <div class="col-md-6 mb-3"><small class="text-muted d-block">Tổng số chỗ</small><span class="fw-medium">@d.TotalSlots.ToString("#,##0")</span></div>
+          <div class="col-md-6"><small class="text-muted d-block">Loại tour</small><span class="fw-medium">@(string.IsNullOrWhiteSpace(d.TourType) ? "—" : d.TourType)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    @if (Model.CanBook)
+    {
+      <div class="card mb-4">
+        <div class="card-header"><h5 class="mb-0">Đặt chỗ</h5></div>
+        <div class="card-body">
+          @if (d.IsClosed)
+          {
+            <div class="alert alert-secondary mb-0">Chuyến đã đóng — không thể đặt hoặc giữ chỗ thêm.</div>
+          }
+          else
+          {
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+              <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
+              <select id="cust-picker" class="form-select"></select>
+            </div>
+            <div class="row">
+              <div class="col-6 mb-3"><label class="form-label">Người lớn</label><input type="number" id="q-adult" class="form-control" value="0" min="0" placeholder="0" /></div>
+              <div class="col-6 mb-3"><label class="form-label">Trẻ em</label><input type="number" id="q-child" class="form-control" value="0" min="0" placeholder="0" /></div>
+              <div class="col-6 mb-3"><label class="form-label">Trẻ nhỏ</label><input type="number" id="q-childsmall" class="form-control" value="0" min="0" placeholder="0" /></div>
+              <div class="col-6 mb-3"><label class="form-label">Em bé</label><input type="number" id="q-baby" class="form-control" value="0" min="0" placeholder="0" /></div>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-primary flex-fill" id="btn-book"><i class="ti ti-check me-1"></i> Chốt ngay</button>
+              <button type="button" class="btn btn-label-primary flex-fill" id="btn-hold"><i class="ti ti-clock me-1"></i> Giữ chỗ</button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Đơn hàng của chuyến</h5>
+    <input type="text" id="f-q" class="form-control form-control-sm w-auto" placeholder="Mã đơn / khách…" />
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tbl" class="table table-hover">
+      <thead>
+        <tr>
+          <th class="text-center">#</th><th>Đơn hàng</th><th>Khách</th><th>Chỗ</th>
+          <th class="text-end">Doanh thu</th><th class="text-end">Đã thu / Còn nợ</th><th>Trạng thái</th><th></th>
+        </tr>
+      </thead>
+      <tfoot><tr id="page-sum" class="fw-medium"><td colspan="8" class="small"></td></tr></tfoot>
+    </table>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    var ID = '@d.Id', dt;
+
+    function book(action) {
+      var customerId = $('#cust-picker').val();
+      if (!customerId) { tk.error('Chưa chọn khách hàng.'); return; }
+      var fd = new FormData();
+      fd.append('id', ID);
+      fd.append('action', action);
+      fd.append('customerId', customerId);
+      fd.append('adultQty', $('#q-adult').val() || 0);
+      fd.append('childQty', $('#q-child').val() || 0);
+      fd.append('childSmallQty', $('#q-childsmall').val() || 0);
+      fd.append('babyQty', $('#q-baby').val() || 0);
+
+      var btns = $('#btn-book, #btn-hold').prop('disabled', true);
+      tk.post('?handler=Book', fd).then(function (res) {
+        btns.prop('disabled', false);
+        if (res && res.isSuccess) {
+          tk.toast(res.message);
+          $('#cust-picker').val(null).trigger('change');
+          $('#q-adult, #q-child, #q-childsmall, #q-baby').val(0);
+          dt.ajax.reload(null, false);
+        } else { tk.error((res && res.message) || 'Thao tác thất bại'); }
+      });
+    }
+
+    $(function () {
+      $('#cust-picker').select2({ theme:'bootstrap-5', placeholder:'Tìm khách hàng…', allowClear:true, width:'100%',
+        ajax:{ url:'?handler=CustomerSearch', dataType:'json', delay:250, data:function(p){ return { q:p.term }; }, processResults:function(x){ return x; } } });
+
+      // Server-side: mỗi lần chỉ tải 1 trang đơn của ĐÚNG chuyến này (lọc tại DB).
+      dt = tk.table('#tbl', {
+        url: '?handler=Orders&id=' + ID,
+        extraData: function (x) { var q = $('#f-q').val(); if (q) { x['search[value]'] = q; } },
+        columns: [
+          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
+          { data: null, render: function (r) { return '<a href="/Orders" class="fw-medium">' + tk.escape(r.code) + '</a>'; } },
+          { data: null, render: function (r) { return tk.trunc(r.customerName, 200); } },
+          { data: null, render: function (r) {
+              return '<span class="badge bg-label-primary">' + r.seatTotal + ' chỗ</span>' +
+                     '<div class="small text-muted">giữ ' + r.seatHeld + ' · bán ' + r.seatSold + '</div>';
+            } },
+          { data: null, className: 'text-end', render: function (r) { return tk.money(r.totalRevenue); } },
+          { data: null, className: 'text-end', render: function (r) {
+              return '<div class="text-success">' + tk.money(r.amountPaid) + '</div>' +
+                     '<div class="small text-danger">' + tk.money(r.outstanding) + '</div>';
+            } },
+          { data: null, render: function (r) { return '<span class="badge bg-label-secondary">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end', render: function (r) { return '<a href="/Orders" class="btn btn-icon btn-sm" title="Xem đơn"><i class="ti ti-external-link"></i></a>'; } }
+        ]
+      });
+
+      $('#tbl').on('xhr.dt', function (e, s, json) {
+        if (!json || !json.pageSum) { return; }
+        $('#page-sum td').html('Tổng cộng (trang này): <strong>' + json.pageSum.seats + '</strong> chỗ · doanh thu <strong>' +
+          tk.money(json.pageSum.revenue) + '</strong> · đã thu <strong>' + tk.money(json.pageSum.paid) +
+          '</strong> · còn nợ <strong>' + tk.money(json.pageSum.outstanding) + '</strong>');
+      });
+
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#btn-book').on('click', function () { book('book'); });
+      $('#btn-hold').on('click', function () { book('hold'); });
+
+      $('#btn-close').on('click', function () {
+        Swal.fire({ title:'Đóng chuyến này?', text:'Sau khi đóng sẽ không thể đặt hoặc giữ chỗ thêm.', icon:'warning',
+          showCancelButton:true, confirmButtonText:'Đóng chuyến', cancelButtonText:'Huỷ',
+          customClass:{ confirmButton:'btn btn-danger me-2', cancelButton:'btn btn-label-secondary' }, buttonsStyling:false
+        }).then(function (r) {
+          if (!r.isConfirmed) { return; }
+          var fd = new FormData(); fd.append('id', ID);
+          tk.post('?handler=Close', fd).then(function (res) {
+            if (res && res.isSuccess) { tk.toast(res.message); setTimeout(function(){ location.reload(); }, 600); }
+            else { tk.error((res && res.message) || 'Đóng chuyến thất bại'); }
+          });
+        });
+      });
+    });
+  </script>
+}

@@ -29,7 +29,10 @@ public sealed record OrderListFilter(
     Guid? SalesUserId = null, Guid? BranchId = null, Guid? CreatedByUserId = null, Guid? DepartmentId = null,
     string? TourType = null, Guid? ProviderId = null,
     Guid? MarketTypeId = null, Guid? TourGroupId = null, int? BookingType = null, bool? CommissionSettled = null,
-    int? OperationalStatus = null, Guid? CollaboratorId = null, int? InvoiceStatus = null);
+    int? OperationalStatus = null, Guid? CollaboratorId = null, int? InvoiceStatus = null,
+    // Lọc theo CHUYẾN — cho màn chi tiết chuyến đi liệt kê đơn của đúng chuyến đó (đẩy xuống DB,
+    // không tải cả bảng đơn rồi lọc ở bộ nhớ).
+    Guid? DepartureId = null);
 
 /// <summary>NCC xuất hiện trong đơn (dùng cho Select lọc theo nhà cung cấp).</summary>
 public sealed record OrderFilterProviderDto(Guid Id, string Name);

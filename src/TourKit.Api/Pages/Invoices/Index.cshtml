@@ -50,7 +50,13 @@
 </div>
 
 <div class="card">
-  <div class="card-header"><h5 class="mb-0">Danh sách hoá đơn (VAT)</h5></div>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Danh sách hoá đơn (VAT)</h5>
+    @if (Model.CanManage)
+    {
+      <a href="/Invoices/Edit" class="btn btn-primary btn-sm"><i class="ti ti-plus me-1"></i> Thêm hoá đơn</a>
+    }
+  </div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
       <thead>
@@ -127,9 +133,10 @@
                      '<div class="small text-muted">VAT ' + tk.money(r.vatAmount) + '</div>';
             } },
           { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end text-nowrap', render: function () {
+          { data: null, className: 'text-end text-nowrap', render: function (r) {
               if (!CAN_MANAGE) { return ''; }
-              return '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
+              return '<a href="/Invoices/Edit/' + r.id + '" class="btn btn-icon btn-sm" title="Sửa"><i class="ti ti-edit"></i></a>' +
+                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
             } }
         ]
       });

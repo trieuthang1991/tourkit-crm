@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
+using TourKit.Application.Customers;
+using TourKit.Application.Customers.Dtos;
 using TourKit.Application.Marketing;
 using TourKit.Application.Marketing.Dtos;
 using TourKit.Shared.Enums;
@@ -18,10 +20,22 @@ namespace TourKit.Api.Pages.MarketingCampaigns;
 [Authorize(Policy = "marketing.view")]
 public class IndexModel : TkListPageModel
 {
+    /// <summary>Trần địa chỉ nhận cho MỘT lần gửi — chặn cả việc bấm nhầm lẫn việc treo request.</summary>
+    public const int MaxRecipients = 500;
+
     private readonly ICampaignService _svc;
-    public IndexModel(ICampaignService svc) => _svc = svc;
+    private readonly ICustomerService _customers;
+
+    public IndexModel(ICampaignService svc, ICustomerService customers)
+    {
+        _svc = svc;
+        _customers = customers;
+    }
 
     public CampaignStatsDto Stats { get; private set; } = new(0, 0, 0, 0);
+
+    public bool CanCreate => User.HasClaim("perm", "marketing.create");
+    public bool CanSend => User.HasClaim("perm", "marketing.send");
 
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
@@ -97,8 +111,100 @@ public class IndexModel : TkListPageModel
         }));
     }
 
+    /// <summary>
+    /// Gợi ý địa chỉ nhận từ danh sách khách hàng — chỉ lấy tối đa MaxRecipients bản ghi CÓ liên hệ
+    /// hợp lệ theo kênh (Email cần email, SMS/Zalo cần điện thoại). Trả cả danh sách để người gửi
+    /// NHÌN THẤY đích trước khi bấm gửi, không gửi mù theo bộ lọc.
+    /// </summary>
+    public async Task<IActionResult> OnGetRecipientsAsync(int channel, string? q)
+    {
+        if (!CanSend)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền gửi chiến dịch."));
+        }
+
+        var wantEmail = (MarketingChannel)channel == MarketingChannel.Email;
+
+        // Quét theo TRANG cho tới khi đủ trần — không get-all bảng khách hàng.
+        const int pageSize = 200;
+        var picked = new List<object>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var page = 1;
+        int total;
+
+        do
+        {
+            var result = await _customers.ListAsync(page, pageSize, new CustomerListFilter(Q: q));
+            total = result.Total;
+
+            foreach (var c in result.Items)
+            {
+                var contact = (wantEmail ? c.Email : c.Phone)?.Trim();
+                if (string.IsNullOrWhiteSpace(contact) || !seen.Add(contact))
+                {
+                    continue;
+                }
+
+                picked.Add(new { name = c.FullName, contact });
+                if (picked.Count >= MaxRecipients)
+                {
+                    break;
+                }
+            }
+
+            page++;
+        }
+        while (picked.Count < MaxRecipients && (page - 1) * pageSize < total);
+
+        return new JsonResult(Result.Success("", new
+        {
+            items = picked,
+            max = MaxRecipients,
+            channelLabel = wantEmail ? "email" : "số điện thoại",
+        }));
+    }
+
+    /// <summary>Gửi chiến dịch tới đúng danh sách người dùng đã xác nhận trên màn hình.</summary>
+    public async Task<IActionResult> OnPostSendAsync(Guid id, string? recipients)
+    {
+        if (!CanSend)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền gửi chiến dịch."));
+        }
+
+        var list = (recipients ?? "")
+            .Split(['\n', '\r', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (list.Length == 0)
+        {
+            return new JsonResult(Result.Error("Chưa có địa chỉ nhận nào."));
+        }
+
+        if (list.Length > MaxRecipients)
+        {
+            return new JsonResult(Result.Error($"Một lần chỉ gửi tối đa {MaxRecipients} địa chỉ (đang có {list.Length}). Hãy chia nhỏ danh sách."));
+        }
+
+        try
+        {
+            var result = await _svc.SendAsync(id, new SendCampaignDto(list));
+            return new JsonResult(Result.Success($"Đã gửi {result.Sent} tin. Xem tab Nhật ký để biết địa chỉ nào lỗi.", new { sent = result.Sent }));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+    }
+
     public async Task<IActionResult> OnPostSaveAsync()
     {
+        if (!CanCreate)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền sửa chiến dịch."));
+        }
+
         if (!ModelState.IsValid)
         {
             return new JsonResult(Result.Error(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault() ?? "Dữ liệu không hợp lệ."));
@@ -119,6 +225,12 @@ public class IndexModel : TkListPageModel
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
+        if (!CanCreate)
+        {
+            TempData["err"] = "Bạn không có quyền xoá chiến dịch.";
+            return RedirectToPage();
+        }
+
         await _svc.DeleteAsync(id);
         TempData["ok"] = "Đã xoá chiến dịch.";
         return RedirectToPage();

@@ -143,6 +143,7 @@ public sealed class BookingService(
             (f.CommissionSettled == null || o.IsCommissionSettled == f.CommissionSettled) &&
             (f.OperationalStatus == null || (int)o.OperationalStatus == f.OperationalStatus) &&
             (f.CollaboratorId == null || o.CollaboratorId == f.CollaboratorId) &&
+            (f.DepartureId == null || o.TourDepartureId == f.DepartureId) &&
             (f.CreatedFrom == null || o.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || o.CreatedAt <= f.CreatedTo));
 

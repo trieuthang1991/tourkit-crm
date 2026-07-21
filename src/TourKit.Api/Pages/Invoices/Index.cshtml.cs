@@ -12,9 +12,7 @@ namespace TourKit.Api.Pages.Invoices;
 // (web/src/features/invoices/InvoicesPage.tsx): 6 KPI, thanh lọc (từ khoá + ngày HĐ từ/đến +
 // trạng thái), cột kép (số/ký hiệu · người mua/MST · tổng tiền + VAT), dòng tổng cộng trang,
 // export CSV, nút Xoá (invoice.manage).
-// VẪN read-only cho Thêm/Sửa: IInvoiceService.Create/Update yêu cầu tập DÒNG hoá đơn động
-// (Lines[] — hoá đơn không tạo rỗng, subtotal/VAT/total tính từ dòng); Pages/ chưa có màn Edit
-// hoá đơn nên không dựng form ở đây để tránh bịa.
+// Thêm/Sửa nằm ở màn riêng Pages/Invoices/Edit (hoá đơn cần tập DÒNG động — không nhét vừa offcanvas).
 [Authorize(Policy = "invoice.view")]
 public class IndexModel : TkListPageModel
 {

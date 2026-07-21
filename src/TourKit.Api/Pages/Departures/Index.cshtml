@@ -118,7 +118,7 @@
           { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
           { data: null, render: function (r) {
               // Cột ghép: tên chuyến · mã · loại tour (bám CellEntity hệ cũ)
-              return '<div class="fw-medium">' + tk.escape(r.title) + '</div>' +
+              return '<a href="/Departures/Detail/' + r.id + '" class="fw-medium">' + tk.escape(r.title) + '</a>' +
                      '<div class="small text-muted">' + tk.escape(r.code) + ' · ' + tk.escape(r.tourType) + '</div>';
             } },
           { data: null, render: function (r) {
@@ -129,7 +129,8 @@
           { data: 'assigneeName', render: function (v) { return tk.trunc(v, 170); } },
           { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
           { data: null, className: 'text-end', render: function (r) {
-              return r.isClosed ? '' : '<button type="button" class="btn btn-icon btn-sm js-close" title="Đóng chuyến"><i class="ti ti-lock"></i></button>';
+              return '<a href="/Departures/Detail/' + r.id + '" class="btn btn-icon btn-sm" title="Chi tiết"><i class="ti ti-eye"></i></a>' +
+                     (r.isClosed ? '' : '<button type="button" class="btn btn-icon btn-sm js-close" title="Đóng chuyến"><i class="ti ti-lock"></i></button>');
             } }
         ]
       });
