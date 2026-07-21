@@ -2,10 +2,11 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Tenancy;
+using TourKit.Application.Auth;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Tenancy;
 
-namespace TourKit.Api.Auth;
+namespace TourKit.Infrastructure.Auth;
 
 /// <summary>
 /// Xác thực cho UI Razor Pages (cookie). Dựng ClaimsPrincipal mang claim sub/tenant_id/email/perm

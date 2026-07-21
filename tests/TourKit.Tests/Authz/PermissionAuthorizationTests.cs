@@ -28,8 +28,8 @@ public class PermissionAuthorizationTests : IClassFixture<AuthTestFactory>
     {
         var client = _factory.CreateClient();
         var auth = await (await client.PostAsJsonAsync("/api/v1/auth/login",
-            new TourKit.Api.Auth.LoginRequest(seed.slug, seed.email, seed.password)))
-            .Content.ReadFromJsonAsync<TourKit.Api.Auth.AuthResponse>();
+            new TourKit.Application.Auth.LoginRequest(seed.slug, seed.email, seed.password)))
+            .Content.ReadFromJsonAsync<TourKit.Application.Auth.AuthResponse>();
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth!.AccessToken);
         return client;

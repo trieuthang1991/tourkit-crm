@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using TourKit.Api.Auth;
+using TourKit.Application.Auth;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Api;

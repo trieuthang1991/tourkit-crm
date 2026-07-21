@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using TourKit.Api.Auth;
+using TourKit.Application.Auth;
 
 namespace TourKit.Api.Pages.Auth;
 

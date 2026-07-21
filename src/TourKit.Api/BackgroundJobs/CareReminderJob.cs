@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Tenancy;
+using TourKit.Infrastructure.Tenancy;
 using TourKit.Application.Notifications;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Entities;

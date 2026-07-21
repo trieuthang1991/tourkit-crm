@@ -1,4 +1,4 @@
-namespace TourKit.Api.Billing;
+namespace TourKit.Application.Billing;
 
 /// <summary>Catalog gói dịch vụ SaaS (global). Nguồn seed cho bảng Plans.</summary>
 public static class PlanCatalog

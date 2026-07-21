@@ -78,4 +78,20 @@ public sealed class FakeRepository<T> : IRepository<T> where T : BaseEntity
         return Task.FromResult(query.Sum(selector));
     }
 
+    public Task<int> SumIntAsync(Expression<Func<T, int>> selector, Expression<Func<T, bool>>? predicate = null)
+    {
+        var query = predicate is null ? _items.AsQueryable() : _items.AsQueryable().Where(predicate);
+        return Task.FromResult(query.Sum(selector));
+    }
+
+
+    public Task<IReadOnlyDictionary<TKey, int>> CountByAsync<TKey>(
+        Expression<Func<T, TKey>> keySelector, Expression<Func<T, bool>>? predicate = null)
+        where TKey : notnull
+    {
+        var query = predicate is null ? _items.AsQueryable() : _items.AsQueryable().Where(predicate);
+        IReadOnlyDictionary<TKey, int> result = query.GroupBy(keySelector).ToDictionary(g => g.Key, g => g.Count());
+        return Task.FromResult(result);
+    }
+
 }

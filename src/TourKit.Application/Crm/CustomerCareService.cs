@@ -49,14 +49,16 @@ public sealed class CustomerCareService(
 
     public async Task<CustomerCareStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
         var now = DateTimeOffset.UtcNow;
+        var byStatus = await repo.CountByAsync(c => c.Status);
+        int N(int s) => byStatus.GetValueOrDefault(s);
+
         return new CustomerCareStatsDto(
-            all.Count,
-            all.Count(c => c.Status == 0),
-            all.Count(c => c.Status == 1),
-            all.Count(c => c.Status == 2),
-            all.Count(c => c.RemindAt is { } r && r < now && c.Status != 2));
+            byStatus.Values.Sum(),
+            N(0), N(1), N(2),
+            // "Quá hạn nhắc" không phải một bậc trạng thái → cần thêm một COUNT riêng.
+            await repo.CountAsync(c => c.RemindAt != null && c.RemindAt < now && c.Status != 2));
     }
 
     public async Task<CustomerCareDto> GetAsync(Guid id)

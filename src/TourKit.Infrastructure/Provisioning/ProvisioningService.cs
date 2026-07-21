@@ -1,13 +1,14 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Auth;
-using TourKit.Api.Billing;
-using TourKit.Api.Tenancy;
+using TourKit.Application.Auth;
+using TourKit.Application.Billing;
+using TourKit.Application.Provisioning;
 using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Tenancy;
 
 using TourKit.Shared.Enums;
 
-namespace TourKit.Api.Provisioning;
+namespace TourKit.Infrastructure.Provisioning;
 
 /// <summary>
 /// Tạo tenant mới + user admin + role "Admin" (đủ quyền) trong một lần đăng ký.

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TourKit.Api.Auth;
+using TourKit.Application.Auth;
 using TourKit.Api.Authz;
 using TourKit.Application.Admin;
 

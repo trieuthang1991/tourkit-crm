@@ -3,26 +3,18 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Tenancy;
+using Microsoft.Extensions.Logging;
+using TourKit.Application.Auth;
 using TourKit.Application.Notifications;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Tenancy;
 
-namespace TourKit.Api.Auth;
+namespace TourKit.Infrastructure.Auth;
 
 /// <summary>
-/// Quên/đặt lại mật khẩu KHÔNG cần bảng token: token là chuỗi DataProtection CÓ HẠN chứa
-/// userId|tenantId|stamp, trong đó stamp băm từ PasswordHash hiện tại → đổi mật khẩu xong thì
-/// mọi token cũ tự vô hiệu (dùng một lần trên thực tế).
+/// Hiện thực token đặt lại mật khẩu bằng DataProtection có hạn (xem <see cref="IPasswordResetService"/>):
+/// đụng thẳng AppDbContext nên phải nằm ở tầng Infrastructure, không phải tầng Api.
 /// </summary>
-public interface IPasswordResetService
-{
-    /// <summary>Gửi link đặt lại. LUÔN trả về như nhau để không lộ email/tenant nào tồn tại.</summary>
-    Task SendResetLinkAsync(string tenantSlug, string email, Func<string, string> buildUrl, CancellationToken ct = default);
-
-    /// <summary>Đặt mật khẩu mới từ token. Trả về null nếu OK, ngược lại là thông báo lỗi.</summary>
-    Task<string?> ResetAsync(string token, string newPassword, CancellationToken ct = default);
-}
-
 public sealed class PasswordResetService : IPasswordResetService
 {
     private const string Purpose = "TourKit.PasswordReset.v1";

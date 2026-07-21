@@ -1,4 +1,4 @@
-namespace TourKit.Api.Provisioning;
+namespace TourKit.Application.Provisioning;
 
 public enum RegistrationError { None, SlugTaken, Invalid }
 

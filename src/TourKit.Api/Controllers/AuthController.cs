@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TourKit.Api.Auth;
+using TourKit.Application.Auth;
 
 namespace TourKit.Api.Controllers;
 

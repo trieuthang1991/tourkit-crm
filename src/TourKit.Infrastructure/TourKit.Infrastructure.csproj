@@ -8,6 +8,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Auth/tenancy đã dời từ tầng Api xuống đây: cần DataProtection (token đặt lại mật khẩu),
+         cookie scheme và ILogger — tất cả nằm trong shared framework ASP.NET Core. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.*" />
     <!-- Provider dev hiện tại: SQLite (không cần cài server). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.*" />
@@ -15,6 +21,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.*" />
     <!-- Provider dev/prod: PostgreSQL (jsonb cho CrmProfileJson + phễu khách hàng). -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.*" />
+    <!-- Tên claim chuẩn JWT (sub/jti) dùng chung cho cả cookie lẫn bearer — giữ 2 scheme phát cùng bộ claim. -->
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.*" />
   </ItemGroup>
 
 </Project>

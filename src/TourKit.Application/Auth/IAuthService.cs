@@ -1,4 +1,4 @@
-namespace TourKit.Api.Auth;
+namespace TourKit.Application.Auth;
 
 public interface IAuthService
 {

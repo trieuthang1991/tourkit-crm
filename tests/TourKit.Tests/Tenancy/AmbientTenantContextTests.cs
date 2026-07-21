@@ -1,4 +1,4 @@
-using TourKit.Api.Tenancy;
+using TourKit.Infrastructure.Tenancy;
 
 namespace TourKit.Tests.Tenancy;
 

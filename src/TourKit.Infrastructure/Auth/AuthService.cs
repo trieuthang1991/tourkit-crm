@@ -1,11 +1,12 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Tenancy;
+using TourKit.Application.Auth;
 using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Tenancy;
 
-namespace TourKit.Api.Auth;
+namespace TourKit.Infrastructure.Auth;
 
 public sealed class AuthService : IAuthService
 {

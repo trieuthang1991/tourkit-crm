@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using TourKit.Api.BackgroundJobs;
-using TourKit.Api.Tenancy;
+using TourKit.Infrastructure.Tenancy;
 using TourKit.Application.Notifications;
 using TourKit.Shared.Entities;
 using TourKit.Tests.Support;

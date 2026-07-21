@@ -39,14 +39,15 @@ public sealed class AgentQuoteRequestService(
 
     public async Task<AgentQuoteStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
+        var byStatus = await repo.CountByAsync(r => r.Status);
+        int N(AgentQuoteStatus s) => byStatus.GetValueOrDefault(s);
+
         return new AgentQuoteStatsDto(
-            all.Count,
-            all.Count(r => r.Status == AgentQuoteStatus.Requested),
-            all.Count(r => r.Status == AgentQuoteStatus.Quoted),
-            all.Count(r => r.Status == AgentQuoteStatus.Confirmed),
-            all.Count(r => r.Status == AgentQuoteStatus.Rejected),
-            all.Sum(r => r.QuotedAmount ?? 0m));
+            byStatus.Values.Sum(),
+            N(AgentQuoteStatus.Requested), N(AgentQuoteStatus.Quoted),
+            N(AgentQuoteStatus.Confirmed), N(AgentQuoteStatus.Rejected),
+            await repo.SumAsync(r => r.QuotedAmount ?? 0m));
     }
 
     public async Task<AgentQuoteRequestDto> GetAsync(Guid id)

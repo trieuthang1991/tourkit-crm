@@ -40,10 +40,13 @@ public sealed class AgentBookingService(
 
     public async Task<AgentBookingStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
+        var byStatus = await repo.CountByAsync(b => b.Status);
+        int N(int s) => byStatus.GetValueOrDefault(s);
+
         return new AgentBookingStatsDto(
-            all.Count, all.Count(b => b.Status == 0), all.Count(b => b.Status == 1),
-            all.Count(b => b.Status == 2), all.Count(b => b.Status == 3), all.Sum(b => b.TotalAmount));
+            byStatus.Values.Sum(), N(0), N(1), N(2), N(3),
+            await repo.SumAsync(b => b.TotalAmount));
     }
 
     public async Task<AgentBookingDto> GetAsync(Guid id)

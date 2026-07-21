@@ -33,12 +33,15 @@ public sealed class CustomerCommissionRuleService(
 
     public async Task<CustomerCommissionRuleStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
-        return new CustomerCommissionRuleStatsDto(
-            all.Count,
-            all.Count(r => r.Status == 1),
-            all.Count(r => r.Status != 1),
-            all.Count == 0 ? 0m : Math.Round(all.Average(r => r.Percentage), 2));
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
+        var byStatus = await repo.CountByAsync(r => r.Status);
+        var total = byStatus.Values.Sum();
+        var active = byStatus.GetValueOrDefault(1);
+
+        // Trung bình = tổng / số dòng, cả hai đều tính ở SQL (IRepository không có AverageAsync).
+        var avg = total == 0 ? 0m : Math.Round(await repo.SumAsync(r => r.Percentage) / total, 2);
+
+        return new CustomerCommissionRuleStatsDto(total, active, total - active, avg);
     }
 
     public async Task<CustomerCommissionRuleDto> CreateAsync(CreateCustomerCommissionRuleDto dto)

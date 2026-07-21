@@ -1,3 +1,4 @@
+using TourKit.Application.Auth;
 using Microsoft.AspNetCore.Identity;
 using TourKit.Shared.Entities;
 

@@ -57,4 +57,19 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
     public Task<decimal> SumAsync(Expression<Func<T, decimal>> selector, Expression<Func<T, bool>>? predicate = null)
         => (predicate is null ? Set : Set.Where(predicate)).SumAsync(selector);
 
+    public Task<int> SumIntAsync(Expression<Func<T, int>> selector, Expression<Func<T, bool>>? predicate = null)
+        => (predicate is null ? Set : Set.Where(predicate)).SumAsync(selector);
+
+    public async Task<IReadOnlyDictionary<TKey, int>> CountByAsync<TKey>(
+        Expression<Func<T, TKey>> keySelector, Expression<Func<T, bool>>? predicate = null)
+        where TKey : notnull
+    {
+        var q = predicate is null ? Set : Set.Where(predicate);
+        var rows = await q.GroupBy(keySelector)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToListAsync();
+        return rows.ToDictionary(r => r.Key, r => r.Count);
+    }
+
+
 }

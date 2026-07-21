@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using TourKit.Api.Auth;
-using TourKit.Api.Tenancy;
+using TourKit.Application.Auth;
+using TourKit.Infrastructure.Tenancy;
 using TourKit.Shared.Entities;
 using TourKit.Infrastructure.Persistence;
 

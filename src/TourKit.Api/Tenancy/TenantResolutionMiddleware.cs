@@ -1,3 +1,4 @@
+using TourKit.Infrastructure.Tenancy;
 namespace TourKit.Api.Tenancy;
 
 public sealed class TenantResolutionMiddleware

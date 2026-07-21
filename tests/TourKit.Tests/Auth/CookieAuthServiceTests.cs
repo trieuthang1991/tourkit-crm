@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using TourKit.Api.Auth;
+using TourKit.Application.Auth;
 using TourKit.Tests.Support;
 
 namespace TourKit.Tests.Auth;

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using TourKit.Api.Auth;
-using TourKit.Api.Provisioning;
-using TourKit.Api.Tenancy;
+using TourKit.Application.Auth;
+using TourKit.Application.Provisioning;
+using TourKit.Infrastructure.Tenancy;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Enums;

@@ -39,13 +39,15 @@ public sealed class DepartureService(
 
     public async Task<DepartureStatsDto> GetStatsAsync()
     {
-        var all = await departureRepo.ListAsync();
+        // Đếm/cộng ở SQL. Các tiêu chí ở đây không cùng một bậc nên phải tách COUNT có điều kiện.
         var now = DateTimeOffset.UtcNow;
+        var byClosed = await departureRepo.CountByAsync(d => d.IsClosed);
+
         return new DepartureStatsDto(
-            all.Count,
-            all.Count(d => !d.IsClosed && d.DepartureDate != null && d.DepartureDate >= now),
-            all.Count(d => d.IsClosed),
-            all.Sum(d => d.TotalSlots));
+            byClosed.Values.Sum(),
+            await departureRepo.CountAsync(d => !d.IsClosed && d.DepartureDate != null && d.DepartureDate >= now),
+            byClosed.GetValueOrDefault(true),
+            await departureRepo.SumIntAsync(d => d.TotalSlots));
     }
 
     public async Task<DepartureFilterOptionsDto> GetFilterOptionsAsync()

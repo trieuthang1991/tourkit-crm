@@ -1,6 +1,6 @@
 using TourKit.Shared.Entities;
 
-namespace TourKit.Api.Auth;
+namespace TourKit.Application.Auth;
 
 public interface IJwtTokenService
 {

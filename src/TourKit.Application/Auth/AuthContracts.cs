@@ -1,4 +1,4 @@
-namespace TourKit.Api.Auth;
+namespace TourKit.Application.Auth;
 
 public sealed record LoginRequest(string TenantSlug, string Email, string Password);
 public sealed record RefreshRequest(string RefreshToken);

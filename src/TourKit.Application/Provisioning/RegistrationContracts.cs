@@ -1,4 +1,4 @@
-namespace TourKit.Api.Provisioning;
+namespace TourKit.Application.Provisioning;
 
 public sealed record RegisterTenantRequest(
     string CompanyName, string Slug, string AdminEmail, string AdminPassword, string AdminFullName);

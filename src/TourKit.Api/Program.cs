@@ -9,14 +9,18 @@ using Serilog;
 using TourKit.Api.Auth;
 using TourKit.Api.Billing;
 using TourKit.Api.Middleware;
-using TourKit.Api.Provisioning;
 using TourKit.Api.Tenancy;
+using TourKit.Application.Auth;
 using TourKit.Application.Common;
+using TourKit.Application.Provisioning;
 using TourKit.Application.Reports;
 using TourKit.Caching;
+using TourKit.Infrastructure.Auth;
 using TourKit.Infrastructure.Persistence;
+using TourKit.Infrastructure.Provisioning;
 using TourKit.Infrastructure.Repositories;
 using TourKit.Infrastructure.Reports;
+using TourKit.Infrastructure.Tenancy;
 using TourKit.Shared.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -256,12 +260,12 @@ using (var scope = app.Services.CreateScope())
     // Chỉ Development: seed bộ data mẫu vào DB để kiểm tra trực quan các thanh lọc.
     if (app.Environment.IsDevelopment() && db.Database.IsRelational())
     {
-        var ambient = scope.ServiceProvider.GetRequiredService<TourKit.Api.Tenancy.AmbientTenantContext>();
+        var ambient = scope.ServiceProvider.GetRequiredService<TourKit.Infrastructure.Tenancy.AmbientTenantContext>();
         await TourKit.Api.DevData.DemoDataSeeder.SeedAsync(
             db,
             ambient,
-            scope.ServiceProvider.GetRequiredService<TourKit.Api.Provisioning.IProvisioningService>(),
-            scope.ServiceProvider.GetRequiredService<TourKit.Api.Auth.IPasswordHasher>());
+            scope.ServiceProvider.GetRequiredService<TourKit.Application.Provisioning.IProvisioningService>(),
+            scope.ServiceProvider.GetRequiredService<TourKit.Application.Auth.IPasswordHasher>());
 
         // DEV-ONLY: bơm KHỐI LƯỢNG LỚN (hàng nghìn dòng/bảng) để test hiệu năng lưới/phân trang.
         // Chỉ chạy khi đặt biến môi trường SEED_PERF_COUNT>0 (vd SEED_PERF_COUNT=3000). Idempotent.

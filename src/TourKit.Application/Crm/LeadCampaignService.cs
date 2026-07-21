@@ -39,13 +39,14 @@ public sealed class LeadCampaignService(
 
     public async Task<LeadCampaignStatsDto> GetStatsAsync()
     {
-        var campaigns = await repo.ListAsync();
-        var leads = await leadRepo.ListAsync(l => l.CampaignId != null);
-        var total = leads.Count;
-        var won = leads.Count(l => l.Status == LeadStatus.Won);
-        var completed = campaigns.Count(c => c.Status == 1);
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
+        var byCampaignStatus = await repo.CountByAsync(c => c.Status);
+        var total = await leadRepo.CountAsync(l => l.CampaignId != null);
+        var won = await leadRepo.CountAsync(l => l.CampaignId != null && l.Status == LeadStatus.Won);
         var avgClose = total == 0 ? 0m : Math.Round(won * 100m / total, 2);
-        return new LeadCampaignStatsDto(campaigns.Count, total, avgClose, completed);
+
+        return new LeadCampaignStatsDto(
+            byCampaignStatus.Values.Sum(), total, avgClose, byCampaignStatus.GetValueOrDefault(1));
     }
 
     public async Task<LeadCampaignDto> CreateAsync(CreateLeadCampaignDto dto)

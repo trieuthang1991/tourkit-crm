@@ -38,16 +38,15 @@ public sealed class ServiceBookingService(
 
     public async Task<ServiceBookingStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
+        var byType = await repo.CountByAsync(b => b.Type);
+        int N(ServiceBookingType t) => byType.GetValueOrDefault(t);
+
         return new ServiceBookingStatsDto(
-            all.Count,
-            all.Count(b => b.Type == ServiceBookingType.Hotel),
-            all.Count(b => b.Type == ServiceBookingType.Flight),
-            all.Count(b => b.Type == ServiceBookingType.Visa),
-            all.Count(b => b.Type == ServiceBookingType.Ticket),
-            all.Count(b => b.Type == ServiceBookingType.Transfer),
-            all.Count(b => b.Type == ServiceBookingType.Other),
-            all.Sum(b => b.TotalAmount));
+            byType.Values.Sum(),
+            N(ServiceBookingType.Hotel), N(ServiceBookingType.Flight), N(ServiceBookingType.Visa),
+            N(ServiceBookingType.Ticket), N(ServiceBookingType.Transfer), N(ServiceBookingType.Other),
+            await repo.SumAsync(b => b.TotalAmount));
     }
 
     public async Task<ServiceBookingDto> CreateAsync(CreateServiceBookingDto dto)

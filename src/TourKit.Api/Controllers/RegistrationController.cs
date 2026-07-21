@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TourKit.Api.Provisioning;
+using TourKit.Application.Provisioning;
 
 namespace TourKit.Api.Controllers;
 

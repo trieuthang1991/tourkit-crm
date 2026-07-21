@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using TourKit.Api.Provisioning;
+using TourKit.Application.Provisioning;
 
 namespace TourKit.Api.Pages.Auth;
 

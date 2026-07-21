@@ -50,8 +50,12 @@ public sealed class ProviderService(
 
     public async Task<ProviderStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
-        return new ProviderStatsDto(all.Count, all.Count(p => p.Status == 1), all.Count(p => p.Status != 1));
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
+        var byStatus = await repo.CountByAsync(p => p.Status);
+        var total = byStatus.Values.Sum();
+        var active = byStatus.GetValueOrDefault(1);
+
+        return new ProviderStatsDto(total, active, total - active);
     }
 
     public async Task<ProviderDto> GetAsync(Guid id)

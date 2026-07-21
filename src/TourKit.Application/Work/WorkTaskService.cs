@@ -44,15 +44,16 @@ public sealed class WorkTaskService(
 
     public async Task<WorkTaskStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
         var now = DateTimeOffset.UtcNow;
+        var byStatus = await repo.CountByAsync(x => x.Status);
+        int N(int s) => byStatus.GetValueOrDefault(s);
+
         return new WorkTaskStatsDto(
-            all.Count,
-            all.Count(x => x.Status == 0),
-            all.Count(x => x.Status == 1),
-            all.Count(x => x.Status == 2),
-            all.Count(x => x.Status == 3),
-            all.Count(x => x.DueDate is { } d && d < now && x.Status != 2 && x.Status != 3));
+            byStatus.Values.Sum(),
+            N(0), N(1), N(2), N(3),
+            // "Quá hạn" không phải một bậc trạng thái → cần thêm một COUNT riêng.
+            await repo.CountAsync(x => x.DueDate != null && x.DueDate < now && x.Status != 2 && x.Status != 3));
     }
 
     public async Task<WorkTaskDto> CreateAsync(CreateWorkTaskDto dto)

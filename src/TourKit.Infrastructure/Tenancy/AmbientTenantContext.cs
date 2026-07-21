@@ -1,6 +1,6 @@
 using TourKit.Shared.Tenancy;
 
-namespace TourKit.Api.Tenancy;
+namespace TourKit.Infrastructure.Tenancy;
 
 /// <summary>
 /// Tenant của request hiện tại — nguồn có thể là claim JWT (qua TenantResolutionMiddleware)

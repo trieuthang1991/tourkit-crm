@@ -43,8 +43,11 @@ public sealed class TicketFundService(
 
     public async Task<TicketFundStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
-        return new TicketFundStatsDto(all.Count, all.Count(t => t.IsClosed), all.Count(t => !t.IsClosed));
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
+        var byClosed = await repo.CountByAsync(t => t.IsClosed);
+
+        return new TicketFundStatsDto(
+            byClosed.Values.Sum(), byClosed.GetValueOrDefault(true), byClosed.GetValueOrDefault(false));
     }
 
     public async Task<TicketFundDto> CreateAsync(CreateTicketFundDto dto)

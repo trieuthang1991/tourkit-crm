@@ -30,4 +30,17 @@ public interface IRepository<T> where T : BaseEntity
     /// <summary>Cộng ở SQL (SUM) — KHÔNG materialize bảng. Dùng cho thẻ thống kê có tổng tiền.</summary>
     Task<decimal> SumAsync(Expression<Func<T, decimal>> selector, Expression<Func<T, bool>>? predicate = null);
 
+    /// <summary>Cộng cột SỐ NGUYÊN ở SQL (vd tổng số chỗ) — bản decimal không nhận int.</summary>
+    Task<int> SumIntAsync(Expression<Func<T, int>> selector, Expression<Func<T, bool>>? predicate = null);
+
+    /// <summary>
+    /// Đếm theo NHÓM bằng một câu GROUP BY duy nhất ở SQL. Dành cho thẻ thống kê dạng
+    /// "tổng + đếm theo trạng thái": trước đây mỗi thẻ hoặc nạp cả bảng rồi đếm trong bộ nhớ,
+    /// hoặc bắn 5-6 câu COUNT riêng lẻ. Cả hai đều thừa — một GROUP BY trả về đủ mọi bậc.
+    /// </summary>
+    Task<IReadOnlyDictionary<TKey, int>> CountByAsync<TKey>(
+        Expression<Func<T, TKey>> keySelector, Expression<Func<T, bool>>? predicate = null)
+        where TKey : notnull;
+
+
 }

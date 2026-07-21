@@ -30,9 +30,12 @@ public sealed class AgentService(
 
     public async Task<AgentStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
+        var byStatus = await repo.CountByAsync(a => a.Status);
+
         return new AgentStatsDto(
-            all.Count, all.Count(a => a.Status == 1), all.Count(a => a.Status == 0), all.Sum(a => a.CreditLimit));
+            byStatus.Values.Sum(), byStatus.GetValueOrDefault(1), byStatus.GetValueOrDefault(0),
+            await repo.SumAsync(a => a.CreditLimit));
     }
 
     public async Task<AgentDto> CreateAsync(CreateAgentDto dto)

@@ -52,10 +52,14 @@ public sealed class VehicleAssignmentService(
 
     public async Task<VehicleAssignmentStatsDto> GetStatsAsync()
     {
-        var all = await repo.ListAsync();
+        // Một câu GROUP BY cho mọi bậc trạng thái, thay vì nạp cả bảng hoặc bắn nhiều câu COUNT rời.
+        var byStatus = await repo.CountByAsync(a => a.Status);
+        // Số xe khác nhau = số NHÓM của GROUP BY theo VehicleId (tương đương COUNT DISTINCT ở SQL).
+        var byVehicle = await repo.CountByAsync(a => a.VehicleId);
+
         return new VehicleAssignmentStatsDto(
-            all.Count, all.Count(a => a.Status == 1), all.Count(a => a.Status == 2),
-            all.Select(a => a.VehicleId).Distinct().Count());
+            byStatus.Values.Sum(), byStatus.GetValueOrDefault(1), byStatus.GetValueOrDefault(2),
+            byVehicle.Count);
     }
 
     public async Task<VehicleAssignmentDto> CreateAsync(CreateVehicleAssignmentDto dto)
