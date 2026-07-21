@@ -142,8 +142,22 @@
             arg.event.title + ' · ' + e.tourType + ' · ' + e.totalSlots + ' chỗ · ' + e.statusLabel);
         },
         eventClick: function (arg) {
-          // Chưa có trang chi tiết chuyến → mở danh sách Chuyến đi lọc theo mã.
-          window.location.href = '/Departures?q=' + encodeURIComponent(arg.event.extendedProps.code);
+          // Mở panel trượt từ phải thay vì điều hướng — giữ nguyên tháng/bộ lọc đang xem.
+          arg.jsEvent.preventDefault();
+          var p = arg.event.extendedProps || {};
+          tk.panel({
+            title: arg.event.title,
+            rows: [
+              { label: 'Mã chuyến', value: p.code },
+              { label: 'Loại tour', value: p.tourType },
+              { label: 'Ngày khởi hành', value: arg.event.start ? arg.event.start.toLocaleDateString('vi-VN') : null },
+              { label: 'Ngày kết thúc', value: arg.event.end ? new Date(arg.event.end.getTime() - 86400000).toLocaleDateString('vi-VN') : null },
+              { label: 'Tổng số chỗ', value: p.totalSlots != null ? tk.money(p.totalSlots) : null },
+              { label: 'Trạng thái', value: p.statusLabel }
+            ],
+            actionUrl: '/Departures/Detail/' + arg.event.id,
+            actionText: 'Mở chi tiết chuyến'
+          });
         }
       });
       cal.render();

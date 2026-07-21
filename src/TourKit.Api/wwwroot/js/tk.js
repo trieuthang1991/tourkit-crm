@@ -134,5 +134,49 @@
     return { open: open };
   };
 
+
+  // ---- Panel thông tin trượt từ PHẢI (offcanvas) ----
+  // Dùng cho các chỗ chỉ cần liếc nhanh rồi đi tiếp: bấm sự kiện trên lịch, bấm ô lưới…
+  // Điều hướng hẳn sang trang khác làm mất ngữ cảnh (đang xem tháng nào, cuộn tới đâu);
+  // panel giữ nguyên màn hình phía sau, đóng lại là xem tiếp được ngay.
+  // Panel được tạo MỘT lần rồi dùng lại, không nhồi thêm DOM mỗi lần bấm.
+  tk.panel = function (opts) {
+    opts = opts || {};
+    var el = document.getElementById('tk-panel');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'tk-panel';
+      el.className = 'offcanvas offcanvas-end';
+      el.tabIndex = -1;
+      el.style.width = '420px';
+      el.style.maxWidth = '100%';
+      el.innerHTML =
+        '<div class="offcanvas-header border-bottom">' +
+          '<h5 class="offcanvas-title" id="tk-panel-title"></h5>' +
+          '<button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button>' +
+        '</div>' +
+        '<div class="offcanvas-body"><div id="tk-panel-body"></div></div>';
+      document.body.appendChild(el);
+    }
+
+    document.getElementById('tk-panel-title').textContent = opts.title || '';
+
+    var html = '';
+    (opts.rows || []).forEach(function (r) {
+      if (!r || r.value == null || r.value === '') { return; }
+      html += '<div class="d-flex justify-content-between align-items-start gap-3 py-2 border-bottom">' +
+                '<span class="text-muted flex-shrink-0">' + tk.escape(r.label) + '</span>' +
+                '<span class="fw-medium text-end">' + (r.html ? r.value : tk.escape(String(r.value))) + '</span>' +
+              '</div>';
+    });
+    if (opts.actionUrl) {
+      html += '<a href="' + opts.actionUrl + '" class="btn btn-primary w-100 mt-3">' +
+              tk.escape(opts.actionText || 'Xem chi tiết') + '</a>';
+    }
+    document.getElementById('tk-panel-body').innerHTML = html;
+
+    bootstrap.Offcanvas.getOrCreateInstance(el).show();
+  };
+
   window.tk = tk;
 })();

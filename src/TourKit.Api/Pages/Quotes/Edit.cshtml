@@ -177,7 +177,7 @@
     }
 
     $(function(){
-      $('#cust-picker').select2({ theme:'bootstrap-5', placeholder:'Tìm khách hàng...', allowClear:true, width:'100%',
+      $('#cust-picker').select2({ placeholder:'Tìm khách hàng...', allowClear:true, width:'100%',
         ajax:{ url:'?handler=CustomerSearch', dataType:'json', delay:250, data:function(p){return {q:p.term};}, processResults:function(d){return d;} } });
       @if (q?.CustomerId != null) {
         <text>$('#cust-picker').append(new Option(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(q!.CustomerName)), '@q!.CustomerId', true, true)).trigger('change');</text>

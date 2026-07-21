@@ -469,7 +469,24 @@
               .done(function (d) { success((d && d.events) || []); })
               .fail(failure);
           },
-          eventClick: function (i) { location.href = '/Departures/Detail/' + i.event.id; }
+          eventClick: function (i) {
+            // Mở panel trượt từ phải thay vì điều hướng — giữ nguyên tháng đang xem.
+            i.jsEvent.preventDefault();
+            var p = i.event.extendedProps || {};
+            tk.panel({
+              title: i.event.title,
+              rows: [
+                { label: 'Mã chuyến', value: p.code },
+                { label: 'Loại tour', value: p.tourType },
+                { label: 'Ngày khởi hành', value: i.event.start ? i.event.start.toLocaleDateString('vi-VN') : null },
+                { label: 'Ngày kết thúc', value: i.event.end ? new Date(i.event.end.getTime() - 86400000).toLocaleDateString('vi-VN') : null },
+                { label: 'Tổng số chỗ', value: p.totalSlots != null ? tk.money(p.totalSlots) : null },
+                { label: 'Trạng thái', value: p.statusLabel }
+              ],
+              actionUrl: '/Departures/Detail/' + i.event.id,
+              actionText: 'Mở chi tiết chuyến'
+            });
+          }
         }).render();
       }
         </text>

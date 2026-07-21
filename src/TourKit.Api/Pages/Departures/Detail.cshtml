@@ -80,16 +80,21 @@
 </div>
 
 <div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
+  <div class="card-header">
     <h5 class="mb-0">Đơn hàng của chuyến</h5>
-    <input type="text" id="f-q" class="form-control form-control-sm w-auto" placeholder="Mã đơn / khách…" />
   </div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
       <thead>
         <tr>
-          <th class="text-center">#</th><th>Đơn hàng</th><th>Khách</th><th>Chỗ</th>
-          <th class="text-end">Doanh thu</th><th class="text-end">Đã thu / Còn nợ</th><th>Trạng thái</th><th></th>
+          <th class="text-center" style="min-width:52px">#</th>
+          <th style="min-width:120px">Đơn hàng</th>
+          <th style="min-width:180px">Khách</th>
+          <th style="min-width:110px">Chỗ</th>
+          <th class="text-end" style="min-width:130px">Doanh thu</th>
+          <th class="text-end" style="min-width:150px">Đã thu / Còn nợ</th>
+          <th style="min-width:130px">Trạng thái</th>
+          <th style="min-width:56px"></th>
         </tr>
       </thead>
       <tfoot><tr id="page-sum" class="fw-medium"><td colspan="8" class="small"></td></tr></tfoot>
@@ -132,16 +137,15 @@
     }
 
     $(function () {
-      $('#cust-picker').select2({ theme:'bootstrap-5', placeholder:'Tìm khách hàng…', allowClear:true, width:'100%',
+      $('#cust-picker').select2({ placeholder:'Tìm khách hàng…', allowClear:true, width:'100%',
         ajax:{ url:'?handler=CustomerSearch', dataType:'json', delay:250, data:function(p){ return { q:p.term }; }, processResults:function(x){ return x; } } });
 
       // Server-side: mỗi lần chỉ tải 1 trang đơn của ĐÚNG chuyến này (lọc tại DB).
       dt = tk.table('#tbl', {
         url: '?handler=Orders&id=' + ID,
-        extraData: function (x) { var q = $('#f-q').val(); if (q) { x['search[value]'] = q; } },
         columns: [
           { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: null, render: function (r) { return '<a href="/Orders" class="fw-medium">' + tk.escape(r.code) + '</a>'; } },
+          { data: null, render: function (r) { return '<a href="/Orders/Detail/' + r.id + '" class="fw-medium">' + tk.escape(r.code) + '</a>'; } },
           { data: null, render: function (r) { return tk.trunc(r.customerName, 200); } },
           { data: null, render: function (r) {
               return '<span class="badge bg-label-primary">' + r.seatTotal + ' chỗ</span>' +
@@ -152,8 +156,8 @@
               return '<div class="text-success">' + tk.money(r.amountPaid) + '</div>' +
                      '<div class="small text-danger">' + tk.money(r.outstanding) + '</div>';
             } },
-          { data: null, render: function (r) { return '<span class="badge bg-label-secondary">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end', render: function (r) { return '<a href="/Orders" class="btn btn-icon btn-sm" title="Xem đơn"><i class="ti ti-external-link"></i></a>'; } }
+          { data: null, render: function (r) { return '<span class="badge bg-label-' + (r.statusColor || 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end', render: function (r) { return '<a href="/Orders/Detail/' + r.id + '" class="btn btn-icon btn-sm" title="Xem đơn"><i class="ti ti-external-link"></i></a>'; } }
         ]
       });
 
@@ -164,7 +168,6 @@
           '</strong> · còn nợ <strong>' + tk.money(json.pageSum.outstanding) + '</strong>');
       });
 
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
       $('#btn-book').on('click', function () { book('book'); });
       $('#btn-hold').on('click', function () { book('hold'); });
 

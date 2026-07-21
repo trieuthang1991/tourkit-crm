@@ -80,10 +80,20 @@
     <table id="tbl" class="table table-hover">
       <thead>
         <tr>
-          <th class="text-center">#</th><th>Mã đơn</th><th>Khách hàng</th><th>Tour</th>
-          <th class="text-center">Khách (chỗ)</th><th>Ngày đi</th>
-          <th class="text-end">Thu tiền</th><th class="text-end">Chi tiền</th><th class="text-end">Lợi nhuận</th>
-          <th>Sales</th><th>Trạng thái</th><th></th>
+          @* min-width cho từng cột: bảng nằm trong .table-responsive nên màn hẹp sẽ CUỘN NGANG
+             thay vì bóp các cột lại đến mức chữ xuống dòng lem nhem. *@
+          <th class="text-center" style="min-width:52px">#</th>
+          <th style="min-width:130px">Mã đơn</th>
+          <th style="min-width:190px">Khách hàng</th>
+          <th style="min-width:240px">Tour</th>
+          <th class="text-center" style="min-width:110px">Khách (chỗ)</th>
+          <th style="min-width:120px">Ngày đi</th>
+          <th class="text-end" style="min-width:130px">Thu tiền</th>
+          <th class="text-end" style="min-width:130px">Chi tiền</th>
+          <th class="text-end" style="min-width:130px">Lợi nhuận</th>
+          <th style="min-width:130px">Sales</th>
+          <th style="min-width:150px">Trạng thái</th>
+          <th style="min-width:56px"></th>
         </tr>
       </thead>
       <tfoot>

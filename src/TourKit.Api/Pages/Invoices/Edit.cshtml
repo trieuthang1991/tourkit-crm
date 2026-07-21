@@ -165,7 +165,7 @@
     }
 
     $(function(){
-      $('#order-picker').select2({ theme:'bootstrap-5', placeholder:'Tìm mã đơn / khách...', allowClear:true, width:'100%',
+      $('#order-picker').select2({ placeholder:'Tìm mã đơn / khách...', allowClear:true, width:'100%',
         ajax:{ url:'?handler=OrderSearch', dataType:'json', delay:250, data:function(p){ return { q:p.term }; }, processResults:function(d){ return d; } } });
       @if (Model.Invoice?.OrderId != null) {
         <text>$('#order-picker').append(new Option(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OrderLabel ?? "")), '@Model.Invoice!.OrderId', true, true)).trigger('change');</text>
