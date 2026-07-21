@@ -62,7 +62,7 @@ public class IndexModel : TkListPageModel
     /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí VehicleAssignmentListFilter hỗ trợ.
     /// Mặc định Status = chờ duyệt; người dùng có thể đổi qua ô trạng thái (bám Select hệ cũ).
     /// windowFrom/windowTo (khung lịch đang xem) nếu có sẽ ĐÈ khoảng ngày của thanh lọc.</summary>
-    private VehicleAssignmentListFilter BuildFilter(DateTimeOffset? windowFrom = null, DateTimeOffset? windowTo = null)
+    private VehicleAssignmentListFilter BuildFilter(DateTimeOffset? windowFrom = null, DateTimeOffset? windowTo = null, string? keyword = null)
     {
         var q = Request.Query;
         Guid? G(string k) => Guid.TryParse(q[k], out var g) ? g : null;
@@ -73,14 +73,15 @@ public class IndexModel : TkListPageModel
             DepartureId: G("departureId"),
             Status: int.TryParse(q["status"], out var st) ? st : PendingStatus,
             DateFrom: windowFrom?.ToUniversalTime() ?? D("dateFrom"),
-            DateTo: windowTo?.ToUniversalTime() ?? D("dateTo"));
+            DateTo: windowTo?.ToUniversalTime() ?? D("dateTo"),
+            Q: keyword);
     }
 
     /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
     public async Task<IActionResult> OnGetDataAsync()
     {
         var dt = ParseDataTables();
-        var result = await _svc.ListAsync(dt.Page, dt.Size, BuildFilter());
+        var result = await _svc.ListAsync(dt.Page, dt.Size, BuildFilter(keyword: dt.Keyword));
         var stats = await _svc.GetStatsAsync();
 
         var data = result.Items.Select(x => new

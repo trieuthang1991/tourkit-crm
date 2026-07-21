@@ -5,7 +5,7 @@ namespace TourKit.Application.Providers;
 
 public interface IServiceItemService
 {
-    Task<PagedResult<ServiceItemDto>> ListAsync(int page, int size);
+    Task<PagedResult<ServiceItemDto>> ListAsync(int page, int size, string? q = null);
     Task<ServiceItemDto> GetAsync(Guid id);
     Task<ServiceItemDto> CreateAsync(CreateServiceItemDto dto);
     Task UpdateAsync(Guid id, UpdateServiceItemDto dto);

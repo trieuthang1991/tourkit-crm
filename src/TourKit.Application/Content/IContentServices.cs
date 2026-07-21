@@ -12,7 +12,7 @@ public interface IPostCategoryService
 
 public interface IPostService
 {
-    Task<PagedResult<PostDto>> ListAsync(int page, int size, Guid? categoryId, int? status);
+    Task<PagedResult<PostDto>> ListAsync(int page, int size, Guid? categoryId, int? status, string? q = null);
     Task<PostDto> GetAsync(Guid id);
     Task<PostDto> CreateAsync(CreatePostDto dto);
     Task UpdateAsync(Guid id, UpdatePostDto dto);

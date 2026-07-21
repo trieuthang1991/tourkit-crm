@@ -10,11 +10,27 @@ public sealed class ServiceItemService(
     IValidator<CreateServiceItemDto> createValidator,
     IValidator<UpdateServiceItemDto> updateValidator) : IServiceItemService
 {
-    public async Task<PagedResult<ServiceItemDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<ServiceItemDto>> ListAsync(int page, int size, string? q = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
-        var dtos = items.Select(Map).ToList();
-        return new PagedResult<ServiceItemDto>(dtos, total, page, size);
+        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+
+        // Không từ khoá → cắt trang NGAY Ở SQL (CreatedAt giảm dần), không nạp cả bảng.
+        if (kw == null)
+        {
+            var (items, total) = await repo.PageAsync(page, size);
+            return new PagedResult<ServiceItemDto>(items.Select(Map).ToList(), total, page, size);
+        }
+
+        // Có từ khoá: khớp mã + tên dịch vụ. EF không dịch được StringComparison nên lọc ở bộ nhớ
+        // (LINQ-to-objects, an toàn cho provider InMemory của test).
+        var all = await repo.ListAsync();
+        bool MatchQ(ServiceItem s) =>
+            s.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            s.Name.Contains(kw, StringComparison.OrdinalIgnoreCase);
+
+        var filtered = all.Where(MatchQ).OrderByDescending(s => s.CreatedAt).ToList();
+        var dtos = filtered.Skip((page - 1) * size).Take(size).Select(Map).ToList();
+        return new PagedResult<ServiceItemDto>(dtos, filtered.Count, page, size);
     }
 
     public async Task<ServiceItemDto> GetAsync(Guid id)

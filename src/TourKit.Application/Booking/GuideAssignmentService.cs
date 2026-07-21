@@ -26,7 +26,31 @@ public sealed class GuideAssignmentService(
             (f.DateFrom == null || a.TimeGo >= f.DateFrom) &&
             (f.DateTo == null || a.TimeGo <= f.DateTo));
 
-        var ordered = all.OrderByDescending(a => a.TimeGo ?? a.CreatedAt).ToList();
+        // Từ khoá: khớp tên HDV / mã-tên chuyến. Các trường này nằm ở bảng khác, join không dịch được
+        // sang SQL → nạp tên cho TOÀN BỘ tập đã lọc rồi so khớp ở bộ nhớ (an toàn cho provider InMemory
+        // của test), chạy trên tập đã bị các tiêu chí trên thu hẹp.
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+        IReadOnlyList<TourGuideAssignment> matched = all;
+        if (kw != null)
+        {
+            var pIds = all.Select(a => a.ProviderId).ToHashSet();
+            var dIds = all.Select(a => a.TourDepartureId).ToHashSet();
+            var pLookup = (await providerRepo.ListAsync(p => pIds.Contains(p.Id))).ToDictionary(p => p.Id, p => p.Name);
+            var dLookup = (await departureRepo.ListAsync(d => dIds.Contains(d.Id))).ToDictionary(d => d.Id, d => d);
+
+            bool MatchQ(TourGuideAssignment a)
+            {
+                var providerName = pLookup.GetValueOrDefault(a.ProviderId);
+                dLookup.TryGetValue(a.TourDepartureId, out var dep);
+                return (providerName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                       (dep?.Code?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                       (dep?.Title?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
+            }
+
+            matched = all.Where(MatchQ).ToList();
+        }
+
+        var ordered = matched.OrderByDescending(a => a.TimeGo ?? a.CreatedAt).ToList();
         var pageItems = ordered.Skip((page - 1) * size).Take(size).ToList();
 
         // Làm giàu tên HDV + tên/mã chuyến theo lô.

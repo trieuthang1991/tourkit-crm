@@ -11,11 +11,27 @@ public sealed class VehicleService(
     IValidator<CreateVehicleDto> createValidator,
     IValidator<UpdateVehicleDto> updateValidator) : IVehicleService
 {
-    public async Task<PagedResult<VehicleDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<VehicleDto>> ListAsync(int page, int size, string? q = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
-        var dtos = items.Select(Map).ToList();
-        return new PagedResult<VehicleDto>(dtos, total, page, size);
+        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+
+        // Không từ khoá → cắt trang NGAY Ở SQL (CreatedAt giảm dần), không nạp cả bảng.
+        if (kw == null)
+        {
+            var (items, total) = await repo.PageAsync(page, size);
+            return new PagedResult<VehicleDto>(items.Select(Map).ToList(), total, page, size);
+        }
+
+        // Có từ khoá: khớp tên xe + hãng (xe không có biển số/mã ở entity). EF không dịch được
+        // StringComparison nên lọc ở bộ nhớ (LINQ-to-objects, an toàn cho provider InMemory của test).
+        var all = await repo.ListAsync();
+        bool MatchQ(Vehicle v) =>
+            v.Name.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+            (v.FirmName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
+
+        var filtered = all.Where(MatchQ).OrderByDescending(v => v.CreatedAt).ToList();
+        var dtos = filtered.Skip((page - 1) * size).Take(size).Select(Map).ToList();
+        return new PagedResult<VehicleDto>(dtos, filtered.Count, page, size);
     }
 
     public async Task<VehicleDto> CreateAsync(CreateVehicleDto dto)

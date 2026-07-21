@@ -22,11 +22,20 @@ public sealed class CustomerCommissionRuleService(
 
         var names = (await customerTypeRepo.ListAsync()).ToDictionary(t => t.Code, t => t.Name);
 
-        var ordered = all
+        var enriched = all
             .Select(r => Map(r) with { CustomerTypeName = names.GetValueOrDefault(r.CustomerType) })
             .OrderByDescending(d => d.Percentage)
-            .ToList();
+            .AsEnumerable();
 
+        // Từ khoá: khớp tên loại khách (trường chữ duy nhất của màn — % và trạng thái là số). Lọc ở bộ nhớ
+        // sau khi đã làm giàu tên (StringComparison không dịch được sang SQL).
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+        if (kw != null)
+        {
+            enriched = enriched.Where(d => d.CustomerTypeName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
+        }
+
+        var ordered = enriched.ToList();
         var pageItems = ordered.Skip((page - 1) * size).Take(size).ToList();
         return new PagedResult<CustomerCommissionRuleDto>(pageItems, ordered.Count, page, size);
     }

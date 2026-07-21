@@ -83,7 +83,7 @@ public class IndexModel : TkListPageModel
     }
 
     /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí GuideAssignmentListFilter hỗ trợ.</summary>
-    private GuideAssignmentListFilter BuildFilter()
+    private GuideAssignmentListFilter BuildFilter(string? keyword = null)
     {
         var q = Request.Query;
         int? I(string k) => int.TryParse(q[k], out var n) ? n : null;
@@ -95,14 +95,15 @@ public class IndexModel : TkListPageModel
             DepartureId: G("departureId"),
             Status: I("status"),
             DateFrom: D("dateFrom"),
-            DateTo: D("dateTo"));
+            DateTo: D("dateTo"),
+            Q: keyword);
     }
 
     /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
     public async Task<IActionResult> OnGetDataAsync()
     {
         var dt = ParseDataTables();
-        var result = await _svc.ListAsync(dt.Page, dt.Size, BuildFilter());
+        var result = await _svc.ListAsync(dt.Page, dt.Size, BuildFilter(dt.Keyword));
         var stats = await _svc.GetStatsAsync();
 
         var data = result.Items.Select(x => new

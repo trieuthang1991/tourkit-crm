@@ -14,10 +14,10 @@ public sealed record VehicleAssignmentDto(
     string? DepartureTitle = null,
     string? DepartureCode = null);
 
-/// <summary>Bộ lọc lịch điều xe (bám hệ cũ): xe · chuyến · trạng thái · khoảng ngày đón.</summary>
+/// <summary>Bộ lọc lịch điều xe (bám hệ cũ): xe · chuyến · trạng thái · khoảng ngày đón · từ khoá.</summary>
 public sealed record VehicleAssignmentListFilter(
     Guid? VehicleId = null, Guid? DepartureId = null, int? Status = null,
-    DateTimeOffset? DateFrom = null, DateTimeOffset? DateTo = null);
+    DateTimeOffset? DateFrom = null, DateTimeOffset? DateTo = null, string? Q = null);
 
 /// <summary>Thẻ thống kê đầu màn Lịch điều xe: tổng + theo trạng thái + số xe.</summary>
 public sealed record VehicleAssignmentStatsDto(int Total, int Created, int Active, int VehicleCount);

@@ -24,7 +24,8 @@ public class ProviderServiceServiceTests
         providerRepo = new FakeRepository<Provider>();
         currencyRepo = new FakeRepository<Currency>();
         return new ProviderServiceService(
-            repo, providerRepo, currencyRepo, new CreateProviderServiceValidator(), new UpdateProviderServiceValidator());
+            repo, providerRepo, currencyRepo, new FakeRepository<ServiceItem>(),
+            new CreateProviderServiceValidator(), new UpdateProviderServiceValidator());
     }
 
     private static async Task<Provider> SeedProviderAsync(FakeRepository<Provider> providerRepo)

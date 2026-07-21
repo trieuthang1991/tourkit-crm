@@ -77,7 +77,7 @@ public class IndexModel : TkListPageModel
     {
         var dt = ParseDataTables();
         var providerId = Guid.TryParse(Request.Query["providerId"], out var pid) ? pid : (Guid?)null;
-        var result = await _svc.ListAsync(dt.Page, dt.Size, providerId);
+        var result = await _svc.ListAsync(dt.Page, dt.Size, providerId, dt.Keyword);
 
         // Tên NCC: chỉ tra cho NCC xuất hiện trong TRANG hiện tại (không nạp toàn bảng).
         var providerNames = new Dictionary<Guid, string>();

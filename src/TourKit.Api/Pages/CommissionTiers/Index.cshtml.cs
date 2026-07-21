@@ -28,6 +28,13 @@ public class IndexModel : TkListPageModel
         var dt = ParseDataTables();
         var all = await _svc.ListAsync();
 
+        // Từ khoá: khớp tên chính sách. Service trả TOÀN BỘ (không phân trang) nên lọc ngay ở page model
+        // trước khi cắt trang — không cần đổi service (StringComparison lọc ở bộ nhớ).
+        if (dt.Keyword is { } kw)
+        {
+            all = all.Where(x => x.Name.Contains(kw, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
         var data = all.Skip((dt.Page - 1) * dt.Size).Take(dt.Size).Select(x => new
         {
             id = x.Id,

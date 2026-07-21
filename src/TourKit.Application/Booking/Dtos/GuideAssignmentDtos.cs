@@ -15,10 +15,10 @@ public sealed record GuideAssignmentDto(
     string? DepartureTitle = null,    // tên chuyến
     string? DepartureCode = null);
 
-/// <summary>Bộ lọc lịch điều HDV (bám hệ cũ): HDV · chuyến · trạng thái · khoảng ngày đi.</summary>
+/// <summary>Bộ lọc lịch điều HDV (bám hệ cũ): HDV · chuyến · trạng thái · khoảng ngày đi · từ khoá.</summary>
 public sealed record GuideAssignmentListFilter(
     Guid? ProviderId = null, Guid? DepartureId = null, int? Status = null,
-    DateTimeOffset? DateFrom = null, DateTimeOffset? DateTo = null);
+    DateTimeOffset? DateFrom = null, DateTimeOffset? DateTo = null, string? Q = null);
 
 /// <summary>Thẻ thống kê đầu màn Lịch điều HDV: tổng + theo trạng thái + số HDV.</summary>
 public sealed record GuideAssignmentStatsDto(int Total, int Created, int Active, int GuideCount);

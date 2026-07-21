@@ -56,7 +56,7 @@ public class IndexModel : TkListPageModel
         Guid? categoryId = Guid.TryParse(q["categoryId"], out var c) ? c : null;
         int? status = int.TryParse(q["status"], out var s) ? s : null;
 
-        var result = await _svc.ListAsync(dt.Page, dt.Size, categoryId, status);
+        var result = await _svc.ListAsync(dt.Page, dt.Size, categoryId, status, dt.Keyword);
         var data = result.Items.Select(p => new
         {
             id = p.Id,

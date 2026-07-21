@@ -38,7 +38,7 @@ public class IndexModel : TkListPageModel
     public async Task<IActionResult> OnGetDataAsync()
     {
         var dt = ParseDataTables();
-        var result = await _svc.ListAsync(dt.Page, dt.Size);
+        var result = await _svc.ListAsync(dt.Page, dt.Size, dt.Keyword);
 
         var items = result.Items.Select(r => new
         {

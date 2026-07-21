@@ -52,7 +52,7 @@ public class IndexModel : TkListPageModel
         int? customerType = int.TryParse(q["customerType"], out var ct) ? ct : null;
         int? status = int.TryParse(q["status"], out var st) ? st : null;
 
-        var result = await _svc.ListAsync(dt.Page, dt.Size, new CustomerCommissionRuleListFilter(customerType, status));
+        var result = await _svc.ListAsync(dt.Page, dt.Size, new CustomerCommissionRuleListFilter(customerType, status, dt.Keyword));
         var stats = await _svc.GetStatsAsync();
 
         var data = result.Items.Select(x => new

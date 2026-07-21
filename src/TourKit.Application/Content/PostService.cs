@@ -16,11 +16,22 @@ public sealed class PostService(
 {
     private const int Published = 1;
 
-    public async Task<PagedResult<PostDto>> ListAsync(int page, int size, Guid? categoryId, int? status)
+    public async Task<PagedResult<PostDto>> ListAsync(int page, int size, Guid? categoryId, int? status, string? q = null)
     {
         var items = await repo.ListAsync(p =>
             (categoryId == null || p.CategoryId == categoryId) &&
             (status == null || p.Status == status));
+
+        // Từ khoá: khớp tiêu đề + slug. EF không dịch được StringComparison nên lọc ở bộ nhớ trên tập
+        // ĐÃ thu hẹp bởi chuyên mục/trạng thái (LINQ-to-objects, an toàn cho provider InMemory của test).
+        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+        if (kw != null)
+        {
+            items = items.Where(p =>
+                p.Title.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+                p.Slug.Contains(kw, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
         var names = await LoadCategoryNamesAsync();
         var ordered = items.OrderByDescending(p => p.PublishedAt ?? p.CreatedAt).ToList();
         var pageItems = ordered.Skip((page - 1) * size).Take(size).Select(p => Map(p, names)).ToList();

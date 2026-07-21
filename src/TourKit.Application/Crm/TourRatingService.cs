@@ -11,11 +11,28 @@ public sealed class TourRatingService(
     IValidator<CreateTourRatingDto> createValidator,
     IValidator<UpdateTourRatingDto> updateValidator) : ITourRatingService
 {
-    public async Task<PagedResult<TourRatingDto>> ListAsync(int page, int size)
+    public async Task<PagedResult<TourRatingDto>> ListAsync(int page, int size, string? q = null)
     {
-        var (items, total) = await repo.PageAsync(page, size);
-        var dtos = items.Select(Map).ToList();
-        return new PagedResult<TourRatingDto>(dtos, total, page, size);
+        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+
+        // Không từ khoá (mặc định khi mở màn) → cắt trang NGAY Ở SQL (CreatedAt giảm dần), không nạp cả bảng.
+        if (kw == null)
+        {
+            var (items, total) = await repo.PageAsync(page, size);
+            return new PagedResult<TourRatingDto>(items.Select(Map).ToList(), total, page, size);
+        }
+
+        // Có từ khoá: so khớp không phân biệt hoa thường trên tên khách/SĐT/nhận xét. EF không dịch được
+        // StringComparison nên lọc ở bộ nhớ (LINQ-to-objects, an toàn cho provider InMemory của test).
+        var all = await repo.ListAsync();
+        bool MatchQ(TourRating r) =>
+            (r.CustomerName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (r.CustomerPhone?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (r.Comment?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false);
+
+        var filtered = all.Where(MatchQ).OrderByDescending(r => r.CreatedAt).ToList();
+        var dtos = filtered.Skip((page - 1) * size).Take(size).Select(Map).ToList();
+        return new PagedResult<TourRatingDto>(dtos, filtered.Count, page, size);
     }
 
     public async Task<TourRatingDto> GetAsync(Guid id)

@@ -12,16 +12,38 @@ public sealed class ProviderServiceService(
     IRepository<ProviderServiceEntity> repo,
     IRepository<Provider> providerRepo,
     IRepository<Currency> currencyRepo,
+    IRepository<ServiceItem> serviceItemRepo,
     IValidator<CreateProviderServiceDto> createValidator,
     IValidator<UpdateProviderServiceDto> updateValidator) : IProviderServiceService
 {
-    public async Task<PagedResult<ProviderServiceDto>> ListAsync(int page, int size, Guid? providerId)
+    public async Task<PagedResult<ProviderServiceDto>> ListAsync(int page, int size, Guid? providerId, string? q = null)
     {
-        var (items, total) = await repo.PageAsync(
-            page, size, providerId is null ? null : x => x.ProviderId == providerId.Value);
         var rates = await LoadRatesAsync();
-        var dtos = items.Select(p => Map(p, RateFor(rates, p.CurrencyCode))).ToList();
-        return new PagedResult<ProviderServiceDto>(dtos, total, page, size);
+        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+
+        // Không từ khoá → cắt trang NGAY Ở SQL (theo NCC nếu có), không nạp cả bảng.
+        if (kw == null)
+        {
+            var (items, total) = await repo.PageAsync(
+                page, size, providerId is null ? null : x => x.ProviderId == providerId.Value);
+            var dtos = items.Select(p => Map(p, RateFor(rates, p.CurrencyCode))).ToList();
+            return new PagedResult<ProviderServiceDto>(dtos, total, page, size);
+        }
+
+        // Có từ khoá: khớp tên gói giá + tên dịch vụ. Tên dịch vụ nằm ở bảng khác → nạp danh mục (nhỏ)
+        // rồi so khớp ở bộ nhớ trên tập ĐÃ thu hẹp theo NCC (StringComparison không dịch được sang SQL).
+        var all = await repo.ListAsync(providerId is null ? null : x => x.ProviderId == providerId.Value);
+        var itemNames = (await serviceItemRepo.ListAsync()).ToDictionary(s => s.Id, s => s.Name);
+
+        bool MatchQ(ProviderServiceEntity p) =>
+            (p.PriceName?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (p.ServiceItemId is Guid sid && itemNames.TryGetValue(sid, out var n)
+                && n.Contains(kw, StringComparison.OrdinalIgnoreCase));
+
+        var filtered = all.Where(MatchQ).OrderByDescending(p => p.CreatedAt).ToList();
+        var pageDtos = filtered.Skip((page - 1) * size).Take(size)
+            .Select(p => Map(p, RateFor(rates, p.CurrencyCode))).ToList();
+        return new PagedResult<ProviderServiceDto>(pageDtos, filtered.Count, page, size);
     }
 
     public async Task<ProviderServiceDto> GetAsync(Guid id)

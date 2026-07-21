@@ -5,7 +5,7 @@ namespace TourKit.Application.Crm;
 
 public interface ITourRatingService
 {
-    Task<PagedResult<TourRatingDto>> ListAsync(int page, int size);
+    Task<PagedResult<TourRatingDto>> ListAsync(int page, int size, string? q = null);
     Task<TourRatingDto> GetAsync(Guid id);
     Task<TourRatingDto> CreateAsync(CreateTourRatingDto dto);
     Task UpdateAsync(Guid id, UpdateTourRatingDto dto);
