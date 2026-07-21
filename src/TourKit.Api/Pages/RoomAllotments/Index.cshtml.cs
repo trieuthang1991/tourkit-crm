@@ -371,13 +371,13 @@ public class IndexModel : TkListPageModel
             {
                 await _svc.UpdateAsync(g, new UpdateRoomAllotmentDto(
                     Input.ProviderRef, Input.ServiceName, Input.ProjectName, Input.Province, Input.Market,
-                    date.ToUniversalTime(), Input.DayType, Input.Quota, Input.Booked, Input.Price, Input.Rating, Input.Note));
+                    TkDate.Day(date), Input.DayType, Input.Quota, Input.Booked, Input.Price, Input.Rating, Input.Note));
             }
             else
             {
                 await _svc.CreateAsync(new CreateRoomAllotmentDto(
                     Input.ProviderRef, Input.ServiceName, Input.ProjectName, Input.Province, Input.Market,
-                    date.ToUniversalTime(), Input.DayType, Input.Quota, Input.Booked, Input.Price, Input.Rating, Input.Note));
+                    TkDate.Day(date), Input.DayType, Input.Quota, Input.Booked, Input.Price, Input.Rating, Input.Note));
             }
         }
         catch (Exception ex)

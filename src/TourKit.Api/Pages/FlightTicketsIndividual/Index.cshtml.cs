@@ -265,17 +265,17 @@ public class IndexModel : TkListPageModel
             {
                 await _svc.UpdateAsync(g, new UpdateFlightTicketIndividualDto(
                     Input.Code, Input.TicketCode, Input.Pnr, Input.CustomerName, Input.OrderRef, Input.ProviderRef,
-                    Input.TripType, Input.Route, Input.DepartDate?.ToUniversalTime(), Input.ReturnDate?.ToUniversalTime(),
+                    Input.TripType, Input.Route, TkDate.Day(Input.DepartDate), TkDate.Day(Input.ReturnDate),
                     Input.SellAmount, Input.ReceivedAmount, Input.TotalCost, Input.PaidAmount,
-                    Input.PaymentDueDate?.ToUniversalTime(), Input.Status, Input.AssigneeRef, Input.Note));
+                    TkDate.Day(Input.PaymentDueDate), Input.Status, Input.AssigneeRef, Input.Note));
             }
             else
             {
                 await _svc.CreateAsync(new CreateFlightTicketIndividualDto(
                     Input.Code, Input.TicketCode, Input.Pnr, Input.CustomerName, Input.OrderRef, Input.ProviderRef,
-                    Input.TripType, Input.Route, Input.DepartDate?.ToUniversalTime(), Input.ReturnDate?.ToUniversalTime(),
+                    Input.TripType, Input.Route, TkDate.Day(Input.DepartDate), TkDate.Day(Input.ReturnDate),
                     Input.SellAmount, Input.ReceivedAmount, Input.TotalCost, Input.PaidAmount,
-                    Input.PaymentDueDate?.ToUniversalTime(), Input.Status, Input.AssigneeRef, Input.Note));
+                    TkDate.Day(Input.PaymentDueDate), Input.Status, Input.AssigneeRef, Input.Note));
             }
         }
         catch (Exception ex)

@@ -146,7 +146,7 @@ public class IndexModel : TkListPageModel
             {
                 await _svc.UpdateAsync(g, new UpdateVehicleAssignmentDto(
                     vehicleId, Input.DriverName, Input.DriverPhone,
-                    Input.TimeGo?.ToUniversalTime(), Input.TimeCome?.ToUniversalTime(), Input.Note, Input.Status));
+                    TkDate.Day(Input.TimeGo), TkDate.Day(Input.TimeCome), Input.Note, Input.Status));
             }
             else
             {
@@ -157,7 +157,7 @@ public class IndexModel : TkListPageModel
 
                 await _svc.CreateAsync(new CreateVehicleAssignmentDto(
                     departureId, vehicleId, Input.DriverName, Input.DriverPhone,
-                    Input.TimeGo?.ToUniversalTime(), Input.TimeCome?.ToUniversalTime(), Input.Note, Input.Status));
+                    TkDate.Day(Input.TimeGo), TkDate.Day(Input.TimeCome), Input.Note, Input.Status));
             }
         }
         catch (Exception ex)

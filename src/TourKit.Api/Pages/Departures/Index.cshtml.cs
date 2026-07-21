@@ -119,7 +119,7 @@ public class IndexModel : TkListPageModel
         {
             await _svc.CreateAsync(new CreateDepartureDto(
                 Input.TemplateId, Input.Code, Input.Title,
-                Input.DepartureDate?.ToUniversalTime(), Input.EndDate?.ToUniversalTime(), Input.TotalSlots));
+                TkDate.Day(Input.DepartureDate), TkDate.Day(Input.EndDate), Input.TotalSlots));
         }
         catch (Exception ex)
         {

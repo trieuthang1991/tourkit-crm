@@ -201,7 +201,7 @@ public class IndexModel : TkListPageModel
         try
         {
             await _svc.AddPassengerAsync(bookingId, new AddAgentPassengerDto(
-                fullName.Trim(), dateOfBirth?.ToUniversalTime(), passportNo, nationality, note));
+                fullName.Trim(), TkDate.Day(dateOfBirth), passportNo, nationality, note));
             return new JsonResult(Result.Success("Đã thêm hành khách."));
         }
         catch (Exception ex)

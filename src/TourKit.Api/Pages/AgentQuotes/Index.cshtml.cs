@@ -156,7 +156,7 @@ public class IndexModel : TkListPageModel
         try
         {
             await _svc.CreateAsync(new CreateAgentQuoteRequestDto(
-                agentId, productName, travelDate?.ToUniversalTime(), returnDate?.ToUniversalTime(), paxCount, specialRequests));
+                agentId, productName, TkDate.Day(travelDate), TkDate.Day(returnDate), paxCount, specialRequests));
             return new JsonResult(Result.Success("Đã gửi yêu cầu báo giá."));
         }
         catch (Exception ex)

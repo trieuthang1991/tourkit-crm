@@ -249,14 +249,14 @@ public class IndexModel : TkListPageModel
             if (Id is Guid g && g != Guid.Empty)
             {
                 await _svc.UpdateAsync(g, new UpdateFlightTicketDto(
-                    Input.Pnr, N(Input.MarketRef), N(Input.ProviderRef), N(Input.TourType), Input.Days, Input.DepartureDate?.ToUniversalTime(),
+                    Input.Pnr, N(Input.MarketRef), N(Input.ProviderRef), N(Input.TourType), Input.Days, TkDate.Day(Input.DepartureDate),
                     Input.Quantity, Input.UsedQuantity, N(Input.OrderRef), Input.TotalCost, Input.PaidAmount, Input.ReservedAmount,
                     Input.Status, Input.Note, segments));
             }
             else
             {
                 await _svc.CreateAsync(new CreateFlightTicketDto(
-                    Input.Pnr, N(Input.MarketRef), N(Input.ProviderRef), N(Input.TourType), Input.Days, Input.DepartureDate?.ToUniversalTime(),
+                    Input.Pnr, N(Input.MarketRef), N(Input.ProviderRef), N(Input.TourType), Input.Days, TkDate.Day(Input.DepartureDate),
                     Input.Quantity, Input.TotalCost, Input.ReservedAmount, Input.Note, segments));
             }
         }

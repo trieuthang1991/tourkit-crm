@@ -44,7 +44,7 @@
           </div>
           <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label">Tiêu đề <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" value="@(q?.Title)" placeholder="VD: Báo giá Đà Nẵng 3N2Đ" /></div>
-            <div class="col-md-3 mb-3"><label class="form-label">Hiệu lực đến</label><input type="text" name="Input.ValidUntil" id="ValidUntil" class="form-control tk-date" value="@(q?.ValidUntil?.ToString("dd/MM/yyyy"))" placeholder="dd/mm/yyyy" /></div>
+            <div class="col-md-3 mb-3"><label class="form-label">Hiệu lực đến</label><input type="text" name="Input.ValidUntil" id="ValidUntil" class="form-control tk-date" value="@(q?.ValidUntil?.ToString("yyyy-MM-dd"))" placeholder="dd/mm/yyyy" /></div>
             <div class="col-md-3 mb-3"><label class="form-label">Trạng thái</label>
               <select name="Input.Status" class="form-select">
                 <option value="0">Nháp</option><option value="1">Đã gửi</option><option value="2">Chấp nhận</option><option value="3">Từ chối</option>
@@ -184,7 +184,9 @@
       }
       $('#cust-picker').on('select2:select', function(e){ $('#CustomerId').val(e.params.data.id); $('#CustomerName').val((e.params.data.text||'').split(' - ')[0]); });
       $('#cust-picker').on('select2:clear', function(){ $('#CustomerId').val(''); });
-      if (window.flatpickr) { flatpickr('#ValidUntil', { dateFormat:'d/m/Y', allowInput:true }); }
+      // Gửi lên ISO (Y-m-d), hiển thị d/m/Y — giống mọi ô ngày khác. Nếu gửi "21/07/2026" thì
+      // model binding (invariant culture) KHÔNG parse được và ValidUntil âm thầm về null.
+      if (window.flatpickr) { flatpickr('#ValidUntil', { dateFormat:'Y-m-d', altInput:true, altFormat:'d/m/Y', allowInput:true }); }
 
       var seed = SEED.length ? SEED : [{}];
       seed.forEach(function(d){ $('#lines tbody').append(lineRow(d)); });
@@ -210,7 +212,9 @@
 
     function save(){
       $('#LinesJson').val(JSON.stringify(collect()));
-      tk.post('?handler=Save', $('#frm').serialize()).then(function(res){
+      // FormData (multipart) — KHÔNG dùng $.serialize(): fetch gửi chuỗi dưới dạng text/plain
+      // nên Request.Form rỗng và mọi trường bind ra null.
+      tk.post('?handler=Save', new FormData(document.getElementById('frm'))).then(function(res){
         if (res && res.isSuccess){ tk.toast(res.message||'Đã lưu'); setTimeout(function(){ location.href = '/Quotes/Edit/' + res.data.id; }, 600); }
         else { tk.error((res && res.message) || 'Lưu thất bại'); }
       });

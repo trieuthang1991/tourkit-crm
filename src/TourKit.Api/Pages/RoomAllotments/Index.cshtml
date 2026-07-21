@@ -329,11 +329,7 @@
       $('#tbl').on('xhr.dt', function (e, settings, json) {
         var s = json && json.stats;
         if (!s) { return; }
-        $('#kpi-cells').text(tk.money(s.cells));
-        $('#kpi-providers').text(tk.money(s.providers));
-        $('#kpi-quota').text(tk.money(s.totalQuota));
-        $('#kpi-booked').text(tk.money(s.totalBooked));
-        $('#kpi-available').text(tk.money(s.totalAvailable));
+        applyStats(s);
         var p = (json.pageSum && json.pageSum.price) || 0;
         $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (theo bộ lọc)</span>' +
           '<span class="me-3 text-muted">Tồn: <span class="fw-medium">' + tk.money(s.totalQuota) + '</span></span>' +
@@ -360,17 +356,65 @@
         });
       });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q, #f-province, #f-market').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('#f-rating').on('change', function () { dt.ajax.reload(); });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
+      // ---- Ô lưới: mở offcanvas sửa đúng ô quỹ đang bấm (dữ liệu lấy từ ma trận đã nạp) ----
+      $('#grid tbody').on('click', '.tk-gcell', function () {
+        if (!gData) { return; }
+        var r = gData.rows[+this.getAttribute('data-r')];
+        var day = gData.days[+this.getAttribute('data-d')];
+        var c = r && r.cells[+this.getAttribute('data-d')];
+        if (!c) { return; }
+        oc.open({
+          id: c.id, providerRef: r.providerRef, serviceName: r.serviceName, projectName: r.projectName,
+          province: r.province, market: r.market, date: day.date, dayType: c.dayType,
+          quota: c.quota, booked: c.booked, price: c.price, rating: r.rating, note: c.note
+        });
+      });
+      // Sau khi lưu/huỷ offcanvas: nạp lại đúng cửa sổ lưới đang xem (bảng đã tự reload trong tk.form).
+      $('#oc').on('hidden.bs.offcanvas', function () { if (!$('#pane-grid').hasClass('d-none')) { gridLoad(); } });
+
+      // Điều hướng cửa sổ ngày + phân trang HÀNG.
+      $('#g-span').on('change', function () { gSpan = parseInt(this.value, 10) || 14; setWindow(gFrom); });
+      $('#g-prev').on('click', function () { setWindow(isoAdd(gFrom, -gSpan)); });
+      $('#g-next').on('click', function () { setWindow(isoAdd(gFrom, gSpan)); });
+      $('#g-today').on('click', function () { setWindow('@Model.GridFrom'); });
+      $('#g-size').on('change', function () { gSize = parseInt(this.value, 10) || 25; gPage = 1; gridLoad(); });
+      $('#g-rprev').on('click', function () { if (gPage > 1) { gPage--; gridLoad(); } });
+      $('#g-rnext').on('click', function () { gPage++; gridLoad(); });
+
+      // Áp bộ lọc cho ĐÚNG khung đang xem.
+      function applyFilters() {
+        if ($('#pane-grid').hasClass('d-none')) { dt.ajax.reload(); } else { gPage = 1; gridLoad(); }
+      }
+
+      $('#btn-search').on('click', applyFilters);
+      $('#f-q, #f-province, #f-market').on('keydown', function (e) { if (e.key === 'Enter') { applyFilters(); } });
+      $('#f-rating').on('change', applyFilters);
+      $('.tk-s2f').on('change', applyFilters);
+      // Khoảng ngày của thanh lọc chỉ có nghĩa với khung bảng — lưới đã tự giới hạn bằng cửa sổ ngày.
       $('.tk-datef').on('change', function () { dt.ajax.reload(); });
       $('#btn-reset').on('click', function () {
         $('#f-q').val('');
         FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
         $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
         dt.ajax.reload();
+        gPage = 1;
+        gridLoad();
       });
+
+      // Chuyển khung Lưới ↔ Bảng.
+      $('#view-grid').on('click', function () {
+        $('#pane-table').addClass('d-none'); $('#pane-grid').removeClass('d-none');
+        $(this).addClass('active'); $('#view-table').removeClass('active');
+        if (!gData) { gridLoad(); }
+      });
+      $('#view-table').on('click', function () {
+        $('#pane-grid').addClass('d-none'); $('#pane-table').removeClass('d-none');
+        $(this).addClass('active'); $('#view-grid').removeClass('active');
+        dt.columns.adjust();
+      });
+
+      // Mặc định mở khung LƯỚI LỊCH (đúng dạng ma trận NCC × ngày của bản cũ).
+      gridLoad();
     });
   </script>
 }

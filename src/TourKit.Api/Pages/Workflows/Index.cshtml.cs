@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
 using TourKit.Application.Work;
 
@@ -37,11 +38,11 @@ public class IndexModel : PageModel
 
         if (Id is Guid g && g != Guid.Empty)
         {
-            await _svc.UpdateAsync(g, new UpdateWorkflowDto(Input.Name, Input.StartDate, Input.EndDate, Input.Status));
+            await _svc.UpdateAsync(g, new UpdateWorkflowDto(Input.Name, TkDate.Day(Input.StartDate), TkDate.Day(Input.EndDate), Input.Status));
         }
         else
         {
-            await _svc.CreateAsync(new CreateWorkflowDto(Input.Name, Input.StartDate, Input.EndDate));
+            await _svc.CreateAsync(new CreateWorkflowDto(Input.Name, TkDate.Day(Input.StartDate), TkDate.Day(Input.EndDate)));
         }
 
         return new JsonResult(Result.Success("Đã lưu dự án."));

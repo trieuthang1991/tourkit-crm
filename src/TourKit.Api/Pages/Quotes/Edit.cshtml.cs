@@ -96,7 +96,7 @@ public class EditModel : PageModel
         }
 
         var code = string.IsNullOrWhiteSpace(Input.Code) ? $"BG{DateTimeOffset.UtcNow:yyMMddHHmmss}" : Input.Code.Trim();
-        var validUntil = Input.ValidUntil?.ToUniversalTime();
+        var validUntil = TourKit.Api.Pages.Shared.TkDate.Day(Input.ValidUntil);
 
         try
         {

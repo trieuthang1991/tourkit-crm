@@ -240,8 +240,8 @@ public class IndexModel : TkListPageModel
             if (Id is Guid g && g != Guid.Empty)
             {
                 await _svc.UpdateAsync(g, new UpdateGuideAssignmentDto(
-                    providerId, Input.TimeGo?.ToUniversalTime(), Input.TimeCome?.ToUniversalTime(),
-                    Input.TimeReturn?.ToUniversalTime(), Input.Note, Input.Status));
+                    providerId, TkDate.Day(Input.TimeGo), TkDate.Day(Input.TimeCome),
+                    TkDate.Day(Input.TimeReturn), Input.Note, Input.Status));
             }
             else
             {
@@ -251,8 +251,8 @@ public class IndexModel : TkListPageModel
                 }
 
                 await _svc.CreateAsync(new CreateGuideAssignmentDto(
-                    departureId, providerId, Input.TimeGo?.ToUniversalTime(), Input.TimeCome?.ToUniversalTime(),
-                    Input.TimeReturn?.ToUniversalTime(), Input.Note, Input.Status));
+                    departureId, providerId, TkDate.Day(Input.TimeGo), TkDate.Day(Input.TimeCome),
+                    TkDate.Day(Input.TimeReturn), Input.Note, Input.Status));
             }
         }
         catch (Exception ex)

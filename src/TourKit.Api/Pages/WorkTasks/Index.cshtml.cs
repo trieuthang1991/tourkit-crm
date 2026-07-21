@@ -90,13 +90,13 @@ public class IndexModel : TkListPageModel
         if (Id is Guid g && g != Guid.Empty)
         {
             await _svc.UpdateAsync(g, new UpdateWorkTaskDto(
-                Input.Title, Input.Description, Input.AssigneeUserId, Input.DueDate,
+                Input.Title, Input.Description, Input.AssigneeUserId, TkDate.Day(Input.DueDate),
                 Input.Priority, Input.Status, null, null, null));
         }
         else
         {
             await _svc.CreateAsync(new CreateWorkTaskDto(
-                Input.Title, Input.Description, Input.AssigneeUserId, Input.DueDate,
+                Input.Title, Input.Description, Input.AssigneeUserId, TkDate.Day(Input.DueDate),
                 Input.Priority, Input.Status, null, null, null));
         }
 

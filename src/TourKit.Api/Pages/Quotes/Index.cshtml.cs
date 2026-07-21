@@ -188,7 +188,7 @@ public class IndexModel : TkListPageModel
         {
             var r = await _conversion.ConvertAsync(id, new ConvertQuoteDto(
                 tourDepartureId,
-                tourDepartureId is null ? departureDate?.ToUniversalTime() : null));
+                tourDepartureId is null ? TkDate.Day(departureDate) : null));
             return new JsonResult(Result.Success(
                 $"Đã tạo đơn {r.OrderCode} (+{r.ServiceBookingCount.ToString(CultureInfo.InvariantCulture)} đặt dịch vụ).",
                 new { orderId = r.OrderId }));

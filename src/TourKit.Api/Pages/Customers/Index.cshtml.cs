@@ -183,7 +183,7 @@ public class IndexModel : TkListPageModel
             await _service.UpdateAsync(gid, new UpdateCustomerDto(
                 FullName: Input.FullName, Phone: Input.Phone, CustomerType: Input.CustomerType,
                 Source: Input.Source, Tag: Input.Tags.FirstOrDefault(), Tags: Input.Tags, Email: Input.Email, Address: Input.Address,
-                DateOfBirth: Input.DateOfBirth, IdCardNumber: Input.IdCardNumber, PassportExpiry: Input.PassportExpiry,
+                DateOfBirth: TkDate.Day(Input.DateOfBirth), IdCardNumber: Input.IdCardNumber, PassportExpiry: TkDate.Day(Input.PassportExpiry),
                 Gender: Input.Gender, City: Input.City, MarketGroup: Input.MarketGroup,
                 CollaboratorName: Input.CollaboratorName,
                 UnitName: Input.UnitName, TaxCode: Input.TaxCode, Note: Input.Note));
@@ -193,7 +193,7 @@ public class IndexModel : TkListPageModel
             await _service.CreateAsync(new CreateCustomerDto(
                 FullName: Input.FullName, Phone: Input.Phone, CustomerType: Input.CustomerType,
                 Source: Input.Source, Tag: Input.Tags.FirstOrDefault(), Tags: Input.Tags, Email: Input.Email, Address: Input.Address,
-                DateOfBirth: Input.DateOfBirth, IdCardNumber: Input.IdCardNumber, PassportExpiry: Input.PassportExpiry,
+                DateOfBirth: TkDate.Day(Input.DateOfBirth), IdCardNumber: Input.IdCardNumber, PassportExpiry: TkDate.Day(Input.PassportExpiry),
                 Gender: Input.Gender, City: Input.City, MarketGroup: Input.MarketGroup,
                 CollaboratorName: Input.CollaboratorName,
                 UnitName: Input.UnitName, TaxCode: Input.TaxCode, Note: Input.Note));
