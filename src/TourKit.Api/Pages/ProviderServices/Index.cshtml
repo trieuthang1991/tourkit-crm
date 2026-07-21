@@ -34,9 +34,10 @@
     <table id="tbl" class="table table-hover">
       <thead>
         <tr>
-          <th class="text-center">#</th><th>NCC</th><th>Tên gói giá</th>
-          <th class="text-end">Giá hợp đồng</th><th class="text-end">Giá công bố</th>
-          <th class="text-center">Số khách</th><th>Tiền tệ</th><th>Trạng thái</th><th></th>
+          @* min-width để bảng cuộn ngang thay vì bóp cột NCC/tên gói/giá trên màn hẹp. *@
+          <th class="text-center" style="min-width:52px">#</th><th style="min-width:180px">NCC</th><th style="min-width:200px">Tên gói giá</th>
+          <th class="text-end" style="min-width:130px">Giá hợp đồng</th><th class="text-end" style="min-width:130px">Giá công bố</th>
+          <th class="text-center" style="min-width:90px">Số khách</th><th style="min-width:90px">Tiền tệ</th><th style="min-width:120px">Trạng thái</th><th style="min-width:56px"></th>
         </tr>
       </thead>
       <tfoot>

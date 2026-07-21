@@ -48,8 +48,10 @@
     <table id="tbl" class="table table-hover">
       <thead>
         <tr>
-          <th class="text-center">#</th><th>Đại lý</th><th>Liên hệ</th><th>MST</th><th>Địa chỉ</th>
-          <th class="text-end">Hạn mức</th><th>Trạng thái</th><th></th>
+          @* min-width để bảng CUỘN NGANG thay vì bóp chữ Địa chỉ/Liên hệ trên màn hẹp. *@
+          <th class="text-center" style="min-width:52px">#</th><th style="min-width:180px">Đại lý</th>
+          <th style="min-width:150px">Liên hệ</th><th style="min-width:110px">MST</th><th style="min-width:220px">Địa chỉ</th>
+          <th class="text-end" style="min-width:120px">Hạn mức</th><th style="min-width:120px">Trạng thái</th><th style="min-width:56px"></th>
         </tr>
       </thead>
       <tfoot>
