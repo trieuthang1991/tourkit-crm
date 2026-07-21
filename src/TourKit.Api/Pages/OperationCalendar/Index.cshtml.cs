@@ -1,8 +1,8 @@
+using TourKit.Api.Services;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
-using TourKit.Application.Admin;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
 
@@ -16,9 +16,9 @@ namespace TourKit.Api.Pages.OperationCalendar;
 public class IndexModel : TkListPageModel
 {
     private readonly IDepartureService _svc;
-    private readonly IUserAdminService _users;
+    private readonly UserDirectory _users;
 
-    public IndexModel(IDepartureService svc, IUserAdminService users)
+    public IndexModel(IDepartureService svc, UserDirectory users)
     {
         _svc = svc;
         _users = users;

@@ -1,8 +1,8 @@
+using TourKit.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TourKit.Api.Auth;
-using TourKit.Application.Admin;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Common;
@@ -14,9 +14,9 @@ namespace TourKit.Api.Pages.Orders;
 public class DetailModel : PageModel
 {
     private readonly IBookingService _svc;
-    private readonly IUserAdminService _users;
+    private readonly UserDirectory _users;
     private readonly ICurrentUser _current;
-    public DetailModel(IBookingService svc, IUserAdminService users, ICurrentUser current)
+    public DetailModel(IBookingService svc, UserDirectory users, ICurrentUser current)
     {
         _svc = svc;
         _users = users;

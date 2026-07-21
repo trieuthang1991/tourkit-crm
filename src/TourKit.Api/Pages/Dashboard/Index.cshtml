@@ -4,14 +4,39 @@
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.css" />
+  @if (Model.CanDeparture)
+  {
+    <link rel="stylesheet" href="~/vendor/libs/fullcalendar/fullcalendar.css" />
+  }
 }
 
 @section VendorScripts {
   <script src="~/vendor/libs/apex-charts/apexcharts.js"></script>
+  @if (Model.CanDeparture)
+  {
+    <script src="~/vendor/libs/fullcalendar/fullcalendar.js"></script>
+  }
 }
 
 @* Bám bố cục Dashboards/CRM (docs/vuexy-reference) — số liệu thật từ PageModel. *@
 
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <div>
+    <h4 class="mb-1">Tổng quan điều hành</h4>
+    <p class="text-muted mb-0">Dữ liệu kinh doanh thời gian thực</p>
+  </div>
+  @* Thao tác nhanh — bám dải nút QUICK của bản cũ, chỉ hiện nút có quyền. *@
+  <div class="d-flex flex-wrap gap-2">
+    @if (Model.CanBooking)  { <a href="/Orders" class="btn btn-label-primary btn-sm"><i class="ti ti-shopping-cart me-1"></i> Tạo đơn</a> }
+    @if (Model.CanDeparture){ <a href="/Departures" class="btn btn-label-primary btn-sm"><i class="ti ti-flag me-1"></i> Tạo tour / LKH</a> }
+    @if (Model.CanQuote)    { <a href="/Quotes/Edit" class="btn btn-label-primary btn-sm"><i class="ti ti-file-description me-1"></i> Tạo báo giá</a> }
+    @if (Model.CanCustomer) { <a href="/Customers" class="btn btn-label-primary btn-sm"><i class="ti ti-user-plus me-1"></i> Tạo Data khách</a> }
+    @if (Model.CanLead)     { <a href="/Leads" class="btn btn-label-primary btn-sm"><i class="ti ti-target me-1"></i> Tạo cơ hội</a> }
+    @if (Model.CanTask)     { <a href="/WorkTasks" class="btn btn-label-primary btn-sm"><i class="ti ti-checkbox me-1"></i> Tạo công việc</a> }
+  </div>
+</div>
+
+<h6 class="text-muted text-uppercase small mb-2">Doanh thu &amp; cơ hội</h6>
 <div class="row">
   <!-- 4 thẻ số liệu (khuôn "Total Profit" card của CRM dashboard) -->
   <div class="col-xl-3 col-md-6 col-6 mb-4">
@@ -54,7 +79,75 @@
       </div>
     </div>
   </div>
+</div>
 
+@* ---- KPI nhóm 2: Chi phí & Công nợ (bản cũ có, bản trước thiếu hẳn) ---- *@
+<h6 class="text-muted text-uppercase small mb-2">Chi phí &amp; công nợ</h6>
+<div class="row">
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="badge p-2 bg-label-secondary mb-2 rounded"><i class="ti ti-receipt-2 ti-md"></i></div>
+      <h5 class="card-title mb-1 pt-2">Tổng chi</h5><small class="text-muted">Chi phí trên sổ</small>
+      <p class="mb-0 mt-1 fw-medium">@Model.Summary.TotalCost.ToString("#,##0")</p>
+    </div></div>
+  </div>
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="badge p-2 bg-label-info mb-2 rounded"><i class="ti ti-arrow-down-circle ti-md"></i></div>
+      <h5 class="card-title mb-1 pt-2">Tổng chi thực tế</h5><small class="text-muted">Phiếu chi đã ghi nhận</small>
+      <p class="mb-0 mt-1 fw-medium">@Model.Summary.TotalPaid.ToString("#,##0")</p>
+    </div></div>
+  </div>
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="badge p-2 bg-label-danger mb-2 rounded"><i class="ti ti-building-store ti-md"></i></div>
+      <h5 class="card-title mb-1 pt-2">Công nợ NCC</h5><small class="text-muted">Còn phải trả</small>
+      <p class="mb-0 mt-1 fw-medium">@Model.Summary.PayableOutstanding.ToString("#,##0")</p>
+    </div></div>
+  </div>
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="badge p-2 bg-label-success mb-2 rounded"><i class="ti ti-coin ti-md"></i></div>
+      <h5 class="card-title mb-1 pt-2">Lợi nhuận thực tế</h5><small class="text-muted">Đã thu − đã chi</small>
+      <p class="mb-0 mt-1 fw-medium @(Model.ActualProfit < 0 ? "text-danger" : "")">@Model.ActualProfit.ToString("#,##0")</p>
+    </div></div>
+  </div>
+</div>
+
+@* ---- KPI nhóm 3: Lợi nhuận & Hiệu quả ---- *@
+<h6 class="text-muted text-uppercase small mb-2">Lợi nhuận &amp; hiệu quả</h6>
+<div class="row">
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="badge p-2 bg-label-warning mb-2 rounded"><i class="ti ti-gift ti-md"></i></div>
+      <h5 class="card-title mb-1 pt-2">Tiền hoa hồng</h5><small class="text-muted">Toàn hệ thống</small>
+      <p class="mb-0 mt-1 fw-medium">@Model.CommissionTotal.ToString("#,##0")</p>
+    </div></div>
+  </div>
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="badge p-2 bg-label-info mb-2 rounded"><i class="ti ti-percentage ti-md"></i></div>
+      <h5 class="card-title mb-1 pt-2">Tỉ lệ thu tiền</h5><small class="text-muted">Đã thu / doanh thu</small>
+      <p class="mb-0 mt-1 fw-medium">@((Model.Kpi.CollectionRate * 100).ToString("0.0"))%</p>
+    </div></div>
+  </div>
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="badge p-2 bg-label-primary mb-2 rounded"><i class="ti ti-calculator ti-md"></i></div>
+      <h5 class="card-title mb-1 pt-2">Giá trị TB / đơn</h5><small class="text-muted">Doanh thu / số đơn</small>
+      <p class="mb-0 mt-1 fw-medium">@Model.Kpi.AvgOrderValue.ToString("#,##0")</p>
+    </div></div>
+  </div>
+  <div class="col-xl-3 col-md-6 col-6 mb-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="badge p-2 bg-label-success mb-2 rounded"><i class="ti ti-shopping-cart ti-md"></i></div>
+      <h5 class="card-title mb-1 pt-2">Số đơn</h5><small class="text-muted">Toàn hệ thống</small>
+      <p class="mb-0 mt-1 fw-medium">@Model.Summary.OrderCount.ToString("#,##0")</p>
+    </div></div>
+  </div>
+</div>
+
+<div class="row">
   <!-- Doanh thu theo phòng ban (bar) -->
   <div class="col-12 col-xl-8 mb-4">
     <div class="card h-100">
@@ -210,6 +303,106 @@
   </div>
 </div>
 
+@if (Model.CanCare)
+{
+  @* Quản lý lịch hẹn — bản cũ có bảng CSKH ngay trên Tổng quan. *@
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Quản lý lịch hẹn</h5>
+      <a href="/CustomerCares" class="btn btn-sm btn-label-primary">Tất cả</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Tiêu đề</th><th>Khách hàng</th><th>Nội dung</th><th>Nhắc lúc</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+        @if (Model.Cares.Count == 0)
+        {
+          <tr><td colspan="5" class="text-center text-muted py-4">Chưa có lịch hẹn</td></tr>
+        }
+        @foreach (var c in Model.Cares)
+        {
+          <tr>
+            <td class="fw-medium">@c.Title</td>
+            <td>@(c.CustomerName ?? "—")</td>
+            <td class="text-muted">@(string.IsNullOrWhiteSpace(c.Detail) ? "—" : c.Detail)</td>
+            <td>@(c.RemindAt?.ToLocalTime().ToString("HH:mm dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "—")</td>
+            <td><span class="badge bg-label-@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusColor(c.Status)">@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusLabel(c.Status)</span></td>
+          </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+@* Hiệu suất theo CHI NHÁNH — khác với "theo phòng ban" ở trên, bản cũ có cả hai. *@
+<div class="card mb-4">
+  <div class="card-header"><h5 class="mb-0">Hiệu suất theo chi nhánh</h5></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr>
+        <th>Chi nhánh</th><th class="text-end">Số đơn</th><th class="text-end">Doanh thu</th>
+        <th class="text-end">Thực thu</th><th class="text-end">Còn thiếu</th><th class="text-end">Lợi nhuận</th>
+      </tr></thead>
+      <tbody>
+      @if (Model.ByBranch.Count == 0)
+      {
+        <tr><td colspan="6" class="text-center text-muted py-4">Chưa có dữ liệu chi nhánh</td></tr>
+      }
+      @foreach (var b in Model.ByBranch)
+      {
+        <tr>
+          <td class="fw-medium">@b.BranchName</td>
+          <td class="text-end">@b.OrderCount.ToString("#,##0")</td>
+          <td class="text-end">@b.Turnover.ToString("#,##0")</td>
+          <td class="text-end text-success">@b.Received.ToString("#,##0")</td>
+          <td class="text-end @(b.Outstanding > 0 ? "text-danger" : "")">@b.Outstanding.ToString("#,##0")</td>
+          <td class="text-end">@b.Profit.ToString("#,##0")</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@* Vinh danh chiến binh sales — top 5 theo doanh thu, kèm hoa hồng. *@
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Vinh danh chiến binh sales</h5>
+    <a href="/CommissionBySourceReport" class="btn btn-sm btn-label-primary">Báo cáo hoa hồng</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Nhân viên</th><th class="text-end">Doanh thu</th><th class="text-end">Hoa hồng</th></tr></thead>
+      <tbody>
+      @if (Model.TopSales.Count == 0)
+      {
+        <tr><td colspan="3" class="text-center text-muted py-4">Chưa có dữ liệu</td></tr>
+      }
+      @foreach (var s in Model.TopSales)
+      {
+        <tr>
+          <td class="fw-medium">@s.Name</td>
+          <td class="text-end">@s.Turnover.ToString("#,##0")</td>
+          <td class="text-end text-success">@s.Commission.ToString("#,##0")</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (Model.CanDeparture)
+{
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Lịch khởi hành</h5>
+      <a href="/OperationCalendar" class="small">Xem lịch điều hành →</a>
+    </div>
+    <div class="card-body"><div id="cal"></div></div>
+  </div>
+}
+
 @section PageScripts {
   <script>
     // Data thật serialize từ PageModel — option/style bám dashboards-crm.js của template.
@@ -252,6 +445,27 @@
         }).render();
       } else {
         $('#cashDonut').html('<p class="text-muted text-center py-5 mb-0">Chưa có phiếu thu nào.</p>');
+      }
+
+      @if (Model.CanDeparture)
+      {
+        <text>
+      // Lịch khởi hành: dùng CHUNG nguồn sự kiện của màn Lịch điều hành — chỉ nạp khoảng đang xem.
+      var calEl = document.querySelector('#cal');
+      if (calEl && window.Calendar) {
+        new Calendar(calEl, {
+          plugins: [dayGridPlugin, interactionPlugin],
+          initialView: 'dayGridMonth', locale: 'vi', height: 520,
+          headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+          events: function (info, success, failure) {
+            $.getJSON('/OperationCalendar?handler=Events&start=' + info.startStr + '&end=' + info.endStr)
+              .done(function (d) { success((d && d.events) || []); })
+              .fail(failure);
+          },
+          eventClick: function (i) { location.href = '/Departures/Detail/' + i.event.id; }
+        }).render();
+      }
+        </text>
       }
     });
   </script>

@@ -6,6 +6,7 @@
     <ProjectReference Include="..\TourKit.Application\TourKit.Application.csproj" />
     <ProjectReference Include="..\TourKit.Infrastructure\TourKit.Infrastructure.csproj" />
     <ProjectReference Include="..\TourKit.Shared\TourKit.Shared.csproj" />
+    <ProjectReference Include="..\TourKit.Caching\TourKit.Caching.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -18,9 +18,10 @@ public class IndexModel : PageModel
     private readonly IPositionService _positions;
     private readonly IRoleAdminService _roles;
     private readonly IPasswordHasher _hasher;
-    public IndexModel(IUserAdminService users, IDepartmentService depts, IPositionService positions, IRoleAdminService roles, IPasswordHasher hasher)
+    private readonly TourKit.Api.Services.UserDirectory _directory;
+    public IndexModel(IUserAdminService users, IDepartmentService depts, IPositionService positions, IRoleAdminService roles, IPasswordHasher hasher, TourKit.Api.Services.UserDirectory directory)
     {
-        _users = users; _depts = depts; _positions = positions; _roles = roles; _hasher = hasher;
+        _users = users; _depts = depts; _positions = positions; _roles = roles; _hasher = hasher; _directory = directory;
     }
 
     public IReadOnlyList<UserListDto> Items { get; private set; } = [];
@@ -72,12 +73,15 @@ public class IndexModel : PageModel
                 Input.DepartmentId, Input.PositionId, Input.RoleId, Input.IsActive));
         }
 
+        // Danh bạ có cache 60s ở các màn khác → xoá ngay để combobox không hiện dữ liệu cũ.
+        await _directory.InvalidateAsync();
         return new JsonResult(Result.Success("Đã lưu người dùng."));
     }
 
     public async Task<IActionResult> OnPostToggleAsync(Guid id)
     {
         await _users.ToggleActiveAsync(id);
+        await _directory.InvalidateAsync();
         TempData["ok"] = "Đã đổi trạng thái người dùng.";
         return RedirectToPage();
     }

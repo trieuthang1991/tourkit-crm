@@ -55,6 +55,9 @@ public sealed class CookieAuthService : ICookieAuthService
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new("tenant_id", user.TenantId.ToString()),
             new("email", user.Email),
+            // Tên hiển thị đi kèm cookie: entity user đã nạp sẵn ở trên nên claim này KHÔNG tốn thêm
+            // truy vấn nào, mà mọi màn cần chào tên/hiện tên người dùng thì khỏi phải tra bảng Users.
+            new("name", user.FullName),
         };
         claims.AddRange(permissions.Select(code => new Claim("perm", code)));
 

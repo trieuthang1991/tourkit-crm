@@ -1,8 +1,8 @@
+using TourKit.Api.Services;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
-using TourKit.Application.Admin;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog;
@@ -17,13 +17,13 @@ namespace TourKit.Api.Pages.Orders;
 public class IndexModel : TkListPageModel
 {
     private readonly IBookingService _svc;
-    private readonly IUserAdminService _users;
+    private readonly UserDirectory _users;
     private readonly IBranchService _branches;
     private readonly IDepartmentService _departments;
     private readonly IMarketTypeService _markets;
     private readonly ITourGroupService _groups;
 
-    public IndexModel(IBookingService svc, IUserAdminService users, IBranchService branches,
+    public IndexModel(IBookingService svc, UserDirectory users, IBranchService branches,
         IDepartmentService departments, IMarketTypeService markets, ITourGroupService groups)
     {
         _svc = svc;

@@ -1,10 +1,10 @@
+using TourKit.Api.Services;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
-using TourKit.Application.Admin;
 using TourKit.Application.Catalog;
 using TourKit.Application.Customers;
 using TourKit.Application.Customers.Dtos;
@@ -22,10 +22,10 @@ public class IndexModel : TkListPageModel
     private readonly ICustomerSourceService _sources;
     private readonly ICustomerTagService _tags;
     private readonly IMarketTypeService _markets;
-    private readonly IUserAdminService _users;
+    private readonly UserDirectory _users;
     public IndexModel(ICustomerService service, ICustomerTypeService types,
         ICustomerSourceService sources, ICustomerTagService tags, IMarketTypeService markets,
-        IUserAdminService users)
+        UserDirectory users)
     {
         _service = service;
         _types = types;

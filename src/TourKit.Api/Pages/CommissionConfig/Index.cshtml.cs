@@ -1,8 +1,8 @@
+using TourKit.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
-using TourKit.Application.Admin;
 using TourKit.Application.Commission;
 using TourKit.Application.Commission.Dtos;
 
@@ -17,8 +17,8 @@ namespace TourKit.Api.Pages.CommissionConfig;
 public class IndexModel : TkListPageModel
 {
     private readonly ICommissionRuleService _svc;
-    private readonly IUserAdminService _users;
-    public IndexModel(ICommissionRuleService svc, IUserAdminService users)
+    private readonly UserDirectory _users;
+    public IndexModel(ICommissionRuleService svc, UserDirectory users)
     {
         _svc = svc;
         _users = users;

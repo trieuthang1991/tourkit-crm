@@ -1,10 +1,10 @@
+using TourKit.Api.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
-using TourKit.Application.Admin;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog;
@@ -20,9 +20,9 @@ public class IndexModel : TkListPageModel
 {
     private readonly IDepartureService _svc;
     private readonly ITourTemplateService _templates;
-    private readonly IUserAdminService _users;
+    private readonly UserDirectory _users;
 
-    public IndexModel(IDepartureService svc, ITourTemplateService templates, IUserAdminService users)
+    public IndexModel(IDepartureService svc, ITourTemplateService templates, UserDirectory users)
     {
         _svc = svc;
         _templates = templates;

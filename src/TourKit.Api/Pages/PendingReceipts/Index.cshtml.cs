@@ -1,9 +1,9 @@
+using TourKit.Api.Services;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
-using TourKit.Application.Admin;
 using TourKit.Application.Catalog;
 using TourKit.Application.Finance;
 using TourKit.Application.Finance.Dtos;
@@ -21,9 +21,9 @@ public class IndexModel : TkListPageModel
 
     private readonly IReceiptService _svc;
     private readonly IBranchService _branches;
-    private readonly IUserAdminService _users;
+    private readonly UserDirectory _users;
 
-    public IndexModel(IReceiptService svc, IBranchService branches, IUserAdminService users)
+    public IndexModel(IReceiptService svc, IBranchService branches, UserDirectory users)
     {
         _svc = svc;
         _branches = branches;

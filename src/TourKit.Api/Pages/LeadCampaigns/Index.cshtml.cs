@@ -1,10 +1,10 @@
+using TourKit.Api.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
-using TourKit.Application.Admin;
 using TourKit.Application.Crm;
 using TourKit.Application.Crm.Dtos;
 
@@ -18,9 +18,9 @@ namespace TourKit.Api.Pages.LeadCampaigns;
 public class IndexModel : TkListPageModel
 {
     private readonly ILeadCampaignService _svc;
-    private readonly IUserAdminService _users;
+    private readonly UserDirectory _users;
 
-    public IndexModel(ILeadCampaignService svc, IUserAdminService users)
+    public IndexModel(ILeadCampaignService svc, UserDirectory users)
     {
         _svc = svc;
         _users = users;

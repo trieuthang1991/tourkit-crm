@@ -1,9 +1,9 @@
+using TourKit.Api.Services;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
-using TourKit.Application.Admin;
 using TourKit.Application.Work;
 using TourKit.Shared.Enums;
 
@@ -14,8 +14,8 @@ namespace TourKit.Api.Pages.WorkTasks;
 public class IndexModel : TkListPageModel
 {
     private readonly IWorkTaskService _svc;
-    private readonly IUserAdminService _users;
-    public IndexModel(IWorkTaskService svc, IUserAdminService users)
+    private readonly UserDirectory _users;
+    public IndexModel(IWorkTaskService svc, UserDirectory users)
     {
         _svc = svc;
         _users = users;

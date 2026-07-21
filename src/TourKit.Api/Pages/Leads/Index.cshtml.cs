@@ -1,10 +1,10 @@
+using TourKit.Api.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
-using TourKit.Application.Admin;
 using TourKit.Application.Catalog;
 using TourKit.Application.Crm;
 using TourKit.Application.Crm.Dtos;
@@ -19,10 +19,10 @@ namespace TourKit.Api.Pages.Leads;
 public class IndexModel : TkListPageModel
 {
     private readonly ILeadService _svc;
-    private readonly IUserAdminService _users;
+    private readonly UserDirectory _users;
     private readonly IBranchService _branches;
 
-    public IndexModel(ILeadService svc, IUserAdminService users, IBranchService branches)
+    public IndexModel(ILeadService svc, UserDirectory users, IBranchService branches)
     {
         _svc = svc;
         _users = users;

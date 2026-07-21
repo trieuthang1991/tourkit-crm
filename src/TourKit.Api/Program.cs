@@ -13,6 +13,7 @@ using TourKit.Api.Provisioning;
 using TourKit.Api.Tenancy;
 using TourKit.Application.Common;
 using TourKit.Application.Reports;
+using TourKit.Caching;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Infrastructure.Repositories;
 using TourKit.Infrastructure.Reports;
@@ -47,6 +48,10 @@ builder.Services.AddCors(options => options.AddPolicy("web", policy => policy
 // --- Tenancy: 1 instance scoped, vừa là ITenantContext (đọc) vừa set được (login/middleware) ---
 builder.Services.AddScoped<AmbientTenantContext>();
 builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<AmbientTenantContext>());
+
+// --- Cache (thư viện TourKit.Caching): có cấu hình Redis thì dùng Redis, không thì bộ nhớ tiến trình ---
+builder.Services.AddTourKitCaching(builder.Configuration);
+builder.Services.AddScoped<TourKit.Api.Services.UserDirectory>();
 
 // --- DB provider theo cấu hình ---
 var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
