@@ -9,12 +9,29 @@
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
+@section PageStyles {
+  <style>
+    /* Ma trận NCC × ngày: cột đầu ghim trái để cuộn ngang vẫn đọc được tên NCC/dịch vụ. */
+    #grid { min-width: 900px; }
+    #grid th.tk-gcol, #grid td.tk-gcol { position: sticky; left: 0; z-index: 2; min-width: 220px; background: var(--bs-card-bg, var(--bs-body-bg)); }
+    #grid td.tk-gcell { min-width: 74px; cursor: pointer; line-height: 1.25; }
+    #grid td.tk-gcell:hover { outline: 2px solid var(--bs-primary); outline-offset: -2px; }
+  </style>
+}
+
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
   <div>
     <h4 class="mb-0">Quỹ phòng khách sạn</h4>
-    <small class="text-muted">Lịch tồn (allotment) + giá NET theo ngày — mỗi dòng là một ô quỹ theo loại ngày.</small>
+    <small class="text-muted">Lịch tồn (allotment) + giá NET theo ngày — lưới chỉ nạp cửa sổ ngày đang xem.</small>
   </div>
-  <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm quỹ phòng</button>
+  <div class="d-flex gap-2">
+    @* Chuyển Lưới lịch / Bảng — lưới chỉ nạp NCC + ngày trong cửa sổ đang xem *@
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-label-secondary active" id="view-grid" title="Lưới lịch"><i class="ti ti-layout-grid"></i></button>
+      <button type="button" class="btn btn-label-secondary" id="view-table" title="Dạng bảng"><i class="ti ti-list"></i></button>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm quỹ phòng</button>
+  </div>
 </div>
 
 @* 5 KPI — bám StatGrid hệ cũ, cập nhật theo bộ lọc đang áp *@
@@ -58,7 +75,49 @@
   </div>
 </div>
 
-<div class="card">
+@* Khung LƯỚI LỊCH — ma trận NCC/dịch vụ × ngày (không dùng FullCalendar).
+   Mỗi lần đổi cửa sổ/trang hàng chỉ gọi handler Grid cho ĐÚNG cửa sổ đó — không get-all. *@
+<div class="card" id="pane-grid">
+  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <h5 class="mb-0">Lưới quỹ phòng theo ngày</h5>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <span class="text-muted small" id="g-range"></span>
+      <select id="g-span" class="form-select form-select-sm" style="width:auto" aria-label="Độ dài cửa sổ">
+        <option value="7">7 ngày</option>
+        <option value="14" selected>14 ngày</option>
+        <option value="30">30 ngày</option>
+      </select>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-label-secondary" id="g-prev" title="Cửa sổ trước"><i class="ti ti-chevron-left"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="g-today">Hôm nay</button>
+        <button type="button" class="btn btn-label-secondary" id="g-next" title="Cửa sổ sau"><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered table-sm mb-0 align-middle" id="grid">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <small class="text-muted" id="g-info"></small>
+    <div class="d-flex gap-2 align-items-center">
+      <select id="g-size" class="form-select form-select-sm" style="width:auto" aria-label="Số hàng mỗi trang">
+        <option value="10">10 hàng</option>
+        <option value="25" selected>25 hàng</option>
+        <option value="50">50 hàng</option>
+        <option value="100">100 hàng</option>
+      </select>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-label-secondary" id="g-rprev" title="Trang hàng trước"><i class="ti ti-chevron-left"></i></button>
+        <button type="button" class="btn btn-label-secondary" id="g-rnext" title="Trang hàng sau"><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card d-none" id="pane-table">
   <div class="card-header"><h5 class="mb-0">Quỹ phòng / Allotment</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
@@ -130,10 +189,104 @@
     var oc, dt;
     // Mọi tiêu chí đẩy xuống SERVER (RoomAllotmentListFilter) — không lọc ở client.
     var FILTERS = ['province', 'market', 'providerRef', 'rating', 'dateFrom', 'dateTo'];
+    // Lưới tự giới hạn bằng cửa sổ ngày → không gửi dateFrom/dateTo (server đã đè bằng from/to).
+    var GRID_FILTERS = ['province', 'market', 'providerRef', 'rating'];
 
     function collectFilters(d) {
       FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
       var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+    }
+
+    // ---- Khung LƯỚI LỊCH (ma trận NCC/dịch vụ × ngày) ----
+    // gFrom/gTo = cửa sổ ĐANG XEM; gPage/gSize = phân trang HÀNG. Mỗi lần đổi chỉ nạp đúng cửa sổ đó.
+    var gFrom = '@Model.GridFrom', gTo = '@Model.GridTo', gSpan = 14, gPage = 1, gSize = 25, gData = null;
+
+    function isoAdd(iso, n) {
+      var d = new Date(iso + 'T00:00:00');
+      d.setDate(d.getDate() + n);
+      var m = String(d.getMonth() + 1), day = String(d.getDate());
+      if (m.length < 2) { m = '0' + m; }
+      if (day.length < 2) { day = '0' + day; }
+      return d.getFullYear() + '-' + m + '-' + day;
+    }
+    function isoVi(iso) { var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+
+    function setWindow(from) {
+      gFrom = from;
+      gTo = isoAdd(from, gSpan - 1);
+      gPage = 1;
+      gridLoad();
+    }
+
+    function gridParams() {
+      var p = { from: gFrom, to: gTo, page: gPage, size: gSize };
+      GRID_FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { p[k] = v; } });
+      var q = $('#f-q').val(); if (q) { p.q = q; }
+      return p;
+    }
+
+    function gridLoad() {
+      $('#g-range').text(isoVi(gFrom) + ' – ' + isoVi(gTo));
+      $.getJSON('?handler=Grid&' + $.param(gridParams())).done(function (res) {
+        if (res.tooWide) {
+          tk.error('Cửa sổ tối đa ' + res.maxDays + ' ngày — hãy chọn 7/14/30 ngày.');
+          return;
+        }
+        gData = res;
+        gridRender(res);
+        applyStats(res.stats);
+      });
+    }
+
+    function gridRender(res) {
+      var h = '<tr><th class="tk-gcol">NCC / Dịch vụ</th>';
+      res.days.forEach(function (d) {
+        h += '<th class="text-center small' + (d.isWeekend ? ' table-active' : '') + '">' +
+             tk.escape(d.weekday) + '<div class="text-muted fw-normal">' + tk.escape(d.dayText) + '</div></th>';
+      });
+      h += '</tr>';
+      $('#grid thead').html(h);
+
+      var b = '';
+      if (!res.rows.length) {
+        b = '<tr><td class="text-center text-muted py-4" colspan="' + (res.days.length + 1) + '">Không có quỹ phòng trong cửa sổ này.</td></tr>';
+      }
+      res.rows.forEach(function (r, ri) {
+        b += '<tr><td class="tk-gcol">' +
+             '<div class="fw-medium">' + tk.trunc(r.providerName, 220) + '</div>' +
+             '<div class="small text-muted">' + tk.escape(r.serviceName) + (r.rating ? ' · ' + r.rating + '★' : '') + '</div>' +
+             ((r.province || r.market) ? '<div class="small text-muted">' + tk.escape([r.province, r.market].filter(Boolean).join(' · ')) + '</div>' : '') +
+             '</td>';
+        r.cells.forEach(function (c, di) {
+          if (!c) { b += '<td class="text-center text-muted">—</td>'; return; }
+          var cls = 'text-center tk-gcell' + (c.dayType > 0 ? ' bg-label-' + c.dayTypeColor : '');
+          var tip = c.dayTypeLabel + ' · Tồn ' + c.quota + ' · Đặt ' + c.booked + (c.note ? ' · ' + c.note : '');
+          b += '<td class="' + cls + '" data-r="' + ri + '" data-d="' + di + '" title="' + tk.escape(tip) + '">' +
+               '<div class="small fw-medium">' + tk.money(c.price) + '</div>' +
+               '<div class="small ' + (c.available <= 0 ? 'text-danger' : 'text-success') + '">' + c.available + '/' + c.quota + '</div>' +
+               '</td>';
+        });
+        b += '</tr>';
+      });
+      $('#grid tbody').html(b);
+
+      var first = res.rows.length ? ((res.page - 1) * res.size + 1) : 0;
+      var last = (res.page - 1) * res.size + res.rows.length;
+      var info = 'Hàng ' + first + '–' + last + (res.rowsTotal != null ? ' / ' + res.rowsTotal : '') +
+                 ' · ' + res.days.length + ' ngày · ' + tk.money(res.totalCells) + ' ô trong cửa sổ';
+      if (res.capped) { info += ' · Cửa sổ quá dày (đã quét ' + tk.money(res.scannedCells) + ' ô) — hãy thu hẹp bộ lọc.'; }
+      $('#g-info').text(info);
+      $('#g-rprev').prop('disabled', res.page <= 1);
+      $('#g-rnext').prop('disabled', !res.hasMore);
+    }
+
+    function applyStats(s) {
+      if (!s) { return; }
+      $('#kpi-cells').text(tk.money(s.cells));
+      $('#kpi-providers').text(tk.money(s.providers));
+      $('#kpi-quota').text(tk.money(s.totalQuota));
+      $('#kpi-booked').text(tk.money(s.totalBooked));
+      $('#kpi-available').text(tk.money(s.totalAvailable));
     }
 
     $(function () {

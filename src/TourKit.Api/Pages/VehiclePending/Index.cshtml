@@ -6,14 +6,26 @@
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/fullcalendar/fullcalendar.css" />
+}
+
+@section PageStyles {
+  <link rel="stylesheet" href="~/vendor/css/pages/app-calendar.css" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
   <div>
     <h4 class="mb-0">Lịch xe chờ duyệt</h4>
-    <small class="text-muted">Phân xe đã điều nhưng chưa đưa vào vận hành — mỗi dòng là một chuyến (kèm tài xế).</small>
+    <small class="text-muted">Phân xe đã điều nhưng chưa đưa vào vận hành — lịch chỉ nạp phân xe trong khoảng đang xem.</small>
   </div>
-  <a class="btn btn-label-secondary" href="/VehicleAssignments"><i class="ti ti-calendar me-1"></i> Mở Lịch điều xe</a>
+  <div class="d-flex gap-2">
+    @* Chuyển Lịch / Bảng — lịch chỉ nạp phân xe trong khoảng đang xem *@
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-label-secondary active" id="view-cal" title="Dạng lịch"><i class="ti ti-calendar"></i></button>
+      <button type="button" class="btn btn-label-secondary" id="view-table" title="Dạng bảng"><i class="ti ti-list"></i></button>
+    </div>
+    <a class="btn btn-label-secondary" href="/VehicleAssignments"><i class="ti ti-car me-1"></i> Mở Lịch điều xe</a>
+  </div>
 </div>
 
 @* 4 KPI — bám StatGrid màn Lịch điều xe (cùng nguồn VehicleAssignmentStatsDto) *@
@@ -50,7 +62,14 @@
   </div>
 </div>
 
-<div class="card">
+@* Khung LỊCH — FullCalendar của template; mỗi lần đổi tháng chỉ gọi handler Events cho đúng khoảng đó *@
+<div class="card app-calendar-wrapper" id="pane-cal">
+  <div class="card-body">
+    <div id="calendar"></div>
+  </div>
+</div>
+
+<div class="card d-none" id="pane-table">
   <div class="card-header"><h5 class="mb-0">Danh sách phân xe chờ duyệt</h5></div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
@@ -68,11 +87,12 @@
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/fullcalendar/fullcalendar.js"></script>
 }
 
 @section PageScripts {
   <script>
-    var dt;
+    var dt, cal = null;
     // Toàn bộ tiêu chí lọc đẩy xuống SERVER (VehicleAssignmentListFilter) — không lọc ở client, không get-all.
     var FILTERS = ['vehicleId', 'departureId', 'status', 'dateFrom', 'dateTo'];
 
@@ -85,6 +105,54 @@
       $('#kpi-created').text(tk.money(s.created));
       $('#kpi-active').text(tk.money(s.active));
       $('#kpi-vehicles').text(tk.money(s.vehicleCount));
+    }
+
+    // ---- Khung LỊCH (FullCalendar của template) ----
+    // events: FullCalendar truyền start/end của khung ĐANG XEM → server chỉ trả phân xe trong khoảng đó.
+    // Khoảng ngày của thanh lọc KHÔNG áp cho lịch (khung lịch đã là khoảng ngày).
+    function calFilterParams() {
+      var p = {};
+      ['vehicleId', 'departureId', 'status'].forEach(function (k) { var v = $('#f-' + k).val(); if (v) { p[k] = v; } });
+      return p;
+    }
+
+    function initCalendar() {
+      if (cal) { return; }
+      // Bundle fullcalendar.js của template expose global Calendar + các plugin (không có namespace FullCalendar).
+      cal = new Calendar(document.getElementById('calendar'), {
+        initialView: 'dayGridMonth',
+        plugins: [dayGridPlugin, listPlugin, interactionPlugin],
+        locale: 'vi',
+        height: 'auto',
+        firstDay: 1,
+        dayMaxEvents: 3,
+        headerToolbar: { start: 'prev,next today', center: 'title', end: 'dayGridMonth,listMonth' },
+        buttonText: { today: 'Hôm nay', month: 'Tháng', list: 'Danh sách' },
+        events: function (info, success, failure) {
+          var p = calFilterParams();
+          p.start = info.startStr; p.end = info.endStr;
+          $.getJSON('?handler=Events&' + $.param(p))
+            .done(function (res) {
+              if (res.truncated) { tk.error('Khoảng này có ' + res.total + ' phân xe, chỉ hiển thị 500. Hãy thu hẹp bộ lọc.'); }
+              success(res.events);
+            })
+            .fail(failure);
+        },
+        eventDidMount: function (arg) {
+          var e = arg.event.extendedProps;
+          arg.el.setAttribute('title',
+            e.vehicleName + ' · ' + e.departureCode + ' — ' + e.departureTitle +
+            '\nTài xế: ' + e.driverName + (e.driverPhone ? ' (' + e.driverPhone + ')' : '') +
+            (e.timeComeText ? '\nTrả: ' + e.timeComeText : '') +
+            '\nTrạng thái: ' + e.statusLabel);
+        },
+        eventClick: function (arg) {
+          // Chưa có trang chi tiết phân xe → mở màn Lịch điều xe (nơi sửa/kích hoạt phân xe).
+          arg.jsEvent.preventDefault();
+          window.location.href = '/VehicleAssignments';
+        }
+      });
+      cal.render();
     }
 
     $(function () {
@@ -122,8 +190,14 @@
       // KPI lấy từ khối stats kèm theo mỗi lần tải bảng.
       $('#tbl').on('xhr.dt', function (e, settings, json) { applyStats(json && json.stats); });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('.tk-s2f, #f-status').on('change', function () { dt.ajax.reload(); });
+      // Áp bộ lọc cho ĐÚNG khung đang xem (khung nào ẩn thì không gọi lại).
+      function applyFilters() {
+        if ($('#pane-cal').hasClass('d-none')) { dt.ajax.reload(); } else if (cal) { cal.refetchEvents(); }
+      }
+
+      $('#btn-search').on('click', applyFilters);
+      $('.tk-s2f, #f-status').on('change', applyFilters);
+      // Khoảng ngày chỉ có nghĩa với khung bảng — khung lịch đã tự giới hạn theo tháng đang xem.
       $('.tk-datef').on('change', function () { dt.ajax.reload(); });
       $('#btn-reset').on('click', function () {
         ['vehicleId', 'departureId', 'dateFrom', 'dateTo'].forEach(function (k) {
@@ -132,7 +206,24 @@
         $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
         $('#f-status').val('1');
         dt.ajax.reload();
+        if (cal) { cal.refetchEvents(); }
       });
+
+      // Chuyển khung Lịch ↔ Bảng.
+      $('#view-cal').on('click', function () {
+        $('#pane-table').addClass('d-none'); $('#pane-cal').removeClass('d-none');
+        $(this).addClass('active'); $('#view-table').removeClass('active');
+        initCalendar();
+        cal.updateSize();
+      });
+      $('#view-table').on('click', function () {
+        $('#pane-cal').addClass('d-none'); $('#pane-table').removeClass('d-none');
+        $(this).addClass('active'); $('#view-cal').removeClass('active');
+        dt.columns.adjust();
+      });
+
+      // Mặc định mở khung LỊCH (đúng tên màn "Lịch xe chờ duyệt").
+      initCalendar();
     });
   </script>
 }

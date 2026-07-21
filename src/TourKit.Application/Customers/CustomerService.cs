@@ -65,14 +65,27 @@ public sealed class CustomerService(
             return new PagedResult<CustomerDto>(fastDtos, total, page, size);
         }
 
-        // SLOW-PATH: cần aggregate cho MỌI candidate để lọc nhóm 2 → giữ nguyên logic cũ.
+        // SLOW-PATH: field jsonb không dịch được xuống SQL → lọc ở bộ nhớ.
         var candidates = await repo.ListAsync(predicate);
-        var ids = candidates.Select(c => c.Id).ToHashSet();
-        var (ordersByCustomer, lastCareByCustomer) = await LoadAggregatesAsync(ids);
+
+        // Aggregate (đơn + CSKH của MỌI candidate) CHỈ cần khi chính bộ lọc dựa vào nó.
+        // Lọc thuần jsonb (tỉnh/giới tính/chi nhánh/tag…) thì chỉ nạp aggregate cho ĐÚNG TRANG ở cuối
+        // → không quét toàn bộ Orders/CustomerCares nữa.
+        var needsAggregate = f.RevenueFrom is not null || f.RevenueTo is not null ||
+            f.CareFrom is not null || f.CareTo is not null ||
+            f.PurchaseBucket is not null || f.NotContactedBucket is not null;
+
+        var ordersByCustomer = new Dictionary<Guid, (int Count, decimal Sum)>();
+        var lastCareByCustomer = new Dictionary<Guid, CustomerCare>();
+        if (needsAggregate)
+        {
+            (ordersByCustomer, lastCareByCustomer) =
+                await LoadAggregatesAsync(candidates.Select(c => c.Id).ToHashSet());
+        }
 
         // B3: lọc field mềm (jsonb) + aggregate ở bộ nhớ; sắp theo ngày tạo giảm dần (bám hệ cũ) rồi phân trang.
         var now = DateTimeOffset.UtcNow;
-        var matched = new List<(Customer Cust, int Count, decimal Sum, DateTimeOffset? CareAt, string? CareTitle)>();
+        var matched = new List<Customer>();
         foreach (var c in candidates)
         {
             var p = CustomerCrmProfile.Parse(c.CrmProfileJson);
@@ -100,14 +113,26 @@ public sealed class CustomerService(
             if (Norm(f.NotContactedBucket) is { } ncb &&
                 ContactBucketOf(DaysSinceContact(now, lastCare?.CreatedAt, c.CreatedAt)) != ncb) { continue; }
 
-            matched.Add((c, agg.Count, agg.Sum, lastCare?.CreatedAt, lastCare?.Title));
+            matched.Add(c);
         }
 
-        var ordered = matched.OrderByDescending(x => x.Cust.CreatedAt).ToList();
-        var pageItems = ordered.Skip((page - 1) * size).Take(size);
-        var dtos = pageItems
-            .Select(x => Map(x.Cust, userNames, x.Count, x.Sum, x.CareAt, x.CareTitle))
-            .ToList();
+        var ordered = matched.OrderByDescending(c => c.CreatedAt).ToList();
+        var pageSlice = ordered.Skip((page - 1) * size).Take(size).ToList();
+
+        // Chưa nạp ở trên → giờ chỉ nạp aggregate cho ĐÚNG TRANG (để cột "lần mua"/doanh thu/CSKH gần nhất
+        // vẫn hiển thị đầy đủ, không mất dữ liệu).
+        if (!needsAggregate)
+        {
+            (ordersByCustomer, lastCareByCustomer) =
+                await LoadAggregatesAsync(pageSlice.Select(c => c.Id).ToHashSet());
+        }
+
+        var dtos = pageSlice.Select(c =>
+        {
+            ordersByCustomer.TryGetValue(c.Id, out var agg);
+            lastCareByCustomer.TryGetValue(c.Id, out var lastCare);
+            return Map(c, userNames, agg.Count, agg.Sum, lastCare?.CreatedAt, lastCare?.Title);
+        }).ToList();
 
         return new PagedResult<CustomerDto>(dtos, ordered.Count, page, size);
     }
