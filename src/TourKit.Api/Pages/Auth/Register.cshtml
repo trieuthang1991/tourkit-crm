@@ -20,7 +20,7 @@
     <!-- /Left Text -->
     <div class="d-none d-lg-flex col-lg-7 p-0">
       <div class="auth-cover-bg auth-cover-bg-color d-flex justify-content-center align-items-center">
-        <img src="~/img/illustrations/auth-register-illustration-light.png" alt="" class="img-fluid my-5 auth-illustration" data-app-light-img="illustrations/auth-register-illustration-light.png" data-app-dark-img="illustrations/auth-register-illustration-dark.png">
+        <img src="~/img/illustrations/auth-illustration-tourkit.svg" alt="" class="img-fluid my-5 auth-illustration">
 
         <img src="~/img/illustrations/bg-shape-image-light.png" alt="" class="platform-bg" data-app-light-img="illustrations/bg-shape-image-light.png" data-app-dark-img="illustrations/bg-shape-image-dark.png">
       </div>
@@ -33,12 +33,11 @@
         <!-- Logo -->
         <div class="app-brand mb-4">
           <a href="/" class="app-brand-link gap-2">
-            <span class="app-brand-logo demo"><span class="fw-bold fs-3 text-primary">T</span></span>
-            <span class="app-brand-text demo text-body fw-bold ms-1 fs-4">TourKit</span>
+            @await Html.PartialAsync("_BrandMark", "text-body fw-bold ms-1 fs-4")
           </a>
         </div>
         <!-- /Logo -->
-        <h3 class="mb-1 fw-bold">Bắt đầu cùng TourKit 🚀</h3>
+        <h3 class="mb-1 fw-bold">Bắt đầu cùng TourKit</h3>
         <p class="mb-4">Tạo doanh nghiệp của bạn và quản lý tour dễ dàng hơn</p>
 
         @if (Model.Error != null)

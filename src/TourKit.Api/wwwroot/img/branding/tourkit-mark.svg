@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dấu hiệu TourKit. Chữ T vẽ bằng path (KHÔNG dùng <text>) vì favicon render ngoài
+     ngữ cảnh trang: không có font nào bảo đảm có sẵn, dùng <text> là chữ sẽ lệch hoặc mất.
+     Một file này dùng cho cả favicon lẫn logo trong ứng dụng. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="TourKit">
+  <rect width="32" height="32" rx="7" fill="#7367F0"/>
+  <rect x="8" y="8.5" width="16" height="4.5" rx="1.2" fill="#FFFFFF"/>
+  <rect x="13.75" y="8.5" width="4.5" height="15" rx="1.2" fill="#FFFFFF"/>
+</svg>

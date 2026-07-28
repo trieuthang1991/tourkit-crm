@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ảnh minh hoạ trang đăng nhập/đăng ký của TourKit.
+     Thay cho ảnh nhân vật 3D kèm chữ tiếng Anh ("Profit / Last Month / Order / Last week") đi
+     theo bộ template — sản phẩm tiếng Việt mà minh hoạ tiếng Anh là lệch thương hiệu.
+
+     Lưu ý khi sửa: file này được nhúng bằng <img>, tức là SVG chạy TÁCH BIỆT khỏi trang —
+     không đọc được CSS của trang và KHÔNG dùng được webfont (Public Sans). Vì vậy phải khai
+     font hệ thống; đổi sang font của trang là chữ sẽ về font mặc định. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 860" width="820" height="860"
+     role="img" aria-label="Minh hoạ điều hành tour: bản đồ hành trình và số liệu doanh thu, chuyến đi">
+  <defs>
+    <filter id="tkCardShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#2F2B3D" flood-opacity="0.07"/>
+    </filter>
+    <style>
+      .tk-t  { font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .tk-hd { font-size: 21px; font-weight: 700; fill: #2F2B3D; }
+      .tk-sb { font-size: 14px; fill: #8C8A94; }
+      .tk-big{ font-size: 25px; font-weight: 700; fill: #2F2B3D; }
+      .tk-up { font-size: 14px; font-weight: 600; fill: #28C76F; }
+    </style>
+  </defs>
+
+  <!-- Nền: vòng tròn mềm + vành mảnh, giữ nhịp thị giác của bố cục cũ -->
+  <circle cx="410" cy="430" r="300" fill="#F4F3F7"/>
+  <circle cx="410" cy="430" r="372" fill="none" stroke="#E9E8EE" stroke-width="1.5"/>
+
+  <!-- Bản đồ hành trình -->
+  <g filter="url(#tkCardShadow)">
+    <rect x="190" y="190" width="440" height="470" rx="30" fill="#FFFFFF" stroke="#ECEBF0"/>
+  </g>
+  <!-- Các mảng "đất" nằm trọn trong khung thẻ nên không cần clip. -->
+  <g>
+    <ellipse cx="292" cy="302" rx="72" ry="48" fill="#EFEDFD"/>
+    <ellipse cx="470" cy="268" rx="56" ry="38" fill="#EFEDFD"/>
+    <ellipse cx="522" cy="470" rx="80" ry="55" fill="#EFEDFD"/>
+    <ellipse cx="300" cy="546" rx="62" ry="40" fill="#EFEDFD"/>
+  </g>
+
+  <!-- Tuyến hành trình + điểm dừng -->
+  <path d="M 265,565 C 300,470 390,500 420,420 S 520,300 570,268"
+        fill="none" stroke="#7367F0" stroke-width="4" stroke-linecap="round" stroke-dasharray="12 11"/>
+  <circle cx="420" cy="420" r="7" fill="#FFFFFF" stroke="#7367F0" stroke-width="4"/>
+
+  <g transform="translate(265,565)">
+    <path d="M0,0 C-9,-12 -15,-19 -15,-26 A15,15 0 1,1 15,-26 C15,-19 9,-12 0,0 Z" fill="#7367F0"/>
+    <circle cx="0" cy="-26" r="5.5" fill="#FFFFFF"/>
+  </g>
+  <g transform="translate(570,268)">
+    <path d="M0,0 C-9,-12 -15,-19 -15,-26 A15,15 0 1,1 15,-26 C15,-19 9,-12 0,0 Z" fill="#7367F0"/>
+    <circle cx="0" cy="-26" r="5.5" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Thẻ số liệu 1 -->
+  <g filter="url(#tkCardShadow)">
+    <rect x="20" y="90" width="270" height="190" rx="22" fill="#FFFFFF" stroke="#ECEBF0"/>
+  </g>
+  <g class="tk-t">
+    <text x="48" y="132" class="tk-hd">Doanh thu</text>
+    <text x="48" y="157" class="tk-sb">Tháng này</text>
+    <polyline points="48,224 82,198 116,208 150,180 184,192 218,164 252,148"
+              fill="none" stroke="#7367F0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="252" cy="148" r="5" fill="#FFFFFF" stroke="#7367F0" stroke-width="3"/>
+    <text x="48" y="260" class="tk-big">1,24 tỷ</text>
+    <text x="182" y="258" class="tk-up">+8,2%</text>
+  </g>
+
+  <!-- Thẻ số liệu 2 -->
+  <g filter="url(#tkCardShadow)">
+    <rect x="530" y="600" width="270" height="200" rx="22" fill="#FFFFFF" stroke="#ECEBF0"/>
+  </g>
+  <g class="tk-t">
+    <text x="558" y="644" class="tk-hd">Chuyến đi</text>
+    <text x="558" y="669" class="tk-sb">Tuần này</text>
+    <rect x="558" y="711" width="12" height="34" rx="6" fill="#E4E1FC"/>
+    <rect x="590" y="693" width="12" height="52" rx="6" fill="#7367F0"/>
+    <rect x="622" y="719" width="12" height="26" rx="6" fill="#E4E1FC"/>
+    <rect x="654" y="685" width="12" height="60" rx="6" fill="#7367F0"/>
+    <rect x="686" y="705" width="12" height="40" rx="6" fill="#E4E1FC"/>
+    <rect x="718" y="715" width="12" height="30" rx="6" fill="#E4E1FC"/>
+    <rect x="750" y="689" width="12" height="56" rx="6" fill="#7367F0"/>
+    <text x="558" y="782" class="tk-big">124</text>
+    <text x="640" y="780" class="tk-up">+12,6%</text>
+  </g>
+</svg>

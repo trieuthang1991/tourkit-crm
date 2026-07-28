@@ -43,10 +43,7 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
   <div class="app-brand demo">
     <a href="/tong-quan" class="app-brand-link">
-      <span class="app-brand-logo demo">
-        <span class="fw-bold fs-3 text-primary">T</span>
-      </span>
-      <span class="app-brand-text demo menu-text fw-bold ms-2">TourKit</span>
+      @await Html.PartialAsync("_BrandMark", "menu-text fw-bold ms-2")
     </a>
   </div>
 
