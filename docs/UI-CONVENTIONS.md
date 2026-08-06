@@ -35,6 +35,28 @@ Stack UI: ASP.NET Core Razor Pages + Bootstrap 5 + jQuery + Vuexy. Icon: **Table
 
 ## 3. Bảng / danh sách
 
+> **Màn danh sách MỚI dùng `tk.grid` (Tabulator), không dùng DataTables nữa.** DataTables chỉ còn
+> ở các màn chưa kịp chuyển. Mẫu chuẩn: `Pages/CustomersTabulator/Index.cshtml` (khách hàng) và
+> `Pages/Orders/Index.cshtml` (đơn hàng).
+
+### 3a. `tk.grid` — lưới chuẩn (`wwwroot/js/tk-grid.js` + `css/tk-grid.css`)
+
+- Trang chỉ khai báo **cột dữ liệu** + **menu hành động**; cột ô chọn và cột ⋮ do `tk.grid` tự thêm.
+- Gói sẵn: phân trang từ server (`?handler=Data`), thanh tác vụ hàng loạt (`#bulkbar`),
+  menu hành động (chuột phải trên dòng **và** nút ⋮), dòng tổng `topCalc` ngay dưới tiêu đề,
+  bảng **fit đúng 1 màn** (chỉ một thanh cuộn, nằm trong bảng), và nối sẵn thanh lọc chuẩn:
+  `#f-q`, `#btn-search`, `#btn-reset`, `#btn-adv` + `#adv`, `.tk-chip` (chip lọc nhanh),
+  `#type-tabs[data-field]` (tab phân loại), `#btn-export`.
+- Ô nhiều dòng phải dựng bằng `tk.g.*` (`stack` / `avatar` / `icLine` / `chip` / `moneyCell`)
+  để mọi màn cùng một kiểu: dòng chính đậm + dòng phụ mờ, tối đa 2 dòng.
+- Handler dữ liệu: `ParseDataTables()` (đã hiểu cả `page/size/q` của tk.grid) + `GridJson(dt, …)`
+  ở `TkListPageModel` — payload phục vụ đồng thời Tabulator và DataTables.
+- **Bẫy đã gặp, đừng lặp lại:** không đặt `selectableRowsRangeMode:'click'` (chỉ chọn được 1 dòng);
+  **tuyệt đối không** gọi `setHeight` trong `renderComplete` (vòng lặp vô hạn → treo trang);
+  select2 phát sự kiện change kiểu jQuery nên phải bind qua jQuery, không `addEventListener`.
+
+### 3b. Màn cũ còn dùng DataTables
+
 - Dữ liệu lớn: **DataTables server-side** (`serverSide: true`, handler `OnGetData`). Không tải hết ra client.
 - Bắt buộc có: ô **tìm kiếm**, **chọn số dòng/trang**, **"Hiện X–Y trên Z"** — **ngôn ngữ Tiếng Việt** (`language:{...}`).
 - **Empty state** rõ ràng ("Chưa có …", "Không tìm thấy …").

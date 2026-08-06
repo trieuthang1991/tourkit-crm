@@ -68,6 +68,12 @@
       var toInput = document.getElementById(fromInput.id.replace(/From$/, 'To'));
       if (!toInput || !$(toInput).hasClass('tk-datef')) { return; }
 
+      // Trang nào lỡ flatpickr 2 ô gốc TRƯỚC (script chạy ngay, không đợi ready) thì ô gốc đã có
+      // altInput hiển thị riêng — chỉ addClass('d-none') vào ô gốc không giấu được altInput, màn hình
+      // hiện ra 2 ô chồng nhau ("Ngày tạo (từ – đến)" + "Ngày tạo từ"). Huỷ flatpickr để gỡ altInput.
+      if (fromInput._flatpickr) { fromInput._flatpickr.destroy(); }
+      if (toInput._flatpickr) { toInput._flatpickr.destroy(); }
+
       var $fromCol = $(fromInput).closest('[class*="col-"]');
       var $toCol = $(toInput).closest('[class*="col-"]');
       // Nhãn: bỏ chữ "từ" ở cuối ("Ngày tạo từ" → "Ngày tạo").

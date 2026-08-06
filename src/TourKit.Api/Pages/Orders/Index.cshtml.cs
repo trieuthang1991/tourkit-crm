@@ -321,14 +321,8 @@ public class IndexModel : TkListPageModel
             outstanding = items.Sum(x => x.outstanding),
         };
 
-        return new JsonResult(new
-        {
-            draw = dt.Draw,
-            recordsTotal = stats.Total,
-            recordsFiltered = result.Total,
-            data = items,
-            pageSum,
-        });
+        return GridJson(dt, stats.Total, result.Total, items,
+            new Dictionary<string, object?> { ["pageSum"] = pageSum });
     }
 
     /// <summary>Xuất CSV theo đúng bộ lọc đang áp (giới hạn 5000 dòng để không sập).</summary>

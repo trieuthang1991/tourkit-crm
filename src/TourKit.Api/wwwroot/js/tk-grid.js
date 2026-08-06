@@ -105,12 +105,18 @@
         // Ô chọn để làm tác vụ hàng loạt; tiêu đề là ô chọn-tất-cả của trang.
         title: '', field: '__sel', width: 44, hozAlign: 'center', headerHozAlign: 'center',
         titleFormatter: 'rowSelection', formatter: 'rowSelection',
-        headerSort: false, cellClick: function (e) { e.stopPropagation(); },
+        headerSort: false, cellClick: function (e) { e.stopPropagation(); }
+      });
+    }
+    var dataCols = (opts.columns || []).slice();
+    // Nhãn "Tổng" của dòng tổng đặt ở cột DỮ LIỆU đầu tiên (cột ô chọn chỉ rộng 44px, chữ bị cắt).
+    if (dataCols.length && !dataCols[0].topCalc) {
+      dataCols[0] = Object.assign({}, dataCols[0], {
         topCalc: function () { return ''; },
         topCalcFormatter: function () { return '<span class="fw-semibold text-muted">' + esc(opts.totalLabel || 'Tổng') + '</span>'; }
       });
     }
-    columns = columns.concat(opts.columns || []);
+    columns = columns.concat(dataCols);
     if (opts.actions) {
       columns.push({
         title: '', field: '__act', width: 56, hozAlign: 'center', headerSort: false,
@@ -230,26 +236,35 @@
     var q = document.getElementById('f-q');
     if (q) { q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { reload(); } }); }
 
-    // Ô ngày: gửi ISO cho server, hiện d/m/Y cho người dùng (luật chung của repo).
+    // Cặp ô …From/…To gộp thành MỘT ô chọn khoảng ngày. Phải chạy TRƯỚC flatpickr bên dưới,
+    // nếu không ô gốc đã có altInput riêng và màn hình hiện 2 ô chồng nhau.
+    if (tk.dateRanges) { tk.dateRanges(); }
+    // Ô ngày lẻ còn lại: gửi ISO cho server, hiện d/m/Y cho người dùng (luật chung của repo).
     if (window.flatpickr) {
       flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true });
     }
-    // Mọi select/input mang class .tk-auto (và trong panel #adv) đổi giá trị là tải lại.
-    document.querySelectorAll('#adv select, #adv input, .tk-auto').forEach(function (e) {
-      e.addEventListener('change', reload);
-    });
+    // Mọi select/input trong panel #adv, hoặc mang class .tk-auto/.tk-s2f, đổi giá trị là tải lại.
+    // Bind QUA jQUERY khi có: select2 phát sự kiện change kiểu jQuery, addEventListener thuần
+    // KHÔNG nhận được → chọn xong lưới đứng im.
+    var sel = '#adv select, #adv input, .tk-auto, .tk-s2f';
+    if (window.jQuery) { jQuery(sel).on('change', reload); }
+    else { document.querySelectorAll(sel).forEach(function (e) { e.addEventListener('change', reload); }); }
 
-    // Panel lọc nâng cao
-    var btnAdv = document.getElementById('btn-adv');
-    if (btnAdv) {
-      btnAdv.addEventListener('click', function () {
-        var adv = document.getElementById('adv');
-        if (!adv) { return; }
-        adv.classList.toggle('d-none');
-        var open = !adv.classList.contains('d-none');
-        this.classList.toggle('btn-primary', open);
-        this.classList.toggle('btn-label-secondary', !open);
-      });
+    // Panel lọc nâng cao: ưu tiên tk.advFilter (có badge đếm số lọc đang bật, tự mở khi có lọc).
+    if (tk.advFilter && document.getElementById('adv')) {
+      tk.advFilter();
+    } else {
+      var btnAdv = document.getElementById('btn-adv');
+      if (btnAdv) {
+        btnAdv.addEventListener('click', function () {
+          var adv = document.getElementById('adv');
+          if (!adv) { return; }
+          adv.classList.toggle('d-none');
+          var open = !adv.classList.contains('d-none');
+          this.classList.toggle('btn-primary', open);
+          this.classList.toggle('btn-label-secondary', !open);
+        });
+      }
     }
 
     // Chip lọc nhanh: các nhóm trong chipGroups LOẠI TRỪ nhau — bấm lại để bỏ chọn.
@@ -277,7 +292,13 @@
 
     on('btn-reset', function () {
       if (q) { q.value = ''; }
-      filterKeys.forEach(function (k) { var e = document.getElementById('f-' + k); if (e) { e.value = ''; } });
+      filterKeys.forEach(function (k) {
+        var e = document.getElementById('f-' + k);
+        if (!e) { return; }
+        e.value = '';
+        // Select2 giữ giá trị hiển thị riêng — phải báo cho nó vẽ lại, nếu không ô vẫn hiện lựa chọn cũ.
+        if (window.jQuery && e.classList.contains('tk-s2f')) { jQuery(e).trigger('change.select2'); }
+      });
       document.querySelectorAll('.tk-datef').forEach(function (e) { if (e._flatpickr) { e._flatpickr.clear(); } });
       document.querySelectorAll('#type-tabs .nav-link').forEach(function (a, i) { a.classList.toggle('active', i === 0); });
       syncChips();
