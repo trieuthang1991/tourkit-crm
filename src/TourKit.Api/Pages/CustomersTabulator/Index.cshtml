@@ -1,7 +1,7 @@
-@page "/khach-hang-tabulator"
+@page
 @model TourKit.Api.Pages.CustomersTabulator.IndexModel
 @{
-    ViewData["Title"] = "Data khách hàng (Tabulator)";
+    ViewData["Title"] = "Data khách hàng";
     ViewData["SaveUrl"] = "?handler=Save";
 }
 
@@ -104,10 +104,10 @@
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
   <div>
     <div class="text-muted mb-1" style="font-size:.78rem">CRM <span class="mx-1">/</span> Khách hàng <span class="mx-1">/</span> <span class="text-body">Data khách hàng</span></div>
-    <h4 class="mb-0">Data khách hàng <span class="badge bg-label-primary ms-1">Bản thử Tabulator</span></h4>
+    <h4 class="mb-0">Data khách hàng</h4>
   </div>
   <div class="d-flex flex-wrap gap-2">
-    <a href="/Customers" class="btn btn-label-secondary"><i class="ti ti-arrows-left-right me-1"></i> So với bản DataTables</a>
+    <a href="/khach-hang/ban-cu" class="btn btn-label-secondary" title="Bản cũ (DataTables) — giữ tạm để đối chiếu"><i class="ti ti-arrows-left-right me-1"></i> Bản cũ</a>
     <a id="btn-export" class="btn btn-label-secondary"><i class="ti ti-file-export me-1"></i> Xuất file</a>
     <button type="button" class="btn btn-primary" onclick="openCustomerOffcanvas(null)"><i class="ti ti-plus me-1"></i> Thêm khách</button>
   </div>

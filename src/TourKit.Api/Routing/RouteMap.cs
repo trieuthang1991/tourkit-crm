@@ -33,7 +33,10 @@ public static class RouteMap
         // --- CRM ---
         ("/LeadCampaigns/Index", "chia-so-sale"),
         ("/Leads/Index", "co-hoi"),
-        ("/Customers/Index", "khach-hang"),
+        // Màn Khách hàng CHÍNH THỨC = bản Tabulator (giao diện phẳng, action theo nghiệp vụ).
+        // Bản DataTables cũ lùi về route phụ để đối chiếu, sẽ xoá khi dùng thực tế thấy ổn.
+        ("/CustomersTabulator/Index", "khach-hang"),
+        ("/Customers/Index", "khach-hang/ban-cu"),
         ("/Customers/Details", "khach-hang/{id:guid}"),
         ("/Customers/Duplicates", "khach-hang/trung-lap"),
         ("/CustomerCares/Index", "lich-hen"),
