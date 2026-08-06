@@ -384,7 +384,8 @@
         ajaxResponse: function (url, params, response) { curPage = params.page || 1; return response; },
         rowContextMenu: rowActionMenu,
         selectableRows: true,          // chọn nhiều dòng để làm tác vụ hàng loạt
-        selectableRowsRangeMode: 'click',
+        // KHÔNG dùng selectableRowsRangeMode:'click' — chế độ đó coi mỗi click là chọn một VÙNG mới
+        // nên bấm ô thứ hai lại bỏ ô thứ nhất (chỉ chọn được 1).
         columnDefaults: { headerSort: false, resizable: true, vertAlign: 'middle' },
         columns: [
           {

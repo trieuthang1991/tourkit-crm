@@ -17,3 +17,21 @@
 @media (min-width: 1400px) and (max-width: 1599.98px) {
   .tk-num { font-size: 1rem; }
 }
+
+/* Bỏ giới hạn bề ngang layout: theme Vuexy khoá .container-* ở nhiều mốc (đến 1440px) —
+   dùng trọn màn hình, màn rộng không còn 2 dải trống hai bên. Override tại đây thay vì sửa
+   file vendor để không mất khi cập nhật theme. */
+.container-xxl,
+.container-xl,
+.container-lg,
+.container-md,
+.container-sm,
+.container {
+  max-width: none;
+}
+/* Navbar tách rời có selector 3 class (.layout-navbar.navbar-detached.container-xxl) nên
+   thắng rule 1 class ở trên — phải gỡ riêng, nếu không thanh trên vẫn co lại 1392px. */
+.layout-navbar.navbar-detached.container-xxl,
+.layout-navbar.navbar-detached {
+  max-width: none;
+}

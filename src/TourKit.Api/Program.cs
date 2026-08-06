@@ -52,6 +52,13 @@ builder.Services.AddRazorPages(options =>
     }
 });
 
+// DEV: biên dịch Razor lúc chạy → sửa .cshtml chỉ cần F5, KHÔNG phải build + khởi động lại
+// (trước đây mỗi lần chỉnh giao diện mất ~40-60 giây cho vòng build/restart). Prod không bật.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
+}
+
 // CORS cho SPA (Vite dev mặc định 5173/4173; prod cấu hình qua Cors:Origins).
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
     ?? ["http://localhost:5173", "http://localhost:4173"];
