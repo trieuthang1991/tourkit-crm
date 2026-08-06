@@ -29,5 +29,14 @@
 - Mỗi nhóm màn: 1 commit, build + `vitest` xanh, chạy thử.
 
 ## Việc cần chủ dự án
-- **Reload Claude Code** để `ag-mcp` (trong `.mcp.json`) kết nối — sau đó AI dùng MCP viết AG Grid chuẩn version.
+- **Reload Claude Code** để `ag-mcp` (trong `.mcp.json`) kết nối — sau đó AI dùng MCP viết AG Grid chuẩn version. Khi reload nhớ **đồng ý (trust)** server `ag-mcp` trong `.mcp.json`.
 - Duyệt **look & feel** màn Khách hàng mẫu trước khi làm loạt.
+
+## ĐIỂM TIẾP TỤC (sau khi reload, ag-mcp đã nối) — làm ngay
+Chủ dự án đã CHỐT (A): rebuild `/khach-hang-v2` thành **mẫu AG Grid CHUẨN, server-native, dễ dùng nhất**. Việc cụ thể:
+1. `detect_version` (đã có ag-grid 36.1.0, React) → `search_docs` cho **Infinite Row Model** + **map filterModel/sortModel → datasource getRows** (v36).
+2. Sửa `web/src/shared/ui2/data-grid.tsx`: chuyển sang `rowModelType="infinite"` + `datasource.getRows(params)` (params.startRow/endRow/sortModel/filterModel → gọi `/api/v1/customers?page&size&q&customerType&sort…`), **pagination native của AG Grid**, cột **flex tự giãn kín**, sort/filter cột **đẩy server** (đúng trên toàn 3.007 khách), quick-search native.
+3. Cập nhật `web/src/features/customers/CustomersGridPage.tsx` dùng datasource thay `rowData` + bỏ pager tự chế.
+4. Kiểm hợp đồng API: `/api/v1/customers` nhận tham số sort nào? (xem `CustomersController` + `CustomerService.ListAsync`/`ICustomerService`). Nếu thiếu sort param thì bổ sung ở service (bám filter Razor `CustomerListFilter`).
+5. Verify preview (đăng nhập demo `admin@demo.vn` / `Demo@12345`, route `/khach-hang-v2`) → chủ dự án duyệt look → nhân bản pattern sang các màn khác.
+- Trạng thái: backend chốt-sổ-hoa-hồng ĐÃ xong (commit 44440c3). Nền shadcn `ui2/` + DataStore first-pass client-side ĐÃ commit (0641d65, 37deec1). Cần thay bằng Infinite Row Model.
