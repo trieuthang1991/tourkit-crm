@@ -3,15 +3,13 @@
 @{ ViewData["Title"] = Model.Heading; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
   @if (Model.IsMine) { <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.css" /> }
-}
-
-@{
-    const string Thead = "<thead><tr><th>Mã Task</th><th>Tiêu đề</th><th>Dự án</th><th>Người tạo</th><th>Người phụ trách</th><th>Ưu tiên</th><th>Ngày bắt đầu</th><th>Hạn</th><th>Tiến độ</th><th>Cảnh báo</th><th>Trạng thái</th><th></th></tr></thead>";
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 @if (Model.IsMine && Model.Stats is { } s)
@@ -72,9 +70,7 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <div><h5 class="mb-0">Công việc của tôi</h5><small class="text-muted">Danh sách giao việc trực quan</small></div>
           </div>
-          <div class="card-datatable table-responsive">
-            <table id="tbl" class="table table-hover">@Html.Raw(Thead)</table>
-          </div>
+          <div id="grid-tasks" style="min-height:420px"></div>
         </div>
       </div>
       <div class="col-12 col-xl-4 mb-4">
@@ -89,14 +85,21 @@
 }
 else
 {
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">@Model.Heading</h5>
-        <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm công việc</button>
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+      <div>
+        <div class="text-muted mb-1" style="font-size:.78rem">Dự án &amp; Công việc <span class="mx-1">/</span> <span class="text-body">@Model.Heading</span></div>
+        <h4 class="mb-0">@Model.Heading</h4>
       </div>
-      <div class="card-datatable table-responsive">
-        <table id="tbl" class="table table-hover">@Html.Raw(Thead)</table>
+      <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm công việc</button>
+    </div>
+
+    <div class="tk-surface">
+      <div id="bulkbar" class="d-none align-items-center gap-2">
+        <span class="fw-medium"><span id="bulk-count">0</span> công việc đã chọn</span>
+        <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+        <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
       </div>
+      <div id="grid-tasks"></div>
     </div>
 }
 
@@ -141,7 +144,7 @@ else
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
@@ -150,46 +153,86 @@ else
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt;
+    var oc, grid;
     $(function () {
       // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        // Trang "Của tôi" ẩn cột Mã Task/Người tạo/Người phụ trách/Ngày bắt đầu (thừa với ngữ cảnh cá nhân)
-        // — bám cột staging /my-tasking. Trang "Danh sách" hiện đủ như staging /tasking.
-        // Cột nhỏ để 'text-nowrap' (không xuống dòng) để Tiêu đề được nhận phần rộng còn lại,
-        // không bị co vụn khi bảng nằm trong cột hẹp của dashboard "Của tôi".
-        columns: [
-          { data: 'code', visible: !@(Model.IsMine ? "true" : "false"), className: 'text-nowrap', render: function (v) { return '<span class="text-muted small">' + tk.escape(v) + '</span>'; } },
-          { data: 'title', render: function (v) { return '<span class="fw-medium d-inline-block" style="min-width:200px">' + tk.escape(v) + '</span>'; } },
-          { data: 'workflowName', className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">—</span>'; } },
-          { data: 'createdByName', visible: !@(Model.IsMine ? "true" : "false"), className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">—</span>'; } },
-          { data: 'assigneeName', visible: !@(Model.IsMine ? "true" : "false"), className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">— Chưa gán —</span>'; } },
-          { data: null, className: 'text-center text-nowrap', render: function (r) { return '<span class="badge bg-label-' + r.priorityColor + '">' + tk.escape(r.priorityLabel) + '</span>'; } },
-          { data: 'startDateText', visible: !@(Model.IsMine ? "true" : "false"), className: 'text-nowrap' },
-          { data: 'dueDateText', className: 'text-nowrap', render: function (v, t, r) { return r.overdue ? '<span class="text-danger fw-medium">' + tk.escape(v) + '</span>' : tk.escape(v); } },
-          { data: null, className: 'text-center', render: function (r) {
-              var p = Math.max(0, Math.min(100, Number(r.progress) || 0));
-              return '<div class="d-flex align-items-center gap-2" style="min-width:90px"><div class="progress flex-grow-1" style="height:6px"><div class="progress-bar" style="width:' + p + '%"></div></div><span class="small text-muted">' + p + '%</span></div>';
-            } },
-          { data: null, visible: !@(Model.IsMine ? "true" : "false"), className: 'text-center text-nowrap', render: function (r) {
-              return r.overdue ? '<span class="badge bg-label-danger"><i class="ti ti-alert-triangle me-1"></i>Quá hạn</span>' : '<span class="text-muted">—</span>';
-            } },
-          { data: null, className: 'text-nowrap', render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end text-nowrap', render: function () {
-              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
-        ]
-      });
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'công việc',
+      var g = tk.g, esc = g.esc;
+      var IS_MINE = @(Model.IsMine ? "true" : "false");
+
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'công việc',
         rules: { 'Input.Title': { required: true } }, messages: { 'Input.Title': { required: 'Bắt buộc nhập tiêu đề' } } });
-      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var id = dt.row($(this).closest('tr')).data().id;
-        tk.confirmDelete({ title: 'Xoá công việc?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+
+      function delRow(r) {
+        tk.confirmDelete({ title: 'Xoá công việc?', text: r.title || '' }).then(function (ok) {
+          if (!ok) { return; }
+          var f = document.getElementById('delete-form');
+          f.querySelector('[name="id"]').value = r.id;
+          f.submit();
+        });
+      }
+
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      // Trang "Của tôi" ẩn cột Mã Task/Người tạo/Người phụ trách/Ngày bắt đầu (thừa với ngữ cảnh cá nhân)
+      // — bám cột staging /my-tasking. Trang "Danh sách" hiện đủ như staging /tasking.
+      grid = tk.grid('#grid-tasks', {
+        filters: [],
+        selectable: !IS_MINE,          // khung cá nhân nằm trong cột hẹp, không cần tác vụ hàng loạt
+        exportName: 'cong-viec.csv',
+        actions: function (r) {
+          return [
+            { label: '<i class="ti ti-edit me-2"></i>Sửa công việc', action: function () { oc.open(r); } },
+            { separator: true },
+            { label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá công việc</span>', action: function () { delRow(r); } }
+          ];
+        },
+        onRowClick: function (r) { oc.open(r); },
+        columns: [
+          {
+            title: 'Công việc', field: 'title', widthGrow: 4, minWidth: 220,
+            formatter: function (c) {
+              var r = c.getData();
+              // Ở khung cá nhân, mã task/dự án dồn xuống dòng phụ cho gọn.
+              return g.stack(r.title, [r.code, r.workflowName].filter(Boolean).join(' · '));
+            }
+          },
+          { title: 'Dự án', field: 'workflowName', widthGrow: 2, minWidth: 150, visible: !IS_MINE, formatter: 'tkStack' },
+          {
+            title: 'Người tạo / phụ trách', field: 'assigneeName', widthGrow: 2, minWidth: 180, visible: !IS_MINE,
+            formatter: function (c) {
+              var r = c.getData();
+              return g.stack(r.assigneeName || '— Chưa gán —', r.createdByName ? ('Tạo: ' + r.createdByName) : null);
+            }
+          },
+          {
+            title: 'Ưu tiên', field: 'priorityLabel', width: 130, hozAlign: 'center',
+            formatter: 'tkBadge', formatterParams: { color: 'priorityColor' }
+          },
+          {
+            title: 'Thời hạn', field: 'dueDateText', width: 150,
+            formatter: function (c) {
+              var r = c.getData();
+              if (r.overdue) {
+                return '<div class="tk-cell"><div class="tk-cell-main text-danger">' + esc(r.dueDateText) + '</div>' +
+                  '<div class="tk-cell-sub text-danger">Quá hạn</div></div>';
+              }
+              return g.stack(r.dueDateText, r.startDateText ? ('Bắt đầu ' + r.startDateText) : null);
+            }
+          },
+          {
+            title: 'Tiến độ', field: 'progress', width: 150, hozAlign: 'center',
+            formatter: function (c) {
+              var p = Math.max(0, Math.min(100, Number(c.getValue()) || 0));
+              return '<div class="d-flex align-items-center gap-2"><div class="progress flex-grow-1" style="height:6px">' +
+                '<div class="progress-bar" style="width:' + p + '%"></div></div><span class="small text-muted">' + p + '%</span></div>';
+            }
+          },
+          {
+            title: 'Trạng thái', field: 'statusLabel', width: 140,
+            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
+          }
+        ]
       });
 
     @if (Model.IsMine && Model.Stats is { } sd)

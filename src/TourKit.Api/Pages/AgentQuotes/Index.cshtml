@@ -3,10 +3,12 @@
 @{ ViewData["Title"] = "Báo giá đại lý (B2B)"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
@@ -20,57 +22,65 @@
   </div>
 </div>
 
-@* 6 KPI — bám StatGrid hệ cũ *@
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng yêu cầu</small><h5 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chờ chào</small><h5 class="mb-0 text-warning tk-num" id="kpi-requested">@Model.Stats.Requested.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã chào</small><h5 class="mb-0 text-info tk-num" id="kpi-quoted">@Model.Stats.Quoted.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Xác nhận</small><h5 class="mb-0 text-success tk-num" id="kpi-confirmed">@Model.Stats.Confirmed.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Từ chối</small><h5 class="mb-0 text-danger tk-num" id="kpi-rejected">@Model.Stats.Rejected.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng giá chào</small><h5 class="mb-0 tk-num" id="kpi-totalquoted">@Model.Stats.TotalQuoted.ToString("#,##0")</h5></div></div></div>
-</div>
+@{
+    // 6 KPI — bám StatGrid hệ cũ, gói vào dải mảnh dùng chung.
+    (string Id, string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("kpi-total", "Tổng yêu cầu", Model.Stats.Total.ToString("#,##0"), "ti ti-file-text", "primary"),
+        ("kpi-requested", "Chờ chào", Model.Stats.Requested.ToString("#,##0"), "ti ti-clock", "warning"),
+        ("kpi-quoted", "Đã chào", Model.Stats.Quoted.ToString("#,##0"), "ti ti-send", "info"),
+        ("kpi-confirmed", "Xác nhận", Model.Stats.Confirmed.ToString("#,##0"), "ti ti-circle-check", "success"),
+        ("kpi-rejected", "Từ chối", Model.Stats.Rejected.ToString("#,##0"), "ti ti-circle-x", "danger"),
+        ("kpi-totalquoted", "Tổng giá chào", Model.Stats.TotalQuoted.ToString("#,##0"), "ti ti-cash", "primary"),
+    };
+}
 
-@* Thanh lọc — MỌI tiêu chí đẩy xuống server (AgentQuoteRequestListFilter) *@
-<div class="card mb-4">
-  <div class="card-body">
+<div class="tk-surface">
+
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem" id="@s.Id">@s.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="tk-pad">
+    @* Tab theo trạng thái — bám Segmented hệ cũ *@
+    <ul class="nav nav-tabs mb-3" id="type-tabs" data-field="status">
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả <span class="badge bg-label-secondary ms-1" data-count="total">@Model.Stats.Total.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="1">Gửi yêu cầu <span class="badge bg-label-warning ms-1" data-count="requested">@Model.Stats.Requested.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="2">Đã chào giá <span class="badge bg-label-info ms-1" data-count="quoted">@Model.Stats.Quoted.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="3">Đã xác nhận <span class="badge bg-label-success ms-1" data-count="confirmed">@Model.Stats.Confirmed.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="4">Từ chối <span class="badge bg-label-danger ms-1" data-count="rejected">@Model.Stats.Rejected.ToString("#,##0")</span></a></li>
+    </ul>
+    <input type="hidden" id="f-status" value="" />
+
+    @* Thanh lọc — MỌI tiêu chí đẩy xuống server (AgentQuoteRequestListFilter) *@
     <div class="row g-2 align-items-center">
       <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Sản phẩm/Tour" /></div>
       <div class="col-md-4">
         <select id="f-agentId" class="form-select tk-s2f" data-placeholder="Đại lý"><option value=""></option>@foreach (var a in Model.Agents) { <option value="@a.Id">@a.Name</option> }</select>
       </div>
       <div class="col-md-3 d-flex gap-2">
-        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
   </div>
-</div>
 
-@* Tab theo trạng thái — bám Segmented hệ cũ *@
-<input type="hidden" id="f-status" value="" />
-<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
-  <li class="nav-item"><button type="button" class="nav-link active" data-val="">Tất cả (<span data-count="total">@Model.Stats.Total.ToString("#,##0")</span>)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-val="1">Gửi yêu cầu (<span data-count="requested">@Model.Stats.Requested.ToString("#,##0")</span>)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-val="2">Đã chào giá (<span data-count="quoted">@Model.Stats.Quoted.ToString("#,##0")</span>)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-val="3">Đã xác nhận (<span data-count="confirmed">@Model.Stats.Confirmed.ToString("#,##0")</span>)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-val="4">Từ chối (<span data-count="rejected">@Model.Stats.Rejected.ToString("#,##0")</span>)</button></li>
-</ul>
-
-<div class="card">
-  <div class="card-header"><h5 class="mb-0">Danh sách báo giá đại lý</h5></div>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          <th class="text-center">#</th><th>Đại lý / Tour</th><th class="text-center">Số khách</th><th>Ngày đi</th>
-          <th class="text-end">Giá chào</th><th>Trạng thái</th><th></th>
-        </tr>
-      </thead>
-      <tfoot>
-        <tr id="page-sum" class="fw-medium"><td colspan="7" class="small"></td></tr>
-      </tfoot>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2">
+    <span class="fw-medium"><span id="bulk-count">0</span> yêu cầu đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-agent-quotes"></div>
 </div>
 
 @Html.AntiForgeryToken()
@@ -127,7 +137,7 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
@@ -135,8 +145,9 @@
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var dt;
+    var grid;
     var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
     var REQUESTED = 1, QUOTED = 2;
     // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
@@ -146,11 +157,6 @@
       var o = {};
       FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
       return o;
-    }
-    function collectFilters(d) {
-      var o = filterValues();
-      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
-      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
     }
     function refreshStats() {
       $.getJSON('?handler=Stats', function (s) {
@@ -165,7 +171,7 @@
     }
     function act(url, fd, ok) {
       tk.post(url, fd).then(function (res) {
-        if (res && res.isSuccess) { dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || ok); }
+        if (res && res.isSuccess) { grid.reload(); refreshStats(); tk.toast(res.message || ok); }
         else { tk.error((res && res.message) || 'Thao tác thất bại.'); }
       });
     }
@@ -175,68 +181,84 @@
       $('#cr-agent').select2({ width: '100%', allowClear: true, placeholder: 'Chọn đại lý', dropdownParent: $('#create-modal') });
       if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
 
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
+      var g = tk.g, esc = g.esc, money = g.money;
+
+      function openQuote(r) {
+        document.getElementById('frm-quote').reset();
+        $('#qt-id').val(r.id);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('quote-modal')).show();
+      }
+
+      // Chào giá / xác nhận / từ chối bám ĐÚNG trạng thái cho phép của hệ cũ.
+      function actionsFor(r) {
+        if (!CAN_MANAGE) { return []; }
+        var items = [];
+        if (r.status === REQUESTED) {
+          items.push({ label: '<i class="ti ti-tag me-2"></i>Chào giá', action: function () { openQuote(r); } });
+        }
+        if (r.status === QUOTED) {
+          items.push({ label: '<i class="ti ti-circle-check me-2"></i>Xác nhận báo giá', action: function () {
+            tk.confirmDelete({ title: 'Xác nhận báo giá này?', text: 'Báo giá đã xác nhận mới tạo được booking.', confirm: 'Xác nhận' }).then(function (ok) {
+              if (!ok) { return; }
+              var fd = new FormData(); fd.append('id', r.id);
+              act('?handler=Confirm', fd, 'Đã xác nhận.');
+            });
+          } });
+          items.push({ label: '<span class="text-danger"><i class="ti ti-circle-x me-2"></i>Từ chối</span>', action: function () {
+            tk.confirmDelete({ title: 'Từ chối báo giá này?', text: 'Yêu cầu sẽ chuyển sang trạng thái Từ chối.', confirm: 'Từ chối' }).then(function (ok) {
+              if (!ok) { return; }
+              var fd = new FormData(); fd.append('id', r.id);
+              act('?handler=Reject', fd, 'Đã từ chối.');
+            });
+          } });
+        }
+        return items;
+      }
+
+      grid = tk.grid('#grid-agent-quotes', {
+        filters: FILTERS,
+        exportName: 'bao-gia-dai-ly.csv',
+        actions: actionsFor,
+        onData: function () { refreshStats(); },
         columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          // Đại lý / Tour (title = yêu cầu riêng)
-          { data: null, render: function (r) {
-              return '<div class="fw-medium" title="' + tk.escape(r.specialRequests || r.productName) + '">' + (r.agentName ? tk.trunc(r.agentName, 220) : '—') + '</div>' +
-                     '<div class="small text-muted">' + tk.trunc(r.productName, 240) + '</div>';
-            } },
-          { data: 'paxCount', className: 'text-center', render: function (v) { return v + ' khách'; } },
-          // Ngày đi (chính) + ngày về (phụ)
-          { data: null, render: function (r) {
-              return '<div>' + tk.escape(r.travelDate || '—') + '</div>' +
-                     (r.returnDate ? '<div class="small text-muted">→ ' + tk.escape(r.returnDate) + '</div>' : '');
-            } },
-          // Giá chào + ghi chú chào giá
-          { data: null, className: 'text-end', render: function (r) {
-              return '<div class="fw-medium">' + (r.quotedAmount == null ? '—' : tk.money(r.quotedAmount)) + '</div>' +
-                     (r.quotedNote ? '<div class="small text-muted">' + tk.trunc(r.quotedNote, 180) + '</div>' : '');
-            } },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end text-nowrap', render: function (r) {
-              if (!CAN_MANAGE) { return ''; }
-              var h = '';
-              if (r.status === REQUESTED) { h += '<button type="button" class="btn btn-sm btn-label-primary js-quote">Chào giá</button>'; }
-              if (r.status === QUOTED) {
-                h += '<button type="button" class="btn btn-sm btn-label-success me-1 js-confirm">Xác nhận</button>' +
-                     '<button type="button" class="btn btn-sm btn-label-danger js-reject">Từ chối</button>';
-              }
-              return h;
-            } }
+          {
+            title: 'Đại lý / Tour', field: 'agentName', widthGrow: 4, minWidth: 240,
+            formatter: 'tkMedia', formatterParams: { sub: 'productName' }
+          },
+          {
+            title: 'Số khách', field: 'paxCount', width: 120, hozAlign: 'center',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) { return '<span class="fw-semibold">' + money(c.getValue()) + '</span>'; },
+            formatter: function (c) { return '<span class="badge bg-label-info">' + c.getValue() + ' khách</span>'; }
+          },
+          {
+            title: 'Ngày đi', field: 'travelDate', width: 150,
+            formatter: function (c) {
+              var r = c.getData();
+              return g.stack(r.travelDate, r.returnDate ? ('→ ' + r.returnDate) : null);
+            }
+          },
+          {
+            title: 'Giá chào', field: 'quotedAmount', width: 170, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) { return '<span class="fw-semibold">' + money(c.getValue()) + '</span>'; },
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + (r.quotedAmount == null ? '—' : money(r.quotedAmount)) + '</div>' +
+                (r.quotedNote ? '<div class="tk-cell-sub" title="' + esc(r.quotedNote) + '">' + esc(r.quotedNote) + '</div>' : '') + '</div>';
+            }
+          },
+          {
+            title: 'Trạng thái', field: 'statusLabel', width: 150,
+            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
+          }
         ]
       });
 
-      // Dòng "Tổng cộng (trang này)".
-      $('#tbl').on('xhr.dt', function (e, settings, json) {
-        var s = json && json.pageSum;
-        if (!s) { return; }
-        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' +
-          '<span class="me-3 text-muted">Số khách: <span class="fw-medium">' + tk.money(s.pax) + '</span></span>' +
-          '<span class="me-3 text-muted">Tổng giá chào: <span class="fw-medium">' + tk.money(s.quoted) + '</span></span>');
-      });
-
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('#btn-reset').on('click', function () {
-        $('#f-q').val('');
-        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
-        $('#tabs .nav-link').removeClass('active').first().addClass('active');
-        dt.ajax.reload();
-      });
-      $('#tabs').on('click', '.nav-link', function () {
-        $('#tabs .nav-link').removeClass('active');
-        $(this).addClass('active');
-        $('#f-status').val($(this).data('val'));
-        dt.ajax.reload();
-      });
-      $('#btn-export').on('click', function (e) {
+      // Xuất TOÀN BỘ theo bộ lọc đang áp — handler Export nhận keyword ở tham số `search`.
+      $('#btn-export').off('click').on('click', function (e) {
         e.preventDefault();
-        var p = new URLSearchParams(filterValues());
+        var p = new URLSearchParams(grid.filters());
         var q = $('#f-q').val(); if (q) { p.set('search', q); }
         location.href = '?handler=Export&' + p.toString();
       });
@@ -261,42 +283,11 @@
         tk.post('?handler=Create', new FormData(document.getElementById('frm-create'))).then(function (res) {
           if (res && res.isSuccess) {
             bootstrap.Modal.getInstance(document.getElementById('create-modal')).hide();
-            dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã gửi yêu cầu.');
+            grid.reload(); refreshStats(); tk.toast(res.message || 'Đã gửi yêu cầu.');
           } else { tk.error((res && res.message) || 'Gửi yêu cầu thất bại.'); }
         });
       });
 
-      // ---- Chào giá / Xác nhận / Từ chối ----
-      $('#tbl tbody').on('click', '.js-quote', function () {
-        var r = dt.row($(this).closest('tr')).data();
-        document.getElementById('frm-quote').reset();
-        $('#qt-id').val(r.id);
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('quote-modal')).show();
-      });
-      $('#qt-submit').on('click', function () {
-        tk.post('?handler=Quote', new FormData(document.getElementById('frm-quote'))).then(function (res) {
-          if (res && res.isSuccess) {
-            bootstrap.Modal.getInstance(document.getElementById('quote-modal')).hide();
-            dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã chào giá.');
-          } else { tk.error((res && res.message) || 'Chào giá thất bại.'); }
-        });
-      });
-      $('#tbl tbody').on('click', '.js-confirm', function () {
-        var r = dt.row($(this).closest('tr')).data();
-        tk.confirmDelete({ title: 'Xác nhận báo giá này?', text: 'Báo giá đã xác nhận mới tạo được booking.', confirm: 'Xác nhận' }).then(function (ok) {
-          if (!ok) { return; }
-          var fd = new FormData(); fd.append('id', r.id);
-          act('?handler=Confirm', fd, 'Đã xác nhận.');
-        });
-      });
-      $('#tbl tbody').on('click', '.js-reject', function () {
-        var r = dt.row($(this).closest('tr')).data();
-        tk.confirmDelete({ title: 'Từ chối báo giá này?', text: 'Yêu cầu sẽ chuyển sang trạng thái Từ chối.', confirm: 'Từ chối' }).then(function (ok) {
-          if (!ok) { return; }
-          var fd = new FormData(); fd.append('id', r.id);
-          act('?handler=Reject', fd, 'Đã từ chối.');
-        });
-      });
     });
   </script>
 }
