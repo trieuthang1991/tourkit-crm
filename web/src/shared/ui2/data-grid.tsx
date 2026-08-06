@@ -13,25 +13,25 @@ import * as React from 'react';
 // AG Grid v33+ yêu cầu đăng ký module (1 lần). Community = miễn phí, đủ cho dự án.
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-// Theme (Theming API v36 — KHÔNG import CSS) bám brand #eb5324 + token Vuexy của dự án.
+// Theme Quartz CHUẨN của AG Grid (Theming API v36 — KHÔNG import CSS), chỉ nhấn accent brand.
+// Giữ bản sắc AG Grid (viền/hover/header) thay vì flatten thành bảng thường.
 export const tkGridTheme = themeQuartz.withParams({
   accentColor: '#eb5324',
   fontFamily: 'inherit',
-  foregroundColor: '#5e5873',
-  headerTextColor: '#6e6b7b',
-  headerBackgroundColor: '#f6f7fb',
   headerFontWeight: 600,
-  borderColor: '#eef0f5',
-  rowBorder: { style: 'solid', width: 1, color: '#f2f2f6' },
+  headerHeight: 46,
+  rowHeight: 52,
+  spacing: 8,
   wrapperBorderRadius: 12,
-  wrapperBorder: { style: 'solid', width: 1, color: '#eef0f5' },
-  oddRowBackgroundColor: '#fbfbfd',
-  headerHeight: 44,
-  rowHeight: 54,
-  cellHorizontalPadding: 16,
 });
 
-const defaultColDef: ColDef = { sortable: true, resizable: true, filter: false };
+// Client-side filter/sort SẼ SAI với dữ liệu phân trang server (chỉ 20 dòng đang tải).
+// Bản chuẩn AG Grid (Infinite Row Model + filter/sort đẩy xuống server) làm ở pass ag-mcp.
+const defaultColDef: ColDef = {
+  resizable: true,
+  sortable: false,
+  filter: false,
+};
 
 const localeText = {
   noRowsToShow: 'Không có dữ liệu',
