@@ -1,4 +1,4 @@
-// Nền UI mới (shadcn/ui + Tailwind) — thay dần AntD. Bảng dùng AG Grid (DataGrid, thêm sau).
+// Nền UI mới (shadcn/ui + Tailwind) — thay dần AntD. Bảng dùng SVAR React DataGrid (MIT, mã nguồn mở).
 export * from './cn';
 export * from './button';
 export * from './card';
