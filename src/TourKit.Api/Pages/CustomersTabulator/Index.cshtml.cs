@@ -217,6 +217,22 @@ public class IndexModel : PageModel
         return new JsonResult(Result.Success("Đã lưu khách hàng."));
     }
 
+    /// <summary>Xoá nhiều khách đã chọn (tác vụ hàng loạt) — AJAX, trả JSON.</summary>
+    public async Task<IActionResult> OnPostBulkDeleteAsync([FromForm] Guid[] ids)
+    {
+        if (ids is null || ids.Length == 0)
+        {
+            return new JsonResult(Result.Error("Chưa chọn khách hàng nào."));
+        }
+
+        foreach (var id in ids)
+        {
+            await _service.DeleteAsync(id);
+        }
+
+        return new JsonResult(Result.Success($"Đã xoá {ids.Length} khách hàng."));
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
         await _service.DeleteAsync(id);

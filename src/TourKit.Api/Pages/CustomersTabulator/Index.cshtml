@@ -77,6 +77,29 @@
     #grid-customers .tabulator-footer { background: transparent; border-top: 1px solid var(--bs-border-color); }
     #grid-customers .tabulator-footer .tabulator-page.active { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
     #grid-customers .tabulator-col-resize-handle { opacity: .4; }
+
+    /* Ô chọn: dùng ĐÚNG component checkbox của theme (Bootstrap .form-check-input) —
+       mặc định Tabulator vẽ checkbox thô của trình duyệt, lạc khỏi giao diện. */
+    #grid-customers input[type="checkbox"] {
+      appearance: none; -webkit-appearance: none;
+      width: 1.15em; height: 1.15em; margin: 0; vertical-align: middle; cursor: pointer;
+      background-color: var(--bs-body-bg, #fff); background-repeat: no-repeat; background-position: center;
+      background-size: contain; border: 1px solid var(--bs-border-color); border-radius: .25em;
+      transition: background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+    #grid-customers input[type="checkbox"]:checked {
+      background-color: var(--bs-primary); border-color: var(--bs-primary);
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+    }
+    #grid-customers input[type="checkbox"]:indeterminate {
+      background-color: var(--bs-primary); border-color: var(--bs-primary);
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
+    }
+    #grid-customers input[type="checkbox"]:focus-visible {
+      outline: 0; box-shadow: 0 0 0 .18rem rgba(var(--bs-primary-rgb), .25);
+    }
+    /* Dòng đang chọn: nền nhấn nhẹ theo brand thay vì màu mặc định của Tabulator. */
+    #grid-customers .tabulator-row.tabulator-selected { background: rgba(var(--bs-primary-rgb), .07) !important; }
   </style>
 }
 
@@ -205,6 +228,15 @@
       <input type="hidden" id="f-purchaseBucket" value="" />
       <input type="hidden" id="f-notContactedBucket" value="" />
     </div>
+  </div>
+
+  @* Thanh tác vụ hàng loạt — chỉ hiện khi có dòng được chọn *@
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> khách đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-care"><i class="ti ti-headset me-1"></i> Xem lịch hẹn</button>
+    <button type="button" class="btn btn-sm btn-label-danger" id="bulk-delete"><i class="ti ti-trash me-1"></i> Xoá</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
 
   @* Bảng *@
@@ -351,14 +383,15 @@
         paginationCounter: 'rows',
         ajaxResponse: function (url, params, response) { curPage = params.page || 1; return response; },
         rowContextMenu: rowActionMenu,
+        selectableRows: true,          // chọn nhiều dòng để làm tác vụ hàng loạt
+        selectableRowsRangeMode: 'click',
         columnDefaults: { headerSort: false, resizable: true, vertAlign: 'middle' },
         columns: [
           {
-            title: '#', field: '__n', width: 56, hozAlign: 'center',
-            formatter: function (cell) {
-              var pos = cell.getRow().getPosition(true);
-              return '<span class="text-muted">' + (((curPage - 1) * table.getPageSize()) + pos) + '</span>';
-            },
+            // Ô chọn để làm tác vụ hàng loạt; tiêu đề là ô chọn-tất-cả của trang.
+            title: '', field: '__sel', width: 44, hozAlign: 'center', headerHozAlign: 'center',
+            titleFormatter: 'rowSelection', formatter: 'rowSelection',
+            headerSort: false, cellClick: function (e) { e.stopPropagation(); },
             topCalc: function () { return ''; },
             topCalcFormatter: function () { return '<span class="fw-semibold text-muted">Tổng</span>'; }
           },
@@ -431,6 +464,49 @@
       function reload() { table.setData(); }
       // customer-form.js gọi hook này sau khi lưu → nạp lại lưới, không tải lại cả trang.
       window.tkGridReload = reload;
+
+      // ===== Tác vụ hàng loạt trên các dòng đã chọn =====
+      var bulkbar = document.getElementById('bulkbar');
+      table.on('rowSelectionChanged', function (data) {
+        document.getElementById('bulk-count').textContent = data.length;
+        bulkbar.classList.toggle('d-none', data.length === 0);
+        bulkbar.classList.toggle('d-flex', data.length > 0);
+      });
+      document.getElementById('bulk-clear').addEventListener('click', function () { table.deselectRow(); });
+      // Xuất riêng các dòng đã chọn (dữ liệu đang có sẵn ở client → tải ngay, không gọi server).
+      document.getElementById('bulk-export').addEventListener('click', function () {
+        table.download('csv', 'khach-hang-da-chon.csv', {}, 'selected');
+      });
+      // Mở lịch hẹn của khách ĐẦU TIÊN đang chọn (trang CSKH lọc theo 1 khách).
+      document.getElementById('bulk-care').addEventListener('click', function () {
+        var sel = table.getSelectedData();
+        if (sel.length) { careRow(sel[0]); }
+      });
+      document.getElementById('bulk-delete').addEventListener('click', function () {
+        var sel = table.getSelectedData();
+        if (!sel.length) { return; }
+        var go = function () {
+          // Gọi handler Razor (auth bằng cookie) — KHÔNG gọi /api/v1 vì API dùng JWT, sẽ 401.
+          var token = document.querySelector('input[name="__RequestVerificationToken"]');
+          var fd = new FormData();
+          sel.forEach(function (d) { fd.append('ids', d.id); });
+          fetch('?handler=BulkDelete', {
+            method: 'POST',
+            headers: token ? { 'RequestVerificationToken': token.value } : {},
+            body: fd
+          }).then(function (r) { return r.json(); }).then(function (res) {
+            table.deselectRow();
+            reload();
+            if (window.Swal && res && res.message) {
+              Swal.fire({ toast: true, position: 'top-end', icon: res.isSuccess ? 'success' : 'error',
+                title: res.message, showConfirmButton: false, timer: 2200 });
+            }
+          });
+        };
+        if (window.tk && tk.confirmDelete) {
+          tk.confirmDelete({ title: 'Xoá ' + sel.length + ' khách hàng?' }).then(function (ok) { if (ok) { go(); } });
+        } else if (window.confirm('Xoá ' + sel.length + ' khách hàng?')) { go(); }
+      });
 
       // Bảng luôn nằm gọn trong 1 màn: cao = phần viewport còn lại tính từ đỉnh bảng.
       // Dùng toạ độ TÀI LIỆU (rect.top + scrollY) để giá trị không đổi theo vị trí cuộn,
