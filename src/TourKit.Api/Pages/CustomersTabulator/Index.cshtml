@@ -2,10 +2,14 @@
 @model TourKit.Api.Pages.CustomersTabulator.IndexModel
 @{
     ViewData["Title"] = "Data khách hàng (Tabulator)";
+    ViewData["SaveUrl"] = "?handler=Save";
 }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
   <style>
     /* CHUẨN HOÁ ô nhiều dòng: đúng 1 kiểu (main + sub), tối đa 2 dòng, dùng đồng nhất mọi cột. */
     .tk-cell { line-height: 1.25; }
@@ -95,6 +99,7 @@
   <div class="d-flex flex-wrap gap-2">
     <a href="/Customers" class="btn btn-label-secondary"><i class="ti ti-arrows-left-right me-1"></i> So với bản DataTables</a>
     <a id="btn-export" class="btn btn-label-secondary"><i class="ti ti-file-export me-1"></i> Xuất file</a>
+    <button type="button" class="btn btn-primary" onclick="openCustomerOffcanvas(null)"><i class="ti ti-plus me-1"></i> Thêm khách</button>
   </div>
 </div>
 
@@ -148,11 +153,20 @@
   <input type="hidden" name="id" />
 </form>
 
+@* Dùng LẠI offcanvas Thêm/Sửa của trang gốc → cùng form, cùng luật, không nhân bản nghiệp vụ. *@
+<partial name="/Pages/Customers/_EditOffcanvas.cshtml" />
+
 @section VendorScripts {
   <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/jquery-validation/additional-methods.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/customer-form.js"></script>
   <script>
     (function () {
       var esc = (window.tk && tk.escape) ? tk.escape : function (s) {
@@ -216,16 +230,24 @@
         } else if (window.confirm('Xoá khách hàng "' + (d.fullName || '') + '"?')) { go(); }
       }
 
+      // Mở offcanvas sửa — dùng LẠI form của trang gốc (dữ liệu dòng đã đủ field).
+      function editRow(d) {
+        if (typeof window.openCustomerOffcanvas === 'function') { window.openCustomerOffcanvas(d); }
+      }
+
       // Menu hành động dùng chung: nút ⋮ (click trái) và chuột phải trên dòng.
       var VIEW = '<i class="ti ti-eye me-2"></i>Xem chi tiết';
+      var EDIT = '<i class="ti ti-edit me-2"></i>Sửa';
       var DEL = '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá</span>';
       var rowActionMenu = [
         { label: VIEW, action: function (e, row) { viewRow(row.getData()); } },
+        { label: EDIT, action: function (e, row) { editRow(row.getData()); } },
         { separator: true },
         { label: DEL, action: function (e, row) { delRow(row.getData()); } }
       ];
       var cellActionMenu = [
         { label: VIEW, action: function (e, cell) { viewRow(cell.getRow().getData()); } },
+        { label: EDIT, action: function (e, cell) { editRow(cell.getRow().getData()); } },
         { separator: true },
         { label: DEL, action: function (e, cell) { delRow(cell.getRow().getData()); } }
       ];
@@ -325,6 +347,8 @@
       });
 
       function reload() { table.setData(); }
+      // customer-form.js gọi hook này sau khi lưu → nạp lại lưới, không tải lại cả trang.
+      window.tkGridReload = reload;
 
       // Bảng luôn nằm gọn trong 1 màn: cao = phần viewport còn lại tính từ đỉnh bảng.
       // Dùng toạ độ TÀI LIỆU (rect.top + scrollY) để giá trị không đổi theo vị trí cuộn,

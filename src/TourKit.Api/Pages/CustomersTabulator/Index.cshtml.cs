@@ -2,7 +2,9 @@ using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using TourKit.Api.Pages.Shared;
 using TourKit.Api.Services;
+using TourKit.Api.Web;
 using TourKit.Application.Catalog;
 using TourKit.Application.Customers;
 using TourKit.Application.Customers.Dtos;
@@ -17,14 +19,19 @@ public class IndexModel : PageModel
     private readonly ICustomerService _service;
     private readonly ICustomerTypeService _types;
     private readonly ICustomerSourceService _sources;
+    private readonly ICustomerTagService _tags;
+    private readonly IMarketTypeService _markets;
     private readonly UserDirectory _users;
 
     public IndexModel(ICustomerService service, ICustomerTypeService types,
-        ICustomerSourceService sources, UserDirectory users)
+        ICustomerSourceService sources, ICustomerTagService tags, IMarketTypeService markets,
+        UserDirectory users)
     {
         _service = service;
         _types = types;
         _sources = sources;
+        _tags = tags;
+        _markets = markets;
         _users = users;
     }
 
@@ -32,11 +39,17 @@ public class IndexModel : PageModel
     public CustomerFilterOptionsDto Options { get; private set; } = new([], [], [], [], [], [], [], [], [], []);
     public IReadOnlyList<(int Code, string Name)> CustomerTypes { get; private set; } = [];
 
+    // Bind cho offcanvas Thêm/Sửa (dùng chung; Id rỗng = tạo mới) — giống trang Customers/Index.
+    [BindProperty] public Customers.CustomerFormInput Input { get; set; } = new();
+    [BindProperty] public Guid? Id { get; set; }
+
     public async Task OnGetAsync()
     {
         Stats = await _service.GetStatsAsync();
         Options = await _service.GetFilterOptionsAsync();
         CustomerTypes = (await _types.ListAsync()).OrderBy(t => t.SortOrder).Select(t => (t.Code, t.Name)).ToList();
+        // Danh mục cho offcanvas — dùng lại đúng hàm của trang gốc để không lệch nghiệp vụ.
+        await Customers.IndexModel.LoadCatalogsAsync(this, _types, _sources, _tags, _markets);
     }
 
     /// <summary>Bộ lọc từ query — cùng khoá với trang gốc để đẩy hết xuống server (không lọc client).</summary>
@@ -91,6 +104,16 @@ public class IndexModel : PageModel
             city = c.City,
             segments = c.Segments,
             tag = c.Tags.Count > 0 ? string.Join(", ", c.Tags) : c.Tag,
+            // Field cho offcanvas SỬA điền lại (không hiển thị ở lưới).
+            tags = c.Tags.Count > 0 ? c.Tags : (string.IsNullOrWhiteSpace(c.Tag) ? [] : new[] { c.Tag }),
+            address = c.Address,
+            gender = c.Gender,
+            dateOfBirth = c.DateOfBirth?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            idCardNumber = c.IdCardNumber,
+            passportExpiry = c.PassportExpiry?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            unitName = c.UnitName,
+            taxCode = c.TaxCode,
+            note = c.Note,
             marketGroup = c.MarketGroup,
             collaboratorName = c.CollaboratorName,
             assignedToNames = c.AssignedToNames,
@@ -112,6 +135,52 @@ public class IndexModel : PageModel
             data,
             pageSum = new { purchases = data.Sum(x => x.purchaseCount), revenue = data.Sum(x => x.revenue) },
         });
+    }
+
+    /// <summary>Lưu (tạo/sửa) từ offcanvas — AJAX, trả JSON. Bám ĐÚNG luật của trang gốc.</summary>
+    public async Task<IActionResult> OnPostSaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Input.Phone))
+        {
+            return new JsonResult(Result.Error("Bắt buộc nhập số điện thoại"));
+        }
+
+        if (!ModelState.IsValid)
+        {
+            var err = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault();
+            return new JsonResult(Result.Error(err ?? "Dữ liệu không hợp lệ."));
+        }
+
+        // SĐT là khoá check trùng: chặn nếu đã có khách khác cùng số (chuẩn hoá).
+        var dup = await _service.FindByPhoneAsync(Input.Phone, Id);
+        if (dup is not null)
+        {
+            return new JsonResult(Result.Error(
+                $"Số điện thoại đã tồn tại — khách: {dup.FullName}{(string.IsNullOrEmpty(dup.Code) ? "" : $" ({dup.Code})")}"));
+        }
+
+        if (Id is Guid gid && gid != Guid.Empty)
+        {
+            await _service.UpdateAsync(gid, new UpdateCustomerDto(
+                FullName: Input.FullName, Phone: Input.Phone, CustomerType: Input.CustomerType,
+                Source: Input.Source, Tag: Input.Tags.FirstOrDefault(), Tags: Input.Tags, Email: Input.Email, Address: Input.Address,
+                DateOfBirth: TkDate.Day(Input.DateOfBirth), IdCardNumber: Input.IdCardNumber, PassportExpiry: TkDate.Day(Input.PassportExpiry),
+                Gender: Input.Gender, City: Input.City, MarketGroup: Input.MarketGroup,
+                CollaboratorName: Input.CollaboratorName,
+                UnitName: Input.UnitName, TaxCode: Input.TaxCode, Note: Input.Note));
+        }
+        else
+        {
+            await _service.CreateAsync(new CreateCustomerDto(
+                FullName: Input.FullName, Phone: Input.Phone, CustomerType: Input.CustomerType,
+                Source: Input.Source, Tag: Input.Tags.FirstOrDefault(), Tags: Input.Tags, Email: Input.Email, Address: Input.Address,
+                DateOfBirth: TkDate.Day(Input.DateOfBirth), IdCardNumber: Input.IdCardNumber, PassportExpiry: TkDate.Day(Input.PassportExpiry),
+                Gender: Input.Gender, City: Input.City, MarketGroup: Input.MarketGroup,
+                CollaboratorName: Input.CollaboratorName,
+                UnitName: Input.UnitName, TaxCode: Input.TaxCode, Note: Input.Note));
+        }
+
+        return new JsonResult(Result.Success("Đã lưu khách hàng."));
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)

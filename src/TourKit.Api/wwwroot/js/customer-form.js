@@ -146,6 +146,10 @@
             if (isDt) {
               jQuery('#tbl-customers').DataTable().ajax.reload(null, false);
               toast(res.message || 'Đã lưu khách hàng.');
+            } else if (typeof window.tkGridReload === 'function') {
+              // Lưới không phải DataTables (vd Tabulator) tự đăng ký hàm nạp lại → khỏi tải lại cả trang.
+              window.tkGridReload();
+              toast(res.message || 'Đã lưu khách hàng.');
             } else {
               location.reload();
             }
