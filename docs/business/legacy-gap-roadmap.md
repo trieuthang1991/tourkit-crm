@@ -29,7 +29,8 @@ Công ty tour không vận hành được nếu chỉ có thu mà không có chi
 - ✅ **Duyệt chi 1 cấp**: tạo/duyệt/từ chối/liệt kê (CQRS mirror phiếu thu); chỉ ghi nhận dòng tiền khi duyệt.
 - ✅ **Công nợ phải trả NCC**: `GET /reports/provider-debt` = Σ OrderCost.ActualAmount − Σ phiếu chi đã ghi nhận, theo provider.
 - ✅ **Frontend**: panel phiếu chi trong chi tiết đơn + trang Công nợ NCC.
-- ◻️ (Sau) Duyệt chi **nhiều cấp** (mirror ReceiptApproval) · **Dự trù chi phí tour (`DuTruTours`)**.
+- ✅ Duyệt chi **nhiều cấp** — ĐÃ LÀM (`PaymentApprovalService` + `PaymentApprovalStepUser` là bản mirror đầy đủ của Receipt: StepOrder, ActAsync theo cấp, ApprovalProcess template). *(kiểm 2026-08)*
+- ◻️ (Sau) **Dự trù chi phí tour (`DuTruTours`)** riêng ngoài báo giá — phần dự trù giá trong Báo giá đã có (Đợt 5).
 
 ## Đợt 2 — Báo cáo & Dashboard 📊 ✅ ĐÃ XONG
 
@@ -48,7 +49,8 @@ Tách bạch với `ProfitShare` (chia lợi nhuận). **Hoàn tất — 131 bac
 - ✅ **`Order.SalesUserId`**: gán sales phụ trách đơn (`PUT /orders/{id}/sales`).
 - ✅ **`CommissionRule`** (=legacy `Comission`): CRUD quy tắc hoa hồng theo user (%).
 - ✅ **Báo cáo hoa hồng/lợi nhuận theo NV** (`/reports/commission-by-user`): turnover/cost/profit + hoa hồng = profit × rate.
-- ◻️ (Deferred) hoa hồng theo **loại khách** (`id_customer_type`) + `CommissionCampaign` — chờ `Customer.CustomerType`; **chốt sổ hoa hồng** (`StatusComission`/`date_closed`).
+- ✅ hoa hồng theo **loại khách** + `CommissionCampaign` — ĐÃ LÀM (`CommissionCampaign`/`CommissionCampaignUser`/tiers + service + controller + migration `AddCommissionCampaign`; `Customer.CustomerType` đã có). *(kiểm 2026-08)*
+- ◻️ (Deferred, cần design + duyệt của chủ dự án như spec BaoGia) **chốt sổ hoa hồng** (`StatusComission`/`date_closed`): hoa hồng hiện tính on-the-fly ở `/reports/commission-by-user`, chưa lưu bản ghi → chốt sổ cần model snapshot (khoá kỳ + đóng băng số đã trả). Đây là **item groundable duy nhất còn lại** nhưng theo quy trình dự án phải có design ngắn duyệt trước khi code.
 
 ## Đợt 4 — CSKH sau tour & CRM sâu 🤝 ✅ ĐÃ XONG (phần dữ liệu)
 
