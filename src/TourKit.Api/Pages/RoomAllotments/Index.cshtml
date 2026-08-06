@@ -3,10 +3,12 @@
 @{ ViewData["Title"] = "Quỹ phòng khách sạn"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 @section PageStyles {
@@ -34,13 +36,29 @@
   </div>
 </div>
 
-@* 5 KPI — bám StatGrid hệ cũ, cập nhật theo bộ lọc đang áp *@
-<div class="row g-3 mb-3">
-  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số ô lịch</small><h5 class="mb-0 tk-num" id="kpi-cells">@Model.Stats.Cells.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số NCC</small><h5 class="mb-0 tk-num" id="kpi-providers">@Model.Stats.Providers.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-md-4 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng tồn</small><h5 class="mb-0 tk-num" id="kpi-quota">@Model.Stats.TotalQuota.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã đặt</small><h5 class="mb-0 text-warning tk-num" id="kpi-booked">@Model.Stats.TotalBooked.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Còn lại</small><h5 class="mb-0 text-success tk-num" id="kpi-available">@Model.Stats.TotalAvailable.ToString("#,##0")</h5></div></div></div>
+@{
+    // 5 KPI — bám StatGrid hệ cũ, cập nhật theo bộ lọc đang áp.
+    (string Id, string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("kpi-cells", "Số ô lịch", Model.Stats.Cells.ToString("#,##0"), "ti ti-calendar", "primary"),
+        ("kpi-providers", "Số NCC", Model.Stats.Providers.ToString("#,##0"), "ti ti-building", "info"),
+        ("kpi-quota", "Tổng tồn", Model.Stats.TotalQuota.ToString("#,##0"), "ti ti-stack", "secondary"),
+        ("kpi-booked", "Đã đặt", Model.Stats.TotalBooked.ToString("#,##0"), "ti ti-bed", "warning"),
+        ("kpi-available", "Còn lại", Model.Stats.TotalAvailable.ToString("#,##0"), "ti ti-circle-check", "success"),
+    };
+}
+
+<div class="tk-stat-strip tk-surface mb-3">
+  @foreach (var s in statCards)
+  {
+    <div class="tk-stat">
+      <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+      <div class="lh-sm">
+        <div class="fw-bold" style="font-size:1.15rem" id="@s.Id">@s.Value</div>
+        <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+      </div>
+    </div>
+  }
 </div>
 
 @* Chú giải loại ngày — bám card "Loại ngày" hệ cũ *@
@@ -117,24 +135,13 @@
   </div>
 </div>
 
-<div class="card d-none" id="pane-table">
-  <div class="card-header"><h5 class="mb-0">Quỹ phòng / Allotment</h5></div>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          @* min-width để bảng cuộn ngang thay vì bóp cột chữ trên màn hẹp. *@
-          <th class="text-center" style="min-width:52px">#</th><th style="min-width:170px">Nhà cung cấp</th><th style="min-width:170px">Dịch vụ / Phòng</th><th style="min-width:150px">Tỉnh / Thị trường</th>
-          <th style="min-width:110px">Ngày</th><th style="min-width:110px">Loại ngày</th>
-          <th class="text-center" style="min-width:70px">Tồn</th><th class="text-center" style="min-width:70px">Đặt</th><th class="text-center" style="min-width:70px">Còn</th>
-          <th class="text-end" style="min-width:120px">Giá NET</th><th style="min-width:56px"></th>
-        </tr>
-      </thead>
-      <tfoot>
-        <tr id="page-sum" class="fw-medium"><td colspan="11" class="small"></td></tr>
-      </tfoot>
-    </table>
+<div class="tk-surface d-none" id="pane-table">
+  <div id="bulkbar" class="d-none align-items-center gap-2">
+    <span class="fw-medium"><span id="bulk-count">0</span> ô quỹ phòng đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+  <div id="grid-room-allotments"></div>
 </div>
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:560px;max-width:100%">
@@ -178,7 +185,7 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
@@ -186,17 +193,13 @@
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt;
+    var oc, grid;
     // Mọi tiêu chí đẩy xuống SERVER (RoomAllotmentListFilter) — không lọc ở client.
     var FILTERS = ['province', 'market', 'providerRef', 'rating', 'dateFrom', 'dateTo'];
     // Lưới tự giới hạn bằng cửa sổ ngày → không gửi dateFrom/dateTo (server đã đè bằng from/to).
     var GRID_FILTERS = ['province', 'market', 'providerRef', 'rating'];
-
-    function collectFilters(d) {
-      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
-      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
-    }
 
     // ---- Khung LƯỚI LỊCH (ma trận NCC/dịch vụ × ngày) ----
     // gFrom/gTo = cửa sổ ĐANG XEM; gPage/gSize = phân trang HÀNG. Mỗi lần đổi chỉ nạp đúng cửa sổ đó.
@@ -294,68 +297,74 @@
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
       if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
 
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
+      var g = tk.g, esc = g.esc, money = g.money;
+
+      grid = tk.grid('#grid-room-allotments', {
+        filters: ['province', 'market', 'providerRef', 'rating', 'dateFrom', 'dateTo'],
+        exportName: 'quy-phong.csv',
+        actions: function (r) {
+          return [
+            { label: '<i class="ti ti-edit me-2"></i>Sửa ô quỹ phòng', action: function () { oc.open(r); } },
+            { separator: true },
+            { label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá ô quỹ phòng</span>', action: function () { delRow(r); } }
+          ];
+        },
+        onRowClick: function (r) { oc.open(r); },
+        // KPI của màn tính THEO BỘ LỌC nên server trả kèm khối stats mỗi lần tải.
+        onData: function (res) { applyStats(res && res.stats); },
         columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: null, render: function (r) {
-              // Cột ghép: tên NCC · mã tham chiếu
-              return '<div class="fw-medium">' + tk.escape(r.providerName) + '</div>' +
-                     '<div class="small text-muted">' + tk.escape(r.providerRef) + '</div>';
-            } },
-          { data: null, render: function (r) {
-              return '<div>' + tk.escape(r.serviceName) + '</div>' +
-                     (r.projectName ? '<div class="small text-muted">' + tk.escape(r.projectName) + '</div>' : '');
-            } },
-          { data: null, render: function (r) {
-              var line1 = (r.province || '—') + (r.rating ? ' · ' + r.rating + '★' : '');
-              return '<div>' + tk.escape(line1) + '</div>' +
-                     (r.market ? '<div class="small text-muted">' + tk.escape(r.market) + '</div>' : '');
-            } },
-          { data: 'dateText' },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.dayTypeColor + '">' + tk.escape(r.dayTypeLabel) + '</span>'; } },
-          { data: 'quota', className: 'text-center' },
-          { data: 'booked', className: 'text-center' },
-          { data: 'available', className: 'text-center fw-medium', render: function (v) { return '<span class="' + (v <= 0 ? 'text-danger' : 'text-success') + '">' + tk.money(v) + '</span>'; } },
-          { data: 'price', className: 'text-end', render: function (v) { return tk.money(v); } },
-          { data: null, className: 'text-end', render: function () {
-              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
+          {
+            title: 'Nhà cung cấp', field: 'providerName', widthGrow: 2, minWidth: 180,
+            formatter: 'tkMedia', formatterParams: { sub: 'providerRef' }
+          },
+          {
+            title: 'Dịch vụ / Phòng', field: 'serviceName', widthGrow: 2, minWidth: 180,
+            formatter: 'tkStack', formatterParams: { sub: 'projectName' }
+          },
+          {
+            title: 'Tỉnh / Thị trường', field: 'province', widthGrow: 2, minWidth: 160,
+            formatter: function (c) {
+              var r = c.getData();
+              return g.stack((r.province || '—') + (r.rating ? ' · ' + r.rating + '★' : ''), r.market);
+            }
+          },
+          { title: 'Ngày', field: 'dateText', width: 120, formatter: 'tkStack' },
+          {
+            title: 'Loại ngày', field: 'dayTypeLabel', width: 130,
+            formatter: 'tkBadge', formatterParams: { color: 'dayTypeColor' }
+          },
+          {
+            title: 'Tồn / Đặt / Còn', field: 'quota', width: 170, hozAlign: 'center',
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-secondary me-1" title="Tồn">' + r.quota + '</span>' +
+                '<span class="badge bg-label-warning me-1" title="Đã đặt">' + r.booked + '</span>' +
+                '<span class="badge bg-label-' + (r.available <= 0 ? 'danger' : 'success') + '" title="Còn lại">' + r.available + '</span>';
+            }
+          },
+          {
+            title: 'Giá NET', field: 'price', width: 140, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) { return '<span class="fw-semibold">' + money(c.getValue()) + '</span>'; },
+            formatter: function (c) { return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + money(c.getValue()) + '</div></div>'; }
+          }
         ]
       });
 
-      // KPI + dòng tổng cộng lấy từ khối stats/pageSum ngoài contract DataTables (sự kiện xhr).
-      $('#tbl').on('xhr.dt', function (e, settings, json) {
-        var s = json && json.stats;
-        if (!s) { return; }
-        applyStats(s);
-        var p = (json.pageSum && json.pageSum.price) || 0;
-        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (theo bộ lọc)</span>' +
-          '<span class="me-3 text-muted">Tồn: <span class="fw-medium">' + tk.money(s.totalQuota) + '</span></span>' +
-          '<span class="me-3 text-muted">Đã đặt: <span class="fw-medium text-warning">' + tk.money(s.totalBooked) + '</span></span>' +
-          '<span class="me-3 text-muted">Còn lại: <span class="fw-medium text-success">' + tk.money(s.totalAvailable) + '</span></span>' +
-          '<span class="me-3 text-muted">Giá NET (trang này): <span class="fw-medium">' + tk.money(p) + '</span></span>');
-      });
-
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'ô quỹ phòng',
-        rules: { 'Input.ProviderRef': { required: true }, 'Input.ServiceName': { required: true }, 'Input.Date': { required: true } },
-        messages: { 'Input.ProviderRef': { required: 'Bắt buộc nhập mã NCC' }, 'Input.ServiceName': { required: 'Bắt buộc nhập tên dịch vụ/phòng' }, 'Input.Date': { required: 'Bắt buộc chọn ngày' } } });
-
-      // Server-side: lấy dữ liệu dòng từ DataTables API (không có data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var id = dt.row($(this).closest('tr')).data().id;
-        tk.confirmDelete({ title: 'Xoá ô quỹ phòng?' }).then(function (ok) {
+      function delRow(r) {
+        tk.confirmDelete({ title: 'Xoá ô quỹ phòng?', text: (r.serviceName || '') + ' — ' + (r.dateText || '') }).then(function (ok) {
           if (!ok) { return; }
-          var fd = new FormData(); fd.append('id', id);
+          var fd = new FormData(); fd.append('id', r.id);
           tk.post('?handler=Delete', fd).then(function (res) {
-            if (res && res.isSuccess) { dt.ajax.reload(null, false); tk.toast(res.message || 'Đã xoá.'); }
+            if (res && res.isSuccess) { grid.reload(); tk.toast(res.message || 'Đã xoá.'); }
             else { tk.error((res && res.message) || 'Xoá thất bại.'); }
           });
         });
-      });
+      }
+
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'ô quỹ phòng',
+        rules: { 'Input.ProviderRef': { required: true }, 'Input.ServiceName': { required: true }, 'Input.Date': { required: true } },
+        messages: { 'Input.ProviderRef': { required: 'Bắt buộc nhập mã NCC' }, 'Input.ServiceName': { required: 'Bắt buộc nhập tên dịch vụ/phòng' }, 'Input.Date': { required: 'Bắt buộc chọn ngày' } } });
 
       // ---- Ô lưới: mở offcanvas sửa đúng ô quỹ đang bấm (dữ liệu lấy từ ma trận đã nạp) ----
       $('#grid tbody').on('click', '.tk-gcell', function () {
@@ -384,7 +393,7 @@
 
       // Áp bộ lọc cho ĐÚNG khung đang xem.
       function applyFilters() {
-        if ($('#pane-grid').hasClass('d-none')) { dt.ajax.reload(); } else { gPage = 1; gridLoad(); }
+        if ($('#pane-grid').hasClass('d-none')) { grid.reload(); } else { gPage = 1; gridLoad(); }
       }
 
       $('#btn-search').on('click', applyFilters);
@@ -392,12 +401,12 @@
       $('#f-rating').on('change', applyFilters);
       $('.tk-s2f').on('change', applyFilters);
       // Khoảng ngày của thanh lọc chỉ có nghĩa với khung bảng — lưới đã tự giới hạn bằng cửa sổ ngày.
-      $('.tk-datef').on('change', function () { dt.ajax.reload(); });
+      $('.tk-datef').on('change', function () { grid.reload(); });
       $('#btn-reset').on('click', function () {
         $('#f-q').val('');
         FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
         $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
-        dt.ajax.reload();
+        grid.reload();
         gPage = 1;
         gridLoad();
       });
@@ -411,7 +420,7 @@
       $('#view-table').on('click', function () {
         $('#pane-grid').addClass('d-none'); $('#pane-table').removeClass('d-none');
         $(this).addClass('active'); $('#view-grid').removeClass('active');
-        dt.columns.adjust();
+        grid.table.redraw(true);
       });
 
       // Mặc định mở khung LƯỚI LỊCH (đúng dạng ma trận NCC × ngày của bản cũ).
