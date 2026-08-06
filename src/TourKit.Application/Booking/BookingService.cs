@@ -132,8 +132,19 @@ public sealed class BookingService(
         // Thị trường phân cấp (cha-con): lọc theo 1 thị trường bao gồm cả con cháu (legacy). Rỗng nếu không lọc.
         var marketIds = f.MarketTypeId is { } mkt ? await DescendantMarketIdsAsync(mkt) : new HashSet<Guid>();
 
+        // Lọc theo THUỘC TÍNH KHÁCH HÀNG (Nguồn/Loại KH): lấy trước tập id khách khớp rồi lọc đơn theo CustomerId.
+        HashSet<Guid>? custFilterIds = null;
+        if (f.CustomerType is not null || !string.IsNullOrWhiteSpace(f.CustomerSource))
+        {
+            custFilterIds = (await customerRepo.ListAsync(c =>
+                    (f.CustomerType == null || c.CustomerType == f.CustomerType) &&
+                    (f.CustomerSource == null || c.Source == f.CustomerSource)))
+                .Select(c => c.Id).ToHashSet();
+        }
+
         // Lọc cột thật (trạng thái, NV sales, chi nhánh, ngày tạo) ở DB; q + khoảng ngày đi lọc sau khi làm giàu.
         var all = await orderRepo.ListAsync(o =>
+            (custFilterIds == null || custFilterIds.Contains(o.CustomerId)) &&
             (f.Status == null || (int)o.Status == f.Status) &&
             (f.SalesUserId == null || o.SalesUserId == f.SalesUserId) &&
             (f.CreatedByUserId == null || o.CreatedByUserId == f.CreatedByUserId) &&
@@ -145,6 +156,7 @@ public sealed class BookingService(
             (f.OperationalStatus == null || (int)o.OperationalStatus == f.OperationalStatus) &&
             (f.CollaboratorId == null || o.CollaboratorId == f.CollaboratorId) &&
             (f.DepartureId == null || o.TourDepartureId == f.DepartureId) &&
+            (f.VisaStatus == null || o.VisaStatus == f.VisaStatus) &&
             (f.CreatedFrom == null || o.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || o.CreatedAt <= f.CreatedTo));
 
@@ -491,6 +503,71 @@ public sealed class BookingService(
         return MapOrder(order);
     }
 
+    /// <summary>Xác nhận đơn (chốt): Nháp/Giữ chỗ → Confirmed. Đơn đã huỷ/tất toán không xác nhận lại.</summary>
+    public async Task<OrderDto> ConfirmOrderAsync(Guid orderId)
+    {
+        var order = await orderRepo.GetByIdAsync(orderId) ?? throw new NotFoundException();
+        if (order.Status is OrderStatus.Cancelled or OrderStatus.Closed)
+        {
+            throw new ValidationAppException("Đơn đã huỷ hoặc đã tất toán — không thể xác nhận.");
+        }
+        order.Status = OrderStatus.Confirmed;
+        orderRepo.Update(order);
+        await orderRepo.SaveChangesAsync();
+        return MapOrder(order);
+    }
+
+    /// <summary>Huỷ đơn: → Cancelled. Đơn đã tất toán phải mở lại trước khi huỷ.</summary>
+    public async Task<OrderDto> CancelOrderAsync(Guid orderId)
+    {
+        var order = await orderRepo.GetByIdAsync(orderId) ?? throw new NotFoundException();
+        if (order.Status == OrderStatus.Closed)
+        {
+            throw new ValidationAppException("Đơn đã tất toán — mở lại trước khi huỷ.");
+        }
+        order.Status = OrderStatus.Cancelled;
+        orderRepo.Update(order);
+        await orderRepo.SaveChangesAsync();
+        return MapOrder(order);
+    }
+
+    /// <summary>
+    /// Đổi tình trạng VẬN HÀNH đơn tour ngay trên dòng (bám staging: 1 cột "Trạng thái" là state-machine vận hành).
+    /// Đồng bộ nhẹ sang <see cref="OrderStatus"/> để không phá gate/tab cũ: Cancelled/CancelledNoShow → huỷ đơn.
+    /// </summary>
+    public async Task<OrderDto> SetOperationalStatusAsync(Guid orderId, int status)
+    {
+        var order = await orderRepo.GetByIdAsync(orderId) ?? throw new NotFoundException();
+        if (!Enum.IsDefined(typeof(OrderOperationalStatus), status))
+        {
+            throw new ValidationAppException("Trạng thái vận hành không hợp lệ.");
+        }
+        order.OperationalStatus = (OrderOperationalStatus)status;
+        // Giữ nhất quán vòng đời thô: huỷ vận hành thì đơn cũng ở trạng thái huỷ (trừ khi đã tất toán).
+        if (order.OperationalStatus is OrderOperationalStatus.Cancelled or OrderOperationalStatus.CancelledNoShow
+            && order.Status != OrderStatus.Closed)
+        {
+            order.Status = OrderStatus.Cancelled;
+        }
+        orderRepo.Update(order);
+        await orderRepo.SaveChangesAsync();
+        return MapOrder(order);
+    }
+
+    /// <summary>Đổi trạng thái quy trình VISA ngay trên dòng (staging: 11 bước Tạo mới…Hoàn tất dịch vụ).</summary>
+    public async Task<OrderDto> SetVisaStatusAsync(Guid orderId, int status)
+    {
+        var order = await orderRepo.GetByIdAsync(orderId) ?? throw new NotFoundException();
+        if (status is < 0 or > 10)
+        {
+            throw new ValidationAppException("Trạng thái visa không hợp lệ.");
+        }
+        order.VisaStatus = status;
+        orderRepo.Update(order);
+        await orderRepo.SaveChangesAsync();
+        return MapOrder(order);
+    }
+
     /// <summary>Chặn sửa đơn đã tất toán (khoá sau chốt). Đơn Closed chỉ có thể "Mở lại" để sửa tiếp.</summary>
     private static void EnsureNotClosed(Order order)
     {
@@ -611,7 +688,8 @@ public sealed class BookingService(
         decimal? totalCost = null, (int Total, int Held, int Sold, int Remaining) seats = default) => new(
         o.Id, o.Code, o.TourDepartureId, o.CustomerId, o.TotalRevenue, totalCost ?? o.TotalCost, o.Status, o.SalesUserId,
         customerName, tourTitle, departureDate, amountPaid, OrderMath.Outstanding(o.TotalRevenue, amountPaid), actualCost,
-        seats.Total, seats.Held, seats.Sold, seats.Remaining);
+        seats.Total, seats.Held, seats.Sold, seats.Remaining,
+        o.VisaReceiveDate, o.VisaSubmitDate, o.VisaReturnDate, o.VisaStatus, (int)o.OperationalStatus, o.BookingType);
 
     /// <summary>Chiếu TourCustomer (chỗ) → SeatDto. Công thức tiền &amp; suy trạng thái nằm ở BookingMath (một chỗ).</summary>
     private static SeatDto MapSeat(TourCustomer s) => new(

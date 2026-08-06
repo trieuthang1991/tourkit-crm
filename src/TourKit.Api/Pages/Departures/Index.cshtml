@@ -1,6 +1,6 @@
 @page
 @model TourKit.Api.Pages.Departures.IndexModel
-@{ ViewData["Title"] = "Chuyến đi (Tour / LKH)"; }
+@{ ViewData["Title"] = Model.ByCategory ? $"Quản lý chuyến — {Model.CategoryLabel}" : "Chuyến đi (Tour / LKH)"; }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
@@ -10,7 +10,7 @@
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-  <h4 class="mb-0">Chuyến đi (Tour / LKH)</h4>
+  <h4 class="mb-0">@(Model.ByCategory ? $"Quản lý chuyến — {Model.CategoryLabel}" : "Chuyến đi (Tour / LKH)")</h4>
   <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm chuyến</button>
 </div>
 
@@ -22,22 +22,38 @@
   <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chỗ</small><h5 class="mb-0 tk-num">@Model.Stats.TotalSlots.ToString("#,##0")</h5></div></div></div>
 </div>
 
-@* Thanh lọc — đủ 4 tiêu chí hệ cũ (q · loại tour · NV điều hành · khoảng ngày khởi hành) *@
+@* Thanh lọc — bám staging /sample-tours ở các field CÓ model chuyến: q · loại tour · NVĐH ·
+   khoảng ngày khởi hành · khoảng ngày kết thúc · sắp xếp. (TT thanh toán/NCC/cọc/người tạo là cấp ĐƠN,
+   không có ở model chuyến → chưa đưa vào, tránh bịa.) *@
 <div class="card mb-3">
   <div class="card-body">
-    <div class="row g-2 align-items-center">
+    @* LƯU Ý: tk.dateRanges() (tk.js) gộp ô "…From/…To" thành 1 range và ẨN CẢ CỘT chứa ô "…To".
+       => Mỗi ô "…To" để RIÊNG 1 cột; KHÔNG đặt nút/điều khiển khác chung cột đó. *@
+    <div class="row g-2 align-items-end">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / tên chuyến" /></div>
       <div class="col-md-2">
-        <select id="f-tourType" class="form-select tk-s2f" data-placeholder="Loại tour"><option value=""></option>@foreach (var t in Model.TourTypes) { <option value="@t">@t</option> }</select>
+        <select id="f-tourType" class="form-select tk-s2f" data-placeholder="Loại hình"><option value=""></option>@foreach (var t in Model.TourTypes) { <option value="@t">@t</option> }</select>
       </div>
-      <div class="col-md-2">
+      <div class="col-md-3">
         <select id="f-assignedToUserId" class="form-select tk-s2f" data-placeholder="NV điều hành"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
       </div>
-      <div class="col-md-2"><input type="text" id="f-departureFrom" class="form-control tk-datef" placeholder="Khởi hành từ" /></div>
-      <div class="col-md-2 d-flex gap-2">
-        <input type="text" id="f-departureTo" class="form-control tk-datef" placeholder="đến" />
-        <button type="button" class="btn btn-primary" id="btn-search" title="Tìm kiếm"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      <div class="col-md-3">
+        <select id="f-sort" class="form-select">
+          <option value="dateDesc">Ngày khởi hành: mới → cũ</option>
+          <option value="dateAsc">Ngày khởi hành: cũ → mới</option>
+          <option value="slots">Số chỗ nhiều nhất</option>
+          <option value="code">Mã chuyến (A→Z)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row g-2 align-items-end mt-1">
+      <div class="col-md-3"><input type="text" id="f-departureFrom" class="form-control tk-datef" placeholder="Ngày khởi hành từ" /></div>
+      <div class="col-md-3"><input type="text" id="f-departureTo" class="form-control tk-datef" placeholder="Ngày khởi hành đến" /></div>
+      <div class="col-md-3"><input type="text" id="f-endFrom" class="form-control tk-datef" placeholder="Ngày kết thúc từ" /></div>
+      <div class="col-md-3"><input type="text" id="f-endTo" class="form-control tk-datef" placeholder="Ngày kết thúc đến" /></div>
+      <div class="col-12 d-flex gap-2 mt-2">
+        <button type="button" class="btn btn-primary text-nowrap" id="btn-search"><i class="ti ti-search me-1"></i>Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại bộ lọc"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
   </div>
@@ -56,8 +72,9 @@
     <table id="tbl" class="table table-hover">
       <thead>
         <tr>
-          <th class="text-center">#</th><th>Tour / LKH</th><th>Ngày đi / về</th>
-          <th class="text-end">Tổng chỗ</th><th>Điều hành</th><th>Trạng thái</th><th></th>
+          <th class="text-center" style="min-width:48px">#</th><th style="min-width:250px">Tour / LKH</th><th style="min-width:120px">Ngày khởi hành</th>
+          <th class="text-end" style="min-width:120px">Giá</th><th class="text-center" style="min-width:170px">Chỗ (Tổng/Giữ/Bán/Còn)</th>
+          <th style="min-width:120px">Ngày đóng chỗ</th><th style="min-width:150px">Điều hành</th><th style="min-width:120px">Trạng thái</th><th style="min-width:56px"></th>
         </tr>
       </thead>
     </table>
@@ -99,7 +116,7 @@
   <script>
     var oc, dt, isClosed = '';
     // Mọi tiêu chí đẩy xuống SERVER (DepartureListFilter) — không lọc ở client.
-    var FILTERS = ['tourType', 'assignedToUserId', 'departureFrom', 'departureTo'];
+    var FILTERS = ['tourType', 'assignedToUserId', 'departureFrom', 'departureTo', 'endFrom', 'endTo', 'sort'];
 
     function collectFilters(d) {
       FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
@@ -121,11 +138,19 @@
               return '<a href="/chuyen-di/' + r.id + '" class="fw-medium">' + tk.escape(r.title) + '</a>' +
                      '<div class="small text-muted">' + tk.escape(r.code) + ' · ' + tk.escape(r.tourType) + '</div>';
             } },
-          { data: null, render: function (r) {
+          { data: null, className: 'text-nowrap', render: function (r) {
               return '<div>' + tk.escape(r.departureDateText) + '</div>' +
                      (r.endDateText ? '<div class="small text-muted">→ ' + tk.escape(r.endDateText) + '</div>' : '');
             } },
-          { data: 'totalSlots', className: 'text-end fw-medium', render: function (v) { return tk.money(v); } },
+          { data: 'price', className: 'text-end fw-medium', render: function (v) { return v > 0 ? tk.money(v) : '<span class="text-muted">—</span>'; } },
+          { data: null, className: 'text-center text-nowrap', render: function (r) {
+              // Tổng · Giữ · Bán · Còn (bám cột chỗ staging /sample-tours)
+              return '<span class="badge bg-label-secondary me-1" title="Tổng">' + r.totalSlots + '</span>' +
+                     '<span class="badge bg-label-warning me-1" title="Giữ chỗ">' + r.seatHeld + '</span>' +
+                     '<span class="badge bg-label-success me-1" title="Đã bán">' + r.seatSold + '</span>' +
+                     '<span class="badge bg-label-info" title="Còn lại">' + r.seatRemaining + '</span>';
+            } },
+          { data: 'closedAtText', className: 'text-nowrap' },
           { data: 'assigneeName', render: function (v) { return tk.trunc(v, 170); } },
           { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
           { data: null, className: 'text-end', render: function (r) {
@@ -144,6 +169,7 @@
       $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
       $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
       $('.tk-datef').on('change', function () { dt.ajax.reload(); });
+      $('#f-sort').on('change', function () { dt.ajax.reload(); });
       $('#btn-reset').on('click', function () {
         $('#f-q').val('');
         FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });

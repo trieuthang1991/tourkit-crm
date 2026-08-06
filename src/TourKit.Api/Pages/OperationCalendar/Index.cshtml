@@ -51,11 +51,12 @@
       <div class="col-md-3">
         <select id="f-assignedToUserId" class="form-select tk-s2f" data-placeholder="NV điều hành"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
       </div>
+      @* tk.dateRanges() ẩn CẢ CỘT chứa f-departureTo → KHÔNG để nút chung cột đó. *@
       <div class="col-md-2"><input type="text" id="f-departureFrom" class="form-control tk-datef" placeholder="Khởi hành từ" value="@Model.MonthFrom" autocomplete="off" /></div>
-      <div class="col-md-2 d-flex gap-2">
-        <input type="text" id="f-departureTo" class="form-control tk-datef" placeholder="đến" value="@Model.MonthTo" autocomplete="off" />
-        <button type="button" class="btn btn-primary" id="btn-search" title="Tìm kiếm"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      <div class="col-md-2"><input type="text" id="f-departureTo" class="form-control tk-datef" placeholder="đến" value="@Model.MonthTo" autocomplete="off" /></div>
+      <div class="col-auto d-flex gap-2 ms-auto">
+        <button type="button" class="btn btn-primary text-nowrap" id="btn-search"><i class="ti ti-search me-1"></i>Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại bộ lọc"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
   </div>

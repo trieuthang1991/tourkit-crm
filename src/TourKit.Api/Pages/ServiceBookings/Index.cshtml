@@ -33,11 +33,12 @@
       <div class="col-md-2">
         <select id="f-status" class="form-select"><option value="">Trạng thái</option><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
       </div>
+      @* tk.dateRanges() ẩn CẢ CỘT chứa f-dateTo → KHÔNG để nút chung cột đó (nếu không nút biến mất). *@
       <div class="col-md-2"><input type="text" id="f-dateFrom" class="form-control tk-datef" placeholder="Bắt đầu từ" /></div>
-      <div class="col-md-2 d-flex gap-2">
-        <input type="text" id="f-dateTo" class="form-control tk-datef" placeholder="đến" />
-        <button type="button" class="btn btn-primary" id="btn-search" title="Tìm kiếm"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      <div class="col-md-2"><input type="text" id="f-dateTo" class="form-control tk-datef" placeholder="đến" /></div>
+      <div class="col-auto d-flex gap-2 ms-auto">
+        <button type="button" class="btn btn-primary text-nowrap" id="btn-search"><i class="ti ti-search me-1"></i>Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại bộ lọc"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
   </div>
@@ -58,12 +59,12 @@
     <table id="tbl" class="table table-hover">
       <thead>
         <tr>
-          <th class="text-center">#</th><th>Mã</th><th>Loại</th><th>Dịch vụ / NCC</th>
+          <th class="text-center">#</th><th>Mã</th><th>Mã đơn</th><th>Loại</th><th>Dịch vụ / NCC</th>
           <th>Thời gian sử dụng</th><th class="text-end">Giá trị</th><th class="text-center">Trạng thái</th>
         </tr>
       </thead>
       <tfoot>
-        <tr id="page-sum" class="fw-medium"><td colspan="7" class="small"></td></tr>
+        <tr id="page-sum" class="fw-medium"><td colspan="8" class="small"></td></tr>
       </tfoot>
     </table>
   </div>
@@ -97,6 +98,7 @@
         columns: [
           { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
           { data: 'code', render: function (v) { return '<span class="fw-medium">' + tk.escape(v) + '</span>'; } },
+          { data: 'orderCode', className: 'text-nowrap', render: function (v) { return v ? '<span class="text-muted small">' + tk.escape(v) + '</span>' : '<span class="text-muted">—</span>'; } },
           { data: null, render: function (r) { return '<span class="badge bg-label-' + r.typeColor + '">' + tk.escape(r.typeLabel) + '</span>'; } },
           { data: null, render: function (r) {
               // Cột ghép: mô tả dịch vụ · nhà cung cấp (bám CellStack hệ cũ)

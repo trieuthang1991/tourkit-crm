@@ -13,4 +13,5 @@ public enum OrderOperationalStatus
     Done = 5,              // Xong (hoàn thành)
     Cancelled = 6,         // Hủy
     CancelledNoShow = 7,   // Hủy không đi
+    PriceActivated = 8,    // Kích hoạt giá (staging Tour FIT) — thêm value mới, KHÔNG đánh số lại giá trị cũ
 }

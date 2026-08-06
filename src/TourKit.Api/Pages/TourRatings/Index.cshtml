@@ -16,13 +16,74 @@
   </div>
 </div>
 
+@{
+    var st = Model.Stats;
+    string Pct(int n) => st.Total > 0 ? (Math.Round(100.0 * n / st.Total, 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%") : "0%";
+    // 7 thẻ bám staging: Tổng · Điểm TB · Xuất sắc(5★) · Tốt(4★) · Bình thường(3★) · Tệ(2★) · Rất tệ(1★)
+    (string Label, string Value, string Sub, string Color)[] cards =
+    {
+        ("Tổng đánh giá", st.Total.ToString("#,##0"), "", "primary"),
+        ("Điểm trung bình", st.AverageStars.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "/5", "chất lượng", "warning"),
+        ("Xuất sắc", st.Star5.ToString("#,##0"), "5★ · " + Pct(st.Star5), "success"),
+        ("Tốt", st.Star4.ToString("#,##0"), "4★ · " + Pct(st.Star4), "info"),
+        ("Bình thường", st.Star3.ToString("#,##0"), "3★ · " + Pct(st.Star3), "secondary"),
+        ("Tệ", st.Star2.ToString("#,##0"), "2★ · " + Pct(st.Star2), "warning"),
+        ("Rất tệ", st.Star1.ToString("#,##0"), "1★ · " + Pct(st.Star1), "danger"),
+    };
+}
+
+<div class="row g-3 mb-4">
+  @foreach (var c in cards)
+  {
+    <div class="col-6 col-md-3 col-xl">
+      <div class="card h-100"><div class="card-body py-3">
+        <small class="text-muted d-block">@c.Label</small>
+        <h5 class="mb-0 text-@c.Color">@c.Value</h5>
+        @if (!string.IsNullOrEmpty(c.Sub)) { <small class="text-muted">@c.Sub</small> }
+      </div></div>
+    </div>
+  }
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Tên khách, SĐT, nhận xét…" /></div>
+      <div class="col-md-2">
+        <select id="f-stars" class="form-select">
+          <option value="">Tất cả số sao</option>
+          <option value="5">5★ Xuất sắc</option><option value="4">4★ Tốt</option><option value="3">3★ Bình thường</option>
+          <option value="2">2★ Tệ</option><option value="1">1★ Rất tệ</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-status" class="form-select">
+          <option value="">Tất cả trạng thái</option>
+          <option value="1">Hiển thị</option><option value="0">Ẩn</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-salesUserId" class="form-select tk-s2f" data-placeholder="NV phụ trách"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-operatorUserId" class="form-select tk-s2f" data-placeholder="NV điều hành"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-2">
+      <button type="button" class="btn btn-primary" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+      <button type="button" class="btn btn-label-secondary" id="btn-reset"><i class="ti ti-rotate me-1"></i> Đặt lại</button>
+    </div>
+  </div>
+</div>
+
 <div class="card">
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
       <thead>
         <tr>
-          <th class="text-center">#</th><th>Chuyến đi</th><th>Khách hàng</th>
-          <th class="text-center">Số sao</th><th>Nhận xét</th><th class="text-center">Trạng thái</th><th></th>
+          <th class="text-center">#</th><th>Khách hàng</th><th>Mã đặt chỗ</th><th>Tour / Dịch vụ</th>
+          <th>Khởi hành</th><th>Ngày về</th><th>NVPT</th><th>NVĐH</th>
+          <th class="text-center">Điểm</th><th>Nhận xét</th><th class="text-center">Trạng thái</th><th></th>
         </tr>
       </thead>
     </table>
@@ -49,8 +110,27 @@
           <option value="5" selected>5</option>
         </select>
       </div>
+      <div class="row">
+        <div class="col-6 mb-3">
+          <label class="form-label">NV phụ trách</label>
+          <select name="Input.SalesUserId" class="form-select tk-s2" data-placeholder="Chọn NVPT">
+            <option value="">— Chưa gán —</option>
+            @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
+          </select>
+        </div>
+        <div class="col-6 mb-3">
+          <label class="form-label">NV điều hành</label>
+          <select name="Input.OperatorUserId" class="form-select tk-s2" data-placeholder="Chọn NVĐH">
+            <option value="">— Chưa gán —</option>
+            @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
+          </select>
+        </div>
+      </div>
       <div class="mb-3"><label class="form-label">Nhận xét</label><textarea name="Input.Comment" class="form-control" rows="3" placeholder="Nhập nhận xét"></textarea></div>
-      <div class="mb-3"><label class="form-label">Trạng thái <span class="text-danger">*</span></label><input type="number" name="Input.Status" class="form-control" value="1" placeholder="Nhập mã trạng thái" /></div>
+      <div class="mb-3">
+        <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+        <select name="Input.Status" class="form-select"><option value="1">Hiển thị</option><option value="0">Ẩn</option></select>
+      </div>
       <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
     </form>
@@ -68,24 +148,39 @@
   <script>
     var oc, dt;
     $(function () {
+      // Gom bộ lọc gửi kèm mỗi request server-side (không lọc client).
+      function collectFilters(d) {
+        var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
+        var s = $('#f-stars').val(); if (s) { d['stars'] = s; }
+        var st = $('#f-status').val(); if (st !== '') { d['status'] = st; }
+        var sa = $('#f-salesUserId').val(); if (sa) { d['salesUserId'] = sa; }
+        var op = $('#f-operatorUserId').val(); if (op) { d['operatorUserId'] = op; }
+      }
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
       // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
       dt = tk.table('#tbl', {
         url: '?handler=Data',
+        extraData: collectFilters,
         columns: [
           { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: null, render: function (r) { return r.departureName ? tk.escape(r.departureName) : '<span class="text-muted">—</span>'; } },
-          { data: null, render: function (r) {
-              // Cột ghép: tên khách + SĐT
+          { data: null, className: 'text-nowrap', render: function (r) {
               return '<div class="fw-medium">' + tk.escape(r.customerName || '—') + '</div>' +
                      '<div class="small text-muted">' + tk.escape(r.customerPhone || '—') + '</div>';
             } },
-          { data: 'stars', className: 'text-center', render: function (v) {
+          { data: 'orderCode', className: 'text-nowrap', render: function (v) { return v ? '<span class="text-muted small">' + tk.escape(v) + '</span>' : '<span class="text-muted">—</span>'; } },
+          { data: null, render: function (r) { return r.departureName ? '<span class="d-inline-block text-truncate" style="max-width:200px" title="' + tk.escape(r.departureName) + '">' + tk.escape(r.departureName) + '</span>' : '<span class="text-muted">—</span>'; } },
+          { data: 'departureDate', className: 'text-nowrap' },
+          { data: 'returnDate', className: 'text-nowrap' },
+          { data: 'salesName', className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">—</span>'; } },
+          { data: 'operatorName', className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">—</span>'; } },
+          { data: 'stars', className: 'text-center text-nowrap', render: function (v) {
               var n = Number(v) || 0;
               return '<span class="text-warning">' + '★'.repeat(n) + '</span>' +
                      '<span class="text-muted">' + '☆'.repeat(Math.max(0, 5 - n)) + '</span>';
             } },
-          { data: 'comment', render: function (v) { return v ? tk.trunc(v, 320) : '<span class="text-muted">—</span>'; } },
-          { data: 'status', className: 'text-center', render: function (v) { return '<span class="badge bg-label-secondary">' + tk.escape(v) + '</span>'; } },
+          { data: 'comment', render: function (v) { return v ? tk.trunc(v, 200) : '<span class="text-muted">—</span>'; } },
+          { data: null, className: 'text-center', render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
           { data: null, className: 'text-end', render: function () {
               return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
                      '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
@@ -101,6 +196,28 @@
       $('#tbl tbody').on('click', '.js-del', function () {
         var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá đánh giá tour?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      });
+
+      // Bộ lọc → tải lại server-side.
+      $('#btn-search').on('click', function () { dt.ajax.reload(); });
+      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
+      $('#f-stars, #f-status').on('change', function () { dt.ajax.reload(); });
+      $('#f-salesUserId, #f-operatorUserId').on('change', function () { dt.ajax.reload(); });
+      $('#btn-reset').on('click', function () {
+        $('#f-q,#f-stars,#f-status').val('');
+        $('#f-salesUserId,#f-operatorUserId').val('').trigger('change.select2');
+        dt.ajax.reload();
+      });
+
+      // Xuất CSV theo đúng bộ lọc đang áp.
+      $('#btn-export').on('click', function (e) {
+        e.preventDefault();
+        var d = {}; collectFilters(d);
+        var qs = Object.keys(d).map(function (k) {
+          var key = k === 'search[value]' ? 'search' : k;
+          return encodeURIComponent(key) + '=' + encodeURIComponent(d[k]);
+        }).join('&');
+        window.location = '?handler=Export' + (qs ? '&' + qs : '');
       });
     });
   </script>

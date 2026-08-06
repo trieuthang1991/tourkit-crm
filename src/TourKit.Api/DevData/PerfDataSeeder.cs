@@ -303,6 +303,37 @@ public static class PerfDataSeeder
         }
         await Flush($"OrderCost ({costRows}) + OrderSurcharge ({surRows})", costRows + surRows);
 
+        // ---- 7c) Đánh giá tour (feedback): ~scale/3, GẮN đơn+chuyến để NVPT/NVĐH/ngày/mã đặt chỗ hiện đủ.
+        // Phân bố sao ĐÃ BIẾT (45/25/15/10/5% cho 5→1★) để đối chiếu 7 thẻ thống kê — lệch là lộ bug ngay.
+        var ratingSrc = await db.Set<Order>()
+            .Where(o => o.Code.StartsWith("ODP"))
+            .OrderBy(o => o.Code)
+            .Take(Math.Max(1, scale / 3))
+            .Select(o => new { o.Id, o.TourDepartureId, o.SalesUserId })
+            .ToListAsync();
+        int[] starWeights = [5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 2, 2, 1]; // 9/5/3/2/1 trên 20
+        string[] ratingComments =
+            ["Tour rất tốt, hướng dẫn nhiệt tình", "Khách sạn ổn, ăn ngon", "Xe hơi cũ", "Sẽ quay lại lần sau",
+             "Lịch trình hơi gấp", "Rất hài lòng, đáng tiền", "Bình thường", "Cần cải thiện dịch vụ"];
+        var ratingRows = 0;
+        foreach (var o in ratingSrc)
+        {
+            await Add(new TourRating
+            {
+                TourDepartureId = o.TourDepartureId,
+                OrderId = o.Id,
+                CustomerName = Name(),
+                CustomerPhone = Phone(),
+                Stars = starWeights[rng.Next(starWeights.Length)],
+                Comment = Pick(ratingComments),
+                Status = rng.Next(0, 100) < 85 ? 1 : 0,     // 85% Hiển thị · 15% Ẩn
+                SalesUserId = o.SalesUserId,                // NVPT khớp NV phụ trách của đơn (đối chiếu được)
+                OperatorUserId = PickId(userIds),           // NVĐH ngẫu nhiên (lọc được)
+            });
+            ratingRows++;
+        }
+        await Flush("TourRating", ratingRows);
+
         // ---- 8) Báo giá + dòng báo giá: `scale` quote × 2–4 dòng -----------------
         var quoteLineRows = 0;
         for (var i = 1; i <= scale; i++)

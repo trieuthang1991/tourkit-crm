@@ -32,7 +32,12 @@ public class WorkTaskServiceTests
         repo = new FakeRepository<WorkTask>();
         userRepo = new FakeRepository<User>();
         notifications = new CapturingNotifications();
-        return new WorkTaskService(repo, userRepo, notifications, new CreateWorkTaskValidator(), new UpdateWorkTaskValidator());
+        return new WorkTaskService(repo, userRepo, new FakeRepository<Workflow>(), notifications, new CreateWorkTaskValidator(), new UpdateWorkTaskValidator(), new FakeCurrentUser());
+    }
+
+    private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
+    {
+        public Guid? UserId => null;
     }
 
     private static CreateWorkTaskDto NewDto(string title = "Gọi khách xác nhận", Guid? assignee = null) =>

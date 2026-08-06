@@ -42,12 +42,12 @@
     </div>
 
     <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
-      <div class="col-md-3"><label class="form-label small mb-1">Từ ngày</label><input type="text" id="f-from" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
-      <div class="col-md-3"><label class="form-label small mb-1">đến ngày</label><input type="text" id="f-to" class="form-control tk-datef" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Số tiền từ</label><input type="number" min="0" id="f-amountFrom" class="form-control" placeholder="0" /></div>
-      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="number" min="0" id="f-amountTo" class="form-control" placeholder="0" /></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Chi nhánh</label><select id="f-branchId" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }</select></div>
-      <div class="col-md-3"><label class="form-label small mb-1">NV phụ trách</label><select id="f-salesUserId" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
+      <div class="col-md-3"><input type="text" id="f-from" class="form-control tk-datef" placeholder="Ngày từ" autocomplete="off" /></div>
+      <div class="col-md-3"><input type="text" id="f-to" class="form-control tk-datef" placeholder="Ngày đến" autocomplete="off" /></div>
+      <div class="col-md-3"><input type="number" min="0" id="f-amountFrom" class="form-control" placeholder="Số tiền từ" /></div>
+      <div class="col-md-3"><input type="number" min="0" id="f-amountTo" class="form-control" placeholder="Số tiền đến" /></div>
+      <div class="col-md-3"><select id="f-branchId" class="form-select tk-s2f" data-placeholder="Chi nhánh"><option value=""></option>@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }</select></div>
+      <div class="col-md-3"><select id="f-salesUserId" class="form-select tk-s2f" data-placeholder="NV phụ trách"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
     </div>
   </div>
 </div>

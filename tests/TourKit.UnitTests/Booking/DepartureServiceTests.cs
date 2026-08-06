@@ -16,6 +16,8 @@ public sealed class DepartureServiceTests
             departureRepo ?? new FakeRepository<TourDeparture>(),
             templateRepo ?? new FakeRepository<TourTemplate>(),
             itineraryRepo ?? new FakeRepository<TourItinerary>(),
+            new FakeRepository<Order>(),
+            new FakeRepository<TourCustomer>(),
             new CreateDepartureValidator());
 
     [Fact]

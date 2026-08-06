@@ -11,5 +11,7 @@ public sealed class TourRating : BaseEntity, ITenantEntity
     public string? CustomerPhone { get; set; }
     public int Stars { get; set; }               // 1..5 (Rate.AvgStar rút gọn)
     public string? Comment { get; set; }
-    public int Status { get; set; }
+    public int Status { get; set; }              // 0 Ẩn · 1 Hiển thị (moderation)
+    public Guid? SalesUserId { get; set; }       // NV phụ trách (NVPT) — sửa/lọc được, backfill từ Order.SalesUserId
+    public Guid? OperatorUserId { get; set; }    // NV điều hành (NVĐH)
 }

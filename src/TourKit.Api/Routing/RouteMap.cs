@@ -38,6 +38,7 @@ public static class RouteMap
         ("/Customers/Duplicates", "khach-hang/trung-lap"),
         ("/CustomerCares/Index", "lich-hen"),
         ("/TourRatings/Index", "danh-gia"),
+        ("/TourRatings/ByTour", "danh-gia/theo-tour"),
 
         // --- Báo giá ---
         ("/Quotes/Index", "bao-gia"),
@@ -154,6 +155,10 @@ public static class RouteMap
         ("/Orders/Index", "don-hang/loai/{loai}"),
         ("/Quotes/Index", "bao-gia/loai/{loai}"),
         ("/Providers/Index", "nha-cung-cap/loai/{loai}"),
+        // Công việc: cùng trang danh sách, đoạn "pham-vi" lọc theo phạm vi (cua-toi = của người đăng nhập).
+        ("/WorkTasks/Index", "cong-viec/{pham_vi}"),
+        // Quản lý CHUYẾN theo loại sản phẩm (Tour FIT/GIT/LandTour) — bám staging /sample-tours,/group-tours,/single-tours.
+        ("/Departures/Index", "chuyen-di/loai/{loai}"),
     };
 
     /// <summary>Slug loại nhà cung cấp → ProviderType. Guide 4 (HDV) · Airline 5 (vé máy bay).</summary>

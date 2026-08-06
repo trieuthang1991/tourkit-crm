@@ -2,8 +2,11 @@ using TourKit.Api.Services;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TourKit.Api.Auth;
 using TourKit.Api.Pages.Shared;
+using TourKit.Api.Web;
 using TourKit.Application.Booking;
+using TourKit.Application.Common;
 using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog;
 using TourKit.Shared.Enums;
@@ -22,9 +25,16 @@ public class IndexModel : TkListPageModel
     private readonly IDepartmentService _departments;
     private readonly IMarketTypeService _markets;
     private readonly ITourGroupService _groups;
+    private readonly ICustomerSourceService _sources;
+    private readonly TourKit.Application.Finance.IReceiptService _receipts;
+    private readonly TourKit.Application.Finance.IPaymentService _payments;
+    private readonly ICurrentUser _current;
 
     public IndexModel(IBookingService svc, UserDirectory users, IBranchService branches,
-        IDepartmentService departments, IMarketTypeService markets, ITourGroupService groups)
+        IDepartmentService departments, IMarketTypeService markets, ITourGroupService groups,
+        ICustomerSourceService sources,
+        TourKit.Application.Finance.IReceiptService receipts, TourKit.Application.Finance.IPaymentService payments,
+        ICurrentUser current)
     {
         _svc = svc;
         _users = users;
@@ -32,6 +42,79 @@ public class IndexModel : TkListPageModel
         _departments = departments;
         _markets = markets;
         _groups = groups;
+        _sources = sources;
+        _receipts = receipts;
+        _payments = payments;
+        _current = current;
+    }
+
+    // ---- Action ngay trên DÒNG danh sách (bám hệ cũ: thao tác ở list, không sang trang) — trả JSON cho AJAX ----
+    public async Task<IActionResult> OnPostConfirmAsync(Guid id)
+    {
+        try { await _svc.ConfirmOrderAsync(id); return new JsonResult(Result.Success("Đã xác nhận đơn.")); }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    public async Task<IActionResult> OnPostCancelAsync(Guid id)
+    {
+        try { await _svc.CancelOrderAsync(id); return new JsonResult(Result.Success("Đã huỷ đơn.")); }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    public async Task<IActionResult> OnPostCloseAsync(Guid id)
+    {
+        if (_current.UserId is not Guid uid) { return new JsonResult(Result.Error("Không xác định được người dùng hiện tại.")); }
+        try { await _svc.CloseOrderAsync(id, uid); return new JsonResult(Result.Success("Đã tất toán đơn.")); }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    public async Task<IActionResult> OnPostReopenAsync(Guid id)
+    {
+        try { await _svc.ReopenOrderAsync(id); return new JsonResult(Result.Success("Đã mở lại đơn.")); }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    /// <summary>Đổi tình trạng vận hành đơn tour ngay trên dòng (bám staging cột "Trạng thái").</summary>
+    public async Task<IActionResult> OnPostOpStatusAsync(Guid id, int status)
+    {
+        try { await _svc.SetOperationalStatusAsync(id, status); return new JsonResult(Result.Success("Đã đổi trạng thái.")); }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    /// <summary>Đổi trạng thái quy trình visa ngay trên dòng (11 bước staging).</summary>
+    public async Task<IActionResult> OnPostVisaStatusAsync(Guid id, int status)
+    {
+        try { await _svc.SetVisaStatusAsync(id, status); return new JsonResult(Result.Success("Đã đổi trạng thái visa.")); }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    public async Task<IActionResult> OnPostReceiptAsync(Guid id, decimal amount, string? method, string? note)
+    {
+        try
+        {
+            await _receipts.CreateAsync(id, new TourKit.Application.Finance.Dtos.CreateReceiptDto(
+                amount, string.IsNullOrWhiteSpace(method) ? "cash" : method, null, note));
+            return new JsonResult(Result.Success("Đã tạo phiếu thu."));
+        }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    public async Task<IActionResult> OnPostPaymentAsync(Guid id, decimal amount, string? method, string? receiver, string? note)
+    {
+        try
+        {
+            await _payments.CreateAsync(id, new TourKit.Application.Finance.Dtos.CreatePaymentDto(
+                null, null, amount, string.IsNullOrWhiteSpace(method) ? "cash" : method, null, receiver, note));
+            return new JsonResult(Result.Success("Đã tạo phiếu chi."));
+        }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    /// <summary>Số dư đơn (cho popup xem nhanh + mặc định phiếu thu = còn nợ).</summary>
+    public async Task<IActionResult> OnGetBalanceAsync(Guid id)
+    {
+        var b = await _receipts.GetBalanceAsync(id);
+        return new JsonResult(new { total = b.Total, paid = b.Paid, outstanding = b.Outstanding });
     }
 
     public OrderStatsDto Stats { get; private set; } = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -65,6 +148,59 @@ public class IndexModel : TkListPageModel
     public static readonly string[] BookingTypeLabels = ["Tour FIT", "Tour GIT/Combo", "LandTour", "Booking phòng", "Dịch vụ lẻ", "Visa", "Xe"];
     public string TypeLabel => EffectiveBookingType is int t && t >= 0 && t < BookingTypeLabels.Length ? BookingTypeLabels[t] : "Tất cả";
 
+    /// <summary>Loại KHÔNG phải tour (Dịch vụ lẻ 4 · Visa 5 · Xe 6): ẩn cột đặc thù tour (Khởi hành, Chỗ/pax)
+    /// vì không có ý nghĩa — bám staging (màn Visa/Dịch vụ không có cột Tour/Khởi hành/Chỗ).</summary>
+    public bool HideTourColumns => EffectiveBookingType is 4 or 5 or 6;
+
+    /// <summary>Loại đơn Visa (5): hiện các cột quy trình visa.</summary>
+    public bool IsVisa => EffectiveBookingType is 5;
+
+    // Trạng thái Visa — 11 bước bám staging (VisaStatus 0..10).
+    public static readonly string[] VisaStatusLabels =
+        ["Tạo mới", "Đã tiếp nhận", "Đang xử lý", "Đã nộp", "Yêu cầu bổ sung", "Chờ kết quả", "Đậu", "Rớt", "Rút hồ sơ", "Hủy hồ sơ", "Hoàn tất dịch vụ"];
+    public static string VisaStatusLabel(int? s) => s is int v && v >= 0 && v < VisaStatusLabels.Length ? VisaStatusLabels[v] : VisaStatusLabels[0];
+    public static string VisaStatusColor(int? s) => s switch
+    {
+        6 => "success", 10 => "success",              // Đậu · Hoàn tất
+        7 => "danger", 9 => "danger",                 // Rớt · Hủy hồ sơ
+        4 => "warning", 8 => "warning",               // Yêu cầu bổ sung · Rút hồ sơ
+        2 or 3 => "primary", 1 or 5 => "info",        // Đang xử lý/Đã nộp · Đã tiếp nhận/Chờ kết quả
+        _ => "secondary",                             // Tạo mới
+    };
+
+    // Tình trạng vận hành (OrderOperationalStatus) — cột "Trạng thái" cho đơn TOUR (bám staging).
+    public static string OpStatusLabel(int s) => (OrderOperationalStatus)s switch
+    {
+        OrderOperationalStatus.Upcoming => "Sắp chạy",
+        OrderOperationalStatus.PriceActivated => "Kích hoạt giá",
+        OrderOperationalStatus.Running => "Đang chạy",
+        OrderOperationalStatus.PendingSettlement => "Chưa quyết toán",
+        OrderOperationalStatus.Settled => "Đã quyết toán",
+        OrderOperationalStatus.Done => "Hoàn thành",
+        OrderOperationalStatus.Cancelled => "Hủy",
+        OrderOperationalStatus.CancelledNoShow => "Hủy không đi",
+        _ => "—",
+    };
+    public static string OpStatusColor(int s) => (OrderOperationalStatus)s switch
+    {
+        OrderOperationalStatus.Settled or OrderOperationalStatus.Done => "success",
+        OrderOperationalStatus.Cancelled or OrderOperationalStatus.CancelledNoShow => "danger",
+        OrderOperationalStatus.PendingSettlement => "warning",
+        OrderOperationalStatus.Running => "primary",
+        OrderOperationalStatus.PriceActivated => "info",
+        _ => "secondary",
+    };
+
+    /// <summary>Danh sách trạng thái vận hành cho dropdown theo LOẠI đơn (bám đúng bộ staging từng loại).</summary>
+    public int[] OpStatusOptions => EffectiveBookingType switch
+    {
+        1 => [1, 2, 3, 4, 5, 6, 7],       // GIT: Sắp chạy·Đang chạy·Chưa QT·Đã QT·Hoàn thành·Hủy·Hủy không đi
+        _ => [1, 8, 2, 3, 4, 5, 6],       // FIT/LandTour: Sắp chạy·Kích hoạt giá·Đang chạy·Chưa QT·Đã QT·Hoàn thành·Hủy
+    };
+
+    /// <summary>Loại đơn TOUR (FIT/GIT/LandTour) — cột "Trạng thái" dùng dropdown tình trạng vận hành.</summary>
+    public bool IsTour => EffectiveBookingType is null or 0 or 1 or 2;
+
     public static string StatusLabel(OrderStatus s) => s switch
     {
         OrderStatus.Draft => "Nháp/Giữ chỗ",
@@ -91,7 +227,10 @@ public class IndexModel : TkListPageModel
         Departments = (await _departments.ListAsync()).Select(d => (d.Id, d.Name)).ToList();
         Markets = (await _markets.ListAsync()).Select(m => (m.Id, m.Name)).ToList();
         Groups = (await _groups.ListAsync()).Select(g => (g.Id, g.Name)).ToList();
+        Sources = (await _sources.ListAsync()).Select(s => s.Name).ToList();
     }
+
+    public IReadOnlyList<string> Sources { get; private set; } = [];
 
     /// <summary>Dựng bộ lọc từ query — giữ đủ 17 tiêu chí của thanh lọc hệ cũ.</summary>
     private OrderListFilter BuildFilter(string? keyword)
@@ -117,7 +256,9 @@ public class IndexModel : TkListPageModel
             CommissionSettled: B("commissionSettled"),
             OperationalStatus: I("operationalStatus"),
             CollaboratorId: G("collaboratorId"),
-            InvoiceStatus: I("invoiceStatus"));
+            InvoiceStatus: I("invoiceStatus"),
+            VisaStatus: I("visaStatus"),
+            CustomerType: I("customerType"), CustomerSource: S("customerSource"));
     }
 
     /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
@@ -151,8 +292,22 @@ public class IndexModel : TkListPageModel
             actualCost = o.ActualCost,
             profit = o.TotalRevenue - o.TotalCost,
             salesName = o.SalesUserId is Guid g && names.TryGetValue(g, out var n) ? n : "—",
+            status = (int)o.Status,
             statusLabel = StatusLabel(o.Status),
             statusColor = StatusColor(o.Status),
+            // Tình trạng vận hành (đơn tour) — hiện trên cột "Trạng thái" dạng dropdown đổi trên dòng.
+            opStatus = o.OperationalStatus,
+            opStatusLabel = OpStatusLabel(o.OperationalStatus),
+            opStatusColor = OpStatusColor(o.OperationalStatus),
+            visaStatus = o.VisaStatus ?? 0,
+            bookingType = o.BookingType,
+            // Quy trình Visa (chỉ hiện ở màn Visa): ngày nhận/nộp/trả + trạng thái + TG xét duyệt (tính toán).
+            visaReceiveDate = o.VisaReceiveDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—",
+            visaSubmitDate = o.VisaSubmitDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—",
+            visaReturnDate = o.VisaReturnDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—",
+            visaReviewDays = o.VisaSubmitDate is { } vs && o.VisaReturnDate is { } vr ? (int?)(vr - vs).Days : null,
+            visaStatusLabel = VisaStatusLabel(o.VisaStatus),
+            visaStatusColor = VisaStatusColor(o.VisaStatus),
         }).ToList();
 
         // Tổng cộng TRANG HIỆN TẠI (bám dòng tfoot hệ cũ — 6 chỉ số).

@@ -39,7 +39,14 @@ public interface IBookingService
     /// Tất toán/chốt đơn (legacy ChotDon): gate tuần tự — đơn Confirmed + đã ghi nhận dòng tiền + hoa hồng đã
     /// quyết → Status=Closed + audit. Vi phạm điều kiện ném ValidationAppException.
     /// </summary>
+    Task<OrderDto> ConfirmOrderAsync(Guid orderId);
+    Task<OrderDto> CancelOrderAsync(Guid orderId);
     Task<OrderDto> CloseOrderAsync(Guid orderId, Guid userId);
+
+    /// <summary>Đổi tình trạng vận hành đơn tour ngay trên dòng (OrderOperationalStatus) — bám staging.</summary>
+    Task<OrderDto> SetOperationalStatusAsync(Guid orderId, int status);
+    /// <summary>Đổi trạng thái quy trình visa ngay trên dòng (11 bước staging) — VisaStatus 0..10.</summary>
+    Task<OrderDto> SetVisaStatusAsync(Guid orderId, int status);
 
     /// <summary>Mở lại đơn đã tất toán (sửa sai): Closed → Confirmed, xoá audit chốt.</summary>
     Task<OrderDto> ReopenOrderAsync(Guid orderId);

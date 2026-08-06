@@ -49,6 +49,15 @@ public class IndexModel : TkListPageModel
     public static string StatusLabel(bool isClosed) => isClosed ? "Đã đóng" : "Đang mở";
     public static string StatusColor(bool isClosed) => isClosed ? "danger" : "success";
 
+    /// <summary>Loại sản phẩm tour hiệu lực từ đoạn route "loai" (/chuyen-di/loai/tour-fit) — quản lý chuyến theo loại.</summary>
+    private int? EffectiveCategory =>
+        RouteData.Values.TryGetValue("loai", out var raw) && raw is string slug
+            && TourKit.Api.Routing.RouteMap.OrderLoai.TryGetValue(slug, out var c) ? c : (int?)null;
+
+    private static readonly string[] CategoryLabels = ["Tour FIT", "Tour GIT/Combo", "LandTour", "Booking phòng", "Dịch vụ lẻ", "Visa", "Xe"];
+    public string CategoryLabel => EffectiveCategory is int c && c >= 0 && c < CategoryLabels.Length ? CategoryLabels[c] : "Tất cả";
+    public bool ByCategory => EffectiveCategory is not null;
+
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
@@ -74,7 +83,11 @@ public class IndexModel : TkListPageModel
             AssignedToUserId: G("assignedToUserId"),
             IsClosed: B("isClosed"),
             DepartureFrom: D("departureFrom"),
-            DepartureTo: D("departureTo"));
+            DepartureTo: D("departureTo"),
+            Category: EffectiveCategory,
+            EndFrom: D("endFrom"),
+            EndTo: D("endTo"),
+            Sort: S("sort"));
     }
 
     /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
@@ -99,6 +112,11 @@ public class IndexModel : TkListPageModel
             departureDateText = d.DepartureDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—",
             endDateText = d.EndDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
             totalSlots = d.TotalSlots,
+            price = d.Price,
+            seatHeld = d.SeatHeld,
+            seatSold = d.SeatSold,
+            seatRemaining = d.SeatRemaining,
+            closedAtText = d.ClosedAt?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—",
             assigneeName = d.AssignedToUserId is Guid g && names.TryGetValue(g, out var n) ? n : "—",
             isClosed = d.IsClosed,
             statusLabel = StatusLabel(d.IsClosed),

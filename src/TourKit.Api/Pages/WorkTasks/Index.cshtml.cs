@@ -10,6 +10,8 @@ using TourKit.Shared.Enums;
 namespace TourKit.Api.Pages.WorkTasks;
 
 // Danh sách công việc: DataTables SERVER-SIDE (không get-all).
+// Cùng trang phục vụ 2 mục menu: "Danh sách Công việc" (/cong-viec = tất cả) và
+// "Công việc của tôi" (/cong-viec/cua-toi = lọc theo người đăng nhập). Phân biệt qua đoạn route "pham_vi".
 [Authorize(Policy = "task.view")]
 public class IndexModel : TkListPageModel
 {
@@ -23,6 +25,12 @@ public class IndexModel : TkListPageModel
 
     public IReadOnlyList<(Guid Id, string Name)> Users { get; private set; } = [];
 
+    /// <summary>Phạm vi "của tôi" (đoạn route pham_vi = "cua-toi"): việc được giao cho tôi HOẶC do tôi tạo — bám hệ cũ.</summary>
+    public bool IsMine => RouteData.Values.TryGetValue("pham_vi", out var v) && v as string == "cua-toi";
+
+    /// <summary>Tiêu đề/heading theo phạm vi đang xem.</summary>
+    public string Heading => IsMine ? "Công việc của tôi" : "Danh sách công việc";
+
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
 
@@ -31,8 +39,10 @@ public class IndexModel : TkListPageModel
         [Required(ErrorMessage = "Bắt buộc nhập tiêu đề")] public string Title { get; set; } = "";
         public string? Description { get; set; }
         public Guid? AssigneeUserId { get; set; }
+        public DateTimeOffset? StartDate { get; set; }
         public DateTimeOffset? DueDate { get; set; }
         public int Priority { get; set; } = (int)WorkTaskPriority.Normal;
+        public int Progress { get; set; }
         public int Status { get; set; } = (int)WorkTaskStatus.Todo;
     }
 
@@ -53,25 +63,62 @@ public class IndexModel : TkListPageModel
         _ => "warning",
     };
 
+    public static string PriorityLabel(int p) => ((WorkTaskPriority)p) switch
+    {
+        WorkTaskPriority.High => "Cao",
+        WorkTaskPriority.Low => "Thấp",
+        _ => "Bình thường",
+    };
+
+    public static string PriorityColor(int p) => ((WorkTaskPriority)p) switch
+    {
+        WorkTaskPriority.High => "danger",
+        WorkTaskPriority.Low => "secondary",
+        _ => "info",
+    };
+
+    /// <summary>Thống kê cho dashboard "Công việc của tôi" (chỉ nạp khi ở phạm vi của tôi).</summary>
+    public WorkTaskStatsDto? Stats { get; private set; }
+
     public async Task OnGetAsync()
-        => Users = (await _users.ListAsync()).Select(u => (u.Id, u.FullName)).ToList();
+    {
+        Users = (await _users.ListAsync()).Select(u => (u.Id, u.FullName)).ToList();
+        if (IsMine)
+        {
+            Stats = await _svc.GetStatsAsync(mineScope: true);
+        }
+    }
 
     /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
     public async Task<IActionResult> OnGetDataAsync()
     {
         var dt = ParseDataTables();
         var status = int.TryParse(Request.Query["status"], out var st) ? st : (int?)null;
-        var result = await _svc.ListAsync(dt.Page, dt.Size, null, status, dt.Keyword);
+        // "Của tôi" (mineScope): service lọc việc được giao HOẶC do tôi tạo, theo id từ claim — không tra bảng.
+        var result = await _svc.ListAsync(dt.Page, dt.Size, null, status, dt.Keyword, mineScope: IsMine);
 
+        // Ngày nghiệp vụ hôm nay (neo offset 0) để tính "Cảnh báo" quá hạn — bám cột staging.
+        var today = TkDate.Day(DateTimeOffset.Now);
         var data = result.Items.Select(x => new
         {
             id = x.Id,
+            code = x.Code ?? "—",
             title = x.Title,
             description = x.Description,
             assigneeUserId = x.AssigneeUserId,
+            assigneeName = x.AssigneeName,
+            createdByName = x.CreatedByName,
+            workflowName = x.WorkflowName,
+            startDate = x.StartDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            startDateText = x.StartDate?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "—",
             dueDate = x.DueDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
             dueDateText = x.DueDate?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "—",
             priority = x.Priority,
+            priorityLabel = PriorityLabel(x.Priority),
+            priorityColor = PriorityColor(x.Priority),
+            progress = x.Progress,
+            // Cảnh báo quá hạn: có hạn, đã qua hạn, và chưa Hoàn thành/Huỷ (tính toán — không lưu schema).
+            overdue = x.DueDate is { } dd && dd < today && x.Status != (int)WorkTaskStatus.Done && x.Status != (int)WorkTaskStatus.Cancelled,
             status = x.Status,
             statusLabel = StatusLabel(x.Status),
             statusColor = StatusColor(x.Status),
@@ -91,13 +138,15 @@ public class IndexModel : TkListPageModel
         {
             await _svc.UpdateAsync(g, new UpdateWorkTaskDto(
                 Input.Title, Input.Description, Input.AssigneeUserId, TkDate.Day(Input.DueDate),
-                Input.Priority, Input.Status, null, null, null));
+                Input.Priority, Input.Status, null, null, null,
+                TkDate.Day(Input.StartDate), Input.Progress));
         }
         else
         {
             await _svc.CreateAsync(new CreateWorkTaskDto(
                 Input.Title, Input.Description, Input.AssigneeUserId, TkDate.Day(Input.DueDate),
-                Input.Priority, Input.Status, null, null, null));
+                Input.Priority, Input.Status, null, null, null,
+                TkDate.Day(Input.StartDate), Input.Progress));
         }
 
         return new JsonResult(Result.Success("Đã lưu công việc."));

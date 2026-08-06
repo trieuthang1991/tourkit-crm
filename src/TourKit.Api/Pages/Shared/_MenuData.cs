@@ -36,7 +36,7 @@ public static class MenuData
             new("crm-feedback", "Feedback", Children: new List<MenuNode>
             {
                 new("fb-general", "Feedback chung", To: "/danh-gia", Perm: "rating.view"),
-                new("fb-tour", "Feedback theo Tour", To: "/danh-gia", Perm: "rating.view"),
+                new("fb-tour", "Feedback theo Tour", To: "/danh-gia/theo-tour", Perm: "rating.view"),
                 new("fb-zns", "Feedback ZNS", To: "/ComingSoon?f=fb-zns", Perm: "rating.view"),
             }),
         }),
@@ -55,9 +55,9 @@ public static class MenuData
         {
             new("o-all", "Tất cả đơn hàng", To: "/don-hang", Perm: "booking.view"),
             new("o-tours", "Tất cả Tour/LKH", To: "/chuyen-di", Perm: "departure.view"),
-            new("o-fit", "Tour FIT", To: "/don-hang/loai/tour-fit", Perm: "booking.view"),
-            new("o-git", "Tour GIT/Combo", To: "/don-hang/loai/git", Perm: "booking.view"),
-            new("o-landtour", "LandTour", To: "/don-hang/loai/landtour", Perm: "booking.view"),
+            new("o-fit", "Tour FIT", To: "/chuyen-di/loai/tour-fit", Perm: "departure.view"),
+            new("o-git", "Tour GIT/Combo", To: "/chuyen-di/loai/git", Perm: "departure.view"),
+            new("o-landtour", "LandTour", To: "/chuyen-di/loai/landtour", Perm: "departure.view"),
             new("o-visa", "Visa", To: "/don-hang/loai/visa", Perm: "booking.view"),
             new("o-service", "Dịch vụ lẻ", To: "/don-hang/loai/dich-vu-le", Perm: "booking.view"),
         }),
@@ -116,7 +116,7 @@ public static class MenuData
         new("g-project", "Dự án & Công việc", "ti ti-checklist", Children: new List<MenuNode>
         {
             new("pj-project", "Dự án", To: "/du-an", Perm: "workflow.view"),
-            new("pj-mytask", "Công việc của tôi", To: "/cong-viec", Perm: "task.view"),
+            new("pj-mytask", "Công việc của tôi", To: "/cong-viec/cua-toi", Perm: "task.view"),
             new("pj-tasks", "Danh sách Công việc", To: "/cong-viec", Perm: "task.view"),
             new("pj-perf", "Báo cáo Hiệu suất", To: "/hieu-suat-cong-viec", Perm: "task.view"),
         }),

@@ -19,11 +19,14 @@ public class IndexModel : TkListPageModel
 {
     private readonly IServiceBookingService _svc;
     private readonly IProviderService _providers;
+    private readonly TourKit.Application.Common.IRepository<TourKit.Shared.Entities.Order> _orders;
 
-    public IndexModel(IServiceBookingService svc, IProviderService providers)
+    public IndexModel(IServiceBookingService svc, IProviderService providers,
+        TourKit.Application.Common.IRepository<TourKit.Shared.Entities.Order> orders)
     {
         _svc = svc;
         _providers = providers;
+        _orders = orders;
     }
 
     public ServiceBookingStatsDto Stats { get; private set; } = new(0, 0, 0, 0, 0, 0, 0, 0);
@@ -100,11 +103,18 @@ public class IndexModel : TkListPageModel
             ? []
             : (await _providers.ListAsync(1, 1000)).Items.Where(p => providerIds.Contains(p.Id)).ToDictionary(p => p.Id, p => p.Name);
 
+        // Mã ĐƠN: tra Order.Code cho các đơn gắn với booking TRONG TRANG (không nạp cả bảng đơn).
+        var orderIds = result.Items.Where(b => b.OrderId is not null).Select(b => b.OrderId!.Value).Distinct().ToList();
+        var orderCodes = orderIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : (await _orders.ListAsync(o => orderIds.Contains(o.Id))).ToDictionary(o => o.Id, o => o.Code);
+
         var stats = await _svc.GetStatsAsync();
         var data = result.Items.Select(b => new
         {
             id = b.Id,
             code = b.Code,
+            orderCode = b.OrderId is Guid oid && orderCodes.TryGetValue(oid, out var oc) ? oc : null,
             typeLabel = TypeLabel(b.Type),
             typeColor = TypeColor(b.Type),
             description = string.IsNullOrWhiteSpace(b.Description) ? "—" : b.Description,

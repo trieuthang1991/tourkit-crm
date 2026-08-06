@@ -10,7 +10,8 @@ public abstract class Tour : BaseEntity, ITenantEntity
     public TourKind Kind { get; protected set; }
     public string Code { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
-    public string? TourType { get; set; }              // inbound/outbound/domestic...
+    public string? TourType { get; set; }              // inbound/outbound/domestic... (thị trường)
+    public int? Category { get; set; }                 // Loại sản phẩm tour: 0 FIT·1 GIT/Combo·2 LandTour·4 Dịch vụ·5 Visa (bám menu staging quản lý chuyến theo loại)
     public DateTimeOffset? DepartureDate { get; set; }
     public DateTimeOffset? EndDate { get; set; }
     public int TotalSlots { get; set; }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TourKit.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using TourKit.Infrastructure.Persistence;
 namespace TourKit.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260728040735_AddWorkTaskCreatedByUserId")]
+    partial class AddWorkTaskCreatedByUserId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1933,18 +1936,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTimeOffset?>("VisaReceiveDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset?>("VisaReturnDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("VisaStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset?>("VisaSubmitDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "Code")
@@ -3700,9 +3691,6 @@ namespace TourKit.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int?>("Category")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -4104,13 +4092,7 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid?>("OperatorUserId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("OrderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("SalesUserId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Stars")
@@ -4401,10 +4383,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<Guid?>("AssigneeUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Code")
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -4424,17 +4402,11 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Progress")
-                        .HasColumnType("integer");
-
                     b.Property<Guid?>("RelatedOrderId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("SectionId")
                         .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("StartDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");

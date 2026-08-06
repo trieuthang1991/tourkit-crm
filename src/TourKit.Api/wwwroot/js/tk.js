@@ -78,7 +78,12 @@
       $(fromInput).add(toInput).removeClass('tk-datef').addClass('d-none');
       $toCol.addClass('d-none');
 
-      var $range = $('<input type="text" class="form-control" placeholder="dd/mm/yyyy – dd/mm/yyyy" autocomplete="off">');
+      // Placeholder gợi nghĩa (đồng nhất KHÔNG label): nếu ô "From" đặt placeholder kết thúc bằng "từ"
+      // (vd "Ngày tạo từ") thì range hiện "Ngày tạo (từ – đến)". Không có → dùng mặc định dd/mm/yyyy.
+      var rawPh = ($(fromInput).attr('placeholder') || '').trim();
+      var mBase = rawPh.match(/^(.*?)\s*(từ|from)$/i);
+      var rangePh = mBase ? (mBase[1].trim() + ' (từ – đến)') : 'dd/mm/yyyy – dd/mm/yyyy';
+      var $range = $('<input type="text" class="form-control" autocomplete="off">').attr('placeholder', rangePh);
       $(fromInput).after($range);
 
       var fp = flatpickr($range[0], {

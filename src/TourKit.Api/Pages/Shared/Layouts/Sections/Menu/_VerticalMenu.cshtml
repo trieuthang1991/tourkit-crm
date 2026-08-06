@@ -4,18 +4,31 @@
     bool Has(string p) => User.HasClaim("perm", p);
     var groups = MenuData.FilterByPerm(MenuData.Groups, Has);
     var current = ViewContext.HttpContext.Request.Path.Value ?? "/";
+    // Giữ cả query (vd "?f=zalo-uid") để phân biệt các mục cùng path /ComingSoon nhưng khác tính năng.
+    var currentQuery = ViewContext.HttpContext.Request.QueryString.Value ?? "";
 
     // Route KHỚP DÀI NHẤT với đường dẫn hiện tại là route "đúng" đang mở. Chỉ tô đậm route đó.
     // Nếu không: "/don-hang" (Tất cả đơn hàng) là tiền tố của "/don-hang/loai/tour-fit" nên cả hai
     // cùng sáng — đúng lỗi nhập nhằng cần trị. So khớp theo ĐOẠN (segment) để "/don" không khớp bừa.
-    var bestRoute = BestMatch(groups, current);
+    var bestRoute = BestMatch(groups, current, currentQuery);
 }
 @functions {
-    static bool Matches(string to, string path) =>
-        to != "#" && (path.Equals(to, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith(to + "/", StringComparison.OrdinalIgnoreCase));
+    static bool Matches(string to, string path, string query)
+    {
+        if (to == "#") { return false; }
+        var qi = to.IndexOf('?');
+        if (qi >= 0)
+        {
+            // Route có query (vd /ComingSoon?f=zalo-uid): khớp CHÍNH XÁC cả path lẫn query,
+            // nếu không mọi mục /ComingSoon đều không bao giờ sáng (path trần không chứa query).
+            return path.Equals(to[..qi], StringComparison.OrdinalIgnoreCase)
+                && query.Equals(to[qi..], StringComparison.OrdinalIgnoreCase);
+        }
+        return path.Equals(to, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith(to + "/", StringComparison.OrdinalIgnoreCase);
+    }
 
-    static string? BestMatch(IReadOnlyList<MenuNode> nodes, string path)
+    static string? BestMatch(IReadOnlyList<MenuNode> nodes, string path, string query)
     {
         string? best = null;
         void Walk(IReadOnlyList<MenuNode> ns)
@@ -23,7 +36,7 @@
             foreach (var n in ns)
             {
                 if (n.Children is { Count: > 0 }) { Walk(n.Children); }
-                else if (n.To is { } to && Matches(to, path) && (best is null || to.Length > best.Length))
+                else if (n.To is { } to && Matches(to, path, query) && (best is null || to.Length > best.Length))
                 {
                     best = to;
                 }

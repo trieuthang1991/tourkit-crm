@@ -1,25 +1,104 @@
 @page
 @model TourKit.Api.Pages.WorkTasks.IndexModel
-@{ ViewData["Title"] = "Danh sách công việc"; }
+@{ ViewData["Title"] = Model.Heading; }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @if (Model.IsMine) { <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.css" /> }
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Danh sách công việc</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm công việc</button>
-  </div>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead><tr><th>Tiêu đề</th><th>Trạng thái</th><th>Hạn</th><th></th></tr></thead>
-    </table>
-  </div>
-</div>
+@{
+    const string Thead = "<thead><tr><th>Mã Task</th><th>Tiêu đề</th><th>Dự án</th><th>Người tạo</th><th>Người phụ trách</th><th>Ưu tiên</th><th>Ngày bắt đầu</th><th>Hạn</th><th>Tiến độ</th><th>Cảnh báo</th><th>Trạng thái</th><th></th></tr></thead>";
+}
+
+@if (Model.IsMine && Model.Stats is { } s)
+{
+    var perf = s.Total > 0 ? (int)Math.Round(100.0 * s.Done / s.Total) : 0;
+    var pctDoing = s.Total > 0 ? (int)Math.Round(100.0 * s.InProgress / s.Total) : 0;
+    var pctDone = s.Total > 0 ? (int)Math.Round(100.0 * s.Done / s.Total) : 0;
+    var pctOver = s.Total > 0 ? (int)Math.Round(100.0 * s.Overdue / s.Total) : 0;
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <div>
+        <h4 class="mb-1"><i class="ti ti-list-check me-1 text-primary"></i> Công việc của tôi
+          <span class="badge bg-label-success ms-1"><i class="ti ti-point-filled"></i> Trạng thái Live</span></h4>
+        <p class="text-muted mb-0">Bảng điều hành công việc cá nhân &amp; tiến độ dự án</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/hieu-suat-cong-viec" class="btn btn-label-secondary btn-sm"><i class="ti ti-chart-bar me-1"></i> Báo cáo</a>
+        <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Tạo công việc</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-6 col-md-4 col-xl mb-4">
+        <div class="card h-100"><div class="card-body">
+          <div class="badge p-2 bg-label-primary mb-2 rounded"><i class="ti ti-clipboard-list ti-md"></i></div>
+          <h5 class="card-title mb-0 pt-1">@s.Total</h5><small class="text-muted">Tổng công việc</small>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-4 col-xl mb-4">
+        <div class="card h-100"><div class="card-body">
+          <div class="d-flex justify-content-between"><div class="badge p-2 bg-label-info mb-2 rounded"><i class="ti ti-player-play ti-md"></i></div><span class="badge bg-label-info align-self-start">@pctDoing%</span></div>
+          <h5 class="card-title mb-0 pt-1">@s.InProgress</h5><small class="text-muted">Đang thực hiện</small>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-4 col-xl mb-4">
+        <div class="card h-100"><div class="card-body">
+          <div class="d-flex justify-content-between"><div class="badge p-2 bg-label-success mb-2 rounded"><i class="ti ti-circle-check ti-md"></i></div><span class="badge bg-label-success align-self-start">@pctDone%</span></div>
+          <h5 class="card-title mb-0 pt-1">@s.Done</h5><small class="text-muted">Hoàn thành</small>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-4 col-xl mb-4">
+        <div class="card h-100"><div class="card-body">
+          <div class="d-flex justify-content-between"><div class="badge p-2 bg-label-danger mb-2 rounded"><i class="ti ti-alert-triangle ti-md"></i></div><span class="badge bg-label-danger align-self-start">@pctOver%</span></div>
+          <h5 class="card-title mb-0 pt-1">@s.Overdue</h5><small class="text-muted">Quá hạn</small>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-4 col-xl mb-4">
+        <div class="card h-100"><div class="card-body">
+          <div class="badge p-2 bg-label-warning mb-2 rounded"><i class="ti ti-trending-up ti-md"></i></div>
+          <h5 class="card-title mb-0 pt-1">@perf%</h5><small class="text-muted">Hiệu suất chung</small>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12 col-xl-8 mb-4">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <div><h5 class="mb-0">Công việc của tôi</h5><small class="text-muted">Danh sách giao việc trực quan</small></div>
+          </div>
+          <div class="card-datatable table-responsive">
+            <table id="tbl" class="table table-hover">@Html.Raw(Thead)</table>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-4 mb-4">
+        <div class="card h-100">
+          <div class="card-header"><h5 class="mb-0">Phân bổ công việc</h5><small class="text-muted">Tỷ lệ theo trạng thái</small></div>
+          <div class="card-body">
+            <div id="taskDonut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+}
+else
+{
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">@Model.Heading</h5>
+        <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm công việc</button>
+      </div>
+      <div class="card-datatable table-responsive">
+        <table id="tbl" class="table table-hover">@Html.Raw(Thead)</table>
+      </div>
+    </div>
+}
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
 
@@ -32,11 +111,15 @@
       <div class="mb-3"><label class="form-label">Tiêu đề <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Nhập tiêu đề công việc" /></div>
       <div class="mb-3"><label class="form-label">Mô tả</label><textarea name="Input.Description" class="form-control" rows="2" placeholder="Mô tả công việc"></textarea></div>
       <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Ngày bắt đầu</label><input type="text" name="Input.StartDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
         <div class="col-6 mb-3"><label class="form-label">Hạn</label><input type="text" name="Input.DueDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+      </div>
+      <div class="row">
         <div class="col-6 mb-3">
           <label class="form-label">Độ ưu tiên</label>
           <select name="Input.Priority" class="form-select"><option value="0">Thấp</option><option value="1" selected>Bình thường</option><option value="2">Cao</option></select>
         </div>
+        <div class="col-6 mb-3"><label class="form-label">Tiến độ (%)</label><input type="number" name="Input.Progress" class="form-control" min="0" max="100" step="5" value="0" placeholder="0–100" /></div>
       </div>
       <div class="mb-3">
         <label class="form-label">Trạng thái</label>
@@ -63,6 +146,7 @@
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+  @if (Model.IsMine) { <script src="~/vendor/libs/apex-charts/apexcharts.js"></script> }
 }
 
 @section PageScripts {
@@ -72,11 +156,28 @@
       // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
       dt = tk.table('#tbl', {
         url: '?handler=Data',
+        // Trang "Của tôi" ẩn cột Mã Task/Người tạo/Người phụ trách/Ngày bắt đầu (thừa với ngữ cảnh cá nhân)
+        // — bám cột staging /my-tasking. Trang "Danh sách" hiện đủ như staging /tasking.
+        // Cột nhỏ để 'text-nowrap' (không xuống dòng) để Tiêu đề được nhận phần rộng còn lại,
+        // không bị co vụn khi bảng nằm trong cột hẹp của dashboard "Của tôi".
         columns: [
-          { data: 'title', render: function (v) { return '<span class="fw-medium">' + tk.escape(v) + '</span>'; } },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: 'dueDateText' },
-          { data: null, className: 'text-end', render: function () {
+          { data: 'code', visible: !@(Model.IsMine ? "true" : "false"), className: 'text-nowrap', render: function (v) { return '<span class="text-muted small">' + tk.escape(v) + '</span>'; } },
+          { data: 'title', render: function (v) { return '<span class="fw-medium d-inline-block" style="min-width:200px">' + tk.escape(v) + '</span>'; } },
+          { data: 'workflowName', className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">—</span>'; } },
+          { data: 'createdByName', visible: !@(Model.IsMine ? "true" : "false"), className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">—</span>'; } },
+          { data: 'assigneeName', visible: !@(Model.IsMine ? "true" : "false"), className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">— Chưa gán —</span>'; } },
+          { data: null, className: 'text-center text-nowrap', render: function (r) { return '<span class="badge bg-label-' + r.priorityColor + '">' + tk.escape(r.priorityLabel) + '</span>'; } },
+          { data: 'startDateText', visible: !@(Model.IsMine ? "true" : "false"), className: 'text-nowrap' },
+          { data: 'dueDateText', className: 'text-nowrap', render: function (v, t, r) { return r.overdue ? '<span class="text-danger fw-medium">' + tk.escape(v) + '</span>' : tk.escape(v); } },
+          { data: null, className: 'text-center', render: function (r) {
+              var p = Math.max(0, Math.min(100, Number(r.progress) || 0));
+              return '<div class="d-flex align-items-center gap-2" style="min-width:90px"><div class="progress flex-grow-1" style="height:6px"><div class="progress-bar" style="width:' + p + '%"></div></div><span class="small text-muted">' + p + '%</span></div>';
+            } },
+          { data: null, visible: !@(Model.IsMine ? "true" : "false"), className: 'text-center text-nowrap', render: function (r) {
+              return r.overdue ? '<span class="badge bg-label-danger"><i class="ti ti-alert-triangle me-1"></i>Quá hạn</span>' : '<span class="text-muted">—</span>';
+            } },
+          { data: null, className: 'text-nowrap', render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+          { data: null, className: 'text-end text-nowrap', render: function () {
               return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
                      '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
             } }
@@ -90,6 +191,33 @@
         var id = dt.row($(this).closest('tr')).data().id;
         tk.confirmDelete({ title: 'Xoá công việc?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
       });
+
+    @if (Model.IsMine && Model.Stats is { } sd)
+    {
+        <text>
+      // Donut "Phân bổ công việc" — bám đồ họa staging /my-tasking.
+      var el = document.querySelector('#taskDonut');
+      if (el && window.ApexCharts) {
+        var label = getComputedStyle(document.documentElement).getPropertyValue('--bs-body-color') || '#6e6b7b';
+        var series = [@sd.InProgress, @sd.Done, @sd.Overdue, @sd.Todo];
+        if (series.reduce(function (a, b) { return a + b; }, 0) === 0) {
+          el.innerHTML = '<p class="text-muted text-center py-5 mb-0">Chưa có công việc nào.</p>';
+        } else {
+          new ApexCharts(el, {
+            chart: { type: 'donut', height: 300 },
+            series: series,
+            labels: ['Đang thực hiện', 'Hoàn thành', 'Quá hạn', 'Chưa bắt đầu'],
+            colors: ['#00cfe8', '#28c76f', '#ea5455', '#a8aaae'],
+            stroke: { width: 0 },
+            dataLabels: { enabled: false },
+            legend: { position: 'bottom', labels: { colors: label } },
+            plotOptions: { pie: { donut: { labels: { show: true,
+              total: { show: true, label: 'Tổng', color: label, formatter: function () { return @sd.Total; } } } } } }
+          }).render();
+        }
+      }
+        </text>
+    }
     });
   </script>
 }

@@ -100,7 +100,10 @@ public sealed class CustomerService(
                 continue;
             }
 
-            if (Norm(f.Segment) is { } seg && !p.Segments.Contains(seg)) { continue; }
+            // Chip phễu (segment) khớp cả Segment (CRM profile) lẫn cột Tag thật.
+            if (Norm(f.Segment) is { } seg
+                && !p.Segments.Contains(seg)
+                && !string.Equals(c.Tag?.Trim(), seg, StringComparison.OrdinalIgnoreCase)) { continue; }
             if (Norm(f.Tag) is { } tag && !p.Tags.Contains(tag)) { continue; }
             if (Norm(f.AssignedTo) is { } asg && !p.AssignedTo.Contains(asg)) { continue; }
             if (Norm(f.CreatedBy) is { } cb && p.CreatedBy != cb) { continue; }
@@ -193,9 +196,14 @@ public sealed class CustomerService(
         foreach (var c in customers)
         {
             var p = CustomerCrmProfile.Parse(c.CrmProfileJson);
-            foreach (var s in p.Segments.Where(s => !string.IsNullOrWhiteSpace(s)))
+            // Phễu = phân loại KH. Gộp Segment (từ CRM profile) VÀ cột Tag thật (legacy phân loại) —
+            // trước chỉ đếm Segments (thường rỗng) nên phễu trống dù cột Tag có dữ liệu.
+            var classes = p.Segments.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim())
+                .Concat(string.IsNullOrWhiteSpace(c.Tag) ? [] : [c.Tag.Trim()])
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            foreach (var s in classes)
             {
-                segCounts[s.Trim()] = segCounts.GetValueOrDefault(s.Trim()) + 1;
+                segCounts[s] = segCounts.GetValueOrDefault(s) + 1;
             }
 
             switch (PurchaseBucketOf(orderCountByCustomer.GetValueOrDefault(c.Id)))

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TourKit.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using TourKit.Infrastructure.Persistence;
 namespace TourKit.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260728073837_AddTourRatingStaff")]
+    partial class AddTourRatingStaff
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1933,18 +1936,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTimeOffset?>("VisaReceiveDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset?>("VisaReturnDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("VisaStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset?>("VisaSubmitDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "Code")
@@ -3699,9 +3690,6 @@ namespace TourKit.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<int?>("Category")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Code")
                         .IsRequired()

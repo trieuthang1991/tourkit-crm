@@ -1,7 +1,9 @@
 using FluentValidation;
 using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Common;
+using TourKit.Shared.Domain;
 using TourKit.Shared.Entities;
+using TourKit.Shared.Enums;
 
 namespace TourKit.Application.Booking;
 
@@ -10,6 +12,8 @@ public sealed class DepartureService(
     IRepository<TourDeparture> departureRepo,
     IRepository<TourTemplate> templateRepo,
     IRepository<TourItinerary> itineraryRepo,
+    IRepository<Order> orderRepo,
+    IRepository<TourCustomer> seatRepo,
     IValidator<CreateDepartureDto> createValidator) : IDepartureService
 {
     public async Task<PagedResult<DepartureDto>> ListAsync(int page, int size, DepartureListFilter? filter = null)
@@ -21,19 +25,60 @@ public sealed class DepartureService(
         // Lọc cột thật ở DB (loại tour, trạng thái, NV điều hành, đã đóng, ngày khởi hành); q lọc sau.
         var all = await departureRepo.ListAsync(d =>
             (tt == null || d.TourType == tt) &&
+            (f.Category == null || d.Category == f.Category) &&
             (f.Status == null || d.Status == f.Status) &&
             (f.AssignedToUserId == null || d.AssignedToUserId == f.AssignedToUserId) &&
             (f.IsClosed == null || d.IsClosed == f.IsClosed) &&
             (f.DepartureFrom == null || d.DepartureDate >= f.DepartureFrom) &&
-            (f.DepartureTo == null || d.DepartureDate <= f.DepartureTo));
+            (f.DepartureTo == null || d.DepartureDate <= f.DepartureTo) &&
+            (f.EndFrom == null || d.EndDate >= f.EndFrom) &&
+            (f.EndTo == null || d.EndDate <= f.EndTo));
 
         bool MatchQ(TourDeparture d) =>
             kw == null ||
             d.Code.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
             d.Title.Contains(kw, StringComparison.OrdinalIgnoreCase);
 
-        var filtered = all.Where(MatchQ).OrderByDescending(d => d.DepartureDate).ToList();
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(Map).ToList();
+        // Sắp xếp bám staging (chỉ theo cột có ở model chuyến): ngày khởi hành / số chỗ / mã.
+        var matched = all.Where(MatchQ);
+        var filtered = (f.Sort switch
+        {
+            "dateAsc" => matched.OrderBy(d => d.DepartureDate),
+            "slots" => matched.OrderByDescending(d => d.TotalSlots),
+            "code" => matched.OrderBy(d => d.Code),
+            _ => matched.OrderByDescending(d => d.DepartureDate),   // dateDesc mặc định
+        }).ToList();
+        var page1 = filtered.Skip((page - 1) * size).Take(size).ToList();
+
+        // Enrich CHỈ trang hiện tại (bám cột staging): Giá (từ template) + tách chỗ Giữ/Bán/Còn (từ đơn của chuyến).
+        var tplIds = page1.Where(d => d.ParentTourId is not null).Select(d => d.ParentTourId!.Value).Distinct().ToList();
+        var prices = tplIds.Count == 0 ? new Dictionary<Guid, decimal>()
+            : (await templateRepo.ListAsync(t => tplIds.Contains(t.Id))).ToDictionary(t => t.Id, t => t.PriceAdult);
+
+        var depIds = page1.Select(d => d.Id).ToList();
+        var pageOrders = await orderRepo.ListAsync(o => depIds.Contains(o.TourDepartureId));
+        var orderIds = pageOrders.Select(o => o.Id).ToHashSet();
+        var orderDep = pageOrders.ToDictionary(o => o.Id, o => o.TourDepartureId);
+        var seats = orderIds.Count == 0 ? [] : await seatRepo.ListAsync(s => orderIds.Contains(s.OrderId));
+
+        var held = new Dictionary<Guid, int>();
+        var sold = new Dictionary<Guid, int>();
+        foreach (var s in seats)
+        {
+            if (!orderDep.TryGetValue(s.OrderId, out var depId)) { continue; }
+            var st = BookingMath.DeriveSeatStatus(s);
+            if (st is SeatStatus.Held or SeatStatus.HeldConfirmed) { held[depId] = held.GetValueOrDefault(depId) + s.Quantity; }
+            else if (st is SeatStatus.Deposited or SeatStatus.Paid) { sold[depId] = sold.GetValueOrDefault(depId) + s.Quantity; }
+        }
+
+        var pageItems = page1.Select(d =>
+        {
+            var h = held.GetValueOrDefault(d.Id);
+            var so = sold.GetValueOrDefault(d.Id);
+            var price = d.ParentTourId is { } tid && prices.TryGetValue(tid, out var p) ? p : 0m;
+            return Map(d) with { Price = price, SeatHeld = h, SeatSold = so, SeatRemaining = Math.Max(0, d.TotalSlots - h - so), ClosedAt = d.ClosedAt, Category = d.Category };
+        }).ToList();
+
         return new PagedResult<DepartureDto>(pageItems, filtered.Count, page, size);
     }
 

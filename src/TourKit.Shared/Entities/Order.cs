@@ -37,4 +37,10 @@ public sealed class Order : BaseEntity, ITenantEntity
     // Tất toán/chốt đơn (legacy ChotDon): audit ai/khi nào đóng đơn. Null khi chưa chốt (hoặc đã mở lại).
     public DateTimeOffset? ClosedAt { get; set; }
     public Guid? ClosedByUserId { get; set; }
+
+    // Quy trình VISA (chỉ đơn BookingType=5). Ngày nghiệp vụ (TkDate). TG xét duyệt/nộp = tính từ các mốc này.
+    public DateTimeOffset? VisaReceiveDate { get; set; }  // Ngày nhận hồ sơ
+    public DateTimeOffset? VisaSubmitDate { get; set; }   // Ngày nộp / lăn tay
+    public DateTimeOffset? VisaReturnDate { get; set; }   // Ngày trả kết quả
+    public int? VisaStatus { get; set; }                  // 0 Chờ nộp · 1 Đã nộp · 2 Đang xét · 3 Đậu · 4 Trượt
 }

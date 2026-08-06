@@ -86,6 +86,21 @@
             <button type="submit" class="btn btn-primary">Lưu</button>
           </div>
         </form>
+
+        @* Đổi trạng thái đơn: Xác nhận (chốt) / Huỷ — theo trạng thái hiện tại *@
+        @if (Model.Order.Status is not (OrderStatus.Confirmed or OrderStatus.Cancelled or OrderStatus.Closed))
+        {
+          <form method="post" asp-page-handler="Confirm" asp-route-id="@Model.Order.Id" class="d-grid mb-2">
+            <button type="submit" class="btn btn-primary"><i class="ti ti-checks me-1"></i> Xác nhận đơn</button>
+          </form>
+        }
+        @if (Model.Order.Status is not (OrderStatus.Cancelled or OrderStatus.Closed))
+        {
+          <form method="post" asp-page-handler="Cancel" asp-route-id="@Model.Order.Id" class="d-grid mb-2" onsubmit="return confirm('Huỷ đơn này?');">
+            <button type="submit" class="btn btn-label-danger"><i class="ti ti-x me-1"></i> Huỷ đơn</button>
+          </form>
+        }
+
         @if (Model.Order.Status == OrderStatus.Confirmed)
         {
           <form method="post" asp-page-handler="Close" asp-route-id="@Model.Order.Id" class="d-grid">

@@ -19,7 +19,14 @@ public sealed record OrderDto(
     string? CustomerName = null, string? TourTitle = null, DateTimeOffset? DepartureDate = null,
     decimal AmountPaid = 0m, decimal Outstanding = 0m, decimal ActualCost = 0m,
     // Khách hàng (pax) theo trạng thái chỗ: tổng · giữ chỗ · đã bán (cọc/thanh toán) · còn lại (chốt chưa bán).
-    int SeatTotal = 0, int SeatHeld = 0, int SeatSold = 0, int SeatRemaining = 0);
+    int SeatTotal = 0, int SeatHeld = 0, int SeatSold = 0, int SeatRemaining = 0,
+    // Quy trình VISA (chỉ đơn Visa): ngày nhận/nộp/trả + trạng thái visa.
+    DateTimeOffset? VisaReceiveDate = null, DateTimeOffset? VisaSubmitDate = null,
+    DateTimeOffset? VisaReturnDate = null, int? VisaStatus = null,
+    // Tình trạng vận hành (đơn tour) — state-machine hiện trên cột "Trạng thái" (bám staging).
+    int OperationalStatus = (int)TourKit.Shared.Enums.OrderOperationalStatus.Upcoming,
+    // Loại đơn (0 FIT·1 GIT·2 LandTour·3 Booking·4 Dịch vụ·5 Visa·6 Xe) — để chọn ĐÚNG dropdown trạng thái theo dòng.
+    int BookingType = 0);
 
 /// <summary>Bộ lọc danh sách đơn hàng (bám thanh lọc hệ cũ). PaymentStatus: 0 chưa TT · 1 đã cọc · 2 TT hết.</summary>
 public sealed record OrderListFilter(
@@ -32,7 +39,10 @@ public sealed record OrderListFilter(
     int? OperationalStatus = null, Guid? CollaboratorId = null, int? InvoiceStatus = null,
     // Lọc theo CHUYẾN — cho màn chi tiết chuyến đi liệt kê đơn của đúng chuyến đó (đẩy xuống DB,
     // không tải cả bảng đơn rồi lọc ở bộ nhớ).
-    Guid? DepartureId = null);
+    Guid? DepartureId = null,
+    int? VisaStatus = null,
+    // Lọc theo thuộc tính KHÁCH HÀNG của đơn (bám staging: Nguồn KH · Loại KH) — join qua Customer.
+    int? CustomerType = null, string? CustomerSource = null);
 
 /// <summary>NCC xuất hiện trong đơn (dùng cho Select lọc theo nhà cung cấp).</summary>
 public sealed record OrderFilterProviderDto(Guid Id, string Name);

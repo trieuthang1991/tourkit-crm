@@ -37,6 +37,15 @@
     };
 }
 
+@* Toolbar trên cùng — bám khuôn chuẩn (Orders): tiêu đề trái + hành động phải *@
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Data khách hàng</h4>
+  <div class="d-flex flex-wrap gap-2">
+    <a id="btn-export" class="btn btn-label-secondary"><i class="ti ti-file-export me-1"></i> Xuất file</a>
+    <button type="button" class="btn btn-primary" onclick="openCustomerOffcanvas(null)"><i class="ti ti-plus me-1"></i> Thêm khách</button>
+  </div>
+</div>
+
 <div class="row g-3 mb-4">
   @foreach (var s in statCards)
   {
@@ -61,55 +70,56 @@
 @* Thanh lọc — 4 lọc nhanh + panel nâng cao; TẤT CẢ tiêu chí đẩy xuống CustomerListFilter *@
 <div class="card mb-4">
   <div class="card-body">
+    @* Tab theo loại khách (bám staging: Cá nhân/Doanh nghiệp/Đối tác/CTV) — điều khiển f-customerType *@
+    <ul class="nav nav-tabs mb-3" id="type-tabs">
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả</a></li>
+      @foreach (var t in Model.CustomerTypes)
+      {
+        <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="@t.Code">@t.Name</a></li>
+      }
+    </ul>
+    <input type="hidden" id="f-customerType" value="" />
+
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Nhập tên, SĐT, mã, email…" /></div>
-      <div class="col-md-2">
-        <select id="f-customerType" class="form-select">
-          <option value="">Loại khách</option>
-          @foreach (var t in Model.CustomerTypes)
-          {
-            <option value="@t.Code">@t.Name</option>
-          }
-        </select>
-      </div>
-      <div class="col-md-2">
+      <div class="col-md-3">
         <select id="f-source" class="form-select tk-s2f" data-placeholder="Nguồn khách"><option value=""></option>@foreach (var s in Model.Options.Sources) { <option value="@s">@s</option> }</select>
       </div>
-      <div class="col-md-2">
+      <div class="col-md-3">
         <select id="f-city" class="form-select tk-s2f" data-placeholder="Tỉnh/Thành"><option value=""></option>@foreach (var c in cityOptions) { <option value="@c">@c</option> }</select>
       </div>
       <div class="col-md-2 d-flex gap-2">
-        <button type="button" class="btn btn-primary flex-fill" id="btn-search" title="Tìm kiếm"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-sm btn-label-secondary" id="btn-reset" title="Đặt lại bộ lọc"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
 
     <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
-      <div class="col-md-3"><label class="form-label small mb-1">Thời gian tạo từ</label><input type="text" id="f-createdFrom" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
-      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="text" id="f-createdTo" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Thời gian chăm sóc từ</label><input type="text" id="f-careFrom" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
-      <div class="col-md-3"><label class="form-label small mb-1">đến</label><input type="text" id="f-careTo" class="form-control tk-datef" placeholder="dd/mm/yyyy" /></div>
+      <div class="col-md-3"><input type="text" id="f-createdFrom" class="form-control tk-datef" placeholder="Thời gian tạo từ" /></div>
+      <div class="col-md-3"><input type="text" id="f-createdTo" class="form-control tk-datef" placeholder="Thời gian tạo đến" /></div>
+      <div class="col-md-3"><input type="text" id="f-careFrom" class="form-control tk-datef" placeholder="Thời gian chăm sóc từ" /></div>
+      <div class="col-md-3"><input type="text" id="f-careTo" class="form-control tk-datef" placeholder="Thời gian chăm sóc đến" /></div>
 
-      <div class="col-md-3"><label class="form-label small mb-1">Doanh thu từ</label><input type="number" min="0" step="1000" id="f-revenueFrom" class="form-control" placeholder="0" /></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Doanh thu đến</label><input type="number" min="0" step="1000" id="f-revenueTo" class="form-control" placeholder="Không giới hạn" /></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Giới tính</label>
-        <select id="f-gender" class="form-select"><option value="">Tất cả</option><option value="Nam">Nam</option><option value="Nữ">Nữ</option><option value="Khác">Khác</option></select>
+      <div class="col-md-3"><input type="number" min="0" step="1000" id="f-revenueFrom" class="form-control" placeholder="Doanh thu từ" /></div>
+      <div class="col-md-3"><input type="number" min="0" step="1000" id="f-revenueTo" class="form-control" placeholder="Doanh thu đến" /></div>
+      <div class="col-md-3">
+        <select id="f-gender" class="form-select"><option value="">Giới tính</option><option value="Nam">Nam</option><option value="Nữ">Nữ</option><option value="Khác">Khác</option></select>
       </div>
-      <div class="col-md-3"><label class="form-label small mb-1">Sinh nhật (tháng)</label>
-        <select id="f-birthdayMonth" class="form-select"><option value="">Tất cả</option>@for (var m = 1; m <= 12; m++) { <option value="@m">Tháng @m</option> }</select>
+      <div class="col-md-3">
+        <select id="f-birthdayMonth" class="form-select"><option value="">Sinh nhật (tháng)</option>@for (var m = 1; m <= 12; m++) { <option value="@m">Tháng @m</option> }</select>
       </div>
 
-      <div class="col-md-3"><label class="form-label small mb-1">Thị trường</label><select id="f-marketGroup" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.MarketGroups) { <option value="@v">@v</option> }</select></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Chi nhánh</label><select id="f-branch" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Branches) { <option value="@v">@v</option> }</select></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Nhóm</label><select id="f-group" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Groups) { <option value="@v">@v</option> }</select></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Phòng ban</label><select id="f-department" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Departments) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-marketGroup" class="form-select tk-s2f" data-placeholder="Thị trường"><option value=""></option>@foreach (var v in Model.Options.MarketGroups) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-branch" class="form-select tk-s2f" data-placeholder="Chi nhánh"><option value=""></option>@foreach (var v in Model.Options.Branches) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-group" class="form-select tk-s2f" data-placeholder="Nhóm"><option value=""></option>@foreach (var v in Model.Options.Groups) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-department" class="form-select tk-s2f" data-placeholder="Phòng ban"><option value=""></option>@foreach (var v in Model.Options.Departments) { <option value="@v">@v</option> }</select></div>
 
-      <div class="col-md-3"><label class="form-label small mb-1">Tên CTV</label><select id="f-collaborator" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Collaborators) { <option value="@v">@v</option> }</select></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Chiến dịch</label><select id="f-campaign" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Campaigns) { <option value="@v">@v</option> }</select></div>
-      <div class="col-md-3"><label class="form-label small mb-1">Tag</label><select id="f-tag" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var v in Model.Options.Tags) { <option value="@v">@v</option> }</select></div>
-      <div class="col-md-3"><label class="form-label small mb-1">NV phụ trách</label><select id="f-assignedTo" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
+      <div class="col-md-3"><select id="f-collaborator" class="form-select tk-s2f" data-placeholder="Tên CTV"><option value=""></option>@foreach (var v in Model.Options.Collaborators) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-campaign" class="form-select tk-s2f" data-placeholder="Chiến dịch"><option value=""></option>@foreach (var v in Model.Options.Campaigns) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-tag" class="form-select tk-s2f" data-placeholder="Tag"><option value=""></option>@foreach (var v in Model.Options.Tags) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-assignedTo" class="form-select tk-s2f" data-placeholder="NV phụ trách"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
 
-      <div class="col-md-3"><label class="form-label small mb-1">Người tạo</label><select id="f-createdBy" class="form-select tk-s2f" data-placeholder="Tất cả"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
+      <div class="col-md-3"><select id="f-createdBy" class="form-select tk-s2f" data-placeholder="Người tạo"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
     </div>
   </div>
 </div>
@@ -140,11 +150,8 @@
 </div>
 
 <div class="card">
-  <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+  <div class="card-header border-bottom">
     <h5 class="mb-0">Danh sách khách hàng</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="openCustomerOffcanvas(null)">
-      <i class="ti ti-plus me-1"></i> Thêm khách
-    </button>
   </div>
   <div class="card-datatable table-responsive">
     <table id="tbl-customers" class="table table-hover">
@@ -263,14 +270,35 @@
 
       $('#btn-search').on('click', function () { dt.ajax.reload(); });
       $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('#f-customerType, #f-gender, #f-birthdayMonth, #f-revenueFrom, #f-revenueTo').on('change', function () { dt.ajax.reload(); });
+      $('#f-gender, #f-birthdayMonth, #f-revenueFrom, #f-revenueTo').on('change', function () { dt.ajax.reload(); });
       $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
       $('.tk-datef').on('change', function () { dt.ajax.reload(); });
+
+      // Tab loại khách → set f-customerType + tải lại.
+      $('#type-tabs').on('click', '.nav-link', function () {
+        $('#type-tabs .nav-link').removeClass('active');
+        $(this).addClass('active');
+        $('#f-customerType').val(this.getAttribute('data-type') || '');
+        dt.ajax.reload();
+      });
+
+      // Lọc nâng cao: tk.advFilter tự chèn nút icon lọc vào nhóm nút Tìm/Đặt lại (khuôn chuẩn).
       tk.advFilter();
+
+      // "Xuất file" — dựng URL export kèm ĐÚNG bộ lọc đang áp.
+      $('#btn-export').on('click', function () {
+        var d = {}; collectFilters(d);
+        var qs = Object.keys(d).map(function (k) {
+          var key = k === 'search[value]' ? 'search' : k;
+          return encodeURIComponent(key) + '=' + encodeURIComponent(d[k]);
+        }).join('&');
+        window.location = '?handler=Export' + (qs ? '&' + qs : '');
+      });
       $('#btn-reset').on('click', function () {
         $('#f-q').val('');
         FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
         $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
+        $('#type-tabs .nav-link').removeClass('active').first().addClass('active');
         syncChips();
         dt.ajax.reload();
       });
