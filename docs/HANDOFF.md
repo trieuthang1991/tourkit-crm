@@ -72,11 +72,15 @@ Mockup tĩnh + menu: `D:/MiGroup/tourkitapp/tourkit/UI/*.html`, `.../CMS/KojiCRM
 
 ---
 
-## 3. Trạng thái hiện tại (git)
+## 3. Trạng thái hiện tại (git) — cập nhật 2026-07-13
 
-- Nhánh làm việc mặc định: **`dev`** (chủ dự án yêu cầu làm trên `dev`, merge về `main` khi chốt mốc).
-- `dev` đã tiến tiếp (HEAD ~ `c057338`): CustomersPage + Phiếu thu/chi thêm bộ lọc nâng cao/phễu/stats; BranchesController; module Chia số Sale; menu mirror hệ cũ + hub Cấu hình `/config`. Toàn bộ build+test xanh.
-- FF-merge: `git switch main && git merge --ff-only dev`. Xong reindex GitNexus.
+- **`dev` = `main` = `1ed1506`** (đã hợp nhất + push lên origin). Cây sạch, đã xoá 28 nhánh remote cũ đã merge. Chỉ còn `dev` + `main`.
+- Build ✅ 0 lỗi · **481 unit · 125 integration · 4 arch** xanh · Razor Pages app chạy (login render 200, không crash).
+
+### ⚠️ QUAN TRỌNG: đã PIVOT frontend — có 2 frontend song song
+- **Razor Pages `src/TourKit.Api/Pages/` = frontend CANONICAL** (server-render, theme Vuexy, ~18 màn: Customers/Orders/Providers/Vé máy bay/Invoices/Leads/Phiếu thu-chi…). **Mọi công việc GẦN ĐÂY dồn vào đây.** Route tiếng Việt (vd `/dang-nhap`). Quy tắc EF/UI của app này ở `CLAUDE.md` (mục "EF Core / truy vấn dữ liệu": `tk.table` server-paging, `TkDate.Day()`, cache `UserDirectory`…).
+- **React `web/` = BỊ BỎ LẠI** (bản cũ; theme AntD + bộ handoff CSS). Là "gánh nặng chết" — **cần chủ dự án quyết gỡ**. KHÔNG tự xoá.
+- Các mô tả React ở mục 2 (Ant Design/ResourcePage/CustomersPage.tsx) chỉ áp cho `web/` cũ; app THẬT giờ là Razor Pages.
 
 ### Đã làm phiên này (bám giao diện hệ cũ)
 - Menu gom 15 nhóm + đúng thứ tự KojiCRM; brand đỏ #EB5324 + Roboto + sidebar #333.
@@ -89,6 +93,13 @@ Mockup tĩnh + menu: `D:/MiGroup/tourkitapp/tourkit/UI/*.html`, `.../CMS/KojiCRM
 ---
 
 ## 4. VIỆC CÒN LẠI (ưu tiên cho AI kế nhiệm)
+
+> **3 QUYẾT ĐỊNH CHẶN CỨNG — chỉ chủ dự án cấp được (đừng làm bừa):**
+> - **(A) Chốt 1 frontend**: gỡ React `web/`, giữ Razor Pages? (kiến trúc — không tự xoá).
+> - **(B) API Gateway NCC ngoài** (SMS/Zalo/Bank/OCR): cần **API key thật + tên NCC**.
+> - **(C) Module HRM** (hồ sơ NV: ngày vào làm/thâm niên): cần **đặc tả nghiệp vụ** (hoặc bám HRM hệ cũ staging).
+>
+> ✅ Đã sửa: lỗi `RECEIPT_STATUS` (nay 0/1/2 đúng backend). ✅ Vé Máy Bay đã có trong Razor Pages.
 
 1. **Roll-out template Data khách hàng sang các màn khác** (việc chính hiện tại). Mỗi màn:
    - Xem staging màn đó (stats gì / filter gì / cột gì) — vd Đơn hàng `/`, NCC, Phiếu thu/chi, Lead `/customer-data`-tương-tự.
