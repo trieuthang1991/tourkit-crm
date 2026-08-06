@@ -86,5 +86,10 @@ a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
 .tk-grid input[type="checkbox"]:focus-visible {
   outline: 0; box-shadow: 0 0 0 .18rem rgba(var(--bs-primary-rgb), .25);
 }
+/* Lưới có mở chi tiết khi kích dòng → con trỏ tay để người dùng biết bấm được. */
+.tk-grid-clickable .tabulator-row { cursor: pointer; }
+.tk-grid-clickable .tabulator-row [tabulator-field="__sel"],
+.tk-grid-clickable .tabulator-row [tabulator-field="__act"] { cursor: default; }
+
 /* Dòng đang chọn: nền nhấn nhẹ theo brand thay vì màu mặc định của Tabulator. */
 .tk-grid .tabulator-row.tabulator-selected { background: rgba(var(--bs-primary-rgb), .07) !important; }

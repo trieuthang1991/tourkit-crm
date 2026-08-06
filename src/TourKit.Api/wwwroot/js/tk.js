@@ -237,6 +237,8 @@
           var dt = opts.table && $.fn.DataTable.isDataTable(opts.table) ? $(opts.table).DataTable() : null;
           var serverSide = dt && dt.settings()[0].oInit.serverSide;
           if (serverSide) { dt.ajax.reload(null, false); tk.toast(res.message || 'Đã lưu.'); }
+          // Màn dùng tk.grid (Tabulator) không có DataTable — nạp lại lưới tại chỗ, đừng tải lại cả trang.
+          else if (window.tkGridReload) { window.tkGridReload(); tk.toast(res.message || 'Đã lưu.'); }
           else { location.reload(); }   // client-side: re-render dòng từ server
         } else { tk.error((res && (res.message || res.detail || res.title)) || 'Lưu thất bại.'); }
       });

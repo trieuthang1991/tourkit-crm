@@ -128,6 +128,22 @@
     }
 
     var config = {
+      // Toàn bộ chữ của lưới phải là TIẾNG VIỆT (quy ước UI của repo), không để "Showing 1-20 of…".
+      locale: 'vi',
+      langs: {
+        vi: {
+          pagination: {
+            page_size: 'Số dòng', page_title: 'Tới trang',
+            first: 'Đầu', first_title: 'Trang đầu',
+            last: 'Cuối', last_title: 'Trang cuối',
+            prev: 'Trước', prev_title: 'Trang trước',
+            next: 'Sau', next_title: 'Trang sau',
+            all: 'Tất cả',
+            counter: { showing: 'Hiện', of: 'trên', rows: 'dòng', pages: 'trang' }
+          },
+          data: { loading: 'Đang tải…', error: 'Lỗi tải dữ liệu' }
+        }
+      },
       layout: 'fitColumns',
       // Chiều cao tính theo màn hình (fitHeight bên dưới) → bảng LUÔN gọn trong 1 màn,
       // cuộn diễn ra NGAY TRONG bảng nên chỉ có MỘT thanh cuộn, không cuộn trang.
@@ -140,10 +156,21 @@
       paginationSize: opts.pageSize || 20,
       paginationSizeSelector: [20, 50, 100],
       paginationCounter: 'rows',
+      // Handler cũ của repo trả contract DataTables (draw/recordsTotal/recordsFiltered/data).
+      // Tự suy ra last_page ở đây → chuyển một màn sang lưới mới KHÔNG phải sửa handler.
+      ajaxResponse: function (url, params, response) {
+        if (response && response.last_page == null && response.recordsFiltered != null) {
+          var size = Number(params && params.size) || opts.pageSize || 20;
+          response.last_page = Math.max(1, Math.ceil(response.recordsFiltered / size));
+          response.last_row = response.recordsFiltered;
+        }
+        return response;
+      },
       columnDefaults: { headerSort: false, resizable: true, vertAlign: 'middle' },
       columns: columns
     };
     if (opts.actions) { config.rowContextMenu = rowActionMenu; }
+    if (opts.onRowClick) { el.classList.add('tk-grid-clickable'); }
     if (selectable) {
       // KHÔNG dùng selectableRowsRangeMode:'click' — chế độ đó coi mỗi click là chọn một VÙNG mới
       // nên bấm ô thứ hai lại bỏ ô thứ nhất (chỉ chọn được 1).
@@ -152,6 +179,21 @@
     Object.keys(opts.tabular || {}).forEach(function (k) { config[k] = opts.tabular[k]; });
 
     var table = new Tabulator(selector, config);
+
+    // Tabulator 6 BỎ kiểu khai báo callback trong options (rowClick: fn không còn chạy) —
+    // phải đăng ký qua bộ sự kiện. Đây là chỗ hay sai khi chuyển từ tài liệu bản 4/5.
+    if (opts.onRowClick) {
+      table.on('rowClick', function (e, row) {
+        // Bấm vào ô chọn, nút ⋮ hay bất kỳ nút/link nào trong dòng thì để phần đó xử lý,
+        // đừng mở luôn chi tiết — nếu không chọn một dòng cũng bật popup.
+        if (e.target.closest('input, button, a, [tabulator-field="__sel"], [tabulator-field="__act"]')) { return; }
+        // Dòng TỔNG (topCalc) cũng là một "row" của Tabulator — bấm vào nó mà mở chi tiết thì
+        // popup hiện dữ liệu rỗng kèm số tiền là tổng cả trang.
+        if (row.getElement().classList.contains('tabulator-calcs')) { return; }
+        opts.onRowClick(row.getData(), row);
+      });
+    }
+
     function reload() { table.setData(); }
     // Form offcanvas (tk.form / customer-form.js) gọi hook này sau khi lưu → nạp lại lưới, không tải lại cả trang.
     window.tkGridReload = reload;
@@ -234,7 +276,15 @@
   function wireFilterBar(reload, filterKeys, collectFilters, opts) {
     on('btn-search', reload);
     var q = document.getElementById('f-q');
-    if (q) { q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { reload(); } }); }
+    if (q) {
+      q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { clearTimeout(typing); reload(); } });
+      // Gõ tới đâu lọc tới đó (chờ 450ms cho ngưng gõ) — đỡ phải bấm nút Tìm mỗi lần.
+      var typing = null;
+      q.addEventListener('input', function () {
+        clearTimeout(typing);
+        typing = setTimeout(reload, 450);
+      });
+    }
 
     // Cặp ô …From/…To gộp thành MỘT ô chọn khoảng ngày. Phải chạy TRƯỚC flatpickr bên dưới,
     // nếu không ô gốc đã có altInput riêng và màn hình hiện 2 ô chồng nhau.

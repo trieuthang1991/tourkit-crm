@@ -3,30 +3,62 @@
 @{ ViewData["Title"] = "Nhà cung cấp"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
+}
+
+@{
+    // 3 thẻ thống kê — bám StatGrid hệ cũ, gói vào dải mảnh dùng chung.
+    (string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("Tổng số NCC", Model.Stats.Total.ToString("#,##0"), "ti ti-building-store", "primary"),
+        ("Đang hoạt động", Model.Stats.Active.ToString("#,##0"), "ti ti-circle-check", "success"),
+        ("Ngừng hoạt động", Model.Stats.Inactive.ToString("#,##0"), "ti ti-circle-x", "secondary"),
+    };
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-  <h4 class="mb-0">Nhà cung cấp</h4>
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">Nhà cung cấp <span class="mx-1">/</span> <span class="text-body">Danh sách</span></div>
+    <h4 class="mb-0">Nhà cung cấp</h4>
+  </div>
   <div class="d-flex gap-2">
-    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất file</a>
     <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm NCC</button>
   </div>
 </div>
 
-@* 3 thẻ thống kê — bám StatGrid hệ cũ *@
-<div class="row g-3 mb-4">
-  <div class="col-12 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng số NCC</small><h5 class="mb-0 tk-num">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đang hoạt động</small><h5 class="mb-0 text-success tk-num">@Model.Stats.Active.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-4"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Ngừng hoạt động</small><h5 class="mb-0 text-muted tk-num">@Model.Stats.Inactive.ToString("#,##0")</h5></div></div></div>
-</div>
+@* MỘT MẶT TRẮNG liền mạch — các vùng ngăn nhau bằng kẻ ngang mảnh, không chia hộp. *@
+<div class="tk-surface">
 
-@* Thanh lọc — đủ 7 tiêu chí của bản cũ, tất cả đẩy xuống SERVER *@
-<div class="card mb-4">
-  <div class="card-body">
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem">@s.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="tk-pad">
+    @* Tabs loại NCC — bám SegmentTabs hệ cũ (lọc ở SERVER qua tiêu chí type) *@
+    <ul class="nav nav-tabs mb-3" id="type-tabs" data-field="type">
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả</a></li>
+      @foreach (var t in TourKit.Api.Pages.Providers.IndexModel.TypeOptions)
+      {
+        <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="@t.Value">@t.Label</a></li>
+      }
+    </ul>
+    <input type="hidden" id="f-type" value="" />
+
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / tên / SĐT / email / người liên hệ" /></div>
       <div class="col-md-2"><input type="text" id="f-province" class="form-control" placeholder="Tỉnh thành" /></div>
@@ -37,8 +69,8 @@
         <select id="f-marketTypeId" class="form-select tk-s2f" data-placeholder="Thị trường"><option value=""></option>@foreach (var m in Model.MarketTypes) { <option value="@m.Id">@m.Name</option> }</select>
       </div>
       <div class="col-md-2 d-flex gap-2">
-        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
 
@@ -46,35 +78,20 @@
       <div class="col-md-3"><input type="text" id="f-createdFrom" class="form-control tk-datef" placeholder="Ngày tạo từ" /></div>
       <div class="col-md-3"><input type="text" id="f-createdTo" class="form-control tk-datef" placeholder="Ngày tạo đến" /></div>
       <div class="col-md-3">
-        <select id="f-status" class="form-select"><option value="">Trạng thái</option><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
+        <select id="f-status" class="form-select tk-auto"><option value="">Trạng thái</option><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
       </div>
     </div>
   </div>
-</div>
 
-@* Tabs loại NCC — bám SegmentTabs hệ cũ (lọc ở SERVER qua tiêu chí type) *@
-<ul class="nav nav-pills flex-wrap gap-1 mb-3" id="type-tabs">
-  <li class="nav-item"><button type="button" class="nav-link active" data-type="">Tất cả</button></li>
-  @foreach (var t in TourKit.Api.Pages.Providers.IndexModel.TypeOptions)
-  {
-    <li class="nav-item"><button type="button" class="nav-link" data-type="@t.Value">@t.Label</button></li>
-  }
-</ul>
-
-<div class="card">
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          <th class="text-center">#</th><th>Nhà cung cấp</th><th>Người liên hệ</th><th>Email &amp; địa chỉ</th>
-          <th class="text-end">Tổng mua</th><th class="text-end">Còn nợ</th><th>Đánh giá &amp; TT</th><th></th>
-        </tr>
-      </thead>
-      <tfoot>
-        <tr id="page-sum" class="fw-medium"><td colspan="8" class="small"></td></tr>
-      </tfoot>
-    </table>
+  @* Thanh tác vụ hàng loạt — chỉ hiện khi có dòng được chọn *@
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> NCC đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-danger" id="bulk-delete"><i class="ti ti-trash me-1"></i> Xoá</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-providers"></div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
@@ -147,7 +164,7 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
@@ -155,108 +172,119 @@
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt, typeFilter = '';
-    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
-    var FILTERS = ['province', 'branchId', 'marketTypeId', 'createdFrom', 'createdTo', 'status'];
-
-    function filterValues() {
-      var o = {};
-      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
-      if (typeFilter) { o.type = typeFilter; }
-      return o;
-    }
-    function collectFilters(d) {
-      var o = filterValues();
-      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
-      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
-    }
-
+    var oc;
     $(function () {
+      var g = tk.g, esc = g.esc, money = g.money;
+
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
-      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
 
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
-        columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: null, render: function (r) {
-              return '<div class="fw-medium">' + tk.escape(r.name) + '</div>' +
-                     '<div class="small text-muted">' + tk.escape(r.code) + ' · ' + tk.escape(r.typeLabel) + '</div>';
-            } },
-          { data: null, render: function (r) {
-              return '<div>' + tk.escape(r.contactPerson || '—') + '</div>' +
-                     '<div class="small text-muted font-monospace">' + tk.escape(r.phone || '') + '</div>';
-            } },
-          { data: null, render: function (r) {
-              return '<div>' + tk.escape(r.email || '—') + '</div>' +
-                     '<div class="small text-muted">' + tk.trunc(r.address, 220) + '</div>';
-            } },
-          { data: null, className: 'text-end', render: function (r) {
-              return '<div title="Tổng mua">' + tk.money(r.totalCost) + '</div>' +
-                     '<div class="small text-success" title="Đã trả">' + tk.money(r.paid) + '</div>';
-            } },
-          { data: 'outstanding', className: 'text-end', render: function (v) {
-              return '<span class="fw-medium ' + (v > 0 ? 'text-danger' : '') + '">' + tk.money(v) + '</span>';
-            } },
-          { data: null, render: function (r) {
-              return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>' +
-                     '<div class="small text-muted mt-1">Đánh giá: ' + (r.rate || 0) + '</div>';
-            } },
-          { data: null, className: 'text-end', render: function () {
-              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
-        ]
-      });
-
-      // Dòng tổng cộng trang: đọc khối pageSum trả kèm (ngoài contract DataTables) qua xhr.dt.
-      $('#tbl').on('xhr.dt', function (e, settings, json) {
-        var s = json && json.pageSum;
-        if (!s) { return; }
-        var parts = [['Tổng mua', s.totalCost, ''], ['Đã trả', s.paid, 'text-success'], ['Còn nợ', s.outstanding, 'text-danger']];
-        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' + parts.map(function (p) {
-          return '<span class="me-3 text-muted">' + p[0] + ': <span class="fw-medium ' + p[2] + '">' + tk.money(p[1]) + '</span></span>';
-        }).join(''));
-      });
-
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'nhà cung cấp',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'nhà cung cấp',
         rules: { 'Input.Code': { required: true }, 'Input.Name': { required: true } },
         messages: { 'Input.Code': { required: 'Bắt buộc nhập mã' }, 'Input.Name': { required: 'Bắt buộc nhập tên' } },
         // Mã NCC không đổi được khi sửa (UpdateProviderDto không nhận Code).
         fill: function ($form, data) { $form.find('[name="Input.Code"]').prop('readonly', !!(data && data.id)); } });
 
-      // Server-side: dữ liệu dòng lấy từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var id = dt.row($(this).closest('tr')).data().id;
-        tk.confirmDelete({ title: 'Xoá nhà cung cấp?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      function delRow(d) {
+        tk.confirmDelete({ title: 'Xoá nhà cung cấp?', text: d.name || '' }).then(function (ok) {
+          if (!ok) { return; }
+          var f = document.getElementById('delete-form');
+          f.querySelector('[name="id"]').value = d.id;
+          f.submit();
+        });
+      }
+
+      // Menu hành động theo nghiệp vụ NCC: sửa · dịch vụ · công nợ · gọi/email (chỉ khi có) · xoá.
+      function actionsFor(d) {
+        var items = [
+          { label: '<i class="ti ti-edit me-2"></i>Sửa thông tin', action: function () { oc.open(d); } },
+          { label: '<i class="ti ti-list-details me-2"></i>Bảng giá dịch vụ', action: function () { window.location = '/bang-gia-ncc?providerId=' + encodeURIComponent(d.id); } },
+          { label: '<i class="ti ti-report-money me-2"></i>Công nợ nhà cung cấp', action: function () { window.location = '/cong-no-ncc?providerId=' + encodeURIComponent(d.id); } }
+        ];
+        if (d.phone) { items.push({ label: '<i class="ti ti-phone me-2"></i>Gọi ' + esc(d.phone), action: function () { window.location = 'tel:' + String(d.phone).replace(/\s/g, ''); } }); }
+        if (d.email) { items.push({ label: '<i class="ti ti-mail me-2"></i>Gửi email', action: function () { window.location = 'mailto:' + d.email; } }); }
+        items.push({ separator: true });
+        items.push({ label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá NCC</span>', action: function () { delRow(d); } });
+        return items;
+      }
+
+      var grid = tk.grid('#grid-providers', {
+        // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
+        filters: ['type', 'province', 'branchId', 'marketTypeId', 'createdFrom', 'createdTo', 'status'],
+        exportName: 'nha-cung-cap-da-chon.csv',
+        actions: actionsFor,
+        columns: [
+          {
+            title: 'Nhà cung cấp', field: 'name', widthGrow: 3, minWidth: 210,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-row-media">' + g.avatar(r.name) +
+                g.stack(r.name, [r.code, r.typeLabel].filter(Boolean).join(' · ')) + '</div>';
+            }
+          },
+          {
+            title: 'Người liên hệ', field: 'contactPerson', widthGrow: 2, minWidth: 165,
+            formatter: function (c) {
+              var r = c.getData();
+              if (!r.contactPerson && !r.phone) { return '<span class="tk-cell-sub">—</span>'; }
+              return '<div class="tk-cell"><div class="tk-cell-main">' + esc(r.contactPerson || '—') + '</div>' +
+                g.icLine('ti ti-phone', r.phone, 'tk-cell-sub') + '</div>';
+            }
+          },
+          {
+            title: 'Email & địa chỉ', field: 'email', widthGrow: 3, minWidth: 200,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell">' + g.icLine('ti ti-mail', r.email || '—', 'tk-cell-main') +
+                g.icLine('ti ti-map-pin', [r.address, r.province].filter(Boolean).join(', '), 'tk-cell-sub') + '</div>';
+            }
+          },
+          {
+            title: 'Tổng mua', field: 'totalCost', width: 150, hozAlign: 'right', headerHozAlign: 'right',
+            // Dòng tổng của TRANG hiện tại đặt ngay dưới tiêu đề (thay dòng tfoot hệ cũ).
+            topCalc: 'sum',
+            topCalcFormatter: function (c) {
+              var paid = c.getTable().getData().reduce(function (a, r) { return a + (r.paid || 0); }, 0);
+              return '<span class="fw-semibold" title="Đã trả trang này: ' + money(paid) + '">' + money(c.getValue()) + '</span>';
+            },
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main" title="Tổng mua">' + money(r.totalCost) + '</div>' +
+                '<div class="tk-cell-sub text-success" title="Đã trả">' + money(r.paid) + '</div></div>';
+            }
+          },
+          {
+            title: 'Còn nợ', field: 'outstanding', width: 140, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) {
+              var v = c.getValue();
+              return '<span class="fw-semibold ' + (v > 0 ? 'text-danger' : '') + '">' + money(v) + '</span>';
+            },
+            formatter: function (c) {
+              var v = c.getValue();
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main ' + (v > 0 ? 'text-danger' : '') + '">' + money(v) + '</div></div>';
+            }
+          },
+          {
+            title: 'Đánh giá & TT', field: 'status', width: 150,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell"><span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + esc(r.statusLabel) + '</span>' +
+                '<div class="tk-cell-sub mt-1">Đánh giá: ' + (r.rate || 0) + '</div></div>';
+            }
+          }
+        ]
       });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q, #f-province').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('#f-province').on('blur', function () { dt.ajax.reload(); });
-      $('#f-status').on('change', function () { dt.ajax.reload(); });
-      $('.tk-s2f, .tk-datef').on('change', function () { dt.ajax.reload(); });
-      tk.advFilter();
-      $('#type-tabs').on('click', '.nav-link', function () {
-        $('#type-tabs .nav-link').removeClass('active');
-        $(this).addClass('active');
-        typeFilter = this.getAttribute('data-type') || '';
-        dt.ajax.reload();
-      });
-      $('#btn-reset').on('click', function () {
-        $('#f-q').val('');
-        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
-        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
-        typeFilter = '';
-        $('#type-tabs .nav-link').removeClass('active').first().addClass('active');
-        dt.ajax.reload();
-      });
-      $('#btn-export').on('click', function (e) {
+      // Ô "Tỉnh thành" là ô chữ tự do → tìm lại khi rời ô hoặc bấm Enter.
+      $('#f-province').on('blur', function () { grid.reload(); })
+        .on('keydown', function (e) { if (e.key === 'Enter') { grid.reload(); } });
+
+      // Xuất TOÀN BỘ theo bộ lọc đang áp — handler Export nhận keyword ở tham số `search`.
+      $('#btn-export').off('click').on('click', function (e) {
         e.preventDefault();
-        var p = new URLSearchParams(filterValues());
+        var p = new URLSearchParams(grid.filters());
         var q = $('#f-q').val(); if (q) { p.set('search', q); }
         location.href = '?handler=Export&' + p.toString();
       });

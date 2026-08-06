@@ -153,14 +153,8 @@ public class IndexModel : TkListPageModel
             outstanding = data.Sum(x => x.outstanding),
         };
 
-        return new JsonResult(new
-        {
-            draw = dt.Draw,
-            recordsTotal = stats.Total,
-            recordsFiltered = result.Total,
-            data,
-            pageSum,
-        });
+        return GridJson(dt, stats.Total, result.Total, data,
+            new Dictionary<string, object?> { ["pageSum"] = pageSum });
     }
 
     /// <summary>Xuất CSV theo đúng bộ lọc đang áp (giới hạn 5000 dòng để không sập).</summary>
@@ -219,5 +213,21 @@ public class IndexModel : TkListPageModel
         await _svc.DeleteAsync(id);
         TempData["ok"] = "Đã xoá nhà cung cấp.";
         return RedirectToPage();
+    }
+
+    /// <summary>Xoá nhiều NCC đã chọn (tác vụ hàng loạt của tk.grid) — AJAX, trả Result.</summary>
+    public async Task<IActionResult> OnPostBulkDeleteAsync([FromForm] Guid[] ids)
+    {
+        if (ids is null || ids.Length == 0)
+        {
+            return new JsonResult(Result.Error("Chưa chọn nhà cung cấp nào."));
+        }
+
+        foreach (var id in ids)
+        {
+            await _svc.DeleteAsync(id);
+        }
+
+        return new JsonResult(Result.Success($"Đã xoá {ids.Length} nhà cung cấp."));
     }
 }

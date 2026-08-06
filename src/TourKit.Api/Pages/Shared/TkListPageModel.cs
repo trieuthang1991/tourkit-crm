@@ -30,9 +30,12 @@ public abstract class TkListPageModel : PageModel
             N("page", 100_000), N("size", 500));
     }
 
-    /// <summary>JSON đúng contract DataTables server-side.</summary>
+    /// <summary>
+    /// JSON cho danh sách server-side. Trả luôn cả khoá của Tabulator (last_page/last_row) nên
+    /// màn nào chuyển từ DataTables sang tk.grid CHỈ cần sửa .cshtml, không phải đụng handler.
+    /// </summary>
     protected JsonResult DtJson(int draw, int recordsTotal, int recordsFiltered, object data)
-        => new(new { draw, recordsTotal, recordsFiltered, data });
+        => GridJson(ParseDataTables(), recordsTotal, recordsFiltered, data);
 
     /// <summary>
     /// JSON phục vụ ĐỒNG THỜI Tabulator (tk.grid: last_page + data) và DataTables
