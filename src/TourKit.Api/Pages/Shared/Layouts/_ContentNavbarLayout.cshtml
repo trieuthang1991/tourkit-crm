@@ -9,7 +9,9 @@
   ViewData["isNavbar"] = (ViewData["isNavbar"] ??= true);
   ViewData["isMenu"] = (ViewData["isMenu"] ??= true);
   ViewData["isFlex"] = (ViewData["isFlex"] ??= false);
-  ViewData["isFooter"] = (ViewData["isFooter"] ??= true);
+  // Bỏ footer (chỉ có dòng © ) để nhường diện tích cho nội dung.
+  // Cần hiện lại ở trang nào thì đặt ViewData["isFooter"] = true trong trang đó.
+  ViewData["isFooter"] = (ViewData["isFooter"] ??= false);
   ViewData["customizerHidden"] = (ViewData["customizerHidden"] ??= "customizer-hide");   // ẩn Template Customizer (công cụ demo Vuexy)
 
 

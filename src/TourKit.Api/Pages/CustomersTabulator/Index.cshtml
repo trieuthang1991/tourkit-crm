@@ -23,14 +23,39 @@
 
     /* MỘT MẶT TRẮNG liền mạch: giữ nền (không bị hụt) nhưng vẫn phẳng —
        không chia nhiều hộp, không đổ bóng, chỉ kẻ ngang mảnh ngăn từng vùng. */
-    .tk-surface { background: var(--bs-body-bg, #fff); border-radius: 12px; overflow: hidden; }
+    /* LƯU Ý: --bs-body-bg của theme là XÁM nền trang (#f8f7fa) — mặt nội dung phải dùng nền card (trắng). */
+    .tk-surface { background: var(--bs-card-bg, #fff); border-radius: 12px; overflow: hidden;
+                  display: flex; flex-direction: column; min-height: 0; }
     .tk-surface > * + * { border-top: 1px solid var(--bs-border-color); }
     .tk-pad { padding: 1rem 1.25rem; }
+    /* Bảng chiếm hết chiều cao còn lại của màn → luôn gọn trong 1 màn, cuộn NGAY TRONG bảng. */
+    #grid-customers { flex: 1 1 auto; min-height: 240px; }
+
+    /* Trang không cuộn nữa → menu trái dài sẽ bị cắt. Cho chính menu cuộn được. */
+    #layout-menu .menu-inner { overflow-y: auto; overscroll-behavior: contain; }
+    #layout-menu .menu-inner::-webkit-scrollbar { width: 6px; }
+    #layout-menu .menu-inner::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .25); border-radius: 3px; }
+    #layout-menu .menu-inner::-webkit-scrollbar-track { background: transparent; }
+
+    /* Avatar chữ cái (khách hàng / nhân viên) — màu nhạt đồng bộ với dải thống kê. */
+    .tk-av { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+             font-size: .75rem; font-weight: 600; flex-shrink: 0; letter-spacing: .3px; }
+    .tk-av-sm { width: 28px; height: 28px; font-size: .68rem; }
+    .tk-row-media { display: flex; align-items: center; gap: .625rem; min-width: 0; }
+    .tk-row-media > .tk-cell { min-width: 0; }
+
+    /* Dòng có icon (SĐT/email) — icon mờ, chữ theo hệ màu chung. */
+    .tk-ic-line { display: flex; align-items: center; gap: .375rem; min-width: 0; }
+    .tk-ic-line > i { font-size: .875rem; color: var(--bs-secondary-color); flex-shrink: 0; }
+
+    /* Badge nhạt cho nhóm/phân khúc — bo tròn, không viền, cùng tông với thống kê. */
+    .tk-chip-sm { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 500;
+                  line-height: 1.5; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* GIAO DIỆN PHẲNG: bảng không viền ngoài/nền, header nhạt, chỉ kẻ ngang mảnh giữa dòng. */
     #grid-customers.tabulator { border: none; background: transparent; }
     /* Bảng tự cao (1 thanh cuộn duy nhất của trang) → ghim tiêu đề cột để cuộn không mất header. */
-    #grid-customers .tabulator-header { background: var(--bs-body-bg, #fff); border-bottom: 1px solid var(--bs-border-color); position: sticky; top: 0; z-index: 5; }
+    #grid-customers .tabulator-header { background: var(--bs-card-bg, #fff); border-bottom: 1px solid var(--bs-border-color); position: sticky; top: 0; z-index: 5; }
     #grid-customers .tabulator-header .tabulator-col { background: transparent; border-right: none; }
     #grid-customers .tabulator-header .tabulator-col .tabulator-col-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .4px; color: var(--bs-secondary-color); font-weight: 600; }
     /* KHÔNG sọc 2 màu: mọi dòng cùng nền, chỉ phân cách bằng kẻ ngang mảnh. */
@@ -40,6 +65,11 @@
     #grid-customers .tabulator-row { border-bottom: 1px solid var(--bs-border-color); }
     #grid-customers .tabulator-row .tabulator-cell { border-right: none; }
     #grid-customers .tabulator-row:hover { background: rgba(var(--bs-primary-rgb), .05); }
+    /* Dòng tổng NGAY DƯỚI tiêu đề (topCalc) — dải MỎNG, chữ nhỏ, chỉ là chú thích phụ. */
+    #grid-customers .tabulator-calcs-top { background: rgba(var(--bs-primary-rgb), .04) !important;
+      border-bottom: 1px solid var(--bs-border-color); min-height: 0 !important; height: 30px !important; }
+    #grid-customers .tabulator-calcs-top .tabulator-cell { height: 30px !important; padding-top: 0; padding-bottom: 0;
+      font-size: .75rem; line-height: 30px; }
     #grid-customers .tabulator-footer { background: transparent; border-top: 1px solid var(--bs-border-color); }
     #grid-customers .tabulator-footer .tabulator-page.active { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
     #grid-customers .tabulator-col-resize-handle { opacity: .4; }
@@ -59,8 +89,8 @@
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
   <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">CRM <span class="mx-1">/</span> Khách hàng <span class="mx-1">/</span> <span class="text-body">Data khách hàng</span></div>
     <h4 class="mb-0">Data khách hàng <span class="badge bg-label-primary ms-1">Bản thử Tabulator</span></h4>
-    <small class="text-muted">Cùng dữ liệu & nghiệp vụ với bản DataTables — chỉ đổi thư viện lưới.</small>
   </div>
   <div class="d-flex flex-wrap gap-2">
     <a href="/Customers" class="btn btn-label-secondary"><i class="ti ti-arrows-left-right me-1"></i> So với bản DataTables</a>
@@ -139,6 +169,32 @@
         return '<div class="tk-cell">' + m + s + '</div>';
       }
 
+      // Bảng màu nhạt dùng CHUNG cho avatar + badge (liền mạch với dải thống kê).
+      var TONES = ['primary', 'info', 'success', 'warning', 'danger', 'secondary'];
+      function toneOf(text) {
+        var s = String(text || ''), h = 0;
+        for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; }
+        return TONES[h % TONES.length];
+      }
+      // Chữ cái đầu của (tối đa) 2 từ cuối — "Lê Đức Vân" → "ĐV".
+      function initials(name) {
+        var w = String(name || '').trim().split(/\s+/).filter(Boolean);
+        if (!w.length) { return '?'; }
+        return (w.length === 1 ? w[0].slice(0, 2) : w[w.length - 2][0] + w[w.length - 1][0]).toUpperCase();
+      }
+      function avatar(name, small) {
+        return '<span class="tk-av ' + (small ? 'tk-av-sm ' : '') + 'bg-label-' + toneOf(name) + '">' + esc(initials(name)) + '</span>';
+      }
+      // Dòng có icon (SĐT/email…).
+      function icLine(icon, text, cls) {
+        if (!text) { return ''; }
+        return '<div class="tk-ic-line ' + (cls || '') + '"><i class="' + icon + '"></i>' +
+          '<span class="text-truncate" title="' + esc(text) + '">' + esc(text) + '</span></div>';
+      }
+      function chip(text) {
+        return '<span class="tk-chip-sm bg-label-' + toneOf(text) + '" title="' + esc(text) + '">' + esc(text) + '</span>';
+      }
+
       function collectFilters() {
         var d = {};
         var q = document.getElementById('f-q').value.trim(); if (q) { d.q = q; }
@@ -178,9 +234,9 @@
 
       var table = new Tabulator('#grid-customers', {
         layout: 'fitColumns',
-        // KHÔNG đặt height → bảng tự cao theo số dòng, chỉ còn MỘT thanh cuộn của trang
-        // (mỗi trang 20 dòng nên không cần cuộn trong bảng).
-        height: false,
+        // Chiều cao tính theo màn hình (fitHeight bên dưới) → bảng LUÔN gọn trong 1 màn,
+        // cuộn diễn ra NGAY TRONG bảng nên chỉ có MỘT thanh cuộn, không cuộn trang.
+        height: 420,
         placeholder: 'Không có dữ liệu',
         ajaxURL: '?handler=Data',
         ajaxParams: collectFilters,
@@ -198,36 +254,59 @@
             formatter: function (cell) {
               var pos = cell.getRow().getPosition(true);
               return '<span class="text-muted">' + (((curPage - 1) * table.getPageSize()) + pos) + '</span>';
-            }
+            },
+            topCalc: function () { return ''; },
+            topCalcFormatter: function () { return '<span class="fw-semibold text-muted">Tổng</span>'; }
           },
           {
-            title: 'Khách hàng', field: 'fullName', widthGrow: 3, minWidth: 220,
+            title: 'Khách hàng', field: 'fullName', widthGrow: 3, minWidth: 200,
             formatter: function (cell) {
               var r = cell.getData();
               var sub = [r.code, r.customerTypeName].filter(Boolean).join(' · ');
-              return '<div class="tk-cell"><a class="tk-cell-main" href="/Customers/Details/' + r.id + '" title="' + esc(r.fullName) + '">' + esc(r.fullName) + '</a>' +
-                (sub ? '<div class="tk-cell-sub">' + esc(sub) + '</div>' : '') + '</div>';
+              return '<div class="tk-row-media">' + avatar(r.fullName) +
+                '<div class="tk-cell"><a class="tk-cell-main" href="/Customers/Details/' + r.id + '" title="' + esc(r.fullName) + '">' + esc(r.fullName) + '</a>' +
+                (sub ? '<div class="tk-cell-sub">' + esc(sub) + '</div>' : '') + '</div></div>';
             }
           },
-          { title: 'Liên hệ', field: 'phone', widthGrow: 2, minWidth: 160, formatter: function (c) { var r = c.getData(); return stack(r.phone, r.email); } },
-          { title: 'Khu vực & nhóm', field: 'city', widthGrow: 2, minWidth: 170, formatter: function (c) { var r = c.getData(); return stack(r.city, (r.segments || []).join(' · ')); } },
-          { title: 'CSKH gần nhất', field: 'lastCareAt', widthGrow: 2, minWidth: 180, formatter: function (c) { var r = c.getData(); return stack(r.lastCareAt, r.lastCareContent); } },
           {
-            title: 'Phụ trách', field: 'assignedToNames', widthGrow: 2, minWidth: 160,
+            title: 'Liên hệ', field: 'phone', widthGrow: 2, minWidth: 155,
+            formatter: function (c) {
+              var r = c.getData();
+              if (!r.phone && !r.email) { return '<span class="tk-cell-sub">—</span>'; }
+              return '<div class="tk-cell">' + icLine('ti ti-phone', r.phone, 'tk-cell-main') +
+                icLine('ti ti-mail', r.email, 'tk-cell-sub') + '</div>';
+            }
+          },
+          {
+            title: 'Khu vực & nhóm', field: 'city', widthGrow: 2, minWidth: 150,
+            formatter: function (c) {
+              var r = c.getData();
+              var segs = (r.segments || []).slice(0, 2).map(chip).join(' ');
+              return '<div class="tk-cell">' + icLine('ti ti-map-pin', r.city || '—', 'tk-cell-main') +
+                (segs ? '<div class="mt-1">' + segs + '</div>' : '') + '</div>';
+            }
+          },
+          { title: 'CSKH gần nhất', field: 'lastCareAt', widthGrow: 2, minWidth: 155, formatter: function (c) { var r = c.getData(); return stack(r.lastCareAt, r.lastCareContent); } },
+          {
+            title: 'Phụ trách', field: 'assignedToNames', widthGrow: 2, minWidth: 150,
             formatter: function (c) {
               var r = c.getData();
               var main = (r.assignedToNames || []).join(', ');
               var sub = r.collaboratorName ? ('CTV: ' + r.collaboratorName) : (r.createdByName || '');
-              return stack(main, sub);
+              if (!main) { return stack(main, sub); }
+              return '<div class="tk-row-media">' + avatar(main, true) + stack(main, sub) + '</div>';
             }
           },
           {
-            title: 'Doanh thu', field: 'revenue', width: 160, hozAlign: 'right', headerHozAlign: 'right',
-            bottomCalc: 'sum',
-            bottomCalcFormatter: function (cell) {
+            title: 'Doanh thu', field: 'revenue', width: 140, hozAlign: 'right', headerHozAlign: 'right',
+            // Dòng tổng đặt NGAY DƯỚI tiêu đề (topCalc) để thấy ngay, không phải cuộn xuống đáy.
+            topCalc: 'sum',
+            topCalcFormatter: function (cell) {
               var rev = cell.getValue();
               var buys = cell.getTable().getData().reduce(function (a, r) { return a + (r.purchaseCount || 0); }, 0);
-              return '<div class="tk-cell-right"><div class="fw-bold">' + money(rev) + '</div><div class="tk-cell-sub">' + money(buys) + ' lần mua</div></div>';
+              // Một dòng gọn: tổng tiền (đậm) + số lần mua (mờ) — không chiếm chiều cao.
+              return '<span class="fw-semibold">' + money(rev) + '</span>' +
+                '<span class="text-muted ms-2">· ' + money(buys) + ' lần</span>';
             },
             formatter: function (c) {
               var r = c.getData();
@@ -246,6 +325,32 @@
       });
 
       function reload() { table.setData(); }
+
+      // Bảng luôn nằm gọn trong 1 màn: cao = phần viewport còn lại tính từ đỉnh bảng.
+      // Dùng toạ độ TÀI LIỆU (rect.top + scrollY) để giá trị không đổi theo vị trí cuộn,
+      // nhờ vậy setHeight không tự kích hoạt lại chính nó (tránh vòng lặp).
+      var grid = document.getElementById('grid-customers');
+      var lastH = 0;
+      function fitHeight() {
+        // Đo bằng toạ độ TÀI LIỆU để không phụ thuộc vị trí cuộn hiện tại.
+        var top = grid.getBoundingClientRect().top + window.scrollY;
+        var h = Math.max(260, Math.round(window.innerHeight - top - 24));
+        if (Math.abs(h - lastH) < 3) { return; } // chênh không đáng kể → bỏ qua, tránh vòng lặp
+        lastH = h;
+        table.setHeight(h);
+        // Layout còn đệm dưới (padding content-wrapper…) → trừ đúng phần dư để trang hết cuộn.
+        var doc = document.documentElement;
+        var over = doc.scrollHeight - doc.clientHeight;
+        if (over > 2) {
+          lastH = Math.max(260, h - over);
+          table.setHeight(lastH);
+        }
+      }
+      // CHỈ tính lúc dựng xong + khi đổi kích thước cửa sổ.
+      // TUYỆT ĐỐI không gắn vào renderComplete: setHeight lại kích hoạt render → vòng lặp treo trang.
+      function fitSoon() { requestAnimationFrame(fitHeight); setTimeout(fitHeight, 300); }
+      table.on('tableBuilt', fitSoon);
+      window.addEventListener('resize', fitSoon);
 
       document.getElementById('btn-search').addEventListener('click', reload);
       document.getElementById('f-q').addEventListener('keydown', function (e) { if (e.key === 'Enter') { reload(); } });
