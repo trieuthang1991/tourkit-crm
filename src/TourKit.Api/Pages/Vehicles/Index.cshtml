@@ -3,22 +3,41 @@
 @{ ViewData["Title"] = "Kho xe"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Kho xe</h5>
-    <button type="button" class="btn btn-primary btn-sm" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm xe</button>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">Quản lý xe <span class="mx-1">/</span> <span class="text-body">Kho xe</span></div>
+    <h4 class="mb-0">Kho xe</h4>
   </div>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr><th class="text-center">#</th><th>Tên xe</th><th>Hãng</th><th class="text-center">Số chỗ</th><th>Trạng thái</th><th></th></tr>
-      </thead>
-    </table>
+  <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm xe</button>
+</div>
+
+<div class="tk-surface">
+
+  <div class="tk-pad">
+    @* Chỉ có ô tìm: service kho xe hiện mới nhận từ khoá, chưa có lọc trạng thái —
+       không thêm ô lọc chết để người dùng bấm mà không có tác dụng. *@
+    <div class="row g-2 align-items-center">
+      <div class="col-md-9"><input type="text" id="f-q" class="form-control" placeholder="Tên xe / biển số / hãng xe…" /></div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
   </div>
+
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> xe đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
+  </div>
+
+  <div id="grid-vehicles"></div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
@@ -43,40 +62,63 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt;
+    var oc, grid;
     $(function () {
-      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: 'name', className: 'fw-medium' },
-          { data: 'firmName', render: function (v) { return tk.escape(v || '—'); } },
-          { data: 'seatType', className: 'text-center' },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end', render: function () {
-              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
-        ]
-      });
+      var g = tk.g, esc = g.esc;
 
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'xe',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'xe',
         rules: { 'Input.Name': { required: true }, 'Input.SeatType': { required: true } },
         messages: { 'Input.Name': { required: 'Bắt buộc nhập tên xe' }, 'Input.SeatType': { required: 'Bắt buộc nhập số chỗ' } } });
 
-      // Server-side: dữ liệu dòng lấy từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var id = dt.row($(this).closest('tr')).data().id;
-        tk.confirmDelete({ title: 'Xoá xe?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      function delRow(r) {
+        tk.confirmDelete({ title: 'Xoá xe?', text: r.name || '' }).then(function (ok) {
+          if (!ok) { return; }
+          var f = document.getElementById('delete-form');
+          f.querySelector('[name="id"]').value = r.id;
+          f.submit();
+        });
+      }
+
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      grid = tk.grid('#grid-vehicles', {
+        filters: [],
+        exportName: 'kho-xe.csv',
+        actions: function (r) {
+          return [
+            { label: '<i class="ti ti-edit me-2"></i>Sửa xe', action: function () { oc.open(r); } },
+            { separator: true },
+            { label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá xe</span>', action: function () { delRow(r); } }
+          ];
+        },
+        onRowClick: function (r) { oc.open(r); },
+        columns: [
+          {
+            title: 'Tên xe', field: 'name', widthGrow: 3, minWidth: 200,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-row-media">' + g.avatar(r.name) + g.stack(r.name, r.firmName) + '</div>';
+            }
+          },
+          { title: 'Hãng', field: 'firmName', widthGrow: 2, minWidth: 150,
+            formatter: function (c) { return g.stack(c.getValue(), null); } },
+          { title: 'Số chỗ', field: 'seatType', width: 110, hozAlign: 'center',
+            formatter: function (c) { return '<span class="badge bg-label-info">' + esc(c.getValue()) + '</span>'; } },
+          {
+            title: 'Trạng thái', field: 'status', width: 150,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + esc(r.statusLabel) + '</span>';
+            }
+          }
+        ]
       });
     });
   </script>

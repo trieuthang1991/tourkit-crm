@@ -3,10 +3,12 @@
 @{ ViewData["Title"] = "Lịch điều xe"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
@@ -17,17 +19,42 @@
   }
 </div>
 
-@* 4 KPI — bám StatGrid hệ cũ *@
-<div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng phân xe</small><h5 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã điều</small><h5 class="mb-0 text-info tk-num" id="kpi-created">@Model.Stats.Created.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đang thực hiện</small><h5 class="mb-0 text-success tk-num" id="kpi-active">@Model.Stats.Active.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số xe</small><h5 class="mb-0 tk-num" id="kpi-vehicles">@Model.Stats.VehicleCount.ToString("#,##0")</h5></div></div></div>
-</div>
+@{
+    // 4 KPI — bám StatGrid hệ cũ, gói vào dải mảnh dùng chung.
+    (string Id, string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("kpi-total", "Tổng phân xe", Model.Stats.Total.ToString("#,##0"), "ti ti-clipboard-list", "primary"),
+        ("kpi-created", "Đã điều", Model.Stats.Created.ToString("#,##0"), "ti ti-send", "info"),
+        ("kpi-active", "Đang thực hiện", Model.Stats.Active.ToString("#,##0"), "ti ti-run", "success"),
+        ("kpi-vehicles", "Số xe", Model.Stats.VehicleCount.ToString("#,##0"), "ti ti-bus", "warning"),
+    };
+}
 
-@* Thanh lọc — đúng các tiêu chí VehicleAssignmentListFilter (xe · chuyến · khoảng ngày đón), đẩy hết xuống SERVER *@
-<div class="card mb-3">
-  <div class="card-body">
+<div class="tk-surface">
+
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem" id="@s.Id">@s.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="tk-pad">
+    @* Tab trạng thái — bám Segmented hệ cũ (Tất cả / Đã điều / Đang thực hiện) *@
+    <ul class="nav nav-tabs mb-3" id="type-tabs" data-field="status">
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả <span class="badge bg-label-secondary ms-1" id="tab-total">@Model.Stats.Total</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="1">Đã điều <span class="badge bg-label-info ms-1" id="tab-created">@Model.Stats.Created</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="2">Đang thực hiện <span class="badge bg-label-success ms-1" id="tab-active">@Model.Stats.Active</span></a></li>
+    </ul>
+    <input type="hidden" id="f-status" value="" />
+
+    @* Thanh lọc — đúng các tiêu chí VehicleAssignmentListFilter (xe · chuyến · khoảng ngày đón), đẩy hết xuống SERVER *@
     <div class="row g-2 align-items-center">
       <div class="col-md-3">
         <select id="f-vehicleId" class="form-select tk-s2f" data-placeholder="Xe"><option value=""></option>@foreach (var v in Model.Vehicles) { <option value="@v.Id">@v.Label</option> }</select>
@@ -44,27 +71,14 @@
       </div>
     </div>
   </div>
-</div>
 
-@* Tab trạng thái — bám Segmented hệ cũ (Tất cả / Đã điều / Đang thực hiện) *@
-<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
-  <li class="nav-item"><button type="button" class="nav-link active" data-v="">Tất cả (<span id="tab-total">@Model.Stats.Total</span>)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-v="1">Đã điều (<span id="tab-created">@Model.Stats.Created</span>)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-v="2">Đang thực hiện (<span id="tab-active">@Model.Stats.Active</span>)</button></li>
-</ul>
-
-<div class="card">
-  <div class="card-header"><h5 class="mb-0">Danh sách điều xe</h5></div>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          <th class="text-center">#</th><th>Chuyến</th><th>Xe</th><th>Tài xế</th>
-          <th>Thời gian</th><th>Trạng thái</th><th></th>
-        </tr>
-      </thead>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> phân xe đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-vehicle-assign"></div>
 </div>
 
 @Html.AntiForgeryToken()
@@ -109,7 +123,7 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
@@ -117,16 +131,11 @@
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt, fStatus = '';
+    var oc, grid;
     var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
-    // Toàn bộ tiêu chí lọc đẩy xuống SERVER (VehicleAssignmentListFilter) — không lọc ở client, không get-all.
-    var FILTERS = ['vehicleId', 'departureId', 'dateFrom', 'dateTo'];
 
-    function collectFilters(d) {
-      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
-      if (fStatus !== '') { d.status = fStatus; }
-    }
     function applyStats(s) {
       if (!s) { return; }
       $('#kpi-total, #tab-total').text(tk.money(s.total));
@@ -136,75 +145,74 @@
     }
 
     $(function () {
+      var g = tk.g, esc = g.esc;
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
-      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
 
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
-        columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          // Chuyến: tên + mã (bám CellEntity hệ cũ)
-          { data: null, render: function (r) {
-              return '<div class="fw-medium">' + tk.trunc(r.departureTitle, 220) + '</div>' +
-                     '<div class="small text-muted">' + tk.escape(r.departureCode) + '</div>';
-            } },
-          { data: 'vehicleName', render: function (v) { return '<span class="fw-medium">' + tk.trunc(v, 170) + '</span>'; } },
-          // Tài xế: tên + SĐT
-          { data: null, render: function (r) {
-              return '<div>' + tk.trunc(r.driverName || '—', 160) + '</div>' +
-                     (r.driverPhone ? '<div class="small text-muted">' + tk.escape(r.driverPhone) + '</div>' : '');
-            } },
-          // Thời gian: ngày đón + "Trả: ..."
-          { data: null, render: function (r) {
-              return '<div>' + tk.escape(r.timeGoText) + '</div>' +
-                     (r.timeComeText ? '<div class="small text-muted">Trả: ' + tk.escape(r.timeComeText) + '</div>' : '');
-            } },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end text-nowrap', render: function () {
-              if (!CAN_MANAGE) { return ''; }
-              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
-        ]
-      });
-
-      // KPI + số đếm trên tab lấy từ khối stats kèm theo mỗi lần tải bảng.
-      $('#tbl').on('xhr.dt', function (e, settings, json) { applyStats(json && json.stats); });
-
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'phân xe',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'phân xe',
         rules: { 'Input.TourDepartureId': { required: true }, 'Input.VehicleId': { required: true } },
         messages: { 'Input.TourDepartureId': { required: 'Bắt buộc chọn chuyến' }, 'Input.VehicleId': { required: 'Bắt buộc chọn xe' } } });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('.tk-datef').on('change', function () { dt.ajax.reload(); });
-      $('#btn-reset').on('click', function () {
-        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
-        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
-        fStatus = '';
-        $('#tabs .nav-link').removeClass('active').filter('[data-v=""]').addClass('active');
-        dt.ajax.reload();
-      });
-      $('#tabs').on('click', '.nav-link', function () {
-        $('#tabs .nav-link').removeClass('active');
-        $(this).addClass('active');
-        fStatus = this.getAttribute('data-v');
-        dt.ajax.reload();
-      });
-
-      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var r = dt.row($(this).closest('tr')).data();
+      function delRow(r) {
         tk.confirmDelete({ title: 'Xoá phân xe?', text: 'Phân xe ' + r.vehicleName + ' — ' + r.departureCode + ' sẽ bị xoá.' }).then(function (ok) {
           if (!ok) { return; }
           var fd = new FormData(); fd.append('id', r.id);
           tk.post('?handler=Delete', fd).then(function (res) {
-            if (res && res.isSuccess) { dt.ajax.reload(null, false); tk.toast(res.message || 'Đã xoá.'); }
+            if (res && res.isSuccess) { grid.reload(); tk.toast(res.message || 'Đã xoá.'); }
             else { tk.error((res && res.message) || 'Xoá thất bại.'); }
           });
         });
+      }
+
+      // Sửa/xoá chỉ dành cho người có quyền điều hành — giữ đúng luật hệ cũ.
+      function actionsFor(r) {
+        if (!CAN_MANAGE) { return []; }
+        return [
+          { label: '<i class="ti ti-edit me-2"></i>Sửa phân xe', action: function () { oc.open(r); } },
+          { separator: true },
+          { label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá phân xe</span>', action: function () { delRow(r); } }
+        ];
+      }
+
+      // Toàn bộ tiêu chí lọc đẩy xuống SERVER (VehicleAssignmentListFilter).
+      grid = tk.grid('#grid-vehicle-assign', {
+        filters: ['vehicleId', 'departureId', 'dateFrom', 'dateTo', 'status'],
+        exportName: 'dieu-xe.csv',
+        actions: CAN_MANAGE ? actionsFor : null,
+        onRowClick: CAN_MANAGE ? function (r) { oc.open(r); } : null,
+        // KPI + số đếm trên tab lấy từ khối stats kèm theo mỗi lần tải bảng.
+        onData: function (res) { applyStats(res && res.stats); },
+        columns: [
+          {
+            title: 'Chuyến', field: 'departureTitle', widthGrow: 3, minWidth: 220,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.departureTitle, r.departureCode); }
+          },
+          {
+            title: 'Xe', field: 'vehicleName', widthGrow: 2, minWidth: 160,
+            formatter: function (c) {
+              var v = c.getValue();
+              if (!v) { return '<span class="tk-cell-sub">—</span>'; }
+              return '<div class="tk-row-media">' + g.avatar(v) + g.stack(v, null) + '</div>';
+            }
+          },
+          {
+            title: 'Tài xế', field: 'driverName', widthGrow: 2, minWidth: 160,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.driverName, r.driverPhone); }
+          },
+          {
+            title: 'Thời gian', field: 'timeGoText', width: 170,
+            formatter: function (c) {
+              var r = c.getData();
+              return g.stack(r.timeGoText, r.timeComeText ? ('Trả: ' + r.timeComeText) : null);
+            }
+          },
+          {
+            title: 'Trạng thái', field: 'statusLabel', width: 150,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
+            }
+          }
+        ]
       });
     });
   </script>
