@@ -89,6 +89,16 @@
         ("Mua lần đầu", Model.Stats.FirstTimeBuyers.ToString("#,##0"), "ti ti-star", "success"),
         ("Mua lại nhiều lần", Model.Stats.RepeatBuyers.ToString("#,##0"), "ti ti-refresh", "danger"),
     };
+    // Chip "Chăm sóc khách hàng" — số đếm từ CustomerFunnelDto.Care (bám hệ cũ).
+    (string Key, string Value, string Label, int Count)[] careChips =
+    {
+        ("purchaseBucket", "first", "Mua lần đầu", Model.Funnel.Care.FirstTime),
+        ("purchaseBucket", "repeat", "Khách mua lại", Model.Funnel.Care.Repeat),
+        ("notContactedBucket", "nc7", "7 ngày chưa liên hệ", Model.Funnel.Care.NotContacted7),
+        ("notContactedBucket", "nc15", "15 ngày chưa liên hệ", Model.Funnel.Care.NotContacted15),
+        ("notContactedBucket", "nc30", "30 ngày chưa liên hệ", Model.Funnel.Care.NotContacted30),
+        ("notContactedBucket", "nc90", "90 ngày chưa liên hệ", Model.Funnel.Care.NotContacted90),
+    };
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
@@ -140,8 +150,60 @@
       </div>
       <div class="col-md-2 d-flex gap-2">
         <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-filter"></i></button>
         <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
+    </div>
+
+    @* Lọc nâng cao — ĐỦ tiêu chí của CustomerListFilter, tất cả đẩy xuống server *@
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3"><input type="text" id="f-createdFrom" class="form-control tk-datef" placeholder="Thời gian tạo từ" /></div>
+      <div class="col-md-3"><input type="text" id="f-createdTo" class="form-control tk-datef" placeholder="Thời gian tạo đến" /></div>
+      <div class="col-md-3"><input type="text" id="f-careFrom" class="form-control tk-datef" placeholder="Thời gian chăm sóc từ" /></div>
+      <div class="col-md-3"><input type="text" id="f-careTo" class="form-control tk-datef" placeholder="Thời gian chăm sóc đến" /></div>
+
+      <div class="col-md-3"><input type="number" min="0" step="1000" id="f-revenueFrom" class="form-control" placeholder="Doanh thu từ" /></div>
+      <div class="col-md-3"><input type="number" min="0" step="1000" id="f-revenueTo" class="form-control" placeholder="Doanh thu đến" /></div>
+      <div class="col-md-3">
+        <select id="f-gender" class="form-select"><option value="">Giới tính</option><option value="Nam">Nam</option><option value="Nữ">Nữ</option><option value="Khác">Khác</option></select>
+      </div>
+      <div class="col-md-3">
+        <select id="f-birthdayMonth" class="form-select"><option value="">Sinh nhật (tháng)</option>@for (var m = 1; m <= 12; m++) { <option value="@m">Tháng @m</option> }</select>
+      </div>
+
+      <div class="col-md-3"><select id="f-marketGroup" class="form-select"><option value="">Thị trường</option>@foreach (var v in Model.Options.MarketGroups) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-branch" class="form-select"><option value="">Chi nhánh</option>@foreach (var v in Model.Options.Branches) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-group" class="form-select"><option value="">Nhóm</option>@foreach (var v in Model.Options.Groups) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-department" class="form-select"><option value="">Phòng ban</option>@foreach (var v in Model.Options.Departments) { <option value="@v">@v</option> }</select></div>
+
+      <div class="col-md-3"><select id="f-collaborator" class="form-select"><option value="">Tên CTV</option>@foreach (var v in Model.Options.Collaborators) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-campaign" class="form-select"><option value="">Chiến dịch</option>@foreach (var v in Model.Options.Campaigns) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-tag" class="form-select"><option value="">Tag</option>@foreach (var v in Model.Options.Tags) { <option value="@v">@v</option> }</select></div>
+      <div class="col-md-3"><select id="f-assignedTo" class="form-select"><option value="">NV phụ trách</option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
+
+      <div class="col-md-3"><select id="f-createdBy" class="form-select"><option value="">Người tạo</option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select></div>
+    </div>
+
+    @* Chip lọc nhanh: phễu khách + chăm sóc — bám hệ cũ, kèm số đếm *@
+    <div class="d-flex flex-column gap-2 mt-3 pt-3 border-top">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="text-muted small fw-medium" style="min-width:110px">Phễu khách hàng</span>
+        <button type="button" class="btn btn-sm btn-primary tk-chip" data-k="segment" data-v="">Tất cả <span class="badge bg-white text-dark ms-1">@Model.Funnel.Total.ToString("#,##0")</span></button>
+        @foreach (var seg in Model.Funnel.Segments)
+        {
+          <button type="button" class="btn btn-sm btn-label-secondary tk-chip" data-k="segment" data-v="@seg.Name">@seg.Name <span class="badge bg-secondary ms-1">@seg.Count.ToString("#,##0")</span></button>
+        }
+      </div>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="text-muted small fw-medium" style="min-width:110px">Chăm sóc</span>
+        @foreach (var c in careChips)
+        {
+          <button type="button" class="btn btn-sm btn-label-secondary tk-chip" data-k="@c.Key" data-v="@c.Value">@c.Label <span class="badge bg-secondary ms-1">@c.Count.ToString("#,##0")</span></button>
+        }
+      </div>
+      <input type="hidden" id="f-segment" value="" />
+      <input type="hidden" id="f-purchaseBucket" value="" />
+      <input type="hidden" id="f-notContactedBucket" value="" />
     </div>
   </div>
 
@@ -209,12 +271,19 @@
         return '<span class="tk-chip-sm bg-label-' + toneOf(text) + '" title="' + esc(text) + '">' + esc(text) + '</span>';
       }
 
+      // ĐỦ tiêu chí của CustomerListFilter — tất cả đẩy xuống SERVER (không lọc ở client).
+      var FILTERS = ['customerType', 'source', 'city', 'gender', 'marketGroup', 'collaborator', 'campaign',
+        'branch', 'group', 'department', 'segment', 'tag', 'assignedTo', 'createdBy',
+        'createdFrom', 'createdTo', 'careFrom', 'careTo', 'revenueFrom', 'revenueTo', 'birthdayMonth',
+        'purchaseBucket', 'notContactedBucket'];
+
       function collectFilters() {
         var d = {};
         var q = document.getElementById('f-q').value.trim(); if (q) { d.q = q; }
-        var ct = document.getElementById('f-customerType').value; if (ct) { d.customerType = ct; }
-        var src = document.getElementById('f-source').value; if (src) { d.source = src; }
-        var city = document.getElementById('f-city').value; if (city) { d.city = city; }
+        FILTERS.forEach(function (k) {
+          var el = document.getElementById('f-' + k);
+          if (el && el.value) { d[k] = el.value; }
+        });
         return d;
       }
 
@@ -393,12 +462,47 @@
       document.getElementById('f-q').addEventListener('keydown', function (e) { if (e.key === 'Enter') { reload(); } });
       document.getElementById('f-source').addEventListener('change', reload);
       document.getElementById('f-city').addEventListener('change', reload);
+      // Ô ngày: gửi ISO cho server, hiện d/m/Y cho người dùng (luật chung của repo).
+      if (window.flatpickr) {
+        flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true });
+      }
+      document.querySelectorAll('#adv select, #adv input').forEach(function (el) {
+        el.addEventListener('change', reload);
+      });
+
+      // Panel lọc nâng cao
+      document.getElementById('btn-adv').addEventListener('click', function () {
+        var adv = document.getElementById('adv');
+        adv.classList.toggle('d-none');
+        this.classList.toggle('btn-primary', !adv.classList.contains('d-none'));
+        this.classList.toggle('btn-label-secondary', adv.classList.contains('d-none'));
+      });
+
+      // Chip: 3 nhóm (phễu / mua / chưa liên hệ) LOẠI TRỪ nhau — bấm lại để bỏ chọn.
+      function syncChips() {
+        document.querySelectorAll('.tk-chip').forEach(function (b) {
+          var on = (document.getElementById('f-' + b.getAttribute('data-k')).value || '') === b.getAttribute('data-v');
+          b.classList.toggle('btn-primary', on);
+          b.classList.toggle('btn-label-secondary', !on);
+        });
+      }
+      document.querySelectorAll('.tk-chip').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var k = b.getAttribute('data-k'), v = b.getAttribute('data-v');
+          var next = (document.getElementById('f-' + k).value || '') === v ? '' : v;
+          ['segment', 'purchaseBucket', 'notContactedBucket'].forEach(function (x) { document.getElementById('f-' + x).value = ''; });
+          document.getElementById('f-' + k).value = next;
+          syncChips();
+          reload();
+        });
+      });
+
       document.getElementById('btn-reset').addEventListener('click', function () {
         document.getElementById('f-q').value = '';
-        document.getElementById('f-source').value = '';
-        document.getElementById('f-city').value = '';
-        document.getElementById('f-customerType').value = '';
+        FILTERS.forEach(function (k) { var el = document.getElementById('f-' + k); if (el) { el.value = ''; } });
+        document.querySelectorAll('.tk-datef').forEach(function (el) { if (el._flatpickr) { el._flatpickr.clear(); } });
         document.querySelectorAll('#type-tabs .nav-link').forEach(function (a, i) { a.classList.toggle('active', i === 0); });
+        syncChips();
         reload();
       });
       document.getElementById('type-tabs').addEventListener('click', function (e) {
@@ -408,8 +512,13 @@
         document.getElementById('f-customerType').value = a.getAttribute('data-type') || '';
         reload();
       });
+      // Xuất TOÀN BỘ theo bộ lọc đang áp (server-side) — không chỉ trang hiện tại.
       document.getElementById('btn-export').addEventListener('click', function () {
-        table.download('csv', 'data-khach-hang.csv');
+        var d = collectFilters();
+        var qs = Object.keys(d).map(function (k) {
+          return encodeURIComponent(k) + '=' + encodeURIComponent(d[k]);
+        }).join('&');
+        window.location = '?handler=Export' + (qs ? '&' + qs : '');
       });
     })();
   </script>

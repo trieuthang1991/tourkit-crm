@@ -37,7 +37,9 @@ public class IndexModel : PageModel
 
     public CustomerStatsDto Stats { get; private set; } = new(0, 0, 0, 0, 0);
     public CustomerFilterOptionsDto Options { get; private set; } = new([], [], [], [], [], [], [], [], [], []);
+    public CustomerFunnelDto Funnel { get; private set; } = new(0, [], new(0, 0, 0, 0, 0, 0));
     public IReadOnlyList<(int Code, string Name)> CustomerTypes { get; private set; } = [];
+    public IReadOnlyList<(Guid Id, string Name)> Users { get; private set; } = [];
 
     // Bind cho offcanvas Thêm/Sửa (dùng chung; Id rỗng = tạo mới) — giống trang Customers/Index.
     [BindProperty] public Customers.CustomerFormInput Input { get; set; } = new();
@@ -47,6 +49,8 @@ public class IndexModel : PageModel
     {
         Stats = await _service.GetStatsAsync();
         Options = await _service.GetFilterOptionsAsync();
+        Funnel = await _service.GetFunnelAsync();
+        Users = (await _users.ListAsync()).Select(u => (u.Id, u.FullName)).ToList();
         CustomerTypes = (await _types.ListAsync()).OrderBy(t => t.SortOrder).Select(t => (t.Code, t.Name)).ToList();
         // Danh mục cho offcanvas — dùng lại đúng hàm của trang gốc để không lệch nghiệp vụ.
         await Customers.IndexModel.LoadCatalogsAsync(this, _types, _sources, _tags, _markets);
@@ -135,6 +139,36 @@ public class IndexModel : PageModel
             data,
             pageSum = new { purchases = data.Sum(x => x.purchaseCount), revenue = data.Sum(x => x.revenue) },
         });
+    }
+
+    /// <summary>Xuất CSV theo ĐÚNG bộ lọc đang áp (server-side, tối đa 10.000 dòng) — không chỉ trang hiện tại.</summary>
+    public async Task<IActionResult> OnGetExportAsync()
+    {
+        const int max = 10000;
+        var result = await _service.ListAsync(1, max, BuildFilter(Request.Query["q"]));
+        var typeNames = (await _types.ListAsync()).GroupBy(t => t.Code).ToDictionary(g => g.Key, g => g.First().Name);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Mã KH,Họ tên,Loại khách,SĐT,Email,Tỉnh/Thành,Tag,Phụ trách,Số lần mua,Doanh thu,CSKH gần nhất,Ngày tạo");
+        static string C(string? v) => "\"" + (v ?? "").Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+        foreach (var c in result.Items)
+        {
+            var typeName = typeNames.TryGetValue(c.CustomerType, out var tn)
+                ? tn
+                : c.CustomerType.ToString(CultureInfo.InvariantCulture);
+            var tagText = c.Tags.Count > 0 ? string.Join(" / ", c.Tags) : c.Tag;
+            sb.Append(C(c.Code)).Append(',').Append(C(c.FullName)).Append(',').Append(C(typeName)).Append(',')
+              .Append(C(c.Phone)).Append(',').Append(C(c.Email)).Append(',').Append(C(c.City)).Append(',')
+              .Append(C(tagText)).Append(',').Append(C(string.Join(" / ", c.AssignedToNames))).Append(',')
+              .Append(c.PurchaseCount.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .Append(c.Revenue.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .Append(C(c.LastCareAt?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture))).Append(',')
+              .Append(C(c.CreatedAt.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture))).AppendLine();
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetPreamble()
+            .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+        return File(bytes, "text/csv", "data-khach-hang.csv");
     }
 
     /// <summary>Lưu (tạo/sửa) từ offcanvas — AJAX, trả JSON. Bám ĐÚNG luật của trang gốc.</summary>
