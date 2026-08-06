@@ -3,9 +3,11 @@
 @{ ViewData["Title"] = "Bảng giá NCC"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 
@@ -14,37 +16,28 @@
   <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm bảng giá</button>
 </div>
 
-@* Thanh lọc — chỉ tiêu chí NCC (tiêu chí duy nhất service hỗ trợ), đẩy xuống SERVER *@
-<div class="card mb-4">
-  <div class="card-body">
+<div class="tk-surface">
+
+  @* Thanh lọc — chỉ tiêu chí NCC (tiêu chí duy nhất service hỗ trợ), đẩy xuống SERVER *@
+  <div class="tk-pad">
     <div class="row g-2 align-items-center">
-      <div class="col-md-5">
+      <div class="col-md-9">
         <select id="f-providerId" class="form-select" data-placeholder="Lọc theo nhà cung cấp"><option value=""></option></select>
       </div>
-      <div class="col-md-4 d-flex gap-2">
-        <button type="button" class="btn btn-primary" id="btn-search"><i class="ti ti-search me-1"></i> Tìm kiếm</button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset"><i class="ti ti-rotate me-1"></i> Đặt lại</button>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm kiếm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
   </div>
-</div>
 
-<div class="card">
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          @* min-width để bảng cuộn ngang thay vì bóp cột NCC/tên gói/giá trên màn hẹp. *@
-          <th class="text-center" style="min-width:52px">#</th><th style="min-width:180px">NCC</th><th style="min-width:200px">Tên gói giá</th>
-          <th class="text-end" style="min-width:130px">Giá hợp đồng</th><th class="text-end" style="min-width:130px">Giá công bố</th>
-          <th class="text-center" style="min-width:90px">Số khách</th><th style="min-width:90px">Tiền tệ</th><th style="min-width:120px">Trạng thái</th><th style="min-width:56px"></th>
-        </tr>
-      </thead>
-      <tfoot>
-        <tr id="page-sum" class="fw-medium"><td colspan="9" class="small"></td></tr>
-      </tfoot>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2">
+    <span class="fw-medium"><span id="bulk-count">0</span> bảng giá đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-provider-services"></div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
@@ -98,18 +91,16 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt;
-    function collectFilters(d) {
-      var v = $('#f-providerId').val(); if (v) { d.providerId = v; }
-    }
+    var oc, grid;
     // Select2 ajax dùng chung cho 2 ô chọn NCC (danh sách lớn → lọc ở SERVER, không nạp sẵn).
     function providerAjax() {
       return {
@@ -124,44 +115,73 @@
     $(function () {
       $('#f-providerId').select2({ width: '100%', allowClear: true, placeholder: 'Lọc theo nhà cung cấp', ajax: providerAjax() });
 
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
+      var g = tk.g, esc = g.esc, money = g.money;
+
+      function delRow(r) {
+        tk.confirmDelete({ title: 'Xoá bảng giá NCC?', text: r.priceName || '' }).then(function (ok) {
+          if (!ok) { return; }
+          var f = document.getElementById('delete-form');
+          f.querySelector('[name="id"]').value = r.id;
+          f.submit();
+        });
+      }
+
+      grid = tk.grid('#grid-provider-services', {
+        filters: ['providerId'],
+        exportName: 'bang-gia-ncc.csv',
+        actions: function (r) {
+          return [
+            { label: '<i class="ti ti-edit me-2"></i>Sửa bảng giá', action: function () { oc.open(r); } },
+            { separator: true },
+            { label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá bảng giá</span>', action: function () { delRow(r); } }
+          ];
+        },
+        onRowClick: function (r) { oc.open(r); },
         columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: 'providerName', render: function (v) { return '<span class="fw-medium">' + tk.escape(v) + '</span>'; } },
-          { data: null, render: function (r) {
-              return '<div>' + tk.escape(r.priceName || '—') + '</div>' +
-                     (r.serviceItemName ? '<div class="small text-muted">' + tk.escape(r.serviceItemName) + '</div>' : '');
-            } },
-          { data: null, className: 'text-end', render: function (r) {
+          { title: 'NCC', field: 'providerName', widthGrow: 2, minWidth: 190, formatter: 'tkMedia' },
+          {
+            title: 'Tên gói giá', field: 'priceName', widthGrow: 3, minWidth: 210,
+            formatter: 'tkStack', formatterParams: { sub: 'serviceItemName' }
+          },
+          {
+            title: 'Giá hợp đồng', field: 'contractPriceVnd', width: 160, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) { return '<span class="fw-semibold">' + money(c.getValue()) + '</span>'; },
+            formatter: function (c) {
+              var r = c.getData();
               // Ngoại tệ: hiện nguyên tệ + quy đổi VND (bám cột "Giá hợp đồng" hệ cũ).
               if (r.currencyCode && r.currencyCode !== 'VND') {
-                return '<div>' + tk.money(r.contractPrice) + ' ' + tk.escape(r.currencyCode) + '</div>' +
-                       '<div class="small text-muted">= ' + tk.money(r.contractPriceVnd) + '</div>';
+                return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + money(r.contractPrice) + ' ' + esc(r.currencyCode) + '</div>' +
+                  '<div class="tk-cell-sub">= ' + money(r.contractPriceVnd) + '</div></div>';
               }
-              return tk.money(r.contractPriceVnd);
-            } },
-          { data: 'publicPriceVnd', className: 'text-end', render: function (v) { return tk.money(v); } },
-          { data: 'amountOfPeople', className: 'text-center' },
-          { data: 'currencyCode' },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end', render: function () {
-              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + money(r.contractPriceVnd) + '</div></div>';
+            }
+          },
+          {
+            title: 'Giá công bố', field: 'publicPriceVnd', width: 150, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) { return '<span class="fw-semibold">' + money(c.getValue()) + '</span>'; },
+            formatter: function (c) { return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + money(c.getValue()) + '</div></div>'; }
+          },
+          {
+            title: 'Số khách / Tiền tệ', field: 'amountOfPeople', width: 160, hozAlign: 'center',
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-info me-1" title="Số khách">' + r.amountOfPeople + '</span>' +
+                '<span class="badge bg-label-secondary" title="Tiền tệ">' + esc(r.currencyCode) + '</span>';
+            }
+          },
+          {
+            title: 'Trạng thái', field: 'statusLabel', width: 140,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + esc(r.statusLabel) + '</span>';
+            }
+          }
         ]
       });
 
-      $('#tbl').on('xhr.dt', function (e, settings, json) {
-        var s = json && json.pageSum;
-        if (!s) { return; }
-        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' +
-          '<span class="me-3 text-muted">Giá hợp đồng (VND): <span class="fw-medium">' + tk.money(s.contractPriceVnd) + '</span></span>' +
-          '<span class="me-3 text-muted">Giá công bố (VND): <span class="fw-medium">' + tk.money(s.publicPriceVnd) + '</span></span>');
-      });
-
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'bảng giá NCC',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'bảng giá NCC',
         rules: { 'Input.ProviderId': { required: true }, 'Input.ContractPrice': { required: true }, 'Input.PublicPrice': { required: true }, 'Input.AmountOfPeople': { required: true } },
         messages: { 'Input.ProviderId': { required: 'Bắt buộc chọn NCC' }, 'Input.ContractPrice': { required: 'Bắt buộc nhập giá hợp đồng' }, 'Input.PublicPrice': { required: 'Bắt buộc nhập giá công bố' }, 'Input.AmountOfPeople': { required: 'Bắt buộc nhập số khách' } },
         fill: function ($form, data) {
@@ -181,16 +201,8 @@
       $('#in-provider').select2({ width: '100%', allowClear: true, placeholder: 'Chọn nhà cung cấp',
         dropdownParent: $('#oc'), ajax: providerAjax() });
 
-      // Server-side: dữ liệu dòng lấy từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var id = dt.row($(this).closest('tr')).data().id;
-        tk.confirmDelete({ title: 'Xoá bảng giá NCC?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
-      });
-
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-providerId').on('change', function () { dt.ajax.reload(); });
-      $('#btn-reset').on('click', function () { $('#f-providerId').val(null).trigger('change'); dt.ajax.reload(); });
+      // Ô NCC dùng select2 ajax → tự nối để lưới tải lại khi đổi.
+      $('#f-providerId').on('change', function () { grid.reload(); });
     });
   </script>
 }
