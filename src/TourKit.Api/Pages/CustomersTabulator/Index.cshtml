@@ -19,13 +19,24 @@
     /* Icon thống kê — canh giữa chuẩn (trước dùng avatar-initial bị lệch). */
     .tk-stat-ic { width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
     .tk-stat { display: flex; align-items: center; gap: .625rem; }
-    .tk-stat-strip { display: flex; flex-wrap: wrap; row-gap: .75rem; column-gap: 2.25rem; }
+    .tk-stat-strip { display: flex; flex-wrap: wrap; row-gap: .75rem; column-gap: 2.25rem; padding: 1rem 1.25rem; }
+
+    /* MỘT MẶT TRẮNG liền mạch: giữ nền (không bị hụt) nhưng vẫn phẳng —
+       không chia nhiều hộp, không đổ bóng, chỉ kẻ ngang mảnh ngăn từng vùng. */
+    .tk-surface { background: var(--bs-body-bg, #fff); border-radius: 12px; overflow: hidden; }
+    .tk-surface > * + * { border-top: 1px solid var(--bs-border-color); }
+    .tk-pad { padding: 1rem 1.25rem; }
 
     /* GIAO DIỆN PHẲNG: bảng không viền ngoài/nền, header nhạt, chỉ kẻ ngang mảnh giữa dòng. */
     #grid-customers.tabulator { border: none; background: transparent; }
-    #grid-customers .tabulator-header { background: transparent; border-bottom: 1px solid var(--bs-border-color); }
+    /* Bảng tự cao (1 thanh cuộn duy nhất của trang) → ghim tiêu đề cột để cuộn không mất header. */
+    #grid-customers .tabulator-header { background: var(--bs-body-bg, #fff); border-bottom: 1px solid var(--bs-border-color); position: sticky; top: 0; z-index: 5; }
     #grid-customers .tabulator-header .tabulator-col { background: transparent; border-right: none; }
     #grid-customers .tabulator-header .tabulator-col .tabulator-col-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .4px; color: var(--bs-secondary-color); font-weight: 600; }
+    /* KHÔNG sọc 2 màu: mọi dòng cùng nền, chỉ phân cách bằng kẻ ngang mảnh. */
+    #grid-customers .tabulator-row,
+    #grid-customers .tabulator-row.tabulator-row-even,
+    #grid-customers .tabulator-row.tabulator-row-odd { background: transparent; }
     #grid-customers .tabulator-row { border-bottom: 1px solid var(--bs-border-color); }
     #grid-customers .tabulator-row .tabulator-cell { border-right: none; }
     #grid-customers .tabulator-row:hover { background: rgba(var(--bs-primary-rgb), .05); }
@@ -57,44 +68,51 @@
   </div>
 </div>
 
-@* PHẲNG: không khung card — thống kê là 1 dải ngang mảnh, icon canh giữa bằng .tk-stat-ic. *@
-<div class="tk-stat-strip mb-4">
-  @foreach (var s in statCards)
-  {
-    <div class="tk-stat">
-      <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
-      <div class="lh-sm">
-        <div class="fw-bold" style="font-size:1.15rem">@s.Value</div>
-        <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+@* MỘT MẶT TRẮNG liền mạch (giữ nền cho đỡ hụt) — 3 vùng ngăn nhau bằng kẻ ngang mảnh, không chia hộp. *@
+<div class="tk-surface">
+
+  @* Thống kê: 1 dải ngang mảnh, icon canh giữa bằng .tk-stat-ic *@
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem">@s.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  @* Bộ lọc *@
+  <div class="tk-pad">
+    <ul class="nav nav-tabs mb-3" id="type-tabs">
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả</a></li>
+      @foreach (var t in Model.CustomerTypes)
+      {
+        <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="@t.Code">@t.Name</a></li>
+      }
+    </ul>
+    <input type="hidden" id="f-customerType" value="" />
+    <div class="row g-2 align-items-center">
+      <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Nhập tên, SĐT, mã, email…" /></div>
+      <div class="col-md-3">
+        <select id="f-source" class="form-select"><option value="">Tất cả nguồn</option>@foreach (var s in Model.Options.Sources) { <option value="@s">@s</option> }</select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-city" class="form-select"><option value="">Tỉnh/Thành</option>@foreach (var c in Model.Options.Cities) { <option value="@c">@c</option> }</select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
-  }
-</div>
+  </div>
 
-@* PHẲNG: bộ lọc không card, chỉ 1 đường kẻ ngăn với bảng. *@
-<ul class="nav nav-tabs mb-3" id="type-tabs">
-  <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả</a></li>
-  @foreach (var t in Model.CustomerTypes)
-  {
-    <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="@t.Code">@t.Name</a></li>
-  }
-</ul>
-<input type="hidden" id="f-customerType" value="" />
-<div class="row g-2 align-items-center mb-3">
-  <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Nhập tên, SĐT, mã, email…" /></div>
-  <div class="col-md-3">
-    <select id="f-source" class="form-select"><option value="">Tất cả nguồn</option>@foreach (var s in Model.Options.Sources) { <option value="@s">@s</option> }</select>
-  </div>
-  <div class="col-md-2">
-    <select id="f-city" class="form-select"><option value="">Tỉnh/Thành</option>@foreach (var c in Model.Options.Cities) { <option value="@c">@c</option> }</select>
-  </div>
-  <div class="col-md-2 d-flex gap-2">
-    <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
-    <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
-  </div>
+  @* Bảng *@
+  <div id="grid-customers"></div>
 </div>
-
-<div id="grid-customers"></div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none">
   <input type="hidden" name="id" />
@@ -160,7 +178,9 @@
 
       var table = new Tabulator('#grid-customers', {
         layout: 'fitColumns',
-        height: '640px',
+        // KHÔNG đặt height → bảng tự cao theo số dòng, chỉ còn MỘT thanh cuộn của trang
+        // (mỗi trang 20 dòng nên không cần cuộn trong bảng).
+        height: false,
         placeholder: 'Không có dữ liệu',
         ajaxURL: '?handler=Data',
         ajaxParams: collectFilters,
