@@ -1,0 +1,90 @@
+/* tk-grid.css — giao diện CHUNG cho mọi lưới Tabulator của TourKit.
+   Tách ra từ màn "Data khách hàng" để các màn sau chỉ việc thêm class, không copy CSS.
+   Quy ước: phần tử lưới mang class .tk-grid; mặt nội dung bọc ngoài mang class .tk-surface.
+   LƯU Ý: --bs-body-bg của theme là XÁM nền trang (#f8f7fa) — mặt nội dung phải dùng --bs-card-bg (trắng). */
+
+/* ===== Ô nhiều dòng: đúng MỘT kiểu (main đậm + sub mờ), tối đa 2 dòng, dùng đồng nhất mọi cột ===== */
+.tk-cell { line-height: 1.25; }
+.tk-cell-main { font-weight: 500; color: var(--bs-heading-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tk-cell-sub { font-size: .75rem; color: var(--bs-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tk-cell-right { text-align: right; }
+/* Link chuyển trang: tô màu primary + con trỏ tay để người dùng biết bấm được. */
+a.tk-cell-main { display: block; color: var(--bs-primary); cursor: pointer; }
+a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
+
+/* ===== Dải thống kê mảnh (thay cho hàng card cao) ===== */
+.tk-stat-ic { width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
+.tk-stat { display: flex; align-items: center; gap: .625rem; }
+.tk-stat-strip { display: flex; flex-wrap: wrap; row-gap: .75rem; column-gap: 2.25rem; padding: 1rem 1.25rem; }
+
+/* ===== MỘT MẶT TRẮNG liền mạch: giữ nền (không bị hụt) nhưng vẫn phẳng —
+   không chia nhiều hộp, không đổ bóng, chỉ kẻ ngang mảnh ngăn từng vùng. ===== */
+.tk-surface { background: var(--bs-card-bg, #fff); border-radius: 12px; overflow: hidden;
+              display: flex; flex-direction: column; min-height: 0; }
+.tk-surface > * + * { border-top: 1px solid var(--bs-border-color); }
+.tk-pad { padding: 1rem 1.25rem; }
+/* Bảng chiếm hết chiều cao còn lại của màn → luôn gọn trong 1 màn, cuộn NGAY TRONG bảng. */
+.tk-surface > .tk-grid { flex: 1 1 auto; min-height: 240px; }
+
+/* Trang không cuộn nữa → menu trái dài sẽ bị cắt. Cho chính menu cuộn được. */
+#layout-menu .menu-inner { overflow-y: auto; overscroll-behavior: contain; }
+#layout-menu .menu-inner::-webkit-scrollbar { width: 6px; }
+#layout-menu .menu-inner::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .25); border-radius: 3px; }
+#layout-menu .menu-inner::-webkit-scrollbar-track { background: transparent; }
+
+/* ===== Avatar chữ cái / dòng có icon / badge nhạt — cùng bảng màu với dải thống kê ===== */
+.tk-av { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+         font-size: .75rem; font-weight: 600; flex-shrink: 0; letter-spacing: .3px; }
+.tk-av-sm { width: 28px; height: 28px; font-size: .68rem; }
+.tk-row-media { display: flex; align-items: center; gap: .625rem; min-width: 0; }
+.tk-row-media > .tk-cell { min-width: 0; }
+
+.tk-ic-line { display: flex; align-items: center; gap: .375rem; min-width: 0; }
+.tk-ic-line > i { font-size: .875rem; color: var(--bs-secondary-color); flex-shrink: 0; }
+
+.tk-chip-sm { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 500;
+              line-height: 1.5; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ===== GIAO DIỆN PHẲNG: bảng không viền ngoài/nền, header nhạt, chỉ kẻ ngang mảnh giữa dòng ===== */
+.tk-grid.tabulator { border: none; background: transparent; }
+.tk-grid .tabulator-header { background: var(--bs-card-bg, #fff); border-bottom: 1px solid var(--bs-border-color); position: sticky; top: 0; z-index: 5; }
+.tk-grid .tabulator-header .tabulator-col { background: transparent; border-right: none; }
+.tk-grid .tabulator-header .tabulator-col .tabulator-col-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .4px; color: var(--bs-secondary-color); font-weight: 600; }
+/* KHÔNG sọc 2 màu: mọi dòng cùng nền, chỉ phân cách bằng kẻ ngang mảnh. */
+.tk-grid .tabulator-row,
+.tk-grid .tabulator-row.tabulator-row-even,
+.tk-grid .tabulator-row.tabulator-row-odd { background: transparent; }
+.tk-grid .tabulator-row { border-bottom: 1px solid var(--bs-border-color); }
+.tk-grid .tabulator-row .tabulator-cell { border-right: none; }
+.tk-grid .tabulator-row:hover { background: rgba(var(--bs-primary-rgb), .05); }
+/* Dòng tổng NGAY DƯỚI tiêu đề (topCalc) — dải MỎNG, chữ nhỏ, chỉ là chú thích phụ. */
+.tk-grid .tabulator-calcs-top { background: rgba(var(--bs-primary-rgb), .04) !important;
+  border-bottom: 1px solid var(--bs-border-color); min-height: 0 !important; height: 30px !important; }
+.tk-grid .tabulator-calcs-top .tabulator-cell { height: 30px !important; padding-top: 0; padding-bottom: 0;
+  font-size: .75rem; line-height: 30px; }
+.tk-grid .tabulator-footer { background: transparent; border-top: 1px solid var(--bs-border-color); }
+.tk-grid .tabulator-footer .tabulator-page.active { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
+.tk-grid .tabulator-col-resize-handle { opacity: .4; }
+
+/* Ô chọn: dùng ĐÚNG component checkbox của theme (Bootstrap .form-check-input) —
+   mặc định Tabulator vẽ checkbox thô của trình duyệt, lạc khỏi giao diện. */
+.tk-grid input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 1.15em; height: 1.15em; margin: 0; vertical-align: middle; cursor: pointer;
+  background-color: var(--bs-body-bg, #fff); background-repeat: no-repeat; background-position: center;
+  background-size: contain; border: 1px solid var(--bs-border-color); border-radius: .25em;
+  transition: background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+.tk-grid input[type="checkbox"]:checked {
+  background-color: var(--bs-primary); border-color: var(--bs-primary);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+}
+.tk-grid input[type="checkbox"]:indeterminate {
+  background-color: var(--bs-primary); border-color: var(--bs-primary);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
+}
+.tk-grid input[type="checkbox"]:focus-visible {
+  outline: 0; box-shadow: 0 0 0 .18rem rgba(var(--bs-primary-rgb), .25);
+}
+/* Dòng đang chọn: nền nhấn nhẹ theo brand thay vì màu mặc định của Tabulator. */
+.tk-grid .tabulator-row.tabulator-selected { background: rgba(var(--bs-primary-rgb), .07) !important; }

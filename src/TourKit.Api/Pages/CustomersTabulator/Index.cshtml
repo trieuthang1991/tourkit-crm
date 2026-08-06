@@ -10,97 +10,8 @@
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
-  <style>
-    /* CHUẨN HOÁ ô nhiều dòng: đúng 1 kiểu (main + sub), tối đa 2 dòng, dùng đồng nhất mọi cột. */
-    .tk-cell { line-height: 1.25; }
-    .tk-cell-main { font-weight: 500; color: var(--bs-heading-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tk-cell-sub { font-size: .75rem; color: var(--bs-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tk-cell-right { text-align: right; }
-    /* Link chuyển trang: tô màu primary + con trỏ tay để người dùng biết bấm được. */
-    a.tk-cell-main { display: block; color: var(--bs-primary); cursor: pointer; }
-    a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
-
-    /* Icon thống kê — canh giữa chuẩn (trước dùng avatar-initial bị lệch). */
-    .tk-stat-ic { width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
-    .tk-stat { display: flex; align-items: center; gap: .625rem; }
-    .tk-stat-strip { display: flex; flex-wrap: wrap; row-gap: .75rem; column-gap: 2.25rem; padding: 1rem 1.25rem; }
-
-    /* MỘT MẶT TRẮNG liền mạch: giữ nền (không bị hụt) nhưng vẫn phẳng —
-       không chia nhiều hộp, không đổ bóng, chỉ kẻ ngang mảnh ngăn từng vùng. */
-    /* LƯU Ý: --bs-body-bg của theme là XÁM nền trang (#f8f7fa) — mặt nội dung phải dùng nền card (trắng). */
-    .tk-surface { background: var(--bs-card-bg, #fff); border-radius: 12px; overflow: hidden;
-                  display: flex; flex-direction: column; min-height: 0; }
-    .tk-surface > * + * { border-top: 1px solid var(--bs-border-color); }
-    .tk-pad { padding: 1rem 1.25rem; }
-    /* Bảng chiếm hết chiều cao còn lại của màn → luôn gọn trong 1 màn, cuộn NGAY TRONG bảng. */
-    #grid-customers { flex: 1 1 auto; min-height: 240px; }
-
-    /* Trang không cuộn nữa → menu trái dài sẽ bị cắt. Cho chính menu cuộn được. */
-    #layout-menu .menu-inner { overflow-y: auto; overscroll-behavior: contain; }
-    #layout-menu .menu-inner::-webkit-scrollbar { width: 6px; }
-    #layout-menu .menu-inner::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .25); border-radius: 3px; }
-    #layout-menu .menu-inner::-webkit-scrollbar-track { background: transparent; }
-
-    /* Avatar chữ cái (khách hàng / nhân viên) — màu nhạt đồng bộ với dải thống kê. */
-    .tk-av { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
-             font-size: .75rem; font-weight: 600; flex-shrink: 0; letter-spacing: .3px; }
-    .tk-av-sm { width: 28px; height: 28px; font-size: .68rem; }
-    .tk-row-media { display: flex; align-items: center; gap: .625rem; min-width: 0; }
-    .tk-row-media > .tk-cell { min-width: 0; }
-
-    /* Dòng có icon (SĐT/email) — icon mờ, chữ theo hệ màu chung. */
-    .tk-ic-line { display: flex; align-items: center; gap: .375rem; min-width: 0; }
-    .tk-ic-line > i { font-size: .875rem; color: var(--bs-secondary-color); flex-shrink: 0; }
-
-    /* Badge nhạt cho nhóm/phân khúc — bo tròn, không viền, cùng tông với thống kê. */
-    .tk-chip-sm { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 500;
-                  line-height: 1.5; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* GIAO DIỆN PHẲNG: bảng không viền ngoài/nền, header nhạt, chỉ kẻ ngang mảnh giữa dòng. */
-    #grid-customers.tabulator { border: none; background: transparent; }
-    /* Bảng tự cao (1 thanh cuộn duy nhất của trang) → ghim tiêu đề cột để cuộn không mất header. */
-    #grid-customers .tabulator-header { background: var(--bs-card-bg, #fff); border-bottom: 1px solid var(--bs-border-color); position: sticky; top: 0; z-index: 5; }
-    #grid-customers .tabulator-header .tabulator-col { background: transparent; border-right: none; }
-    #grid-customers .tabulator-header .tabulator-col .tabulator-col-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .4px; color: var(--bs-secondary-color); font-weight: 600; }
-    /* KHÔNG sọc 2 màu: mọi dòng cùng nền, chỉ phân cách bằng kẻ ngang mảnh. */
-    #grid-customers .tabulator-row,
-    #grid-customers .tabulator-row.tabulator-row-even,
-    #grid-customers .tabulator-row.tabulator-row-odd { background: transparent; }
-    #grid-customers .tabulator-row { border-bottom: 1px solid var(--bs-border-color); }
-    #grid-customers .tabulator-row .tabulator-cell { border-right: none; }
-    #grid-customers .tabulator-row:hover { background: rgba(var(--bs-primary-rgb), .05); }
-    /* Dòng tổng NGAY DƯỚI tiêu đề (topCalc) — dải MỎNG, chữ nhỏ, chỉ là chú thích phụ. */
-    #grid-customers .tabulator-calcs-top { background: rgba(var(--bs-primary-rgb), .04) !important;
-      border-bottom: 1px solid var(--bs-border-color); min-height: 0 !important; height: 30px !important; }
-    #grid-customers .tabulator-calcs-top .tabulator-cell { height: 30px !important; padding-top: 0; padding-bottom: 0;
-      font-size: .75rem; line-height: 30px; }
-    #grid-customers .tabulator-footer { background: transparent; border-top: 1px solid var(--bs-border-color); }
-    #grid-customers .tabulator-footer .tabulator-page.active { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
-    #grid-customers .tabulator-col-resize-handle { opacity: .4; }
-
-    /* Ô chọn: dùng ĐÚNG component checkbox của theme (Bootstrap .form-check-input) —
-       mặc định Tabulator vẽ checkbox thô của trình duyệt, lạc khỏi giao diện. */
-    #grid-customers input[type="checkbox"] {
-      appearance: none; -webkit-appearance: none;
-      width: 1.15em; height: 1.15em; margin: 0; vertical-align: middle; cursor: pointer;
-      background-color: var(--bs-body-bg, #fff); background-repeat: no-repeat; background-position: center;
-      background-size: contain; border: 1px solid var(--bs-border-color); border-radius: .25em;
-      transition: background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-    }
-    #grid-customers input[type="checkbox"]:checked {
-      background-color: var(--bs-primary); border-color: var(--bs-primary);
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
-    }
-    #grid-customers input[type="checkbox"]:indeterminate {
-      background-color: var(--bs-primary); border-color: var(--bs-primary);
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
-    }
-    #grid-customers input[type="checkbox"]:focus-visible {
-      outline: 0; box-shadow: 0 0 0 .18rem rgba(var(--bs-primary-rgb), .25);
-    }
-    /* Dòng đang chọn: nền nhấn nhẹ theo brand thay vì màu mặc định của Tabulator. */
-    #grid-customers .tabulator-row.tabulator-selected { background: rgba(var(--bs-primary-rgb), .07) !important; }
-  </style>
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 @{
@@ -260,64 +171,13 @@
 }
 
 @section PageScripts {
+  @* Lưới dùng chung: phân trang server, chọn nhiều dòng, menu hành động, fit 1 màn. *@
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script src="~/js/customer-form.js"></script>
   <script>
     (function () {
-      var esc = (window.tk && tk.escape) ? tk.escape : function (s) {
-        return (s == null ? '' : String(s)).replace(/[&<>"]/g, function (c) {
-          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-        });
-      };
-      var money = (window.tk && tk.money) ? tk.money : function (n) { return (n || 0).toLocaleString('vi-VN'); };
-
-      // Ô 2 dòng CHUẨN HOÁ — dùng chung mọi cột (main đậm + sub mờ).
-      function stack(main, sub) {
-        var m = '<div class="tk-cell-main" title="' + esc(main || '') + '">' + esc(main || '—') + '</div>';
-        var s = sub ? '<div class="tk-cell-sub" title="' + esc(sub) + '">' + esc(sub) + '</div>' : '';
-        return '<div class="tk-cell">' + m + s + '</div>';
-      }
-
-      // Bảng màu nhạt dùng CHUNG cho avatar + badge (liền mạch với dải thống kê).
-      var TONES = ['primary', 'info', 'success', 'warning', 'danger', 'secondary'];
-      function toneOf(text) {
-        var s = String(text || ''), h = 0;
-        for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; }
-        return TONES[h % TONES.length];
-      }
-      // Chữ cái đầu của (tối đa) 2 từ cuối — "Lê Đức Vân" → "ĐV".
-      function initials(name) {
-        var w = String(name || '').trim().split(/\s+/).filter(Boolean);
-        if (!w.length) { return '?'; }
-        return (w.length === 1 ? w[0].slice(0, 2) : w[w.length - 2][0] + w[w.length - 1][0]).toUpperCase();
-      }
-      function avatar(name, small) {
-        return '<span class="tk-av ' + (small ? 'tk-av-sm ' : '') + 'bg-label-' + toneOf(name) + '">' + esc(initials(name)) + '</span>';
-      }
-      // Dòng có icon (SĐT/email…).
-      function icLine(icon, text, cls) {
-        if (!text) { return ''; }
-        return '<div class="tk-ic-line ' + (cls || '') + '"><i class="' + icon + '"></i>' +
-          '<span class="text-truncate" title="' + esc(text) + '">' + esc(text) + '</span></div>';
-      }
-      function chip(text) {
-        return '<span class="tk-chip-sm bg-label-' + toneOf(text) + '" title="' + esc(text) + '">' + esc(text) + '</span>';
-      }
-
-      // ĐỦ tiêu chí của CustomerListFilter — tất cả đẩy xuống SERVER (không lọc ở client).
-      var FILTERS = ['customerType', 'source', 'city', 'gender', 'marketGroup', 'collaborator', 'campaign',
-        'branch', 'group', 'department', 'segment', 'tag', 'assignedTo', 'createdBy',
-        'createdFrom', 'createdTo', 'careFrom', 'careTo', 'revenueFrom', 'revenueTo', 'birthdayMonth',
-        'purchaseBucket', 'notContactedBucket'];
-
-      function collectFilters() {
-        var d = {};
-        var q = document.getElementById('f-q').value.trim(); if (q) { d.q = q; }
-        FILTERS.forEach(function (k) {
-          var el = document.getElementById('f-' + k);
-          if (el && el.value) { d[k] = el.value; }
-        });
-        return d;
-      }
+      var g = tk.g;                       // stack / avatar / icLine / chip / money — dựng ô chuẩn
+      var esc = g.esc, money = g.money;
 
       function viewRow(d) { window.location = '/khach-hang/' + d.id; }
       // Lịch hẹn/chăm sóc của ĐÚNG khách này (trang /lich-hen đọc customerId từ URL).
@@ -333,18 +193,15 @@
           f.querySelector('input[name="id"]').value = d.id;
           f.submit();
         };
-        if (window.tk && tk.confirmDelete) {
-          tk.confirmDelete({ title: 'Xoá khách hàng?', text: d.fullName || '' }).then(function (ok) { if (ok) { go(); } });
-        } else if (window.confirm('Xoá khách hàng "' + (d.fullName || '') + '"?')) { go(); }
+        tk.confirmDelete({ title: 'Xoá khách hàng?', text: d.fullName || '' }).then(function (ok) { if (ok) { go(); } });
       }
-
       // Mở offcanvas sửa — dùng LẠI form của trang gốc (dữ liệu dòng đã đủ field).
       function editRow(d) {
         if (typeof window.openCustomerOffcanvas === 'function') { window.openCustomerOffcanvas(d); }
       }
 
       // MENU HÀNH ĐỘNG THEO NGHIỆP VỤ KHÁCH HÀNG (không phải CRUD chung chung).
-      // Dựng động theo từng dòng: chỉ hiện "Gọi"/"Gửi email" khi khách CÓ số/є-mail.
+      // Dựng động theo từng dòng: chỉ hiện "Gọi"/"Gửi email" khi khách CÓ số/e-mail.
       function actionsFor(d) {
         var items = [
           { label: '<i class="ti ti-eye me-2"></i>Xem chi tiết', action: function () { viewRow(d); } },
@@ -362,47 +219,24 @@
         items.push({ label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá khách</span>', action: function () { delRow(d); } });
         return items;
       }
-      // Tabulator nhận hàm trả về danh sách mục → mỗi dòng có menu riêng theo dữ liệu của nó.
-      function rowActionMenu(e, row) { return actionsFor(row.getData()); }
-      function cellActionMenu(e, cell) { return actionsFor(cell.getRow().getData()); }
 
-      var curPage = 1;
-
-      var table = new Tabulator('#grid-customers', {
-        layout: 'fitColumns',
-        // Chiều cao tính theo màn hình (fitHeight bên dưới) → bảng LUÔN gọn trong 1 màn,
-        // cuộn diễn ra NGAY TRONG bảng nên chỉ có MỘT thanh cuộn, không cuộn trang.
-        height: 420,
-        placeholder: 'Không có dữ liệu',
-        ajaxURL: '?handler=Data',
-        ajaxParams: collectFilters,
-        pagination: true,
-        paginationMode: 'remote',
-        paginationSize: 20,
-        paginationSizeSelector: [20, 50, 100],
-        paginationCounter: 'rows',
-        ajaxResponse: function (url, params, response) { curPage = params.page || 1; return response; },
-        rowContextMenu: rowActionMenu,
-        selectableRows: true,          // chọn nhiều dòng để làm tác vụ hàng loạt
-        // KHÔNG dùng selectableRowsRangeMode:'click' — chế độ đó coi mỗi click là chọn một VÙNG mới
-        // nên bấm ô thứ hai lại bỏ ô thứ nhất (chỉ chọn được 1).
-        columnDefaults: { headerSort: false, resizable: true, vertAlign: 'middle' },
+      var grid = tk.grid('#grid-customers', {
+        // ĐỦ tiêu chí của CustomerListFilter — tất cả đẩy xuống SERVER (không lọc ở client).
+        filters: ['customerType', 'source', 'city', 'gender', 'marketGroup', 'collaborator', 'campaign',
+          'branch', 'group', 'department', 'segment', 'tag', 'assignedTo', 'createdBy',
+          'createdFrom', 'createdTo', 'careFrom', 'careTo', 'revenueFrom', 'revenueTo', 'birthdayMonth',
+          'purchaseBucket', 'notContactedBucket'],
+        chipGroups: ['segment', 'purchaseBucket', 'notContactedBucket'],
+        exportName: 'khach-hang-da-chon.csv',
+        actions: actionsFor,
         columns: [
-          {
-            // Ô chọn để làm tác vụ hàng loạt; tiêu đề là ô chọn-tất-cả của trang.
-            title: '', field: '__sel', width: 44, hozAlign: 'center', headerHozAlign: 'center',
-            titleFormatter: 'rowSelection', formatter: 'rowSelection',
-            headerSort: false, cellClick: function (e) { e.stopPropagation(); },
-            topCalc: function () { return ''; },
-            topCalcFormatter: function () { return '<span class="fw-semibold text-muted">Tổng</span>'; }
-          },
           {
             title: 'Khách hàng', field: 'fullName', widthGrow: 3, minWidth: 200,
             formatter: function (cell) {
               var r = cell.getData();
               var sub = [r.code, r.customerTypeName].filter(Boolean).join(' · ');
-              return '<div class="tk-row-media">' + avatar(r.fullName) +
-                '<div class="tk-cell"><a class="tk-cell-main" href="/Customers/Details/' + r.id + '" title="' + esc(r.fullName) + '">' + esc(r.fullName) + '</a>' +
+              return '<div class="tk-row-media">' + g.avatar(r.fullName) +
+                '<div class="tk-cell"><a class="tk-cell-main" href="/khach-hang/' + r.id + '" title="' + esc(r.fullName) + '">' + esc(r.fullName) + '</a>' +
                 (sub ? '<div class="tk-cell-sub">' + esc(sub) + '</div>' : '') + '</div></div>';
             }
           },
@@ -411,28 +245,31 @@
             formatter: function (c) {
               var r = c.getData();
               if (!r.phone && !r.email) { return '<span class="tk-cell-sub">—</span>'; }
-              return '<div class="tk-cell">' + icLine('ti ti-phone', r.phone, 'tk-cell-main') +
-                icLine('ti ti-mail', r.email, 'tk-cell-sub') + '</div>';
+              return '<div class="tk-cell">' + g.icLine('ti ti-phone', r.phone, 'tk-cell-main') +
+                g.icLine('ti ti-mail', r.email, 'tk-cell-sub') + '</div>';
             }
           },
           {
             title: 'Khu vực & nhóm', field: 'city', widthGrow: 2, minWidth: 150,
             formatter: function (c) {
               var r = c.getData();
-              var segs = (r.segments || []).slice(0, 2).map(chip).join(' ');
-              return '<div class="tk-cell">' + icLine('ti ti-map-pin', r.city || '—', 'tk-cell-main') +
+              var segs = (r.segments || []).slice(0, 2).map(g.chip).join(' ');
+              return '<div class="tk-cell">' + g.icLine('ti ti-map-pin', r.city || '—', 'tk-cell-main') +
                 (segs ? '<div class="mt-1">' + segs + '</div>' : '') + '</div>';
             }
           },
-          { title: 'CSKH gần nhất', field: 'lastCareAt', widthGrow: 2, minWidth: 155, formatter: function (c) { var r = c.getData(); return stack(r.lastCareAt, r.lastCareContent); } },
+          {
+            title: 'CSKH gần nhất', field: 'lastCareAt', widthGrow: 2, minWidth: 155,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.lastCareAt, r.lastCareContent); }
+          },
           {
             title: 'Phụ trách', field: 'assignedToNames', widthGrow: 2, minWidth: 150,
             formatter: function (c) {
               var r = c.getData();
               var main = (r.assignedToNames || []).join(', ');
               var sub = r.collaboratorName ? ('CTV: ' + r.collaboratorName) : (r.createdByName || '');
-              if (!main) { return stack(main, sub); }
-              return '<div class="tk-row-media">' + avatar(main, true) + stack(main, sub) + '</div>';
+              if (!main) { return g.stack(main, sub); }
+              return '<div class="tk-row-media">' + g.avatar(main, true) + g.stack(main, sub) + '</div>';
             }
           },
           {
@@ -448,154 +285,16 @@
             },
             formatter: function (c) {
               var r = c.getData();
-              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main ' + ((r.revenue || 0) > 0 ? 'text-success' : '') + '">' + money(r.revenue) + '</div>' +
-                '<div class="tk-cell-sub">' + money(r.purchaseCount) + ' lần mua</div></div>';
-            }
-          },
-          {
-            title: '', field: 'id', width: 56, hozAlign: 'center',
-            clickMenu: cellActionMenu,
-            formatter: function () {
-              return '<button type="button" class="btn btn-icon btn-sm" title="Hành động"><i class="ti ti-dots-vertical"></i></button>';
+              return g.moneyCell(r.revenue, money(r.purchaseCount) + ' lần mua');
             }
           }
         ]
       });
 
-      function reload() { table.setData(); }
-      // customer-form.js gọi hook này sau khi lưu → nạp lại lưới, không tải lại cả trang.
-      window.tkGridReload = reload;
-
-      // ===== Tác vụ hàng loạt trên các dòng đã chọn =====
-      var bulkbar = document.getElementById('bulkbar');
-      table.on('rowSelectionChanged', function (data) {
-        document.getElementById('bulk-count').textContent = data.length;
-        bulkbar.classList.toggle('d-none', data.length === 0);
-        bulkbar.classList.toggle('d-flex', data.length > 0);
-      });
-      document.getElementById('bulk-clear').addEventListener('click', function () { table.deselectRow(); });
-      // Xuất riêng các dòng đã chọn (dữ liệu đang có sẵn ở client → tải ngay, không gọi server).
-      document.getElementById('bulk-export').addEventListener('click', function () {
-        table.download('csv', 'khach-hang-da-chon.csv', {}, 'selected');
-      });
       // Mở lịch hẹn của khách ĐẦU TIÊN đang chọn (trang CSKH lọc theo 1 khách).
       document.getElementById('bulk-care').addEventListener('click', function () {
-        var sel = table.getSelectedData();
+        var sel = grid.table.getSelectedData();
         if (sel.length) { careRow(sel[0]); }
-      });
-      document.getElementById('bulk-delete').addEventListener('click', function () {
-        var sel = table.getSelectedData();
-        if (!sel.length) { return; }
-        var go = function () {
-          // Gọi handler Razor (auth bằng cookie) — KHÔNG gọi /api/v1 vì API dùng JWT, sẽ 401.
-          var token = document.querySelector('input[name="__RequestVerificationToken"]');
-          var fd = new FormData();
-          sel.forEach(function (d) { fd.append('ids', d.id); });
-          fetch('?handler=BulkDelete', {
-            method: 'POST',
-            headers: token ? { 'RequestVerificationToken': token.value } : {},
-            body: fd
-          }).then(function (r) { return r.json(); }).then(function (res) {
-            table.deselectRow();
-            reload();
-            if (window.Swal && res && res.message) {
-              Swal.fire({ toast: true, position: 'top-end', icon: res.isSuccess ? 'success' : 'error',
-                title: res.message, showConfirmButton: false, timer: 2200 });
-            }
-          });
-        };
-        if (window.tk && tk.confirmDelete) {
-          tk.confirmDelete({ title: 'Xoá ' + sel.length + ' khách hàng?' }).then(function (ok) { if (ok) { go(); } });
-        } else if (window.confirm('Xoá ' + sel.length + ' khách hàng?')) { go(); }
-      });
-
-      // Bảng luôn nằm gọn trong 1 màn: cao = phần viewport còn lại tính từ đỉnh bảng.
-      // Dùng toạ độ TÀI LIỆU (rect.top + scrollY) để giá trị không đổi theo vị trí cuộn,
-      // nhờ vậy setHeight không tự kích hoạt lại chính nó (tránh vòng lặp).
-      var grid = document.getElementById('grid-customers');
-      var lastH = 0;
-      function fitHeight() {
-        // Đo bằng toạ độ TÀI LIỆU để không phụ thuộc vị trí cuộn hiện tại.
-        var top = grid.getBoundingClientRect().top + window.scrollY;
-        var h = Math.max(260, Math.round(window.innerHeight - top - 24));
-        if (Math.abs(h - lastH) < 3) { return; } // chênh không đáng kể → bỏ qua, tránh vòng lặp
-        lastH = h;
-        table.setHeight(h);
-        // Layout còn đệm dưới (padding content-wrapper…) → trừ đúng phần dư để trang hết cuộn.
-        var doc = document.documentElement;
-        var over = doc.scrollHeight - doc.clientHeight;
-        if (over > 2) {
-          lastH = Math.max(260, h - over);
-          table.setHeight(lastH);
-        }
-      }
-      // CHỈ tính lúc dựng xong + khi đổi kích thước cửa sổ.
-      // TUYỆT ĐỐI không gắn vào renderComplete: setHeight lại kích hoạt render → vòng lặp treo trang.
-      function fitSoon() { requestAnimationFrame(fitHeight); setTimeout(fitHeight, 300); }
-      table.on('tableBuilt', fitSoon);
-      window.addEventListener('resize', fitSoon);
-
-      document.getElementById('btn-search').addEventListener('click', reload);
-      document.getElementById('f-q').addEventListener('keydown', function (e) { if (e.key === 'Enter') { reload(); } });
-      document.getElementById('f-source').addEventListener('change', reload);
-      document.getElementById('f-city').addEventListener('change', reload);
-      // Ô ngày: gửi ISO cho server, hiện d/m/Y cho người dùng (luật chung của repo).
-      if (window.flatpickr) {
-        flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true });
-      }
-      document.querySelectorAll('#adv select, #adv input').forEach(function (el) {
-        el.addEventListener('change', reload);
-      });
-
-      // Panel lọc nâng cao
-      document.getElementById('btn-adv').addEventListener('click', function () {
-        var adv = document.getElementById('adv');
-        adv.classList.toggle('d-none');
-        this.classList.toggle('btn-primary', !adv.classList.contains('d-none'));
-        this.classList.toggle('btn-label-secondary', adv.classList.contains('d-none'));
-      });
-
-      // Chip: 3 nhóm (phễu / mua / chưa liên hệ) LOẠI TRỪ nhau — bấm lại để bỏ chọn.
-      function syncChips() {
-        document.querySelectorAll('.tk-chip').forEach(function (b) {
-          var on = (document.getElementById('f-' + b.getAttribute('data-k')).value || '') === b.getAttribute('data-v');
-          b.classList.toggle('btn-primary', on);
-          b.classList.toggle('btn-label-secondary', !on);
-        });
-      }
-      document.querySelectorAll('.tk-chip').forEach(function (b) {
-        b.addEventListener('click', function () {
-          var k = b.getAttribute('data-k'), v = b.getAttribute('data-v');
-          var next = (document.getElementById('f-' + k).value || '') === v ? '' : v;
-          ['segment', 'purchaseBucket', 'notContactedBucket'].forEach(function (x) { document.getElementById('f-' + x).value = ''; });
-          document.getElementById('f-' + k).value = next;
-          syncChips();
-          reload();
-        });
-      });
-
-      document.getElementById('btn-reset').addEventListener('click', function () {
-        document.getElementById('f-q').value = '';
-        FILTERS.forEach(function (k) { var el = document.getElementById('f-' + k); if (el) { el.value = ''; } });
-        document.querySelectorAll('.tk-datef').forEach(function (el) { if (el._flatpickr) { el._flatpickr.clear(); } });
-        document.querySelectorAll('#type-tabs .nav-link').forEach(function (a, i) { a.classList.toggle('active', i === 0); });
-        syncChips();
-        reload();
-      });
-      document.getElementById('type-tabs').addEventListener('click', function (e) {
-        var a = e.target.closest('.nav-link'); if (!a) { return; }
-        document.querySelectorAll('#type-tabs .nav-link').forEach(function (x) { x.classList.remove('active'); });
-        a.classList.add('active');
-        document.getElementById('f-customerType').value = a.getAttribute('data-type') || '';
-        reload();
-      });
-      // Xuất TOÀN BỘ theo bộ lọc đang áp (server-side) — không chỉ trang hiện tại.
-      document.getElementById('btn-export').addEventListener('click', function () {
-        var d = collectFilters();
-        var qs = Object.keys(d).map(function (k) {
-          return encodeURIComponent(k) + '=' + encodeURIComponent(d[k]);
-        }).join('&');
-        window.location = '?handler=Export' + (qs ? '&' + qs : '');
       });
     })();
   </script>

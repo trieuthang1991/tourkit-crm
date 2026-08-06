@@ -1,0 +1,315 @@
+/* tk-grid.js — lưới danh sách CHUẨN của TourKit (Tabulator, phân trang từ server).
+   Tách ra từ màn "Data khách hàng" để mọi màn danh sách dùng CHUNG một hành vi:
+     · phân trang/lọc/sắp xếp đẩy hết xuống server (?handler=Data)
+     · ô chọn nhiều dòng + thanh tác vụ hàng loạt
+     · menu hành động (chuột phải trên dòng + nút ⋮ cuối dòng)
+     · bảng luôn gọn trong 1 màn (chỉ 1 thanh cuộn, nằm trong bảng)
+   Giao diện đi kèm ở css/tk-grid.css. Dùng: tk.grid('#grid-x', { columns, actions, ... }).
+
+   Trang chỉ khai báo CỘT DỮ LIỆU — cột chọn và cột ⋮ do đây tự thêm. */
+(function () {
+  'use strict';
+  var tk = window.tk || (window.tk = {});
+
+  var esc = tk.escape || function (s) {
+    return (s == null ? '' : String(s)).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  };
+  var money = tk.money || function (n) { return (Number(n) || 0).toLocaleString('vi-VN'); };
+
+  // ===== Bộ dựng ô dùng chung (giữ mọi màn cùng một ngôn ngữ hình ảnh) =====
+  var g = {};
+  g.esc = esc;
+  g.money = money;
+
+  // Ô 2 dòng CHUẨN HOÁ — main đậm + sub mờ.
+  g.stack = function (main, sub) {
+    var m = '<div class="tk-cell-main" title="' + esc(main || '') + '">' + esc(main || '—') + '</div>';
+    var s = sub ? '<div class="tk-cell-sub" title="' + esc(sub) + '">' + esc(sub) + '</div>' : '';
+    return '<div class="tk-cell">' + m + s + '</div>';
+  };
+
+  // Bảng màu nhạt dùng CHUNG cho avatar + badge (liền mạch với dải thống kê).
+  var TONES = ['primary', 'info', 'success', 'warning', 'danger', 'secondary'];
+  g.toneOf = function (text) {
+    var s = String(text || ''), h = 0;
+    for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; }
+    return TONES[h % TONES.length];
+  };
+  // Chữ cái đầu của (tối đa) 2 từ cuối — "Lê Đức Vân" → "ĐV".
+  g.initials = function (name) {
+    var w = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!w.length) { return '?'; }
+    return (w.length === 1 ? w[0].slice(0, 2) : w[w.length - 2][0] + w[w.length - 1][0]).toUpperCase();
+  };
+  g.avatar = function (name, small) {
+    return '<span class="tk-av ' + (small ? 'tk-av-sm ' : '') + 'bg-label-' + g.toneOf(name) + '">' + esc(g.initials(name)) + '</span>';
+  };
+  g.icLine = function (icon, text, cls) {
+    if (!text) { return ''; }
+    return '<div class="tk-ic-line ' + (cls || '') + '"><i class="' + icon + '"></i>' +
+      '<span class="text-truncate" title="' + esc(text) + '">' + esc(text) + '</span></div>';
+  };
+  g.chip = function (text) {
+    return '<span class="tk-chip-sm bg-label-' + g.toneOf(text) + '" title="' + esc(text) + '">' + esc(text) + '</span>';
+  };
+  // Ô tiền: số đậm bên phải + ghi chú mờ bên dưới.
+  g.moneyCell = function (value, sub) {
+    return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main ' + ((value || 0) > 0 ? 'text-success' : '') + '">' +
+      money(value) + '</div>' + (sub ? '<div class="tk-cell-sub">' + esc(sub) + '</div>' : '') + '</div>';
+  };
+  tk.g = g;
+
+  /* tk.grid(selector, opts)
+     opts:
+       url          '?handler=Data'    — handler Razor (auth cookie; KHÔNG gọi /api/v1 vì API dùng JWT → 401)
+       filters      ['status', …]      — đọc giá trị từ #f-<key>, gửi kèm mỗi lần tải
+       columns      [...]              — CHỈ cột dữ liệu
+       actions      function(row)      — trả danh sách mục menu hành động (Tabulator menu items)
+       pageSize     20
+       selectable   true               — cột chọn + thanh tác vụ hàng loạt (#bulkbar)
+       totalLabel   'Tổng'             — nhãn ở dòng tổng (topCalc) tại cột chọn
+       exportName   'danh-sach.csv'    — tên file khi xuất các dòng đã chọn
+       bulkDeleteUrl '?handler=BulkDelete'
+       onBulkDeleted function()        — chạy sau khi xoá hàng loạt xong
+       wireFilters  true               — tự nối thanh lọc chuẩn (#btn-search, #f-q, #btn-reset, #btn-adv, .tk-chip, #type-tabs, #btn-export)
+       chipGroups   ['segment', …]     — các nhóm chip LOẠI TRỪ nhau
+       tabular      {...}              — tuỳ chọn Tabulator bổ sung (ghi đè)
+     trả về: { table, reload, filters } */
+  tk.grid = function (selector, opts) {
+    opts = opts || {};
+    var el = document.querySelector(selector);
+    if (!el) { return null; }
+    el.classList.add('tk-grid');
+
+    var filterKeys = opts.filters || [];
+    var selectable = opts.selectable !== false;
+
+    function val(id) { var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }
+
+    function collectFilters() {
+      var d = {};
+      var q = val('f-q'); if (q) { d.q = q; }
+      filterKeys.forEach(function (k) { var v = val('f-' + k); if (v) { d[k] = v; } });
+      return d;
+    }
+
+    var actionsFor = opts.actions || function () { return []; };
+    function rowActionMenu(e, row) { return actionsFor(row.getData()); }
+    function cellActionMenu(e, cell) { return actionsFor(cell.getRow().getData()); }
+
+    var columns = [];
+    if (selectable) {
+      columns.push({
+        // Ô chọn để làm tác vụ hàng loạt; tiêu đề là ô chọn-tất-cả của trang.
+        title: '', field: '__sel', width: 44, hozAlign: 'center', headerHozAlign: 'center',
+        titleFormatter: 'rowSelection', formatter: 'rowSelection',
+        headerSort: false, cellClick: function (e) { e.stopPropagation(); },
+        topCalc: function () { return ''; },
+        topCalcFormatter: function () { return '<span class="fw-semibold text-muted">' + esc(opts.totalLabel || 'Tổng') + '</span>'; }
+      });
+    }
+    columns = columns.concat(opts.columns || []);
+    if (opts.actions) {
+      columns.push({
+        title: '', field: '__act', width: 56, hozAlign: 'center', headerSort: false,
+        clickMenu: cellActionMenu,
+        formatter: function () {
+          return '<button type="button" class="btn btn-icon btn-sm" title="Hành động"><i class="ti ti-dots-vertical"></i></button>';
+        }
+      });
+    }
+
+    var config = {
+      layout: 'fitColumns',
+      // Chiều cao tính theo màn hình (fitHeight bên dưới) → bảng LUÔN gọn trong 1 màn,
+      // cuộn diễn ra NGAY TRONG bảng nên chỉ có MỘT thanh cuộn, không cuộn trang.
+      height: 420,
+      placeholder: 'Không có dữ liệu',
+      ajaxURL: opts.url || '?handler=Data',
+      ajaxParams: collectFilters,
+      pagination: true,
+      paginationMode: 'remote',
+      paginationSize: opts.pageSize || 20,
+      paginationSizeSelector: [20, 50, 100],
+      paginationCounter: 'rows',
+      columnDefaults: { headerSort: false, resizable: true, vertAlign: 'middle' },
+      columns: columns
+    };
+    if (opts.actions) { config.rowContextMenu = rowActionMenu; }
+    if (selectable) {
+      // KHÔNG dùng selectableRowsRangeMode:'click' — chế độ đó coi mỗi click là chọn một VÙNG mới
+      // nên bấm ô thứ hai lại bỏ ô thứ nhất (chỉ chọn được 1).
+      config.selectableRows = true;
+    }
+    Object.keys(opts.tabular || {}).forEach(function (k) { config[k] = opts.tabular[k]; });
+
+    var table = new Tabulator(selector, config);
+    function reload() { table.setData(); }
+    // Form offcanvas (tk.form / customer-form.js) gọi hook này sau khi lưu → nạp lại lưới, không tải lại cả trang.
+    window.tkGridReload = reload;
+
+    wireBulkBar(table, reload, opts);
+    fitHeight(el, table);
+    if (opts.wireFilters !== false) { wireFilterBar(reload, filterKeys, collectFilters, opts); }
+
+    return { table: table, reload: reload, filters: collectFilters };
+  };
+
+  // ===== Thanh tác vụ hàng loạt (#bulkbar) — chỉ hoạt động nếu trang có sẵn khối này =====
+  function wireBulkBar(table, reload, opts) {
+    var bulkbar = document.getElementById('bulkbar');
+    if (!bulkbar) { return; }
+    table.on('rowSelectionChanged', function (data) {
+      var c = document.getElementById('bulk-count');
+      if (c) { c.textContent = data.length; }
+      bulkbar.classList.toggle('d-none', data.length === 0);
+      bulkbar.classList.toggle('d-flex', data.length > 0);
+    });
+    on('bulk-clear', function () { table.deselectRow(); });
+    // Xuất riêng các dòng đã chọn (dữ liệu đang có sẵn ở client → tải ngay, không gọi server).
+    on('bulk-export', function () { table.download('csv', opts.exportName || 'danh-sach.csv', {}, 'selected'); });
+    on('bulk-delete', function () {
+      var sel = table.getSelectedData();
+      if (!sel.length) { return; }
+      var go = function () {
+        // Gọi handler Razor (auth bằng cookie) — KHÔNG gọi /api/v1 vì API dùng JWT, sẽ 401.
+        var token = document.querySelector('input[name="__RequestVerificationToken"]');
+        var fd = new FormData();
+        sel.forEach(function (d) { fd.append('ids', d.id); });
+        fetch(opts.bulkDeleteUrl || '?handler=BulkDelete', {
+          method: 'POST',
+          headers: token ? { 'RequestVerificationToken': token.value } : {},
+          body: fd
+        }).then(function (r) { return r.json(); }).then(function (res) {
+          table.deselectRow();
+          reload();
+          if (res && res.message) {
+            if (res.isSuccess && tk.toast) { tk.toast(res.message); }
+            else if (!res.isSuccess && tk.error) { tk.error(res.message); }
+          }
+          if (opts.onBulkDeleted) { opts.onBulkDeleted(res); }
+        });
+      };
+      if (tk.confirmDelete) {
+        tk.confirmDelete({ title: 'Xoá ' + sel.length + ' mục đã chọn?' }).then(function (ok) { if (ok) { go(); } });
+      } else if (window.confirm('Xoá ' + sel.length + ' mục đã chọn?')) { go(); }
+    });
+  }
+
+  // ===== Bảng luôn nằm gọn trong 1 màn =====
+  // Cao = phần viewport còn lại tính từ đỉnh bảng. Dùng toạ độ TÀI LIỆU (rect.top + scrollY)
+  // để giá trị không đổi theo vị trí cuộn, nhờ vậy setHeight không tự kích hoạt lại chính nó.
+  function fitHeight(el, table) {
+    var lastH = 0;
+    function fit() {
+      var top = el.getBoundingClientRect().top + window.scrollY;
+      var h = Math.max(260, Math.round(window.innerHeight - top - 24));
+      if (Math.abs(h - lastH) < 3) { return; } // chênh không đáng kể → bỏ qua, tránh vòng lặp
+      lastH = h;
+      table.setHeight(h);
+      // Layout còn đệm dưới (padding content-wrapper…) → trừ đúng phần dư để trang hết cuộn.
+      var doc = document.documentElement;
+      var over = doc.scrollHeight - doc.clientHeight;
+      if (over > 2) {
+        lastH = Math.max(260, h - over);
+        table.setHeight(lastH);
+      }
+    }
+    // CHỈ tính lúc dựng xong + khi đổi kích thước cửa sổ.
+    // TUYỆT ĐỐI không gắn vào renderComplete: setHeight lại kích hoạt render → vòng lặp treo trang.
+    function soon() { requestAnimationFrame(fit); setTimeout(fit, 300); }
+    table.on('tableBuilt', soon);
+    window.addEventListener('resize', soon);
+  }
+
+  // ===== Thanh lọc chuẩn của repo =====
+  function wireFilterBar(reload, filterKeys, collectFilters, opts) {
+    on('btn-search', reload);
+    var q = document.getElementById('f-q');
+    if (q) { q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { reload(); } }); }
+
+    // Ô ngày: gửi ISO cho server, hiện d/m/Y cho người dùng (luật chung của repo).
+    if (window.flatpickr) {
+      flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true });
+    }
+    // Mọi select/input mang class .tk-auto (và trong panel #adv) đổi giá trị là tải lại.
+    document.querySelectorAll('#adv select, #adv input, .tk-auto').forEach(function (e) {
+      e.addEventListener('change', reload);
+    });
+
+    // Panel lọc nâng cao
+    var btnAdv = document.getElementById('btn-adv');
+    if (btnAdv) {
+      btnAdv.addEventListener('click', function () {
+        var adv = document.getElementById('adv');
+        if (!adv) { return; }
+        adv.classList.toggle('d-none');
+        var open = !adv.classList.contains('d-none');
+        this.classList.toggle('btn-primary', open);
+        this.classList.toggle('btn-label-secondary', !open);
+      });
+    }
+
+    // Chip lọc nhanh: các nhóm trong chipGroups LOẠI TRỪ nhau — bấm lại để bỏ chọn.
+    var groups = opts.chipGroups || [];
+    function syncChips() {
+      document.querySelectorAll('.tk-chip').forEach(function (b) {
+        var f = document.getElementById('f-' + b.getAttribute('data-k'));
+        var on2 = f && (f.value || '') === b.getAttribute('data-v');
+        b.classList.toggle('btn-primary', !!on2);
+        b.classList.toggle('btn-label-secondary', !on2);
+      });
+    }
+    document.querySelectorAll('.tk-chip').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-k'), v = b.getAttribute('data-v');
+        var f = document.getElementById('f-' + k);
+        if (!f) { return; }
+        var next = (f.value || '') === v ? '' : v;
+        groups.forEach(function (x) { var e = document.getElementById('f-' + x); if (e) { e.value = ''; } });
+        f.value = next;
+        syncChips();
+        reload();
+      });
+    });
+
+    on('btn-reset', function () {
+      if (q) { q.value = ''; }
+      filterKeys.forEach(function (k) { var e = document.getElementById('f-' + k); if (e) { e.value = ''; } });
+      document.querySelectorAll('.tk-datef').forEach(function (e) { if (e._flatpickr) { e._flatpickr.clear(); } });
+      document.querySelectorAll('#type-tabs .nav-link').forEach(function (a, i) { a.classList.toggle('active', i === 0); });
+      syncChips();
+      reload();
+    });
+
+    // Tab phân loại: gán vào #f-<tabField> (mặc định customerType để tương thích màn khách hàng).
+    var tabs = document.getElementById('type-tabs');
+    if (tabs) {
+      var tabField = tabs.getAttribute('data-field') || 'customerType';
+      tabs.addEventListener('click', function (e) {
+        var a = e.target.closest('.nav-link'); if (!a) { return; }
+        document.querySelectorAll('#type-tabs .nav-link').forEach(function (x) { x.classList.remove('active'); });
+        a.classList.add('active');
+        var f = document.getElementById('f-' + tabField);
+        if (f) { f.value = a.getAttribute('data-type') || ''; }
+        reload();
+      });
+    }
+
+    // Xuất TOÀN BỘ theo bộ lọc đang áp (server-side) — không chỉ trang hiện tại.
+    on('btn-export', function () {
+      var d = collectFilters();
+      var qs = Object.keys(d).map(function (k) {
+        return encodeURIComponent(k) + '=' + encodeURIComponent(d[k]);
+      }).join('&');
+      window.location = (opts.exportUrl || '?handler=Export') + (qs ? '&' + qs : '');
+    });
+  }
+
+  function on(id, fn) {
+    var e = document.getElementById(id);
+    if (e) { e.addEventListener('click', fn); }
+  }
+})();
