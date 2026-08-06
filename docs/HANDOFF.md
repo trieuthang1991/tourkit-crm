@@ -101,11 +101,7 @@ Mockup tĩnh + menu: `D:/MiGroup/tourkitapp/tourkit/UI/*.html`, `.../CMS/KojiCRM
 >
 > ✅ Đã sửa: lỗi `RECEIPT_STATUS` (nay 0/1/2 đúng backend). ✅ Vé Máy Bay đã có trong Razor Pages.
 
-1. **Roll-out template Data khách hàng sang các màn khác** (việc chính hiện tại). Mỗi màn:
-   - Xem staging màn đó (stats gì / filter gì / cột gì) — vd Đơn hàng `/`, NCC, Phiếu thu/chi, Lead `/customer-data`-tương-tự.
-   - Mở rộng model nếu thiếu (theo pattern JSON+string-ID+list).
-   - Dựng: hàng thẻ Statistic + Input.Search + Select lọc + cột giàu + render phòng thủ.
-   - Chủ dự án định hướng ưu tiên "các màn giao dịch chính trước" (Đơn hàng, NCC, Phiếu thu/chi, Lead) nhưng CHƯA chốt — HỎI LẠI trước khi làm loạt.
+1. ~~**Roll-out template stats+search sang các màn**~~ — **ĐÃ XONG trên Razor Pages** (kiểm 2026-08 bằng grep: **35/35 màn list có `Stats` đều render thẻ thống kê + toolbar lọc + cột giàu**; 6 màn báo cáo/dashboard không có ô search là ĐÚNG thiết kế — lọc theo kỳ). Mục này trước đây nói về frontend React `web/` cũ; trên frontend canonical (Razor) không còn việc. **KHÔNG làm lại.**
 2. **Data khách hàng sâu hơn**: bảng con **Danh sách liên hệ** (nhiều người liên hệ/KH), bộ lọc đầu trang (chi nhánh, phễu khách), Xuất/Nhập file.
 3. **Module hệ cũ còn thiếu**: Vé Máy Bay, Điều hành Tour (phiếu điều hành DV), HRM (hồ sơ NV: ngày vào làm/thâm niên — trang "Bàn làm việc" đang để trống mấy field này).
 4. **API Gateway cho NCC ngoài** (SMS/Zalo/Bank/OCR/CRM) — CHỜ credential + thiết kế gateway (chủ dự án cấp). Seam abstraction đã sẵn (`ISmsSender/IZaloSender/IEmailSender`).
