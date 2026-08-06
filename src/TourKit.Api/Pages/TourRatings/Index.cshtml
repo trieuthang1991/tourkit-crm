@@ -42,8 +42,8 @@
       <div class="tk-stat">
         <span class="tk-stat-ic bg-label-@c.Color"><i class="ti ti-star"></i></span>
         <div class="lh-sm">
-          <div class="fw-bold" style="font-size:1.15rem">@c.Value</div>
-          <small class="text-muted" style="font-size:.75rem">@c.Label @(string.IsNullOrEmpty(c.Sub) ? "" : "· " + c.Sub)</small>
+          <div class="tk-stat-value">@c.Value</div>
+          <small class="tk-stat-label">@c.Label @(string.IsNullOrEmpty(c.Sub) ? "" : "· " + c.Sub)</small>
         </div>
       </div>
     }

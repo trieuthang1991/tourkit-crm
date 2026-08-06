@@ -319,6 +319,19 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+// Số liệu hiển thị theo kiểu Việt: 45.742.253.000 (không phải 45,742,253,000).
+// Trước đây phía server render bằng văn hoá mặc định (dấu phẩy) còn lưới render bằng vi-VN (dấu chấm)
+// → cùng một màn có hai kiểu số. Đặt vi-VN cho toàn bộ request là hết lệch.
+// KHÔNG ảnh hưởng nhập liệu: value provider của ASP.NET Core (form/query/route) luôn parse bằng
+// InvariantCulture, nên số thập phân gửi lên vẫn hiểu đúng.
+var vi = new System.Globalization.CultureInfo("vi-VN");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture(vi),
+    SupportedCultures = [vi],
+    SupportedUICultures = [vi],
+});
+
 app.UseCors("web");   // trước Authentication để preflight OPTIONS không cần token
 
 app.UseStaticFiles();   // phục vụ wwwroot (assets Vuexy) — đặt trước redirect để asset không bị 301
