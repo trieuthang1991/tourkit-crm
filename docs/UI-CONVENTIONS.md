@@ -51,11 +51,22 @@ Stack UI: ASP.NET Core Razor Pages + Bootstrap 5 + jQuery + Vuexy. Icon: **Table
   để mọi màn cùng một kiểu: dòng chính đậm + dòng phụ mờ, tối đa 2 dòng.
 - Handler dữ liệu: `ParseDataTables()` (đã hiểu cả `page/size/q` của tk.grid) + `GridJson(dt, …)`
   ở `TkListPageModel` — payload phục vụ đồng thời Tabulator và DataTables.
+- **Bốn luật chủ dự án đã chốt** (đã cài trong `tk.grid`, đừng làm khác):
+  1. Kích ô dữ liệu **không** tích chọn dòng (`selectableRows:'highlight'`); kích dòng thì `onRowClick`
+     mở form sửa / panel chi tiết.
+  2. Thanh tác vụ hàng loạt **nổi bên trong bảng** (`.tk-bulkbar`), không đẩy nội dung, không tăng chiều cao.
+  3. Badge trạng thái/loại dùng formatter chuẩn `tkBadge`/`tkStack`/`tkMedia`; `tkBadge` lấy nhãn từ
+     GIÁ TRỊ cột nên cột phải trỏ `statusLabel`, không phải mã số `status`.
+  4. Số liệu kiểu Việt (app đặt vi-VN bằng `UseRequestLocalization`) + `tabular-nums` cho cột tiền.
 - **Bẫy đã gặp, đừng lặp lại:** không đặt `selectableRowsRangeMode:'click'` (chỉ chọn được 1 dòng);
   **tuyệt đối không** gọi `setHeight` trong `renderComplete` (vòng lặp vô hạn → treo trang);
-  select2 phát sự kiện change kiểu jQuery nên phải bind qua jQuery, không `addEventListener`.
+  select2 phát sự kiện change kiểu jQuery nên phải bind qua jQuery, không `addEventListener`;
+  Tabulator 6 **bỏ** callback khai báo trong options — `rowClick` phải đăng ký qua `table.on(...)`.
 
 ### 3b. Màn cũ còn dùng DataTables
+
+Chỉ còn màn **Data khách hàng bản cũ** (`/khach-hang/ban-cu`, giữ để đối chiếu) và các **danh mục nhỏ**
+dùng `tk.tableClient` (bảng render sẵn ở server). Toàn bộ 35 màn danh sách server-side đã chuyển sang `tk.grid`.
 
 - Dữ liệu lớn: **DataTables server-side** (`serverSide: true`, handler `OnGetData`). Không tải hết ra client.
 - Bắt buộc có: ô **tìm kiếm**, **chọn số dòng/trang**, **"Hiện X–Y trên Z"** — **ngôn ngữ Tiếng Việt** (`language:{...}`).
