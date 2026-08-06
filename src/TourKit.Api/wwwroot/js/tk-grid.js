@@ -110,7 +110,9 @@
     }
     var dataCols = (opts.columns || []).slice();
     // Nhãn "Tổng" của dòng tổng đặt ở cột DỮ LIỆU đầu tiên (cột ô chọn chỉ rộng 44px, chữ bị cắt).
-    if (dataCols.length && !dataCols[0].topCalc) {
+    // Chỉ thêm khi màn THỰC SỰ có cột cộng tổng — nếu không sẽ thừa một dải trống chỉ ghi "Tổng".
+    var hasCalc = dataCols.some(function (c) { return c && c.topCalc; });
+    if (hasCalc && !dataCols[0].topCalc) {
       dataCols[0] = Object.assign({}, dataCols[0], {
         topCalc: function () { return ''; },
         topCalcFormatter: function () { return '<span class="fw-semibold text-muted">' + esc(opts.totalLabel || 'Tổng') + '</span>'; }
@@ -352,6 +354,9 @@
       document.querySelectorAll('.tk-datef').forEach(function (e) { if (e._flatpickr) { e._flatpickr.clear(); } });
       document.querySelectorAll('#type-tabs .nav-link').forEach(function (a, i) { a.classList.toggle('active', i === 0); });
       syncChips();
+      // Màn có giá trị lọc MẶC ĐỊNH (vd hàng chờ duyệt luôn status=0) đặt lại giá trị đó ở đây,
+      // trước khi tải — nếu để trang tự set sau thì phải gọi thêm một lượt tải nữa.
+      if (opts.onReset) { opts.onReset(); }
       reload();
     });
 
