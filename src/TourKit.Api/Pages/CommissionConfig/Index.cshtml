@@ -3,9 +3,11 @@
 @{ ViewData["Title"] = "Thiết lập hoa hồng"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
@@ -13,69 +15,65 @@
   <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm quy tắc</button>
 </div>
 
-@* 4 KPI — bám StatGrid hệ cũ *@
-<div class="row g-3 mb-3">
-  <div class="col-sm-6 col-lg-3">
-    <div class="card h-100"><div class="card-body d-flex align-items-center">
-      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ti ti-percentage"></i></span></div>
-      <div><small class="text-muted d-block">Tổng quy tắc</small><h5 class="mb-0 tk-num">@Model.Stats.Total.ToString("#,##0")</h5></div>
-    </div></div>
-  </div>
-  <div class="col-sm-6 col-lg-3">
-    <div class="card h-100"><div class="card-body d-flex align-items-center">
-      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-success"><i class="ti ti-check"></i></span></div>
-      <div><small class="text-muted d-block">Đang áp dụng</small><h5 class="mb-0 tk-num">@Model.Stats.Active.ToString("#,##0")</h5></div>
-    </div></div>
-  </div>
-  <div class="col-sm-6 col-lg-3">
-    <div class="card h-100"><div class="card-body d-flex align-items-center">
-      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-secondary"><i class="ti ti-player-pause"></i></span></div>
-      <div><small class="text-muted d-block">Tạm ngừng</small><h5 class="mb-0 tk-num">@Model.Stats.Inactive.ToString("#,##0")</h5></div>
-    </div></div>
-  </div>
-  <div class="col-sm-6 col-lg-3">
-    <div class="card h-100"><div class="card-body d-flex align-items-center">
-      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-info"><i class="ti ti-chart-bar"></i></span></div>
-      <div><small class="text-muted d-block">Tỉ lệ TB</small><h5 class="mb-0">@Model.Stats.AvgPercentage.ToString("0.##")%</h5></div>
-    </div></div>
-  </div>
-</div>
+@{
+    // 4 KPI — bám StatGrid hệ cũ, gói vào dải mảnh dùng chung.
+    (string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("Tổng quy tắc", Model.Stats.Total.ToString("#,##0"), "ti ti-percentage", "primary"),
+        ("Đang áp dụng", Model.Stats.Active.ToString("#,##0"), "ti ti-check", "success"),
+        ("Tạm ngừng", Model.Stats.Inactive.ToString("#,##0"), "ti ti-player-pause", "secondary"),
+        ("Tỉ lệ TB", Model.Stats.AvgPercentage.ToString("0.##") + "%", "ti ti-chart-bar", "info"),
+    };
+}
 
-@* Thanh lọc — đủ tiêu chí CommissionRuleListFilter (Q · UserId · Status), đẩy hết xuống service. *@
-<div class="card mb-3">
-  <div class="card-body">
+<div class="tk-surface">
+
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem">@s.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  @* Thanh lọc — đủ tiêu chí CommissionRuleListFilter (Q · UserId · Status), đẩy hết xuống service. *@
+  <div class="tk-pad">
     <div class="row g-2 align-items-center">
-      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Tên nhân viên…" /></div>
-      <div class="col-md-3">
+      <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Tên nhân viên…" /></div>
+      <div class="col-md-4">
         <select id="f-userId" class="form-select tk-s2f" data-placeholder="Nhân viên">
           <option value=""></option>
           @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
         </select>
       </div>
-      <div class="col-md-2 d-flex gap-2">
-        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
 
-    @* Segmented trạng thái của hệ cũ *@
-    <div class="btn-group btn-group-sm mt-3" role="group" id="seg-status">
-      <button type="button" class="btn btn-primary" data-status="">Tất cả (@Model.Stats.Total.ToString("#,##0"))</button>
-      <button type="button" class="btn btn-label-primary" data-status="1">Đang áp dụng</button>
-      <button type="button" class="btn btn-label-primary" data-status="0">Tạm ngừng</button>
+    @* Trạng thái (Segmented hệ cũ) — chuyển sang chip lọc nhanh chuẩn của tk.grid *@
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top">
+      <span class="text-muted small fw-medium" style="min-width:110px">Trạng thái</span>
+      <input type="hidden" id="f-status" value="" />
+      <button type="button" class="btn btn-sm btn-primary tk-chip" data-k="status" data-v="">Tất cả <span class="badge bg-white text-dark ms-1">@Model.Stats.Total.ToString("#,##0")</span></button>
+      <button type="button" class="btn btn-sm btn-label-secondary tk-chip" data-k="status" data-v="1">Đang áp dụng <span class="badge bg-secondary ms-1">@Model.Stats.Active.ToString("#,##0")</span></button>
+      <button type="button" class="btn btn-sm btn-label-secondary tk-chip" data-k="status" data-v="0">Tạm ngừng <span class="badge bg-secondary ms-1">@Model.Stats.Inactive.ToString("#,##0")</span></button>
     </div>
   </div>
-</div>
 
-<div class="card">
-  <h5 class="card-header">Danh sách quy tắc hoa hồng</h5>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr><th class="text-center">#</th><th style="width:50%">Nhân viên</th><th class="text-end" style="width:15%">Tỉ lệ (%)</th><th style="width:15%">Trạng thái</th><th></th></tr>
-      </thead>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2">
+    <span class="fw-medium"><span id="bulk-count">0</span> quy tắc đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-commission-config"></div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
@@ -109,71 +107,64 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt, segStatus = '';
-
-    function collectFilters(d) {
-      var u = $('#f-userId').val(); if (u) { d.userId = u; }
-      if (segStatus !== '') { d.status = segStatus; }
-      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
-    }
+    var oc, grid;
 
     $(function () {
+      var g = tk.g, esc = g.esc;
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
-      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
-        columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: 'userName', render: function (v) { return '<span class="fw-medium">' + tk.escape(v) + '</span>'; } },
-          { data: 'percentage', className: 'text-end', render: function (v) { return (Number(v) || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + '%'; } },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end text-nowrap', render: function () {
-              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
-        ]
-      });
-
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'quy tắc hoa hồng',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'quy tắc hoa hồng',
         rules: { 'Input.UserId': { required: true }, 'Input.Percentage': { required: true, number: true, min: 0 } },
         messages: { 'Input.UserId': { required: 'Bắt buộc chọn nhân viên' }, 'Input.Percentage': { required: 'Bắt buộc nhập %' } },
         // Sửa: UpdateCommissionRuleDto không nhận UserId → khoá ô nhân viên.
         afterOpen: function (data) { $('#frm [name="Input.UserId"]').prop('disabled', !!data).trigger('change.select2'); }
       });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('#seg-status button').on('click', function () {
-        segStatus = this.getAttribute('data-status');
-        $('#seg-status button').removeClass('btn-primary').addClass('btn-label-primary');
-        $(this).removeClass('btn-label-primary').addClass('btn-primary');
-        dt.ajax.reload();
-      });
-      $('#btn-reset').on('click', function () {
-        $('#f-q').val('');
-        $('#f-userId').val('').trigger('change.select2');
-        segStatus = '';
-        $('#seg-status button').removeClass('btn-primary').addClass('btn-label-primary');
-        $('#seg-status button[data-status=""]').removeClass('btn-label-primary').addClass('btn-primary');
-        dt.ajax.reload();
-      });
+      function delRow(r) {
+        tk.confirmDelete({ title: 'Xoá quy tắc hoa hồng?', text: r.userName || '' }).then(function (ok) {
+          if (!ok) { return; }
+          var f = document.getElementById('delete-form');
+          f.querySelector('[name="id"]').value = r.id;
+          f.submit();
+        });
+      }
 
-      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var id = dt.row($(this).closest('tr')).data().id;
-        tk.confirmDelete({ title: 'Xoá quy tắc hoa hồng?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      grid = tk.grid('#grid-commission-config', {
+        filters: ['userId', 'status'],
+        chipGroups: ['status'],
+        exportName: 'quy-tac-hoa-hong.csv',
+        actions: function (r) {
+          return [
+            { label: '<i class="ti ti-edit me-2"></i>Sửa quy tắc', action: function () { oc.open(r); } },
+            { separator: true },
+            { label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá quy tắc</span>', action: function () { delRow(r); } }
+          ];
+        },
+        onRowClick: function (r) { oc.open(r); },
+        columns: [
+          { title: 'Nhân viên', field: 'userName', widthGrow: 5, minWidth: 260, formatter: 'tkMedia' },
+          {
+            title: 'Tỉ lệ (%)', field: 'percentage', width: 140, hozAlign: 'right', headerHozAlign: 'right',
+            formatter: function (c) {
+              var v = (Number(c.getValue()) || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + v + '%</div></div>';
+            }
+          },
+          {
+            title: 'Trạng thái', field: 'statusLabel', width: 150,
+            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
+          }
+        ]
       });
     });
   </script>

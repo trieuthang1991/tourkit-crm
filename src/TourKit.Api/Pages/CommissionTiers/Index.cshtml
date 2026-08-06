@@ -3,26 +3,20 @@
 @{ ViewData["Title"] = "Chính sách hoa hồng bậc thang"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-  <h4 class="mb-0">Chính sách hoa hồng (bậc thang)</h4>
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">Hoa hồng <span class="mx-1">/</span> <span class="text-body">Chính sách bậc thang</span></div>
+    <h4 class="mb-0">Chính sách hoa hồng (bậc thang)</h4>
+  </div>
 </div>
 
-<div class="card">
-  <h5 class="card-header">Chính sách hoa hồng</h5>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          <th class="text-center">#</th><th style="width:34%">Tên chính sách</th><th style="width:22%">Khoảng ngày</th>
-          <th class="text-end" style="width:10%">Số NV</th><th class="text-end" style="width:10%">Số bậc</th>
-          <th style="width:14%">Trạng thái</th><th></th>
-        </tr>
-      </thead>
-    </table>
-  </div>
+<div class="tk-surface">
+  <div id="grid-commission-tiers"></div>
 </div>
 
 @* Modal chi tiết (chỉ xem): nhân viên áp dụng + bảng bậc lợi nhuận. *@
@@ -36,13 +30,12 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var dt;
-
     function openDetail(row) {
       $('#md-detail .modal-title').text('Chi tiết — ' + row.name);
       $('#detail-body').html('<div class="text-muted">Đang tải…</div>');
@@ -67,21 +60,39 @@
     }
 
     $(function () {
+      var g = tk.g, money = g.money;
+
       // Server-side: mỗi lần chỉ tải 1 trang (không get-all ra view).
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
+      var grid = tk.grid('#grid-commission-tiers', {
+        filters: [],
+        selectable: false,   // màn chỉ để xem, không có tác vụ hàng loạt
+        actions: function (r) {
+          return [{ label: '<i class="ti ti-eye me-2"></i>Xem chi tiết chính sách', action: function () { openDetail(r); } }];
+        },
+        onRowClick: openDetail,
         columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: 'name', render: function (v) { return '<span class="fw-medium">' + tk.escape(v) + '</span>'; } },
-          { data: null, render: function (r) { return tk.escape(r.startDateText) + ' → ' + tk.escape(r.endDateText); } },
-          { data: 'userCount', className: 'text-end', render: function (v) { return tk.money(v); } },
-          { data: 'tierCount', className: 'text-end', render: function (v) { return tk.money(v); } },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end', render: function () { return '<button type="button" class="btn btn-sm btn-label-secondary js-detail" title="Chi tiết"><i class="ti ti-eye me-1"></i>Chi tiết</button>'; } }
+          { title: 'Tên chính sách', field: 'name', widthGrow: 4, minWidth: 250, formatter: 'tkMedia' },
+          {
+            title: 'Khoảng ngày', field: 'startDateText', widthGrow: 2, minWidth: 180,
+            formatter: function (c) {
+              var r = c.getData();
+              return g.stack(r.startDateText + ' → ' + r.endDateText, null);
+            }
+          },
+          {
+            title: 'Số NV', field: 'userCount', width: 110, hozAlign: 'right', headerHozAlign: 'right',
+            formatter: function (c) { return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + money(c.getValue()) + '</div></div>'; }
+          },
+          {
+            title: 'Số bậc', field: 'tierCount', width: 110, hozAlign: 'right', headerHozAlign: 'right',
+            formatter: function (c) { return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + money(c.getValue()) + '</div></div>'; }
+          },
+          {
+            title: 'Trạng thái', field: 'statusLabel', width: 150,
+            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
+          }
         ]
       });
-
-      $('#tbl tbody').on('click', '.js-detail', function () { openDetail(dt.row($(this).closest('tr')).data()); });
     });
   </script>
 }
