@@ -218,7 +218,14 @@
         return d;
       }
 
-      function viewRow(d) { window.location = '/Customers/Details/' + d.id; }
+      function viewRow(d) { window.location = '/khach-hang/' + d.id; }
+      // Lịch hẹn/chăm sóc của ĐÚNG khách này (trang /lich-hen đọc customerId từ URL).
+      function careRow(d) {
+        window.location = '/lich-hen?customerId=' + encodeURIComponent(d.id) +
+          '&customerName=' + encodeURIComponent(d.fullName || '');
+      }
+      function callRow(d) { if (d.phone) { window.location = 'tel:' + String(d.phone).replace(/\s/g, ''); } }
+      function mailRow(d) { if (d.email) { window.location = 'mailto:' + d.email; } }
       function delRow(d) {
         var go = function () {
           var f = document.getElementById('delete-form');
@@ -235,22 +242,28 @@
         if (typeof window.openCustomerOffcanvas === 'function') { window.openCustomerOffcanvas(d); }
       }
 
-      // Menu hành động dùng chung: nút ⋮ (click trái) và chuột phải trên dòng.
-      var VIEW = '<i class="ti ti-eye me-2"></i>Xem chi tiết';
-      var EDIT = '<i class="ti ti-edit me-2"></i>Sửa';
-      var DEL = '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá</span>';
-      var rowActionMenu = [
-        { label: VIEW, action: function (e, row) { viewRow(row.getData()); } },
-        { label: EDIT, action: function (e, row) { editRow(row.getData()); } },
-        { separator: true },
-        { label: DEL, action: function (e, row) { delRow(row.getData()); } }
-      ];
-      var cellActionMenu = [
-        { label: VIEW, action: function (e, cell) { viewRow(cell.getRow().getData()); } },
-        { label: EDIT, action: function (e, cell) { editRow(cell.getRow().getData()); } },
-        { separator: true },
-        { label: DEL, action: function (e, cell) { delRow(cell.getRow().getData()); } }
-      ];
+      // MENU HÀNH ĐỘNG THEO NGHIỆP VỤ KHÁCH HÀNG (không phải CRUD chung chung).
+      // Dựng động theo từng dòng: chỉ hiện "Gọi"/"Gửi email" khi khách CÓ số/є-mail.
+      function actionsFor(d) {
+        var items = [
+          { label: '<i class="ti ti-eye me-2"></i>Xem chi tiết', action: function () { viewRow(d); } },
+          { label: '<i class="ti ti-edit me-2"></i>Sửa thông tin', action: function () { editRow(d); } },
+          { separator: true },
+          { label: '<i class="ti ti-headset me-2"></i>Lịch hẹn &amp; chăm sóc', action: function () { careRow(d); } }
+        ];
+        if (d.phone) {
+          items.push({ label: '<i class="ti ti-phone me-2"></i>Gọi ' + esc(d.phone), action: function () { callRow(d); } });
+        }
+        if (d.email) {
+          items.push({ label: '<i class="ti ti-mail me-2"></i>Gửi email', action: function () { mailRow(d); } });
+        }
+        items.push({ separator: true });
+        items.push({ label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá khách</span>', action: function () { delRow(d); } });
+        return items;
+      }
+      // Tabulator nhận hàm trả về danh sách mục → mỗi dòng có menu riêng theo dữ liệu của nó.
+      function rowActionMenu(e, row) { return actionsFor(row.getData()); }
+      function cellActionMenu(e, cell) { return actionsFor(cell.getRow().getData()); }
 
       var curPage = 1;
 

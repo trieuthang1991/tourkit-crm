@@ -134,6 +134,16 @@
       $('#f-customerId').select2({ width: '100%', allowClear: true, placeholder: 'Khách hàng',
         ajax: { url: '?handler=CustomerSearch', dataType: 'json', delay: 250, data: function (p) { return { q: p.term }; }, processResults: function (d) { return d; } }, minimumInputLength: 2 });
 
+      // Mở từ nơi khác kèm ?customerId=..&customerName=.. (vd menu hành động ở Data khách hàng)
+      // → chọn sẵn khách đó để danh sách lọc đúng ngay, khỏi gõ tìm lại.
+      (function () {
+        var qs = new URLSearchParams(location.search);
+        var cid = qs.get('customerId');
+        if (!cid) { return; }
+        var name = qs.get('customerName') || 'Khách đã chọn';
+        $('#f-customerId').append(new Option(name, cid, true, true)).trigger('change.select2');
+      })();
+
       dt = tk.table('#tbl', {
         url: '?handler=Data',
         extraData: collectFilters,
