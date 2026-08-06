@@ -3,82 +3,100 @@
 @{ ViewData["Title"] = Model.ByCategory ? $"Quản lý chuyến — {Model.CategoryLabel}" : "Chuyến đi (Tour / LKH)"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao dien luoi dung CHUNG moi man danh sach - nap sau tabulator de override thang. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
+}
+
+@{
+    // 4 KPI — bám StatGrid hệ cũ, gói vào dải mảnh dùng chung.
+    (string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("Tổng chuyến", Model.Stats.Total.ToString("#,##0"), "ti ti-route", "primary"),
+        ("Sắp khởi hành", Model.Stats.Upcoming.ToString("#,##0"), "ti ti-plane-departure", "success"),
+        ("Đã đóng", Model.Stats.Closed.ToString("#,##0"), "ti ti-lock", "danger"),
+        ("Tổng chỗ", Model.Stats.TotalSlots.ToString("#,##0"), "ti ti-armchair", "info"),
+    };
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-  <h4 class="mb-0">@(Model.ByCategory ? $"Quản lý chuyến — {Model.CategoryLabel}" : "Chuyến đi (Tour / LKH)")</h4>
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">Điều hành <span class="mx-1">/</span> <span class="text-body">Chuyến đi</span></div>
+    <h4 class="mb-0">@(Model.ByCategory ? $"Quản lý chuyến — {Model.CategoryLabel}" : "Chuyến đi (Tour / LKH)")</h4>
+  </div>
   <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm chuyến</button>
 </div>
 
-@* 4 KPI — bám StatGrid hệ cũ *@
-<div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chuyến</small><h5 class="mb-0 tk-num">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Sắp khởi hành</small><h5 class="mb-0 text-success tk-num">@Model.Stats.Upcoming.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã đóng</small><h5 class="mb-0 text-danger tk-num">@Model.Stats.Closed.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chỗ</small><h5 class="mb-0 tk-num">@Model.Stats.TotalSlots.ToString("#,##0")</h5></div></div></div>
-</div>
+<div class="tk-surface">
 
-@* Thanh lọc — bám staging /sample-tours ở các field CÓ model chuyến: q · loại tour · NVĐH ·
-   khoảng ngày khởi hành · khoảng ngày kết thúc · sắp xếp. (TT thanh toán/NCC/cọc/người tạo là cấp ĐƠN,
-   không có ở model chuyến → chưa đưa vào, tránh bịa.) *@
-<div class="card mb-3">
-  <div class="card-body">
-    @* LƯU Ý: tk.dateRanges() (tk.js) gộp ô "…From/…To" thành 1 range và ẨN CẢ CỘT chứa ô "…To".
-       => Mỗi ô "…To" để RIÊNG 1 cột; KHÔNG đặt nút/điều khiển khác chung cột đó. *@
-    <div class="row g-2 align-items-end">
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem">@s.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  @* Thanh lọc — bám staging /sample-tours ở các field CÓ model chuyến: q · loại tour · NVĐH ·
+     khoảng ngày khởi hành · khoảng ngày kết thúc · sắp xếp. (TT thanh toán/NCC/cọc/người tạo là cấp ĐƠN,
+     không có ở model chuyến → chưa đưa vào, tránh bịa.) *@
+  <div class="tk-pad">
+    @* Tab trạng thái — bám SegmentTabs hệ cũ (Tất cả / Đang mở / Đã đóng) *@
+    <ul class="nav nav-tabs mb-3" id="type-tabs" data-field="isClosed">
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả <span class="badge bg-label-secondary ms-1">@Model.Stats.Total.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="false">Đang mở</a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="true">Đã đóng <span class="badge bg-label-secondary ms-1">@Model.Stats.Closed.ToString("#,##0")</span></a></li>
+    </ul>
+    <input type="hidden" id="f-isClosed" value="" />
+
+    <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / tên chuyến" /></div>
       <div class="col-md-2">
         <select id="f-tourType" class="form-select tk-s2f" data-placeholder="Loại hình"><option value=""></option>@foreach (var t in Model.TourTypes) { <option value="@t">@t</option> }</select>
       </div>
-      <div class="col-md-3">
+      <div class="col-md-2">
         <select id="f-assignedToUserId" class="form-select tk-s2f" data-placeholder="NV điều hành"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
       </div>
-      <div class="col-md-3">
-        <select id="f-sort" class="form-select">
-          <option value="dateDesc">Ngày khởi hành: mới → cũ</option>
-          <option value="dateAsc">Ngày khởi hành: cũ → mới</option>
+      <div class="col-md-2">
+        <select id="f-sort" class="form-select tk-auto">
+          <option value="dateDesc">Ngày KH: mới → cũ</option>
+          <option value="dateAsc">Ngày KH: cũ → mới</option>
           <option value="slots">Số chỗ nhiều nhất</option>
           <option value="code">Mã chuyến (A→Z)</option>
         </select>
       </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-filter"></i></button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại bộ lọc"><i class="ti ti-rotate"></i></button>
+      </div>
     </div>
-    <div class="row g-2 align-items-end mt-1">
+
+    @* LƯU Ý: tk.dateRanges() (tk.js) gộp ô "…From/…To" thành 1 range và ẨN CẢ CỘT chứa ô "…To".
+       => Mỗi ô "…To" để RIÊNG 1 cột; KHÔNG đặt nút/điều khiển khác chung cột đó. *@
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
       <div class="col-md-3"><input type="text" id="f-departureFrom" class="form-control tk-datef" placeholder="Ngày khởi hành từ" /></div>
       <div class="col-md-3"><input type="text" id="f-departureTo" class="form-control tk-datef" placeholder="Ngày khởi hành đến" /></div>
       <div class="col-md-3"><input type="text" id="f-endFrom" class="form-control tk-datef" placeholder="Ngày kết thúc từ" /></div>
       <div class="col-md-3"><input type="text" id="f-endTo" class="form-control tk-datef" placeholder="Ngày kết thúc đến" /></div>
-      <div class="col-12 d-flex gap-2 mt-2">
-        <button type="button" class="btn btn-primary text-nowrap" id="btn-search"><i class="ti ti-search me-1"></i>Tìm</button>
-        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại bộ lọc"><i class="ti ti-rotate"></i></button>
-      </div>
     </div>
   </div>
-</div>
 
-@* Tab trạng thái — bám SegmentTabs hệ cũ (Tất cả / Đang mở / Đã đóng) *@
-<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
-  <li class="nav-item"><button type="button" class="nav-link active" data-v="">Tất cả (@Model.Stats.Total)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-v="false">Đang mở</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-v="true">Đã đóng (@Model.Stats.Closed)</button></li>
-</ul>
-
-<div class="card">
-  <div class="card-header"><h5 class="mb-0">Danh sách chuyến khởi hành</h5></div>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          <th class="text-center" style="min-width:48px">#</th><th style="min-width:250px">Tour / LKH</th><th style="min-width:120px">Ngày khởi hành</th>
-          <th class="text-end" style="min-width:120px">Giá</th><th class="text-center" style="min-width:170px">Chỗ (Tổng/Giữ/Bán/Còn)</th>
-          <th style="min-width:120px">Ngày đóng chỗ</th><th style="min-width:150px">Điều hành</th><th style="min-width:120px">Trạng thái</th><th style="min-width:56px"></th>
-        </tr>
-      </thead>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> chuyến đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-departures"></div>
 </div>
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
@@ -105,7 +123,7 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
@@ -113,90 +131,102 @@
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt, isClosed = '';
-    // Mọi tiêu chí đẩy xuống SERVER (DepartureListFilter) — không lọc ở client.
-    var FILTERS = ['tourType', 'assignedToUserId', 'departureFrom', 'departureTo', 'endFrom', 'endTo', 'sort'];
-
-    function collectFilters(d) {
-      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
-      if (isClosed !== '') { d.isClosed = isClosed; }
-      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
-    }
+    var oc, grid;
 
     $(function () {
+      var g = tk.g, esc = g.esc, money = g.money;
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
-      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
 
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
-        columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: null, render: function (r) {
-              // Cột ghép: tên chuyến · mã · loại tour (bám CellEntity hệ cũ)
-              return '<a href="/chuyen-di/' + r.id + '" class="fw-medium">' + tk.escape(r.title) + '</a>' +
-                     '<div class="small text-muted">' + tk.escape(r.code) + ' · ' + tk.escape(r.tourType) + '</div>';
-            } },
-          { data: null, className: 'text-nowrap', render: function (r) {
-              return '<div>' + tk.escape(r.departureDateText) + '</div>' +
-                     (r.endDateText ? '<div class="small text-muted">→ ' + tk.escape(r.endDateText) + '</div>' : '');
-            } },
-          { data: 'price', className: 'text-end fw-medium', render: function (v) { return v > 0 ? tk.money(v) : '<span class="text-muted">—</span>'; } },
-          { data: null, className: 'text-center text-nowrap', render: function (r) {
-              // Tổng · Giữ · Bán · Còn (bám cột chỗ staging /sample-tours)
-              return '<span class="badge bg-label-secondary me-1" title="Tổng">' + r.totalSlots + '</span>' +
-                     '<span class="badge bg-label-warning me-1" title="Giữ chỗ">' + r.seatHeld + '</span>' +
-                     '<span class="badge bg-label-success me-1" title="Đã bán">' + r.seatSold + '</span>' +
-                     '<span class="badge bg-label-info" title="Còn lại">' + r.seatRemaining + '</span>';
-            } },
-          { data: 'closedAtText', className: 'text-nowrap' },
-          { data: 'assigneeName', render: function (v) { return tk.trunc(v, 170); } },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end', render: function (r) {
-              return '<a href="/chuyen-di/' + r.id + '" class="btn btn-icon btn-sm" title="Chi tiết"><i class="ti ti-eye"></i></a>' +
-                     (r.isClosed ? '' : '<button type="button" class="btn btn-icon btn-sm js-close" title="Đóng chuyến"><i class="ti ti-lock"></i></button>');
-            } }
-        ]
-      });
-
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'chuyến đi',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'chuyến đi',
         rules: { 'Input.Code': { required: true }, 'Input.Title': { required: true } },
         messages: { 'Input.Code': { required: 'Bắt buộc nhập mã chuyến' }, 'Input.Title': { required: 'Bắt buộc nhập tên chuyến' } }
       });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('.tk-datef').on('change', function () { dt.ajax.reload(); });
-      $('#f-sort').on('change', function () { dt.ajax.reload(); });
-      $('#btn-reset').on('click', function () {
-        $('#f-q').val('');
-        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
-        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
-        isClosed = '';
-        $('#tabs .nav-link').removeClass('active').filter('[data-v=""]').addClass('active');
-        dt.ajax.reload();
-      });
-      $('#tabs').on('click', '.nav-link', function () {
-        $('#tabs .nav-link').removeClass('active');
-        $(this).addClass('active');
-        isClosed = this.getAttribute('data-v');
-        dt.ajax.reload();
-      });
-
-      // Server-side: lấy dữ liệu dòng từ DataTables API (không có data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-close', function () {
-        var row = dt.row($(this).closest('tr')).data();
-        tk.confirmDelete({ title: 'Đóng chuyến ' + row.code + '?', text: 'Chuyến đã đóng sẽ khoá đặt chỗ.', confirm: 'Đóng chuyến' })
+      function closeRow(r) {
+        tk.confirmDelete({ title: 'Đóng chuyến ' + r.code + '?', text: 'Chuyến đã đóng sẽ khoá đặt chỗ.', confirm: 'Đóng chuyến' })
           .then(function (ok) {
             if (!ok) { return; }
-            var fd = new FormData(); fd.append('id', row.id);
+            var fd = new FormData(); fd.append('id', r.id);
             tk.post('?handler=Close', fd).then(function (res) {
-              if (res && res.isSuccess) { dt.ajax.reload(null, false); tk.toast(res.message || 'Đã đóng chuyến.'); }
+              if (res && res.isSuccess) { grid.reload(); tk.toast(res.message || 'Đã đóng chuyến.'); }
               else { tk.error((res && res.message) || 'Đóng chuyến thất bại.'); }
             });
           });
+      }
+
+      // Chỉ chuyến CHƯA đóng mới có mục "Đóng chuyến" — giữ đúng luật hệ cũ.
+      function actionsFor(r) {
+        var items = [
+          { label: '<i class="ti ti-eye me-2"></i>Chi tiết chuyến', action: function () { window.location = '/chuyen-di/' + r.id; } },
+          { label: '<i class="ti ti-edit me-2"></i>Sửa chuyến', action: function () { oc.open(r); } }
+        ];
+        if (!r.isClosed) {
+          items.push({ separator: true });
+          items.push({ label: '<i class="ti ti-lock me-2"></i>Đóng chuyến', action: function () { closeRow(r); } });
+        }
+        return items;
+      }
+
+      // Mọi tiêu chí đẩy xuống SERVER (DepartureListFilter) — không lọc ở client.
+      grid = tk.grid('#grid-departures', {
+        filters: ['tourType', 'assignedToUserId', 'departureFrom', 'departureTo', 'endFrom', 'endTo', 'sort', 'isClosed'],
+        exportName: 'chuyen-di-da-chon.csv',
+        actions: actionsFor,
+        columns: [
+          {
+            title: 'Tour / LKH', field: 'title', widthGrow: 4, minWidth: 250,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell"><a class="tk-cell-main" href="/chuyen-di/' + r.id + '" title="' + esc(r.title) + '">' + esc(r.title) + '</a>' +
+                '<div class="tk-cell-sub">' + esc(r.code) + ' · ' + esc(r.tourType) + '</div></div>';
+            }
+          },
+          {
+            title: 'Ngày khởi hành', field: 'departureDateText', width: 150,
+            formatter: function (c) {
+              var r = c.getData();
+              return g.stack(r.departureDateText, r.endDateText ? ('→ ' + r.endDateText) : null);
+            }
+          },
+          {
+            title: 'Giá', field: 'price', width: 140, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) { return '<span class="fw-semibold">' + money(c.getValue()) + '</span>'; },
+            formatter: function (c) {
+              var v = c.getValue();
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + (v > 0 ? money(v) : '—') + '</div></div>';
+            }
+          },
+          {
+            // Tổng · Giữ · Bán · Còn (bám cột chỗ staging /sample-tours)
+            title: 'Chỗ (Tổng/Giữ/Bán/Còn)', field: 'totalSlots', width: 180, hozAlign: 'center',
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-secondary me-1" title="Tổng">' + r.totalSlots + '</span>' +
+                '<span class="badge bg-label-warning me-1" title="Giữ chỗ">' + r.seatHeld + '</span>' +
+                '<span class="badge bg-label-success me-1" title="Đã bán">' + r.seatSold + '</span>' +
+                '<span class="badge bg-label-info" title="Còn lại">' + r.seatRemaining + '</span>';
+            }
+          },
+          {
+            title: 'Điều hành', field: 'assigneeName', widthGrow: 2, minWidth: 160,
+            formatter: function (c) {
+              var r = c.getData();
+              var v = c.getValue();
+              if (!v) { return g.stack(null, r.closedAtText ? ('Đóng: ' + r.closedAtText) : null); }
+              return '<div class="tk-row-media">' + g.avatar(v, true) + g.stack(v, r.closedAtText ? ('Đóng: ' + r.closedAtText) : null) + '</div>';
+            }
+          },
+          {
+            title: 'Trạng thái', field: 'statusLabel', width: 140,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
+            }
+          }
+        ]
       });
     });
   </script>

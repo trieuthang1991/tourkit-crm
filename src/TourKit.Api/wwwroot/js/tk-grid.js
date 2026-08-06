@@ -166,6 +166,8 @@
           response.last_page = Math.max(1, Math.ceil(response.recordsFiltered / size));
           response.last_row = response.recordsFiltered;
         }
+        // Màn nào trả kèm số liệu riêng (stats, pageSum…) thì tự đọc ở đây để cập nhật KPI.
+        if (opts.onData) { opts.onData(response); }
         return response;
       },
       columnDefaults: { headerSort: false, resizable: true, vertAlign: 'middle' },

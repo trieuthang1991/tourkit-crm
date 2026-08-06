@@ -3,62 +3,76 @@
 @{ ViewData["Title"] = "Phiếu điều hành dịch vụ"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
+}
+
+@{
+    // 4 KPI — bám StatGrid hệ cũ, cập nhật theo bộ lọc đang áp.
+    (string Id, string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("kpi-total", "Tổng đơn hàng", Model.Stats.Total.ToString("#,##0"), "ti ti-clipboard-list", "primary"),
+        ("kpi-unpaid", "Chưa thanh toán", Model.Stats.Unpaid.ToString("#,##0"), "ti ti-alert-circle", "danger"),
+        ("kpi-partial", "Chưa chi hết", Model.Stats.Partial.ToString("#,##0"), "ti ti-progress", "warning"),
+        ("kpi-done", "Hoàn thành", Model.Stats.Done.ToString("#,##0"), "ti ti-circle-check", "success"),
+    };
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-  <h4 class="mb-0">Danh sách phiếu điều hành dịch vụ</h4>
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">Điều hành <span class="mx-1">/</span> <span class="text-body">Phiếu điều hành dịch vụ</span></div>
+    <h4 class="mb-0">Danh sách phiếu điều hành dịch vụ</h4>
+  </div>
 </div>
 
-@* 4 KPI — bám StatGrid hệ cũ, cập nhật theo bộ lọc đang áp *@
-<div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng đơn hàng</small><h5 class="mb-0 tk-num" id="kpi-total">@Model.Stats.Total.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chưa thanh toán</small><h5 class="mb-0 text-danger tk-num" id="kpi-unpaid">@Model.Stats.Unpaid.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Chưa chi hết</small><h5 class="mb-0 text-warning tk-num" id="kpi-partial">@Model.Stats.Partial.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Hoàn thành</small><h5 class="mb-0 text-success tk-num" id="kpi-done">@Model.Stats.Done.ToString("#,##0")</h5></div></div></div>
-</div>
+<div class="tk-surface">
 
-@* Thanh lọc — đủ 2 tiêu chí hệ cũ (q · NCC) *@
-<div class="card mb-3">
-  <div class="card-body">
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem" id="@s.Id">@s.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="tk-pad">
+    @* Tab trạng thái chi — bám Segmented hệ cũ *@
+    <ul class="nav nav-tabs mb-3" id="type-tabs" data-field="paymentStatus">
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả <span class="badge bg-label-secondary ms-1">@Model.Stats.Total.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="0">Chờ chi <span class="badge bg-label-danger ms-1">@Model.Stats.Unpaid.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="1">Chưa chi hết <span class="badge bg-label-warning ms-1">@Model.Stats.Partial.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="2">Thành công <span class="badge bg-label-success ms-1">@Model.Stats.Done.ToString("#,##0")</span></a></li>
+    </ul>
+    <input type="hidden" id="f-paymentStatus" value="" />
+
+    @* Thanh lọc — đủ 2 tiêu chí hệ cũ (q · NCC) *@
     <div class="row g-2 align-items-center">
       <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Mã phiếu / NCC / tên dịch vụ" /></div>
       <div class="col-md-4">
         <select id="f-providerId" class="form-select tk-s2f" data-placeholder="Nhà cung cấp"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
       </div>
       <div class="col-md-3 d-flex gap-2">
-        <button type="button" class="btn btn-primary" id="btn-search"><i class="ti ti-search me-1"></i> Tìm kiếm</button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm kiếm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
   </div>
-</div>
 
-@* Tab trạng thái chi — bám Segmented hệ cũ *@
-<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
-  <li class="nav-item"><button type="button" class="nav-link active" data-v="">Tất cả (@Model.Stats.Total)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-v="0">Chờ chi (@Model.Stats.Unpaid)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-v="1">Chưa chi hết (@Model.Stats.Partial)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-v="2">Thành công (@Model.Stats.Done)</button></li>
-</ul>
-
-<div class="card">
-  <div class="card-header"><h5 class="mb-0">Danh sách phiếu điều hành</h5></div>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          <th class="text-center">#</th><th>Phiếu ĐH</th><th>Dịch vụ / NCC</th>
-          <th class="text-end">Tổng chi</th><th class="text-end">Thanh toán</th><th>Trạng thái</th><th></th>
-        </tr>
-      </thead>
-      <tfoot>
-        <tr id="page-sum" class="fw-medium"><td colspan="7" class="small"></td></tr>
-      </tfoot>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> phiếu đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-service-ops"></div>
 </div>
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:480px;max-width:100%">
@@ -80,91 +94,80 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt, paymentStatus = '';
-    // Mọi tiêu chí đẩy xuống SERVER (ServiceOperationListFilter) — không lọc ở client.
-    function collectFilters(d) {
-      var p = $('#f-providerId').val(); if (p) { d.providerId = p; }
-      if (paymentStatus !== '') { d.paymentStatus = paymentStatus; }
-      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
-    }
-
+    var oc, grid;
     $(function () {
+      var g = tk.g, esc = g.esc, money = g.money;
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
-        columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: null, render: function (r) {
-              // Cột ghép: mã phiếu · ngày dùng dịch vụ
-              return '<div class="fw-medium">' + tk.escape(r.code) + '</div>' +
-                     (r.usageDateText ? '<div class="small text-muted">' + tk.escape(r.usageDateText) + '</div>' : '');
-            } },
-          { data: null, render: function (r) {
-              // Cột ghép: mô tả dịch vụ · nhà cung cấp
-              return '<div>' + tk.trunc(r.description, 260) + '</div>' +
-                     '<div class="small text-muted">' + tk.escape(r.providerName) + '</div>';
-            } },
-          { data: 'totalAmount', className: 'text-end', render: function (v) { return tk.money(v); } },
-          { data: null, className: 'text-end', render: function (r) {
-              return '<div class="text-success fw-medium">' + tk.money(r.paidAmount) + '</div>' +
-                     (r.remainingAmount > 0 ? '<div class="small text-danger">Còn ' + tk.money(r.remainingAmount) + '</div>' : '');
-            } },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end', render: function () {
-              return '<button type="button" class="btn btn-icon btn-sm js-pay" title="Ghi nhận thanh toán"><i class="ti ti-cash"></i></button>';
-            } }
-        ]
-      });
-
-      // KPI + dòng tổng cộng lấy từ khối stats ngoài contract DataTables (sự kiện xhr).
-      $('#tbl').on('xhr.dt', function (e, settings, json) {
-        var s = json && json.stats;
-        if (!s) { return; }
-        $('#kpi-total').text(tk.money(s.total));
-        $('#kpi-unpaid').text(tk.money(s.unpaid));
-        $('#kpi-partial').text(tk.money(s.partial));
-        $('#kpi-done').text(tk.money(s.done));
-        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (theo bộ lọc)</span>' +
-          '<span class="me-3 text-muted">Tổng chi: <span class="fw-medium">' + tk.money(s.totalCost) + '</span></span>' +
-          '<span class="me-3 text-muted">Đã thanh toán: <span class="fw-medium text-success">' + tk.money(s.totalPaid) + '</span></span>' +
-          '<span class="me-3 text-muted">Còn thiếu: <span class="fw-medium text-danger">' + tk.money(s.totalRemaining) + '</span></span>');
-      });
-
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Pay',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Pay',
         rules: { 'Input.PaidAmount': { required: true, min: 0 } },
         messages: { 'Input.PaidAmount': { required: 'Bắt buộc nhập số tiền', min: 'Số tiền phải >= 0' } },
         afterOpen: function (data) {
-          $('#pay-info').text(data ? ('Phiếu ' + data.code + ' — tổng chi ' + tk.money(data.totalAmount)) : '');
+          $('#pay-info').text(data ? ('Phiếu ' + data.code + ' — tổng chi ' + money(data.totalAmount)) : '');
         } });
 
-      // Server-side: lấy dữ liệu dòng từ DataTables API (không có data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-pay', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('#btn-reset').on('click', function () {
-        $('#f-q').val('');
-        $('#f-providerId').val('').trigger('change.select2');
-        paymentStatus = '';
-        $('#tabs .nav-link').removeClass('active').filter('[data-v=""]').addClass('active');
-        dt.ajax.reload();
-      });
-      $('#tabs').on('click', '.nav-link', function () {
-        $('#tabs .nav-link').removeClass('active');
-        $(this).addClass('active');
-        paymentStatus = this.getAttribute('data-v');
-        dt.ajax.reload();
+      grid = tk.grid('#grid-service-ops', {
+        // Mọi tiêu chí đẩy xuống SERVER (ServiceOperationListFilter) — không lọc ở client.
+        filters: ['providerId', 'paymentStatus'],
+        exportName: 'phieu-dieu-hanh-dich-vu.csv',
+        actions: function (r) {
+          return [{ label: '<i class="ti ti-cash me-2"></i>Ghi nhận thanh toán', action: function () { oc.open(r); } }];
+        },
+        onRowClick: function (r) { oc.open(r); },
+        // KPI của màn này tính THEO BỘ LỌC nên server trả kèm khối stats mỗi lần tải.
+        onData: function (res) {
+          var s = res && res.stats;
+          if (!s) { return; }
+          $('#kpi-total').text(money(s.total));
+          $('#kpi-unpaid').text(money(s.unpaid));
+          $('#kpi-partial').text(money(s.partial));
+          $('#kpi-done').text(money(s.done));
+        },
+        columns: [
+          {
+            title: 'Phiếu ĐH', field: 'code', widthGrow: 2, minWidth: 160,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.code, r.usageDateText); }
+          },
+          {
+            title: 'Dịch vụ / NCC', field: 'description', widthGrow: 4, minWidth: 260,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.description, r.providerName); }
+          },
+          {
+            title: 'Tổng chi', field: 'totalAmount', width: 150, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) { return '<span class="fw-semibold">' + money(c.getValue()) + '</span>'; },
+            formatter: function (c) { return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + money(c.getValue()) + '</div></div>'; }
+          },
+          {
+            title: 'Thanh toán', field: 'paidAmount', width: 160, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) {
+              var left = c.getTable().getData().reduce(function (a, r) { return a + (r.remainingAmount || 0); }, 0);
+              return '<span class="fw-semibold text-success" title="Còn thiếu trang này: ' + money(left) + '">' + money(c.getValue()) + '</span>';
+            },
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main text-success">' + money(r.paidAmount) + '</div>' +
+                (r.remainingAmount > 0 ? '<div class="tk-cell-sub text-danger">Còn ' + money(r.remainingAmount) + '</div>' : '') + '</div>';
+            }
+          },
+          {
+            title: 'Trạng thái', field: 'statusLabel', width: 150,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
+            }
+          }
+        ]
       });
     });
   </script>
