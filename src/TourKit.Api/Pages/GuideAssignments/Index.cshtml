@@ -275,6 +275,7 @@
         filters: ['providerId', 'departureId', 'dateFrom', 'dateTo', 'status'],
         exportName: 'phan-cong-hdv.csv',
         actions: actionsFor,
+        onRowClick: CAN_MANAGE ? function (r) { oc.open(r); } : null,   // kích dòng → mở form sửa
         // KPI + số đếm trên tab lấy từ khối stats kèm theo mỗi lần tải bảng.
         onData: function (res) { applyStats(res && res.stats); },
         columns: [
@@ -303,10 +304,7 @@
           },
           {
             title: 'Trạng thái', field: 'statusLabel', width: 150,
-            formatter: function (c) {
-              var r = c.getData();
-              return '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
-            }
+            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
           },
           {
             title: 'Bàn giao', field: 'handedOverAtText', width: 160,

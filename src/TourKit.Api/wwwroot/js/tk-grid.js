@@ -61,6 +61,40 @@
   };
   tk.g = g;
 
+  // ===== Formatter dùng chung của Tabulator =====
+  // Mọi ô "trạng thái / loại / phân loại" phải vẽ badge QUA ĐÂY, không mỗi màn tự nối chuỗi HTML.
+  //   { field:'statusLabel', formatter:'tkBadge', formatterParams:{ color:'statusColor', sub:'note' } }
+  //   color: tên trường chứa màu (primary/success/…) hoặc chuỗi màu cố định.
+  if (window.Tabulator && Tabulator.extendModule) {
+    Tabulator.extendModule('format', 'formatters', {
+      tkBadge: function (cell, params) {
+        var label = cell.getValue();
+        if (label == null || label === '') { return '<span class="tk-cell-sub">—</span>'; }
+        var row = cell.getData();
+        var p = params || {};
+        var color = (p.color && row[p.color]) || p.color || 'secondary';
+        var sub = p.sub ? row[p.sub] : null;
+        var badge = '<span class="badge bg-label-' + esc(color) + '">' + esc(label) + '</span>';
+        if (!sub) { return badge; }
+        return '<div class="tk-cell">' + badge + '<div class="tk-cell-sub mt-1" title="' + esc(sub) + '">' + esc(sub) + '</div></div>';
+      },
+      // Ô 2 dòng chuẩn: giá trị của cột là dòng chính, `sub` trỏ tới trường làm dòng phụ.
+      tkStack: function (cell, params) {
+        var p = params || {};
+        var row = cell.getData();
+        return g.stack(cell.getValue(), p.sub ? row[p.sub] : null);
+      },
+      // Ô có avatar chữ cái + 2 dòng (dùng cho cột tên khách/NCC/nhân sự).
+      tkMedia: function (cell, params) {
+        var p = params || {};
+        var row = cell.getData();
+        var v = cell.getValue();
+        if (!v) { return '<span class="tk-cell-sub">—</span>'; }
+        return '<div class="tk-row-media">' + g.avatar(v, !!p.small) + g.stack(v, p.sub ? row[p.sub] : null) + '</div>';
+      }
+    });
+  }
+
   /* tk.grid(selector, opts)
      opts:
        url          '?handler=Data'    — handler Razor (auth cookie; KHÔNG gọi /api/v1 vì API dùng JWT → 401)
@@ -176,9 +210,11 @@
     if (opts.actions) { config.rowContextMenu = rowActionMenu; }
     if (opts.onRowClick) { el.classList.add('tk-grid-clickable'); }
     if (selectable) {
+      // 'highlight' = CHỈ ô chọn mới tích/bỏ tích. Để `true` thì bấm vào ô dữ liệu bất kỳ cũng
+      // tích dòng, người dùng định mở chi tiết lại thành chọn dòng.
       // KHÔNG dùng selectableRowsRangeMode:'click' — chế độ đó coi mỗi click là chọn một VÙNG mới
       // nên bấm ô thứ hai lại bỏ ô thứ nhất (chỉ chọn được 1).
-      config.selectableRows = true;
+      config.selectableRows = 'highlight';
     }
     Object.keys(opts.tabular || {}).forEach(function (k) { config[k] = opts.tabular[k]; });
 
@@ -213,6 +249,10 @@
   function wireBulkBar(table, reload, opts) {
     var bulkbar = document.getElementById('bulkbar');
     if (!bulkbar) { return; }
+    // Thanh tác vụ NỔI ngay trên bảng: hiện ra không đẩy nội dung, không đẻ thêm khối mới
+    // (trước đây nó là một dải riêng nên mỗi lần chọn dòng là bảng bị đội cao thêm).
+    bulkbar.classList.add('tk-bulkbar');
+    bulkbar.style.background = '';
     table.on('rowSelectionChanged', function (data) {
       var c = document.getElementById('bulk-count');
       if (c) { c.textContent = data.length; }

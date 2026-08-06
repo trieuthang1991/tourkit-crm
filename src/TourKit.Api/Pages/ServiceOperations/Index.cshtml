@@ -162,10 +162,7 @@
           },
           {
             title: 'Trạng thái', field: 'statusLabel', width: 150,
-            formatter: function (c) {
-              var r = c.getData();
-              return '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
-            }
+            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
           }
         ]
       });

@@ -229,6 +229,7 @@
         chipGroups: ['segment', 'purchaseBucket', 'notContactedBucket'],
         exportName: 'khach-hang-da-chon.csv',
         actions: actionsFor,
+        onRowClick: editRow,   // kích dòng → mở luôn form sửa (ô chọn vẫn nằm riêng ở cột đầu)
         columns: [
           {
             title: 'Khách hàng', field: 'fullName', widthGrow: 3, minWidth: 200,

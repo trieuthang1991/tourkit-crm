@@ -3,10 +3,12 @@
 @{ ViewData["Title"] = "Vé máy bay đoàn"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
@@ -20,20 +22,45 @@
   </div>
 </div>
 
-@* 7 KPI — bám StatGrid hệ cũ *@
-<div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Số lượng vé</small><h5 class="mb-0 tk-num" id="kpi-qty">@Model.Stats.TotalQuantity.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã sử dụng</small><h5 class="mb-0 text-warning tk-num" id="kpi-used">@Model.Stats.TotalUsed.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Vé còn lại</small><h5 class="mb-0 text-success tk-num" id="kpi-remain">@Model.Stats.TotalRemaining.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tổng chi</small><h5 class="mb-0 tk-num" id="kpi-cost">@Model.Stats.TotalCost.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Đã thanh toán</small><h5 class="mb-0 text-success tk-num" id="kpi-paid">@Model.Stats.TotalPaid.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Còn lại</small><h5 class="mb-0 text-danger tk-num" id="kpi-remaincost">@Model.Stats.TotalRemainingCost.ToString("#,##0")</h5></div></div></div>
-  <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100"><div class="card-body py-3"><small class="text-muted d-block">Tiền bảo lưu</small><h5 class="mb-0 tk-num" id="kpi-reserved">@Model.Stats.TotalReserved.ToString("#,##0")</h5></div></div></div>
-</div>
+@{
+    // 7 KPI — bám StatGrid hệ cũ, gói vào dải mảnh dùng chung.
+    (string Id, string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("kpi-qty", "Số lượng vé", Model.Stats.TotalQuantity.ToString("#,##0"), "ti ti-ticket", "primary"),
+        ("kpi-used", "Đã sử dụng", Model.Stats.TotalUsed.ToString("#,##0"), "ti ti-check", "warning"),
+        ("kpi-remain", "Vé còn lại", Model.Stats.TotalRemaining.ToString("#,##0"), "ti ti-stack", "success"),
+        ("kpi-cost", "Tổng chi", Model.Stats.TotalCost.ToString("#,##0"), "ti ti-cash", "primary"),
+        ("kpi-paid", "Đã thanh toán", Model.Stats.TotalPaid.ToString("#,##0"), "ti ti-arrow-down-circle", "success"),
+        ("kpi-remaincost", "Còn lại", Model.Stats.TotalRemainingCost.ToString("#,##0"), "ti ti-alert-circle", "danger"),
+        ("kpi-reserved", "Tiền bảo lưu", Model.Stats.TotalReserved.ToString("#,##0"), "ti ti-lock", "info"),
+    };
+}
 
-@* Thanh lọc — MỌI tiêu chí đẩy xuống server (FlightTicketListFilter) *@
-<div class="card mb-4">
-  <div class="card-body">
+<div class="tk-surface">
+
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem" id="@s.Id">@s.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="tk-pad">
+    @* Tab Tất cả / Đã gán tour / Chưa gán tour — bám Segmented hệ cũ *@
+    <ul class="nav nav-tabs mb-3" id="type-tabs" data-field="assigned">
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả code <span class="badge bg-label-secondary ms-1" id="tab-all">@Model.Stats.Total.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="true">Đã gán tour <span class="badge bg-label-success ms-1" id="tab-assigned">@Model.Stats.Assigned.ToString("#,##0")</span></a></li>
+      <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="false">Chưa gán tour <span class="badge bg-label-warning ms-1" id="tab-unassigned">@Model.Stats.Unassigned.ToString("#,##0")</span></a></li>
+    </ul>
+    <input type="hidden" id="f-assigned" value="" />
+
+    @* Thanh lọc — MỌI tiêu chí đẩy xuống server (FlightTicketListFilter) *@
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã PNR" /></div>
       <div class="col-md-2">
@@ -43,14 +70,15 @@
         <select id="f-providerRef" class="form-select tk-s2f" data-placeholder="NCC"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
       </div>
       <div class="col-md-2">
-        <select id="f-tourType" class="form-select">
+        <select id="f-tourType" class="form-select tk-auto">
           <option value="">Loại hình</option>
           @foreach (var t in TourKit.Api.Pages.FlightTickets.IndexModel.TourTypes) { <option value="@t.Value">@t.Label</option> }
         </select>
       </div>
       <div class="col-md-2 d-flex gap-2">
-        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-filter"></i></button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
 
@@ -59,32 +87,14 @@
       <div class="col-md-3"><input type="text" id="f-departureFrom" class="form-control tk-datef" placeholder="Ngày đi từ" autocomplete="off" /></div>
     </div>
   </div>
-</div>
 
-@* Tab Tất cả / Đã gán tour / Chưa gán tour — bám Segmented hệ cũ *@
-<input type="hidden" id="f-assigned" value="" />
-<ul class="nav nav-pills flex-wrap mb-3" id="tabs">
-  <li class="nav-item"><button type="button" class="nav-link active" data-val="">Tất cả code (<span id="tab-all">@Model.Stats.Total.ToString("#,##0")</span>)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-val="true">Đã gán tour (<span id="tab-assigned">@Model.Stats.Assigned.ToString("#,##0")</span>)</button></li>
-  <li class="nav-item"><button type="button" class="nav-link" data-val="false">Chưa gán tour (<span id="tab-unassigned">@Model.Stats.Unassigned.ToString("#,##0")</span>)</button></li>
-</ul>
-
-<div class="card">
-  <div class="card-header"><h5 class="mb-0">Danh sách vé máy bay đoàn</h5></div>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          <th class="text-center">#</th><th>PNR / Loại hình</th><th>Gán Tour</th><th>NCC / Thị trường</th>
-          <th>Lịch trình</th><th>Hành trình</th><th class="text-center">Vé (SL/Dùng/Còn)</th>
-          <th class="text-end">Tổng chi / Đã TT</th><th class="text-end">Còn lại / Bảo lưu</th><th></th>
-        </tr>
-      </thead>
-      <tfoot>
-        <tr id="page-sum" class="fw-medium"><td colspan="10" class="small"></td></tr>
-      </tfoot>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> vé đoàn đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-flight-tickets"></div>
 </div>
 
 @Html.AntiForgeryToken()
@@ -162,7 +172,7 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
@@ -170,8 +180,9 @@
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt;
+    var oc, grid;
     var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
     // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
     var FILTERS = ['marketRef', 'providerRef', 'tourType', 'days', 'departureFrom', 'assigned'];
@@ -180,11 +191,6 @@
       var o = {};
       FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { o[k] = v; } });
       return o;
-    }
-    function collectFilters(d) {
-      var o = filterValues();
-      Object.keys(o).forEach(function (k) { d[k] = o[k]; });
-      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
     }
     function refreshStats() {
       var p = new URLSearchParams(filterValues());
@@ -199,89 +205,17 @@
         $('#kpi-reserved').text(tk.money(s.totalReserved));
       });
     }
-    function reload() { dt.ajax.reload(); refreshStats(); }
+    function reload() { if (grid) { grid.reload(); } refreshStats(); }
 
     $(function () {
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
       if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
       $('#as-order').select2({ width: '100%', allowClear: true, placeholder: 'Chọn đơn hàng', dropdownParent: $('#assign-modal') });
 
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
-        columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          // PNR / Loại hình
-          { data: null, render: function (r) {
-              return '<span class="fw-medium">' + tk.escape(r.pnr) + '</span>' +
-                     '<div class="small text-muted">' + tk.escape(r.tourTypeLabel) + '</div>';
-            } },
-          // Gán Tour: mã đơn + tên tour, hoặc nút gán
-          { data: null, render: function (r) {
-              if (r.orderRef) {
-                return '<span class="fw-medium">' + tk.escape(r.orderCode || r.orderRef) + '</span>' +
-                       (r.orderName ? '<div class="small text-muted">' + tk.trunc(r.orderName, 180) + '</div>' : '');
-              }
-              return CAN_MANAGE
-                ? '<button type="button" class="btn btn-sm btn-label-primary js-assign">+ Gán tour</button>'
-                : '<span class="badge bg-label-secondary">Chưa gán</span>';
-            } },
-          // NCC / Thị trường
-          { data: null, render: function (r) {
-              return '<div>' + (r.providerName ? tk.trunc(r.providerName, 160) : '—') + '</div>' +
-                     '<div class="small text-muted">' + (r.marketName ? tk.trunc(r.marketName, 160) : '—') + '</div>';
-            } },
-          // Lịch trình: ngày đi + số ngày
-          { data: null, render: function (r) {
-              return '<div>' + tk.escape(r.departureDateText) + '</div>' +
-                     (r.days ? '<div class="small text-muted">' + r.days + ' ngày</div>' : '');
-            } },
-          // Hành trình: từng chặng bay
-          { data: 'segments', render: function (v) {
-              if (!v || !v.length) { return '—'; }
-              return '<div class="text-nowrap small">' + v.map(function (s) {
-                return '<div><span class="text-muted">' + tk.escape(s.date) + '</span> <b>' + tk.escape(s.flightNo) + '</b> ' +
-                       tk.escape(s.from) + '→' + tk.escape(s.to) + ' ' + tk.escape(s.depTime) + '</div>';
-              }).join('') + '</div>';
-            } },
-          // Vé: SL / Dùng / Còn
-          { data: null, className: 'text-center text-nowrap', render: function (r) {
-              return '<span class="badge bg-label-secondary me-1" title="Số lượng">' + r.quantity + '</span>' +
-                     '<span class="badge bg-label-warning me-1" title="Đã dùng">' + r.usedQuantity + '</span>' +
-                     '<span class="badge bg-label-success" title="Còn lại">' + r.remainingQuantity + '</span>';
-            } },
-          // Tổng chi / Đã TT
-          { data: null, className: 'text-end', render: function (r) {
-              return '<div class="fw-medium" title="Tổng chi">' + tk.money(r.totalCost) + '</div>' +
-                     '<div class="small text-muted" title="Đã thanh toán">Đã TT ' + tk.money(r.paidAmount) + '</div>';
-            } },
-          // Còn lại / Bảo lưu
-          { data: null, className: 'text-end', render: function (r) {
-              return '<div class="fw-medium ' + (r.remainingCost > 0 ? 'text-danger' : '') + '" title="Còn lại">' + tk.money(r.remainingCost) + '</div>' +
-                     '<div class="small text-muted" title="Bảo lưu">Bảo lưu ' + tk.money(r.reservedAmount) + '</div>';
-            } },
-          { data: null, className: 'text-end text-nowrap', render: function () {
-              if (!CAN_MANAGE) { return ''; }
-              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
-        ]
-      });
-
-      // Dòng "Tổng cộng (trang này)" — đọc khối pageSum ngoài contract DataTables.
-      $('#tbl').on('xhr.dt', function (e, settings, json) {
-        var s = json && json.pageSum;
-        if (!s) { return; }
-        var parts = [['SL vé', s.quantity, ''], ['Đã dùng', s.used, ''], ['Còn lại', s.remaining, ''],
-                     ['Tổng chi', s.cost, ''], ['Đã TT', s.paid, 'text-success'],
-                     ['Còn lại tiền', s.remainingCost, s.remainingCost > 0 ? 'text-danger' : ''], ['Bảo lưu', s.reserved, '']];
-        $('#page-sum td').html('<span class="me-3 fw-bold">Tổng cộng (trang này)</span>' + parts.map(function (p) {
-          return '<span class="me-3 text-muted">' + p[0] + ': <span class="fw-medium ' + p[2] + '">' + tk.money(p[1]) + '</span></span>';
-        }).join(''));
-      });
+      var g = tk.g, esc = g.esc, money = g.money;
 
       oc = tk.form({
-        offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'vé đoàn',
+        offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'vé đoàn',
         rules: { 'Input.Pnr': { required: true } }, messages: { 'Input.Pnr': { required: 'Bắt buộc nhập PNR' } },
         // Ref thị trường/NCC có thể là id legacy KHÔNG nằm trong danh mục → thêm option tạm để không mất giá trị khi lưu.
         fill: function ($form, data) {
@@ -295,44 +229,118 @@
           });
         }
       });
-
-      $('#btn-search').on('click', reload);
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { reload(); } });
-      $('#f-tourType, #f-days').on('change', reload);
-      $('.tk-s2f').on('change', reload);
-      $('.tk-datef').on('change', reload);
-      tk.advFilter();
-      $('#btn-reset').on('click', function () {
-        $('#f-q').val('');
-        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
-        $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
-        $('#tabs .nav-link').removeClass('active').first().addClass('active');
-        reload();
-      });
-      $('#tabs').on('click', '.nav-link', function () {
-        $('#tabs .nav-link').removeClass('active');
-        $(this).addClass('active');
-        $('#f-assigned').val($(this).data('val'));
-        reload();
-      });
-      $('#btn-export').on('click', function (e) {
-        e.preventDefault();
-        var p = new URLSearchParams(filterValues());
-        var q = $('#f-q').val(); if (q) { p.set('search', q); }
-        location.href = '?handler=Export&' + p.toString();
-      });
-
-      // Sau khi lưu qua tk.form (bảng tự reload) → làm tươi KPI.
+      // Sau khi lưu qua tk.form → làm tươi KPI.
       $('#frm').on('submit', function () { setTimeout(refreshStats, 600); });
 
-      // Server-side: dữ liệu dòng lấy từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-assign', function () {
-        var r = dt.row($(this).closest('tr')).data();
+      function openAssign(r) {
         $('#as-id').val(r.id);
         $('#as-order').val(r.orderRef || null).trigger('change');
         bootstrap.Modal.getOrCreateInstance(document.getElementById('assign-modal')).show();
+      }
+      function delRow(r) {
+        tk.confirmDelete({ title: 'Xoá vé đoàn ' + r.pnr + '?' }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData(); fd.append('id', r.id);
+          tk.post('?handler=Delete', fd).then(function (res) {
+            if (res && res.isSuccess) { reload(); tk.toast(res.message || 'Đã xoá.'); }
+            else { tk.error((res && res.message) || 'Xoá thất bại.'); }
+          });
+        });
+      }
+
+      // Gán tour / sửa / xoá chỉ dành cho người có quyền quản lý vé — giữ đúng luật hệ cũ.
+      function actionsFor(r) {
+        if (!CAN_MANAGE) { return []; }
+        var items = [{ label: '<i class="ti ti-edit me-2"></i>Sửa vé đoàn', action: function () { oc.open(r); } }];
+        items.push({ label: '<i class="ti ti-link me-2"></i>' + (r.orderRef ? 'Đổi tour đã gán' : 'Gán tour'), action: function () { openAssign(r); } });
+        if (r.orderRef) {
+          items.push({ label: '<i class="ti ti-external-link me-2"></i>Mở đơn liên quan', action: function () { window.location = '/don-hang/' + r.orderRef; } });
+        }
+        items.push({ separator: true });
+        items.push({ label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá vé đoàn</span>', action: function () { delRow(r); } });
+        return items;
+      }
+
+      grid = tk.grid('#grid-flight-tickets', {
+        filters: FILTERS,
+        exportName: 've-may-bay-doan.csv',
+        actions: CAN_MANAGE ? actionsFor : null,
+        onRowClick: CAN_MANAGE ? function (r) { oc.open(r); } : null,
+        columns: [
+          {
+            title: 'PNR / Loại hình', field: 'pnr', widthGrow: 2, minWidth: 160,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.pnr, r.tourTypeLabel); }
+          },
+          {
+            title: 'Gán Tour', field: 'orderCode', widthGrow: 2, minWidth: 170,
+            formatter: function (c) {
+              var r = c.getData();
+              if (r.orderRef) { return g.stack(r.orderCode || r.orderRef, r.orderName); }
+              return '<span class="badge bg-label-warning">Chưa gán</span>';
+            }
+          },
+          {
+            title: 'NCC / Thị trường', field: 'providerName', widthGrow: 2, minWidth: 170,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.providerName, r.marketName); }
+          },
+          {
+            title: 'Lịch trình', field: 'departureDateText', width: 150,
+            formatter: function (c) {
+              var r = c.getData();
+              return g.stack(r.departureDateText, r.days ? (r.days + ' ngày') : null);
+            }
+          },
+          {
+            title: 'Hành trình', field: 'segments', widthGrow: 3, minWidth: 200,
+            formatter: function (c) {
+              var v = c.getValue();
+              if (!v || !v.length) { return '<span class="tk-cell-sub">—</span>'; }
+              // Chỉ hiện chặng đầu + đếm phần còn lại để ô luôn gọn 2 dòng như các cột khác.
+              var first = v[0];
+              var main = first.flightNo + ' ' + first.from + '→' + first.to;
+              var sub = v.length > 1 ? ('+' + (v.length - 1) + ' chặng · ' + first.date) : first.date;
+              return g.stack(main, sub);
+            }
+          },
+          {
+            title: 'Vé (SL/Dùng/Còn)', field: 'quantity', width: 170, hozAlign: 'center',
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-secondary me-1" title="Số lượng">' + r.quantity + '</span>' +
+                '<span class="badge bg-label-warning me-1" title="Đã dùng">' + r.usedQuantity + '</span>' +
+                '<span class="badge bg-label-success" title="Còn lại">' + r.remainingQuantity + '</span>';
+            }
+          },
+          {
+            title: 'Tổng chi / Đã TT', field: 'totalCost', width: 160, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) {
+              var paid = c.getTable().getData().reduce(function (a, r) { return a + (r.paidAmount || 0); }, 0);
+              return '<span class="fw-semibold" title="Đã TT trang này: ' + money(paid) + '">' + money(c.getValue()) + '</span>';
+            },
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + money(r.totalCost) + '</div>' +
+                '<div class="tk-cell-sub">Đã TT ' + money(r.paidAmount) + '</div></div>';
+            }
+          },
+          {
+            title: 'Còn lại / Bảo lưu', field: 'remainingCost', width: 160, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) {
+              var v = c.getValue();
+              var res = c.getTable().getData().reduce(function (a, r) { return a + (r.reservedAmount || 0); }, 0);
+              return '<span class="fw-semibold ' + (v > 0 ? 'text-danger' : '') + '" title="Bảo lưu trang này: ' + money(res) + '">' + money(v) + '</span>';
+            },
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main ' + (r.remainingCost > 0 ? 'text-danger' : '') + '">' + money(r.remainingCost) + '</div>' +
+                '<div class="tk-cell-sub">Bảo lưu ' + money(r.reservedAmount) + '</div></div>';
+            }
+          }
+        ]
       });
+
       $('#as-submit').on('click', function () {
         var fd = new FormData();
         fd.append('id', $('#as-id').val());
@@ -340,20 +348,17 @@
         tk.post('?handler=Assign', fd).then(function (res) {
           if (res && res.isSuccess) {
             bootstrap.Modal.getInstance(document.getElementById('assign-modal')).hide();
-            dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã gán tour.');
+            reload(); tk.toast(res.message || 'Đã gán tour.');
           } else { tk.error((res && res.message) || 'Gán tour thất bại.'); }
         });
       });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var r = dt.row($(this).closest('tr')).data();
-        tk.confirmDelete({ title: 'Xoá vé đoàn ' + r.pnr + '?' }).then(function (ok) {
-          if (!ok) { return; }
-          var fd = new FormData(); fd.append('id', r.id);
-          tk.post('?handler=Delete', fd).then(function (res) {
-            if (res && res.isSuccess) { dt.ajax.reload(null, false); refreshStats(); tk.toast(res.message || 'Đã xoá.'); }
-            else { tk.error((res && res.message) || 'Xoá thất bại.'); }
-          });
-        });
+
+      // Xuất TOÀN BỘ theo bộ lọc đang áp — handler Export nhận keyword ở tham số `search`.
+      $('#btn-export').off('click').on('click', function (e) {
+        e.preventDefault();
+        var p = new URLSearchParams(grid.filters());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        location.href = '?handler=Export&' + p.toString();
       });
     });
   </script>

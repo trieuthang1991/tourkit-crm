@@ -311,6 +311,7 @@
         chipGroups: ['marketTypeId'],
         exportName: 'don-hang-da-chon.csv',
         actions: actionsFor,
+        onRowClick: viewRow,   // kích dòng → mở panel xem nhanh (đơn hàng sửa ở trang chi tiết)
         columns: [
           {
             title: 'Mã đơn', field: 'code', widthGrow: 2, minWidth: 160,

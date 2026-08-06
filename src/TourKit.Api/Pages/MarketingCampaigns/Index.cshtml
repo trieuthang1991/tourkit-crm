@@ -254,11 +254,8 @@
             formatter: function (c) { var r = c.getData(); return g.stack(r.subjectText, r.bodyPreview); }
           },
           {
-            title: 'Trạng thái', field: 'status', width: 140,
-            formatter: function (c) {
-              var r = c.getData();
-              return '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
-            }
+            title: 'Trạng thái', field: 'statusLabel', width: 140,
+            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
           }
         ]
       });
