@@ -1,0 +1,254 @@
+@page "/khach-hang-tabulator"
+@model TourKit.Api.Pages.CustomersTabulator.IndexModel
+@{
+    ViewData["Title"] = "Data khách hàng (Tabulator)";
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
+  <style>
+    /* CHUẨN HOÁ ô nhiều dòng: đúng 1 kiểu (main + sub), tối đa 2 dòng, dùng đồng nhất mọi cột. */
+    .tk-cell { line-height: 1.25; }
+    .tk-cell-main { font-weight: 500; color: var(--bs-heading-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tk-cell-sub { font-size: .75rem; color: var(--bs-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tk-cell-right { text-align: right; }
+    /* Link chuyển trang: tô màu primary + con trỏ tay để người dùng biết bấm được. */
+    a.tk-cell-main { display: block; color: var(--bs-primary); cursor: pointer; }
+    a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
+
+    /* Icon thống kê — canh giữa chuẩn (trước dùng avatar-initial bị lệch). */
+    .tk-stat-ic { width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
+    .tk-stat { display: flex; align-items: center; gap: .625rem; }
+    .tk-stat-strip { display: flex; flex-wrap: wrap; row-gap: .75rem; column-gap: 2.25rem; }
+
+    /* GIAO DIỆN PHẲNG: bảng không viền ngoài/nền, header nhạt, chỉ kẻ ngang mảnh giữa dòng. */
+    #grid-customers.tabulator { border: none; background: transparent; }
+    #grid-customers .tabulator-header { background: transparent; border-bottom: 1px solid var(--bs-border-color); }
+    #grid-customers .tabulator-header .tabulator-col { background: transparent; border-right: none; }
+    #grid-customers .tabulator-header .tabulator-col .tabulator-col-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .4px; color: var(--bs-secondary-color); font-weight: 600; }
+    #grid-customers .tabulator-row { border-bottom: 1px solid var(--bs-border-color); }
+    #grid-customers .tabulator-row .tabulator-cell { border-right: none; }
+    #grid-customers .tabulator-row:hover { background: rgba(var(--bs-primary-rgb), .05); }
+    #grid-customers .tabulator-footer { background: transparent; border-top: 1px solid var(--bs-border-color); }
+    #grid-customers .tabulator-footer .tabulator-page.active { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
+    #grid-customers .tabulator-col-resize-handle { opacity: .4; }
+  </style>
+}
+
+@{
+    (string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("Tổng số khách hàng", Model.Stats.Total.ToString("#,##0"), "ti ti-users", "primary"),
+        ("Tạo hôm nay", Model.Stats.NewToday.ToString("#,##0"), "ti ti-user-plus", "info"),
+        ("Tạo trong tháng", Model.Stats.NewThisMonth.ToString("#,##0"), "ti ti-calendar-stats", "warning"),
+        ("Mua lần đầu", Model.Stats.FirstTimeBuyers.ToString("#,##0"), "ti ti-star", "success"),
+        ("Mua lại nhiều lần", Model.Stats.RepeatBuyers.ToString("#,##0"), "ti ti-refresh", "danger"),
+    };
+}
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-0">Data khách hàng <span class="badge bg-label-primary ms-1">Bản thử Tabulator</span></h4>
+    <small class="text-muted">Cùng dữ liệu & nghiệp vụ với bản DataTables — chỉ đổi thư viện lưới.</small>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="/Customers" class="btn btn-label-secondary"><i class="ti ti-arrows-left-right me-1"></i> So với bản DataTables</a>
+    <a id="btn-export" class="btn btn-label-secondary"><i class="ti ti-file-export me-1"></i> Xuất file</a>
+  </div>
+</div>
+
+@* PHẲNG: không khung card — thống kê là 1 dải ngang mảnh, icon canh giữa bằng .tk-stat-ic. *@
+<div class="tk-stat-strip mb-4">
+  @foreach (var s in statCards)
+  {
+    <div class="tk-stat">
+      <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+      <div class="lh-sm">
+        <div class="fw-bold" style="font-size:1.15rem">@s.Value</div>
+        <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+      </div>
+    </div>
+  }
+</div>
+
+@* PHẲNG: bộ lọc không card, chỉ 1 đường kẻ ngăn với bảng. *@
+<ul class="nav nav-tabs mb-3" id="type-tabs">
+  <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả</a></li>
+  @foreach (var t in Model.CustomerTypes)
+  {
+    <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="@t.Code">@t.Name</a></li>
+  }
+</ul>
+<input type="hidden" id="f-customerType" value="" />
+<div class="row g-2 align-items-center mb-3">
+  <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Nhập tên, SĐT, mã, email…" /></div>
+  <div class="col-md-3">
+    <select id="f-source" class="form-select"><option value="">Tất cả nguồn</option>@foreach (var s in Model.Options.Sources) { <option value="@s">@s</option> }</select>
+  </div>
+  <div class="col-md-2">
+    <select id="f-city" class="form-select"><option value="">Tỉnh/Thành</option>@foreach (var c in Model.Options.Cities) { <option value="@c">@c</option> }</select>
+  </div>
+  <div class="col-md-2 d-flex gap-2">
+    <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+    <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+  </div>
+</div>
+
+<div id="grid-customers"></div>
+
+<form id="delete-form" method="post" asp-page-handler="Delete" class="d-none">
+  <input type="hidden" name="id" />
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    (function () {
+      var esc = (window.tk && tk.escape) ? tk.escape : function (s) {
+        return (s == null ? '' : String(s)).replace(/[&<>"]/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+        });
+      };
+      var money = (window.tk && tk.money) ? tk.money : function (n) { return (n || 0).toLocaleString('vi-VN'); };
+
+      // Ô 2 dòng CHUẨN HOÁ — dùng chung mọi cột (main đậm + sub mờ).
+      function stack(main, sub) {
+        var m = '<div class="tk-cell-main" title="' + esc(main || '') + '">' + esc(main || '—') + '</div>';
+        var s = sub ? '<div class="tk-cell-sub" title="' + esc(sub) + '">' + esc(sub) + '</div>' : '';
+        return '<div class="tk-cell">' + m + s + '</div>';
+      }
+
+      function collectFilters() {
+        var d = {};
+        var q = document.getElementById('f-q').value.trim(); if (q) { d.q = q; }
+        var ct = document.getElementById('f-customerType').value; if (ct) { d.customerType = ct; }
+        var src = document.getElementById('f-source').value; if (src) { d.source = src; }
+        var city = document.getElementById('f-city').value; if (city) { d.city = city; }
+        return d;
+      }
+
+      function viewRow(d) { window.location = '/Customers/Details/' + d.id; }
+      function delRow(d) {
+        var go = function () {
+          var f = document.getElementById('delete-form');
+          f.querySelector('input[name="id"]').value = d.id;
+          f.submit();
+        };
+        if (window.tk && tk.confirmDelete) {
+          tk.confirmDelete({ title: 'Xoá khách hàng?', text: d.fullName || '' }).then(function (ok) { if (ok) { go(); } });
+        } else if (window.confirm('Xoá khách hàng "' + (d.fullName || '') + '"?')) { go(); }
+      }
+
+      // Menu hành động dùng chung: nút ⋮ (click trái) và chuột phải trên dòng.
+      var VIEW = '<i class="ti ti-eye me-2"></i>Xem chi tiết';
+      var DEL = '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá</span>';
+      var rowActionMenu = [
+        { label: VIEW, action: function (e, row) { viewRow(row.getData()); } },
+        { separator: true },
+        { label: DEL, action: function (e, row) { delRow(row.getData()); } }
+      ];
+      var cellActionMenu = [
+        { label: VIEW, action: function (e, cell) { viewRow(cell.getRow().getData()); } },
+        { separator: true },
+        { label: DEL, action: function (e, cell) { delRow(cell.getRow().getData()); } }
+      ];
+
+      var curPage = 1;
+
+      var table = new Tabulator('#grid-customers', {
+        layout: 'fitColumns',
+        height: '640px',
+        placeholder: 'Không có dữ liệu',
+        ajaxURL: '?handler=Data',
+        ajaxParams: collectFilters,
+        pagination: true,
+        paginationMode: 'remote',
+        paginationSize: 20,
+        paginationSizeSelector: [20, 50, 100],
+        paginationCounter: 'rows',
+        ajaxResponse: function (url, params, response) { curPage = params.page || 1; return response; },
+        rowContextMenu: rowActionMenu,
+        columnDefaults: { headerSort: false, resizable: true, vertAlign: 'middle' },
+        columns: [
+          {
+            title: '#', field: '__n', width: 56, hozAlign: 'center',
+            formatter: function (cell) {
+              var pos = cell.getRow().getPosition(true);
+              return '<span class="text-muted">' + (((curPage - 1) * table.getPageSize()) + pos) + '</span>';
+            }
+          },
+          {
+            title: 'Khách hàng', field: 'fullName', widthGrow: 3, minWidth: 220,
+            formatter: function (cell) {
+              var r = cell.getData();
+              var sub = [r.code, r.customerTypeName].filter(Boolean).join(' · ');
+              return '<div class="tk-cell"><a class="tk-cell-main" href="/Customers/Details/' + r.id + '" title="' + esc(r.fullName) + '">' + esc(r.fullName) + '</a>' +
+                (sub ? '<div class="tk-cell-sub">' + esc(sub) + '</div>' : '') + '</div>';
+            }
+          },
+          { title: 'Liên hệ', field: 'phone', widthGrow: 2, minWidth: 160, formatter: function (c) { var r = c.getData(); return stack(r.phone, r.email); } },
+          { title: 'Khu vực & nhóm', field: 'city', widthGrow: 2, minWidth: 170, formatter: function (c) { var r = c.getData(); return stack(r.city, (r.segments || []).join(' · ')); } },
+          { title: 'CSKH gần nhất', field: 'lastCareAt', widthGrow: 2, minWidth: 180, formatter: function (c) { var r = c.getData(); return stack(r.lastCareAt, r.lastCareContent); } },
+          {
+            title: 'Phụ trách', field: 'assignedToNames', widthGrow: 2, minWidth: 160,
+            formatter: function (c) {
+              var r = c.getData();
+              var main = (r.assignedToNames || []).join(', ');
+              var sub = r.collaboratorName ? ('CTV: ' + r.collaboratorName) : (r.createdByName || '');
+              return stack(main, sub);
+            }
+          },
+          {
+            title: 'Doanh thu', field: 'revenue', width: 160, hozAlign: 'right', headerHozAlign: 'right',
+            bottomCalc: 'sum',
+            bottomCalcFormatter: function (cell) {
+              var rev = cell.getValue();
+              var buys = cell.getTable().getData().reduce(function (a, r) { return a + (r.purchaseCount || 0); }, 0);
+              return '<div class="tk-cell-right"><div class="fw-bold">' + money(rev) + '</div><div class="tk-cell-sub">' + money(buys) + ' lần mua</div></div>';
+            },
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main ' + ((r.revenue || 0) > 0 ? 'text-success' : '') + '">' + money(r.revenue) + '</div>' +
+                '<div class="tk-cell-sub">' + money(r.purchaseCount) + ' lần mua</div></div>';
+            }
+          },
+          {
+            title: '', field: 'id', width: 56, hozAlign: 'center',
+            clickMenu: cellActionMenu,
+            formatter: function () {
+              return '<button type="button" class="btn btn-icon btn-sm" title="Hành động"><i class="ti ti-dots-vertical"></i></button>';
+            }
+          }
+        ]
+      });
+
+      function reload() { table.setData(); }
+
+      document.getElementById('btn-search').addEventListener('click', reload);
+      document.getElementById('f-q').addEventListener('keydown', function (e) { if (e.key === 'Enter') { reload(); } });
+      document.getElementById('f-source').addEventListener('change', reload);
+      document.getElementById('f-city').addEventListener('change', reload);
+      document.getElementById('btn-reset').addEventListener('click', function () {
+        document.getElementById('f-q').value = '';
+        document.getElementById('f-source').value = '';
+        document.getElementById('f-city').value = '';
+        document.getElementById('f-customerType').value = '';
+        document.querySelectorAll('#type-tabs .nav-link').forEach(function (a, i) { a.classList.toggle('active', i === 0); });
+        reload();
+      });
+      document.getElementById('type-tabs').addEventListener('click', function (e) {
+        var a = e.target.closest('.nav-link'); if (!a) { return; }
+        document.querySelectorAll('#type-tabs .nav-link').forEach(function (x) { x.classList.remove('active'); });
+        a.classList.add('active');
+        document.getElementById('f-customerType').value = a.getAttribute('data-type') || '';
+        reload();
+      });
+      document.getElementById('btn-export').addEventListener('click', function () {
+        table.download('csv', 'data-khach-hang.csv');
+      });
+    })();
+  </script>
+}
