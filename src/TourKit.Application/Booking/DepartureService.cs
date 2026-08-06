@@ -220,6 +220,51 @@ public sealed class DepartureService(
         return Map(departure);
     }
 
+    /// <summary>Chốt sổ hoa hồng chuyến — legacy `update tours set StatusComission=1`.
+    /// Khoá hoa hồng: đã chốt thì báo cáo hoa hồng coi như đã quyết toán, không chốt lại.</summary>
+    public async Task<DepartureDto> CloseCommissionAsync(Guid id)
+    {
+        var departure = await departureRepo.GetByIdAsync(id);
+        if (departure is null)
+        {
+            throw new NotFoundException();
+        }
+
+        if (departure.CommissionClosed)
+        {
+            throw new ConflictException("Hoa hồng chuyến đã được chốt sổ.");
+        }
+
+        departure.CommissionClosed = true;
+        departure.CommissionClosedAt = DateTimeOffset.UtcNow;
+        departureRepo.Update(departure);
+        await departureRepo.SaveChangesAsync();
+
+        return Map(departure);
+    }
+
+    /// <summary>Mở lại sổ hoa hồng đã chốt (điều chỉnh/sửa sai) — legacy set StatusComission=0.</summary>
+    public async Task<DepartureDto> ReopenCommissionAsync(Guid id)
+    {
+        var departure = await departureRepo.GetByIdAsync(id);
+        if (departure is null)
+        {
+            throw new NotFoundException();
+        }
+
+        if (!departure.CommissionClosed)
+        {
+            throw new ConflictException("Hoa hồng chuyến chưa chốt sổ.");
+        }
+
+        departure.CommissionClosed = false;
+        departure.CommissionClosedAt = null;
+        departureRepo.Update(departure);
+        await departureRepo.SaveChangesAsync();
+
+        return Map(departure);
+    }
+
     private static async Task Validate<T>(IValidator<T> validator, T dto)
     {
         var result = await validator.ValidateAsync(dto);
@@ -231,5 +276,6 @@ public sealed class DepartureService(
 
     private static DepartureDto Map(TourDeparture d) => new(
         d.Id, d.Code, d.Title, d.ParentTourId, d.DepartureDate, d.EndDate, d.TotalSlots, d.Status,
-        d.TourType, d.AssignedToUserId, d.IsClosed);
+        d.TourType, d.AssignedToUserId, d.IsClosed,
+        ClosedAt: d.ClosedAt, CommissionClosed: d.CommissionClosed, CommissionClosedAt: d.CommissionClosedAt);
 }

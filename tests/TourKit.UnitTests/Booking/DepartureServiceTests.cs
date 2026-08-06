@@ -123,6 +123,59 @@ public sealed class DepartureServiceTests
     }
 
     [Fact]
+    public async Task CloseCommissionAsync_throws_NotFound_for_missing_departure()
+    {
+        var service = NewService();
+
+        await Assert.ThrowsAsync<NotFoundException>(() => service.CloseCommissionAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task CloseCommissionAsync_sets_flag_and_conflicts_when_already_closed()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var departure = new TourDeparture { Code = "DEP-COM", Title = "Chốt HH", TotalSlots = 10 };
+        await repo.AddAsync(departure);
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        var closed = await service.CloseCommissionAsync(departure.Id);
+        Assert.True(closed.CommissionClosed);
+        Assert.NotNull(closed.CommissionClosedAt);
+
+        // Chốt lần 2 → xung đột.
+        await Assert.ThrowsAsync<ConflictException>(() => service.CloseCommissionAsync(departure.Id));
+    }
+
+    [Fact]
+    public async Task ReopenCommissionAsync_clears_flag_after_close()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var departure = new TourDeparture { Code = "DEP-REO", Title = "Mở lại HH", TotalSlots = 10 };
+        await repo.AddAsync(departure);
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        await service.CloseCommissionAsync(departure.Id);
+        var reopened = await service.ReopenCommissionAsync(departure.Id);
+
+        Assert.False(reopened.CommissionClosed);
+        Assert.Null(reopened.CommissionClosedAt);
+    }
+
+    [Fact]
+    public async Task ReopenCommissionAsync_conflicts_when_not_closed()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var departure = new TourDeparture { Code = "DEP-NOP", Title = "Chưa chốt", TotalSlots = 10 };
+        await repo.AddAsync(departure);
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        await Assert.ThrowsAsync<ConflictException>(() => service.ReopenCommissionAsync(departure.Id));
+    }
+
+    [Fact]
     public async Task ListAsync_returns_paged_departures()
     {
         var departureRepo = new FakeRepository<TourDeparture>();

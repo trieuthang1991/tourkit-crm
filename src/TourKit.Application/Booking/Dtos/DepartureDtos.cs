@@ -6,7 +6,9 @@ public sealed record DepartureDto(
     string? TourType = null, Guid? AssignedToUserId = null, bool IsClosed = false,
     // Bám cột staging quản lý chuyến (/sample-tours): Giá (từ template) · Giữ/Bán/Còn chỗ · Ngày đóng chỗ.
     decimal Price = 0m, int SeatHeld = 0, int SeatSold = 0, int SeatRemaining = 0,
-    DateTimeOffset? ClosedAt = null, int? Category = null);
+    DateTimeOffset? ClosedAt = null, int? Category = null,
+    // Chốt sổ hoa hồng chuyến (legacy StatusComission / DateClosedComission).
+    bool CommissionClosed = false, DateTimeOffset? CommissionClosedAt = null);
 
 /// <summary>Bộ lọc danh sách chuyến khởi hành (bám hệ cũ). IsClosed = đã đóng/chốt sổ.</summary>
 public sealed record DepartureListFilter(

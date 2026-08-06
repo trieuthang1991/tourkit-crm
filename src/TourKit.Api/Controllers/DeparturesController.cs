@@ -59,4 +59,22 @@ public sealed class DeparturesController(IDepartureService service) : Controller
         var closed = await service.CloseAsync(id);
         return Ok(closed);
     }
+
+    /// <summary>Chốt sổ hoa hồng chuyến (legacy StatusComission=1) — khoá hoa hồng đã quyết toán.</summary>
+    [HttpPost("{id:guid}/close-commission")]
+    [Authorize(Permissions.DepartureClose)]
+    public async Task<IActionResult> CloseCommission(Guid id)
+    {
+        var closed = await service.CloseCommissionAsync(id);
+        return Ok(closed);
+    }
+
+    /// <summary>Mở lại sổ hoa hồng đã chốt để điều chỉnh (legacy StatusComission=0).</summary>
+    [HttpPost("{id:guid}/reopen-commission")]
+    [Authorize(Permissions.DepartureClose)]
+    public async Task<IActionResult> ReopenCommission(Guid id)
+    {
+        var reopened = await service.ReopenCommissionAsync(id);
+        return Ok(reopened);
+    }
 }

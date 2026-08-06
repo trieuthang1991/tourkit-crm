@@ -12,4 +12,6 @@ public interface IDepartureService
     Task<DepartureDto> CreateAsync(CreateDepartureDto dto);
     Task<BatchCreateResultDto> BatchCreateAsync(BatchCreateDeparturesDto dto);
     Task<DepartureDto> CloseAsync(Guid id);
+    Task<DepartureDto> CloseCommissionAsync(Guid id);
+    Task<DepartureDto> ReopenCommissionAsync(Guid id);
 }
