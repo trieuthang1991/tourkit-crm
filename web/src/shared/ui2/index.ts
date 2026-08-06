@@ -5,3 +5,4 @@ export * from './card';
 export * from './badge';
 export * from './input';
 export * from './stat-card';
+export * from './data-grid';
