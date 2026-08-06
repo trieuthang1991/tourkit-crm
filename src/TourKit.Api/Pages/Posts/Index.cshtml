@@ -3,51 +3,53 @@
 @{ ViewData["Title"] = "Bài viết"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao dien luoi dung CHUNG moi man danh sach - nap sau tabulator de override thang. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-  <h4 class="mb-0">Bài viết</h4>
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">Marketing <span class="mx-1">/</span> <span class="text-body">Bài viết</span></div>
+    <h4 class="mb-0">Bài viết</h4>
+  </div>
   <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm bài viết</button>
 </div>
 
-@* Thanh lọc — chỉ 2 tiêu chí service có thật (chuyên mục, trạng thái), đẩy xuống SQL. *@
-<div class="card mb-4">
-  <div class="card-body">
+<div class="tk-surface">
+
+  @* Thanh lọc — chỉ 2 tiêu chí service có thật (chuyên mục, trạng thái), đẩy xuống SQL. *@
+  <div class="tk-pad">
     <div class="row g-2 align-items-center">
-      <div class="col-md-4">
+      <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Tiêu đề bài viết…" /></div>
+      <div class="col-md-3">
         <select id="f-categoryId" class="form-select tk-s2f" data-placeholder="Chuyên mục">
           <option value=""></option>
           @foreach (var c in Model.Categories) { <option value="@c.Id">@c.Name</option> }
         </select>
       </div>
       <div class="col-md-3">
-        <select id="f-status" class="form-select">
+        <select id="f-status" class="form-select tk-auto">
           <option value="">Tất cả trạng thái</option>
           <option value="0">Nháp</option><option value="1">Xuất bản</option><option value="2">Lưu trữ</option>
         </select>
       </div>
       <div class="col-md-2 d-flex gap-2">
-        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
   </div>
-</div>
 
-<div class="card">
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          <th class="text-center">#</th><th>Tiêu đề</th><th>Chuyên mục</th><th>Trạng thái</th>
-          <th>Xuất bản</th><th class="text-end">Lượt thích</th><th></th>
-        </tr>
-      </thead>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> bài viết đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-posts"></div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" id="del-id" /></form>
@@ -102,20 +104,16 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt, cmtPostId = null;
-    var FILTERS = ['categoryId', 'status'];
-
-    function collectFilters(d) {
-      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
-    }
+    var oc, grid, cmtPostId = null;
 
     // ---- Bình luận ----
     function renderComments(rows) {
@@ -148,44 +146,57 @@
     $(function () {
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
-      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
-        columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: null, render: function (r) { return '<div class="fw-medium">' + tk.escape(r.title) + '</div><small class="text-muted">' + tk.escape(r.slug) + '</small>'; } },
-          { data: 'categoryName' },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: 'publishedAtText' },
-          { data: 'likeCount', className: 'text-end', render: function (v) { return tk.money(v); } },
-          { data: null, className: 'text-end text-nowrap', render: function () {
-              return '<button type="button" class="btn btn-sm btn-label-secondary js-cmt" title="Bình luận"><i class="ti ti-message-circle me-1"></i>Bình luận</button> ' +
-                     '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
-        ]
-      });
+      var g = tk.g, esc = g.esc, money = g.money;
 
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'bài viết',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'bài viết',
         rules: { 'Input.Title': { required: true }, 'Input.Slug': { required: true } },
         messages: { 'Input.Title': { required: 'Bắt buộc nhập tiêu đề' }, 'Input.Slug': { required: 'Bắt buộc nhập slug' } }
       });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-status').on('change', function () { dt.ajax.reload(); });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('#btn-reset').on('click', function () {
-        FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
-        dt.ajax.reload();
-      });
+      function delRow(r) {
+        tk.confirmDelete({ title: 'Xoá bài viết?', text: r.title || '' }).then(function (ok) {
+          if (!ok) { return; }
+          $('#del-id').val(r.id);
+          $('#delete-form').submit();
+        });
+      }
 
-      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-cmt', function () { openComments(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var id = dt.row($(this).closest('tr')).data().id;
-        tk.confirmDelete({ title: 'Xoá bài viết?' }).then(function (ok) { if (ok) { $('#del-id').val(id); $('#delete-form').submit(); } });
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      grid = tk.grid('#grid-posts', {
+        filters: ['categoryId', 'status'],
+        exportName: 'bai-viet-da-chon.csv',
+        actions: function (r) {
+          return [
+            { label: '<i class="ti ti-edit me-2"></i>Sửa bài viết', action: function () { oc.open(r); } },
+            { label: '<i class="ti ti-message-circle me-2"></i>Bình luận', action: function () { openComments(r); } },
+            { separator: true },
+            { label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá bài viết</span>', action: function () { delRow(r); } }
+          ];
+        },
+        onRowClick: function (r) { oc.open(r); },
+        columns: [
+          {
+            title: 'Tiêu đề', field: 'title', widthGrow: 4, minWidth: 260,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.title, r.slug); }
+          },
+          { title: 'Chuyên mục', field: 'categoryName', widthGrow: 2, minWidth: 150,
+            formatter: function (c) { return g.stack(c.getValue(), null); } },
+          {
+            title: 'Trạng thái', field: 'status', width: 130,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
+            }
+          },
+          { title: 'Xuất bản', field: 'publishedAtText', width: 140,
+            formatter: function (c) { return g.stack(c.getValue(), null); } },
+          {
+            title: 'Lượt thích', field: 'likeCount', width: 120, hozAlign: 'right', headerHozAlign: 'right',
+            topCalc: 'sum',
+            topCalcFormatter: function (c) { return '<span class="fw-semibold">' + money(c.getValue()) + '</span>'; },
+            formatter: function (c) { return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main">' + money(c.getValue()) + '</div></div>'; }
+          }
+        ]
       });
 
       $('#frm-cmt').on('submit', function () {

@@ -3,9 +3,11 @@
 @{ ViewData["Title"] = "Đánh giá tour"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao dien luoi dung CHUNG moi man danh sach - nap sau tabulator de override thang. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
@@ -32,32 +34,33 @@
     };
 }
 
-<div class="row g-3 mb-4">
-  @foreach (var c in cards)
-  {
-    <div class="col-6 col-md-3 col-xl">
-      <div class="card h-100"><div class="card-body py-3">
-        <small class="text-muted d-block">@c.Label</small>
-        <h5 class="mb-0 text-@c.Color">@c.Value</h5>
-        @if (!string.IsNullOrEmpty(c.Sub)) { <small class="text-muted">@c.Sub</small> }
-      </div></div>
-    </div>
-  }
-</div>
+<div class="tk-surface">
 
-<div class="card mb-4">
-  <div class="card-body">
+  <div class="tk-stat-strip">
+    @foreach (var c in cards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@c.Color"><i class="ti ti-star"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem">@c.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@c.Label @(string.IsNullOrEmpty(c.Sub) ? "" : "· " + c.Sub)</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="tk-pad">
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Tên khách, SĐT, nhận xét…" /></div>
       <div class="col-md-2">
-        <select id="f-stars" class="form-select">
+        <select id="f-stars" class="form-select tk-auto">
           <option value="">Tất cả số sao</option>
           <option value="5">5★ Xuất sắc</option><option value="4">4★ Tốt</option><option value="3">3★ Bình thường</option>
           <option value="2">2★ Tệ</option><option value="1">1★ Rất tệ</option>
         </select>
       </div>
       <div class="col-md-2">
-        <select id="f-status" class="form-select">
+        <select id="f-status" class="form-select tk-auto">
           <option value="">Tất cả trạng thái</option>
           <option value="1">Hiển thị</option><option value="0">Ẩn</option>
         </select>
@@ -65,29 +68,25 @@
       <div class="col-md-2">
         <select id="f-salesUserId" class="form-select tk-s2f" data-placeholder="NV phụ trách"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
       </div>
-      <div class="col-md-2">
+      <div class="col-md-2 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+    <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
+      <div class="col-md-3">
         <select id="f-operatorUserId" class="form-select tk-s2f" data-placeholder="NV điều hành"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
       </div>
     </div>
-    <div class="d-flex gap-2 mt-2">
-      <button type="button" class="btn btn-primary" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
-      <button type="button" class="btn btn-label-secondary" id="btn-reset"><i class="ti ti-rotate me-1"></i> Đặt lại</button>
-    </div>
   </div>
-</div>
 
-<div class="card">
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr>
-          <th class="text-center">#</th><th>Khách hàng</th><th>Mã đặt chỗ</th><th>Tour / Dịch vụ</th>
-          <th>Khởi hành</th><th>Ngày về</th><th>NVPT</th><th>NVĐH</th>
-          <th class="text-center">Điểm</th><th>Nhận xét</th><th class="text-center">Trạng thái</th><th></th>
-        </tr>
-      </thead>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> đánh giá đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-ratings"></div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
@@ -138,86 +137,94 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt;
+    var oc, grid;
     $(function () {
-      // Gom bộ lọc gửi kèm mỗi request server-side (không lọc client).
-      function collectFilters(d) {
-        var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
-        var s = $('#f-stars').val(); if (s) { d['stars'] = s; }
-        var st = $('#f-status').val(); if (st !== '') { d['status'] = st; }
-        var sa = $('#f-salesUserId').val(); if (sa) { d['salesUserId'] = sa; }
-        var op = $('#f-operatorUserId').val(); if (op) { d['operatorUserId'] = op; }
-      }
+      var g = tk.g, esc = g.esc;
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'đánh giá tour',
+        rules: { 'Input.Stars': { required: true } }, messages: { 'Input.Stars': { required: 'Bắt buộc chọn số sao' } } });
+
+      function delRow(r) {
+        tk.confirmDelete({ title: 'Xoá đánh giá tour?', text: r.customerName || '' }).then(function (ok) {
+          if (!ok) { return; }
+          var f = document.getElementById('delete-form');
+          f.querySelector('[name="id"]').value = r.id;
+          f.submit();
+        });
+      }
+
+      function stars(n) {
+        n = Number(n) || 0;
+        return '<span class="text-warning">' + '★'.repeat(n) + '</span>' +
+          '<span class="text-muted">' + '☆'.repeat(Math.max(0, 5 - n)) + '</span>';
+      }
+
       // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
+      grid = tk.grid('#grid-ratings', {
+        filters: ['stars', 'status', 'salesUserId', 'operatorUserId'],
+        exportName: 'danh-gia-tour.csv',
+        actions: function (r) {
+          return [
+            { label: '<i class="ti ti-edit me-2"></i>Sửa đánh giá', action: function () { oc.open(r); } },
+            { separator: true },
+            { label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá đánh giá</span>', action: function () { delRow(r); } }
+          ];
+        },
+        onRowClick: function (r) { oc.open(r); },
         columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: null, className: 'text-nowrap', render: function (r) {
-              return '<div class="fw-medium">' + tk.escape(r.customerName || '—') + '</div>' +
-                     '<div class="small text-muted">' + tk.escape(r.customerPhone || '—') + '</div>';
-            } },
-          { data: 'orderCode', className: 'text-nowrap', render: function (v) { return v ? '<span class="text-muted small">' + tk.escape(v) + '</span>' : '<span class="text-muted">—</span>'; } },
-          { data: null, render: function (r) { return r.departureName ? '<span class="d-inline-block text-truncate" style="max-width:200px" title="' + tk.escape(r.departureName) + '">' + tk.escape(r.departureName) + '</span>' : '<span class="text-muted">—</span>'; } },
-          { data: 'departureDate', className: 'text-nowrap' },
-          { data: 'returnDate', className: 'text-nowrap' },
-          { data: 'salesName', className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">—</span>'; } },
-          { data: 'operatorName', className: 'text-nowrap', render: function (v) { return v ? tk.escape(v) : '<span class="text-muted">—</span>'; } },
-          { data: 'stars', className: 'text-center text-nowrap', render: function (v) {
-              var n = Number(v) || 0;
-              return '<span class="text-warning">' + '★'.repeat(n) + '</span>' +
-                     '<span class="text-muted">' + '☆'.repeat(Math.max(0, 5 - n)) + '</span>';
-            } },
-          { data: 'comment', render: function (v) { return v ? tk.trunc(v, 200) : '<span class="text-muted">—</span>'; } },
-          { data: null, className: 'text-center', render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end', render: function () {
-              return '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>';
-            } }
+          {
+            title: 'Khách hàng', field: 'customerName', widthGrow: 2, minWidth: 180,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-row-media">' + g.avatar(r.customerName) + g.stack(r.customerName, r.customerPhone) + '</div>';
+            }
+          },
+          {
+            title: 'Tour / Dịch vụ', field: 'departureName', widthGrow: 3, minWidth: 210,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.departureName, r.orderCode); }
+          },
+          {
+            title: 'Khởi hành / về', field: 'departureDate', width: 150,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.departureDate, r.returnDate); }
+          },
+          {
+            title: 'NVPT / NVĐH', field: 'salesName', widthGrow: 2, minWidth: 160,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.salesName, r.operatorName); }
+          },
+          {
+            title: 'Điểm', field: 'stars', width: 120, hozAlign: 'center',
+            formatter: function (c) { return stars(c.getValue()); }
+          },
+          {
+            title: 'Nhận xét', field: 'comment', widthGrow: 3, minWidth: 200,
+            formatter: function (c) { return g.stack(c.getValue(), null); }
+          },
+          {
+            title: 'Trạng thái', field: 'status', width: 130, hozAlign: 'center',
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
+            }
+          }
         ]
       });
 
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'đánh giá tour',
-        rules: { 'Input.Stars': { required: true } }, messages: { 'Input.Stars': { required: 'Bắt buộc chọn số sao' } } });
-
-      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var id = dt.row($(this).closest('tr')).data().id;
-        tk.confirmDelete({ title: 'Xoá đánh giá tour?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
-      });
-
-      // Bộ lọc → tải lại server-side.
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('#f-stars, #f-status').on('change', function () { dt.ajax.reload(); });
-      $('#f-salesUserId, #f-operatorUserId').on('change', function () { dt.ajax.reload(); });
-      $('#btn-reset').on('click', function () {
-        $('#f-q,#f-stars,#f-status').val('');
-        $('#f-salesUserId,#f-operatorUserId').val('').trigger('change.select2');
-        dt.ajax.reload();
-      });
-
-      // Xuất CSV theo đúng bộ lọc đang áp.
-      $('#btn-export').on('click', function (e) {
+      // Xuất CSV theo đúng bộ lọc đang áp — handler Export nhận keyword ở tham số `search`.
+      $('#btn-export').off('click').on('click', function (e) {
         e.preventDefault();
-        var d = {}; collectFilters(d);
-        var qs = Object.keys(d).map(function (k) {
-          var key = k === 'search[value]' ? 'search' : k;
-          return encodeURIComponent(key) + '=' + encodeURIComponent(d[k]);
-        }).join('&');
-        window.location = '?handler=Export' + (qs ? '&' + qs : '');
+        var p = new URLSearchParams(grid.filters());
+        var q = $('#f-q').val(); if (q) { p.set('search', q); }
+        window.location = '?handler=Export&' + p.toString();
       });
     });
   </script>
