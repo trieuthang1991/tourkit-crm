@@ -3,50 +3,52 @@
 @{ ViewData["Title"] = "Chiến dịch"; }
 
 @section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
+}
+
+@{
+    // 4 KPI — bám StatGrid hệ cũ, gói vào dải mảnh dùng chung.
+    (string Label, string Value, string Icon, string Color)[] statCards =
+    {
+        ("Tổng chiến dịch", Model.Stats.Total.ToString("#,##0"), "ti ti-speakerphone", "primary"),
+        ("Nháp", Model.Stats.Draft.ToString("#,##0"), "ti ti-pencil", "secondary"),
+        ("Đã gửi", Model.Stats.Sent.ToString("#,##0"), "ti ti-send", "success"),
+        ("Tin đã gửi", Model.Stats.Messages.ToString("#,##0"), "ti ti-mail", "info"),
+    };
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-  <h4 class="mb-0">Marketing</h4>
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">Marketing <span class="mx-1">/</span> <span class="text-body">Chiến dịch</span></div>
+    <h4 class="mb-0">Marketing</h4>
+  </div>
   @if (Model.CanCreate)
   {
     <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm chiến dịch</button>
   }
 </div>
 
-@* 4 KPI — bám StatGrid hệ cũ *@
-<div class="row g-3 mb-3">
-  <div class="col-sm-6 col-lg-3">
-    <div class="card h-100"><div class="card-body d-flex align-items-center">
-      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ti ti-speakerphone"></i></span></div>
-      <div><small class="text-muted d-block">Tổng chiến dịch</small><h5 class="mb-0 tk-num">@Model.Stats.Total.ToString("#,##0")</h5></div>
-    </div></div>
-  </div>
-  <div class="col-sm-6 col-lg-3">
-    <div class="card h-100"><div class="card-body d-flex align-items-center">
-      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-secondary"><i class="ti ti-pencil"></i></span></div>
-      <div><small class="text-muted d-block">Nháp</small><h5 class="mb-0 tk-num">@Model.Stats.Draft.ToString("#,##0")</h5></div>
-    </div></div>
-  </div>
-  <div class="col-sm-6 col-lg-3">
-    <div class="card h-100"><div class="card-body d-flex align-items-center">
-      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-success"><i class="ti ti-send"></i></span></div>
-      <div><small class="text-muted d-block">Đã gửi</small><h5 class="mb-0 tk-num">@Model.Stats.Sent.ToString("#,##0")</h5></div>
-    </div></div>
-  </div>
-  <div class="col-sm-6 col-lg-3">
-    <div class="card h-100"><div class="card-body d-flex align-items-center">
-      <div class="avatar me-3"><span class="avatar-initial rounded bg-label-info"><i class="ti ti-mail"></i></span></div>
-      <div><small class="text-muted d-block">Tin đã gửi</small><h5 class="mb-0 tk-num">@Model.Stats.Messages.ToString("#,##0")</h5></div>
-    </div></div>
-  </div>
-</div>
+<div class="tk-surface">
 
-@* Thanh lọc — đủ tiêu chí CampaignListFilter (Q · Channel · Status), đẩy hết xuống service. *@
-<div class="card mb-3">
-  <div class="card-body">
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="fw-bold" style="font-size:1.15rem">@s.Value</div>
+          <small class="text-muted" style="font-size:.75rem">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  @* Thanh lọc — đủ tiêu chí CampaignListFilter (Q · Channel · Status), đẩy hết xuống service. *@
+  <div class="tk-pad">
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Tên chiến dịch…" /></div>
       <div class="col-md-3">
@@ -55,29 +57,28 @@
         </select>
       </div>
       <div class="col-md-2 d-flex gap-2">
-        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search"></i></button>
-        <button type="button" class="btn btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+        <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
       </div>
     </div>
 
-    @* Segmented trạng thái của hệ cũ *@
-    <div class="btn-group btn-group-sm mt-3" role="group" id="seg-status">
-      <button type="button" class="btn btn-primary" data-status="">Tất cả (@Model.Stats.Total.ToString("#,##0"))</button>
-      <button type="button" class="btn btn-label-primary" data-status="0">Nháp</button>
-      <button type="button" class="btn btn-label-primary" data-status="1">Đã gửi</button>
+    @* Trạng thái (Segmented của hệ cũ) — chuyển sang chip lọc nhanh chuẩn của tk.grid *@
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top">
+      <span class="text-muted small fw-medium" style="min-width:110px">Trạng thái</span>
+      <input type="hidden" id="f-status" value="" />
+      <button type="button" class="btn btn-sm btn-primary tk-chip" data-k="status" data-v="">Tất cả <span class="badge bg-white text-dark ms-1">@Model.Stats.Total.ToString("#,##0")</span></button>
+      <button type="button" class="btn btn-sm btn-label-secondary tk-chip" data-k="status" data-v="0">Nháp <span class="badge bg-secondary ms-1">@Model.Stats.Draft.ToString("#,##0")</span></button>
+      <button type="button" class="btn btn-sm btn-label-secondary tk-chip" data-k="status" data-v="1">Đã gửi <span class="badge bg-secondary ms-1">@Model.Stats.Sent.ToString("#,##0")</span></button>
     </div>
   </div>
-</div>
 
-<div class="card">
-  <h5 class="card-header">Danh sách chiến dịch</h5>
-  <div class="card-datatable table-responsive">
-    <table id="tbl" class="table table-hover">
-      <thead>
-        <tr><th class="text-center">#</th><th style="width:28%">Chiến dịch</th><th style="width:38%">Nội dung</th><th style="width:12%">Trạng thái</th><th></th></tr>
-      </thead>
-    </table>
+  <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
+    <span class="fw-medium"><span id="bulk-count">0</span> chiến dịch đã chọn</span>
+    <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
+    <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
   </div>
+
+  <div id="grid-campaigns"></div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
@@ -152,15 +153,16 @@
 </div>
 
 @section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, dt, segStatus = '', sendRow = null;
+    var oc, grid, sendRow = null;
     var CAN_CREATE = @(Model.CanCreate ? "true" : "false");
     var CAN_SEND = @(Model.CanSend ? "true" : "false");
     var MAX_RECIPIENTS = @TourKit.Api.Pages.MarketingCampaigns.IndexModel.MaxRecipients;
@@ -184,12 +186,6 @@
       bootstrap.Modal.getOrCreateInstance(document.getElementById('md-send')).show();
     }
 
-    function collectFilters(d) {
-      var ch = $('#f-channel').val(); if (ch) { d.channel = ch; }
-      if (segStatus !== '') { d.status = segStatus; }
-      var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
-    }
-
     function openLogs(row) {
       $('#md-log .modal-title').text('Nhật ký gửi — ' + row.name);
       $('#log-list').html('<div class="text-muted">Đang tải…</div>');
@@ -208,56 +204,64 @@
     $(function () {
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
-      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
-      dt = tk.table('#tbl', {
-        url: '?handler=Data',
-        extraData: collectFilters,
-        columns: [
-          { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) { return meta.settings._iDisplayStart + meta.row + 1; } },
-          { data: null, render: function (r) {
-              return '<div class="fw-medium">' + tk.escape(r.name) + '</div>' +
-                     '<span class="badge bg-label-' + r.channelColor + '">' + tk.escape(r.channelLabel) + '</span>';
-            } },
-          { data: null, render: function (r) {
-              return '<div>' + tk.escape(r.subjectText) + '</div>' +
-                     '<small class="text-muted" title="' + tk.escape(r.body) + '">' + tk.escape(r.bodyPreview) + '</small>';
-            } },
-          { data: null, render: function (r) { return '<span class="badge bg-label-' + r.statusColor + '">' + tk.escape(r.statusLabel) + '</span>'; } },
-          { data: null, className: 'text-end text-nowrap', render: function () {
-              return (CAN_SEND ? '<button type="button" class="btn btn-sm btn-label-success js-send" title="Gửi chiến dịch"><i class="ti ti-send me-1"></i>Gửi</button> ' : '') +
-                     '<button type="button" class="btn btn-sm btn-label-secondary js-log" title="Nhật ký gửi"><i class="ti ti-list me-1"></i>Log</button> ' +
-                     (CAN_CREATE ? '<button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>' +
-                     '<button type="button" class="btn btn-icon btn-sm text-danger js-del" title="Xoá"><i class="ti ti-trash"></i></button>' : '');
-            } }
-        ]
-      });
+      var g = tk.g, esc = g.esc;
 
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'chiến dịch',
+      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'chiến dịch',
         rules: { 'Input.Name': { required: true }, 'Input.Body': { required: true } },
         messages: { 'Input.Name': { required: 'Bắt buộc nhập tên' }, 'Input.Body': { required: 'Bắt buộc nhập nội dung' } } });
 
-      $('#btn-search').on('click', function () { dt.ajax.reload(); });
-      $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { dt.ajax.reload(); } });
-      $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
-      $('#seg-status button').on('click', function () {
-        segStatus = this.getAttribute('data-status');
-        $('#seg-status button').removeClass('btn-primary').addClass('btn-label-primary');
-        $(this).removeClass('btn-label-primary').addClass('btn-primary');
-        dt.ajax.reload();
-      });
-      $('#btn-reset').on('click', function () {
-        $('#f-q').val('');
-        $('#f-channel').val('').trigger('change.select2');
-        segStatus = '';
-        $('#seg-status button').removeClass('btn-primary').addClass('btn-label-primary');
-        $('#seg-status button[data-status=""]').removeClass('btn-label-primary').addClass('btn-primary');
-        dt.ajax.reload();
-      });
+      function delRow(r) {
+        tk.confirmDelete({ title: 'Xoá chiến dịch?', text: r.name || '' }).then(function (ok) {
+          if (!ok) { return; }
+          var f = document.getElementById('delete-form');
+          f.querySelector('[name="id"]').value = r.id;
+          f.submit();
+        });
+      }
 
-      // Server-side: lấy dữ liệu dòng từ DataTables API (không còn data-json trên <tr>).
-      $('#tbl tbody').on('click', '.js-edit', function () { oc.open(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-log', function () { openLogs(dt.row($(this).closest('tr')).data()); });
-      $('#tbl tbody').on('click', '.js-send', function () { openSend(dt.row($(this).closest('tr')).data()); });
+      // Gửi/sửa/xoá bám ĐÚNG quyền như bản cũ: gửi cần quyền gửi, sửa–xoá cần quyền tạo.
+      function actionsFor(r) {
+        var items = [{ label: '<i class="ti ti-list me-2"></i>Nhật ký gửi', action: function () { openLogs(r); } }];
+        if (CAN_SEND) {
+          items.unshift({ label: '<i class="ti ti-send me-2"></i>Gửi chiến dịch', action: function () { openSend(r); } });
+        }
+        if (CAN_CREATE) {
+          items.push({ label: '<i class="ti ti-edit me-2"></i>Sửa chiến dịch', action: function () { oc.open(r); } });
+          items.push({ separator: true });
+          items.push({ label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá chiến dịch</span>', action: function () { delRow(r); } });
+        }
+        return items;
+      }
+
+      // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
+      grid = tk.grid('#grid-campaigns', {
+        filters: ['channel', 'status'],
+        chipGroups: ['status'],
+        exportName: 'chien-dich-marketing.csv',
+        actions: actionsFor,
+        onRowClick: CAN_CREATE ? function (r) { oc.open(r); } : null,
+        columns: [
+          {
+            title: 'Chiến dịch', field: 'name', widthGrow: 3, minWidth: 220,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<div class="tk-cell"><div class="tk-cell-main">' + esc(r.name) + '</div>' +
+                '<div class="mt-1"><span class="badge bg-label-' + r.channelColor + '">' + esc(r.channelLabel) + '</span></div></div>';
+            }
+          },
+          {
+            title: 'Nội dung', field: 'subjectText', widthGrow: 5, minWidth: 280,
+            formatter: function (c) { var r = c.getData(); return g.stack(r.subjectText, r.bodyPreview); }
+          },
+          {
+            title: 'Trạng thái', field: 'status', width: 140,
+            formatter: function (c) {
+              var r = c.getData();
+              return '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
+            }
+          }
+        ]
+      });
 
       $('#s-recipients').on('input', refreshCount);
 
@@ -295,14 +299,10 @@
               if (res && res.isSuccess) {
                 tk.toast(res.message);
                 bootstrap.Modal.getInstance(document.getElementById('md-send')).hide();
-                dt.ajax.reload(null, false);
+                grid.reload();
               } else { tk.error((res && res.message) || 'Gửi thất bại'); }
             });
         });
-      });
-      $('#tbl tbody').on('click', '.js-del', function () {
-        var id = dt.row($(this).closest('tr')).data().id;
-        tk.confirmDelete({ title: 'Xoá chiến dịch?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });
       });
     });
   </script>
