@@ -6,6 +6,8 @@ using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
 using TourKit.Application.Finance;
 using TourKit.Application.Finance.Dtos;
+using TourKit.Application.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Providers;
 
 namespace TourKit.Api.Pages.TicketFunds;
@@ -19,11 +21,19 @@ public class IndexModel : TkListPageModel
 {
     private readonly ITicketFundService _svc;
     private readonly IProviderService _providers;
+    private readonly IBookingService _orders;
+    private readonly IProviderServiceService _providerServices;
 
-    public IndexModel(ITicketFundService svc, IProviderService providers)
+    public IndexModel(
+        ITicketFundService svc,
+        IProviderService providers,
+        IBookingService orders,
+        IProviderServiceService providerServices)
     {
         _svc = svc;
         _providers = providers;
+        _orders = orders;
+        _providerServices = providerServices;
     }
 
     public TicketFundStatsDto Stats { get; private set; } = new(0, 0, 0);
@@ -48,6 +58,53 @@ public class IndexModel : TkListPageModel
     {
         Stats = await _svc.GetStatsAsync();
         Providers = (await _providers.ListAsync(1, 500)).Items.Select(p => (p.Id, p.Name)).ToList();
+    }
+
+    /// <summary>
+    /// Tìm đơn hàng cho ô chọn (select2 gọi server, gõ tới đâu lọc tới đó).
+    ///
+    /// Trước đây ô này là input text ghi "Dán ID đơn hàng (GUID)" — không ai gõ hay nhớ nổi một GUID.
+    /// Đổ hết đơn vào một dropdown cũng không được: hệ thống có hàng nghìn đơn. Nên phải là tìm kiếm
+    /// phía server, mỗi lượt chỉ trả 20 dòng khớp nhất.
+    /// </summary>
+    public async Task<IActionResult> OnGetOrderSearchAsync(string? q)
+    {
+        var result = await _orders.ListOrdersAsync(1, 20, new OrderListFilter(Q: q));
+        return new JsonResult(new
+        {
+            results = result.Items.Select(o => new
+            {
+                id = o.Id,
+                text = $"{o.Code} — {o.CustomerName ?? "chưa có khách"}",
+            }),
+        });
+    }
+
+    /// <summary>
+    /// Tìm giá dịch vụ, LỌC THEO nhà cung cấp đang chọn. Không lọc thì người dùng thấy giá của mọi
+    /// NCC và rất dễ gắn nhầm giá của nhà cung cấp khác vào quỹ vé.
+    /// </summary>
+    public async Task<IActionResult> OnGetServiceSearchAsync(Guid? providerId, string? q)
+    {
+        if (providerId is null)
+        {
+            return new JsonResult(new { results = Array.Empty<object>() });
+        }
+
+        var result = await _providerServices.ListAsync(1, 50, providerId);
+        var keyword = q?.Trim();
+
+        var items = result.Items
+            .Where(s => string.IsNullOrEmpty(keyword)
+                || (s.PriceName ?? "").Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            .Take(20)
+            .Select(s => new
+            {
+                id = s.Id,
+                text = $"{s.PriceName ?? "Không tên"} — {s.ContractPrice.ToString("#,##0", CultureInfo.InvariantCulture)}",
+            });
+
+        return new JsonResult(new { results = items });
     }
 
     /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí TicketFundListFilter hỗ trợ.</summary>

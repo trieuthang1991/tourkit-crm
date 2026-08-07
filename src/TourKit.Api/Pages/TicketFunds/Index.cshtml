@@ -92,10 +92,13 @@
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
       <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
+      @* Đơn hàng: tìm phía server (gõ mã đơn hoặc tên khách), KHÔNG dán GUID và cũng không đổ hết
+         hàng nghìn đơn vào một dropdown. Không gắn class tk-s2 để tk.form đừng khởi tạo select2
+         thường đè lên bản có tìm kiếm. *@
       <div class="mb-3">
-        <label class="form-label">Mã đơn (orderId) <span class="text-danger">*</span></label>
-        <input type="text" name="Input.OrderId" class="form-control" placeholder="Dán ID đơn hàng (GUID)" />
-        <div class="form-text">Quỹ vé gắn theo đơn — không đổi được sau khi tạo.</div>
+        <label class="form-label">Đơn hàng <span class="text-danger">*</span></label>
+        <select name="Input.OrderId" id="oc-order" class="form-select"></select>
+        <div class="form-text">Gõ mã đơn hoặc tên khách để tìm. Quỹ vé gắn theo đơn — không đổi được sau khi tạo.</div>
       </div>
       <div class="mb-3">
         <label class="form-label">Nhà cung cấp</label>
@@ -104,7 +107,13 @@
           @foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }
         </select>
       </div>
-      <div class="mb-3"><label class="form-label">Mã giá dịch vụ (providerServiceId)</label><input type="text" name="Input.ProviderServiceId" class="form-control" placeholder="Dán ID giá dịch vụ (GUID)" /></div>
+      @* Giá dịch vụ LỌC THEO nhà cung cấp đang chọn ở trên — không lọc thì rất dễ gắn nhầm giá của
+         NCC khác vào quỹ vé, mà nhìn vào bảng không thể phát hiện ra. *@
+      <div class="mb-3">
+        <label class="form-label">Giá dịch vụ</label>
+        <select name="Input.ProviderServiceId" id="oc-service" class="form-select"></select>
+        <div class="form-text">Chọn nhà cung cấp trước để lọc danh sách giá.</div>
+      </div>
       <div class="mb-3"><label class="form-label">Mã vé</label><input type="text" name="Input.TicketCode" class="form-control" placeholder="Nhập mã vé" /></div>
       <div class="mb-3"><label class="form-label">Trạng thái (mã số)</label><input type="number" name="Input.Status" class="form-control" placeholder="0" value="0" /></div>
       <div class="form-check form-switch mb-4">
@@ -145,9 +154,62 @@
         });
       }
 
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'quỹ vé',
-        rules: { 'Input.OrderId': { required: true } }, messages: { 'Input.OrderId': { required: 'Bắt buộc nhập mã đơn' } } });
+      var ocForm = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'quỹ vé',
+        rules: { 'Input.OrderId': { required: true } }, messages: { 'Input.OrderId': { required: 'Bắt buộc chọn đơn hàng' } } });
       $('#frm').on('submit', function () { setTimeout(refreshStats, 600); });
+
+      // --- Hai ô chọn có TÌM KIẾM PHÍA SERVER ---------------------------------------------------
+      // Đơn hàng và giá dịch vụ không đổ sẵn vào dropdown được (hàng nghìn đơn), nên select2 gọi
+      // server theo từ khoá. Đổi lại: lúc mở form sửa, select2 chưa có option nào cho giá trị đang
+      // lưu → phải tự nạp nhãn vào, nếu không ô sẽ trống và lần Lưu kế tiếp xoá mất liên kết.
+      $('#oc-order').select2({
+        dropdownParent: $('#oc'), width: '100%', allowClear: true,
+        placeholder: 'Gõ mã đơn hoặc tên khách…',
+        ajax: {
+          url: '?handler=OrderSearch', dataType: 'json', delay: 250,
+          data: function (p) { return { q: p.term }; },
+          processResults: function (d) { return d; }
+        }
+      });
+
+      $('#oc-service').select2({
+        dropdownParent: $('#oc'), width: '100%', allowClear: true,
+        placeholder: 'Chọn nhà cung cấp trước…',
+        ajax: {
+          url: '?handler=ServiceSearch', dataType: 'json', delay: 250,
+          data: function (p) { return { q: p.term, providerId: $('[name="Input.ProviderId"]').val() }; },
+          processResults: function (d) { return d; }
+        }
+      });
+
+      // Đổi NCC thì giá dịch vụ cũ không còn thuộc NCC mới — xoá đi thay vì để lại một liên kết sai.
+      $('#frm').on('change', '[name="Input.ProviderId"]', function () {
+        $('#oc-service').val(null).trigger('change');
+      });
+
+      function setPicked(sel, id, label) {
+        var $s = $(sel);
+        $s.empty();
+        if (id) { $s.append(new Option(label || id, id, true, true)); }
+        $s.trigger('change');
+      }
+
+      oc = {
+        open: function (row) {
+          ocForm.open(row);
+          // Nhãn đơn hàng lấy từ chính dòng lưới; nhãn giá dịch vụ phải hỏi server vì lưới không có.
+          setPicked('#oc-order', row && row.orderId, row && row.orderCode);
+          setPicked('#oc-service', null, null);
+
+          if (row && row.providerServiceId && row.providerId) {
+            $.getJSON('?handler=ServiceSearch', { providerId: row.providerId }, function (d) {
+              var hit = (d.results || []).filter(function (x) { return x.id === row.providerServiceId; })[0];
+              // Không tìm thấy (giá đã xoá, hoặc đổi NCC) thì hiện thẳng như vậy chứ không im lặng bỏ trống.
+              setPicked('#oc-service', row.providerServiceId, hit ? hit.text : 'Giá dịch vụ không còn trong danh sách');
+            });
+          }
+        }
+      };
 
       function delRow(r) {
         tk.confirmDelete({ title: 'Xoá quỹ vé ' + (r.ticketCode || '') + '?' }).then(function (ok) {

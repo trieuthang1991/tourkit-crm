@@ -13,6 +13,18 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
 
     public Task<T?> GetByIdAsync(Guid id) => Set.FirstOrDefaultAsync(e => e.Id == id);
 
+    /// <summary>
+    /// Kẹp cỡ trang về [1, MaxPageSize]. Xin QUÁ trần thì CẮT VỀ TRẦN, không rơi về cỡ mặc định:
+    /// trước đây gọi <c>ListAsync(1, 500)</c> để đổ combobox lại âm thầm chỉ nhận 20 dòng, nên hơn
+    /// chục màn hiện thiếu nhà cung cấp/chuyến đi mà không ai biết. Cỡ trang vô lý (&lt; 1) mới về mặc định.
+    /// </summary>
+    private static int PageSize(int size) => size switch
+    {
+        < 1 => PaginationDefaults.DefaultPageSize,
+        > PaginationDefaults.MaxPageSize => PaginationDefaults.MaxPageSize,
+        _ => size,
+    };
+
     public async Task<IReadOnlyList<T>> ListAsync(Expression<Func<T, bool>>? predicate = null)
         => await (predicate is null ? Set : Set.Where(predicate)).AsNoTracking().ToListAsync();
 
@@ -20,7 +32,7 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
     {
         var q = predicate is null ? Set : Set.Where(predicate);
         var p = page < PaginationDefaults.FirstPage ? PaginationDefaults.FirstPage : page;
-        var s = size is < 1 or > PaginationDefaults.MaxPageSize ? PaginationDefaults.DefaultPageSize : size;
+        var s = PageSize(size);
         var total = await q.CountAsync();
         var items = await q.AsNoTracking().OrderByDescending(e => e.CreatedAt).Skip((p - 1) * s).Take(s).ToListAsync();
         return (items, total);
@@ -47,7 +59,7 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
     {
         var q = predicate is null ? Set : Set.Where(predicate);
         var p = page < PaginationDefaults.FirstPage ? PaginationDefaults.FirstPage : page;
-        var s = size is < 1 or > PaginationDefaults.MaxPageSize ? PaginationDefaults.DefaultPageSize : size;
+        var s = PageSize(size);
         var total = await q.CountAsync();
         var ordered = descending ? q.OrderByDescending(orderBy) : q.OrderBy(orderBy);
         var items = await ordered.AsNoTracking().Skip((p - 1) * s).Take(s).ToListAsync();
