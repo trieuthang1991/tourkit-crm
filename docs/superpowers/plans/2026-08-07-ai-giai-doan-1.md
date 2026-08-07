@@ -4,7 +4,7 @@
 
 **Goal:** Nhân viên hỏi bằng tiếng Việt trong một khung chat có ở mọi trang, và nhận lại số liệu thật kèm bảng + link sang màn báo cáo tương ứng.
 
-**Architecture:** Thêm project `TourKit.Ai` chứa lõi provider-agnostic: mỗi "tool" bọc một hàm nghiệp vụ sẵn có của `IReportService`, khai báo JSON Schema và mã quyền yêu cầu. Trước mỗi lượt, registry chỉ đưa cho model những tool mà claim `perm` của người dùng cho phép — phân quyền là hàng rào code, không phải câu nhắc trong prompt. Model chạy vòng lặp gọi tool tối đa 5 vòng; client gọi Claude nằm ở `TourKit.Infrastructure/Ai` theo đúng khuôn Email/SMS/Zalo đã có.
+**Architecture:** Ba project. `TourKit.Ai.Abstractions` giữ hợp đồng (năng lực `IChatModel`, `IAiTool`) và không tham chiếu gì — đây là thứ mọi adapter và mọi phân hệ nhìn vào. `TourKit.Ai` giữ registry, vòng lặp chat và các tool, mỗi tool bọc một hàm nghiệp vụ sẵn có của `IReportService`. `TourKit.Ai.Anthropic` là adapter Claude, **chỉ thấy Abstractions** — nhờ vậy thêm OpenAI/Gemini về sau là thêm một project nhỏ, không sửa lõi và không kéo SDK lạ vào các assembly khác. Trước mỗi lượt, registry chỉ đưa cho model những tool mà claim `perm` của người dùng cho phép — phân quyền là hàng rào code, không phải câu nhắc trong prompt.
 
 **Tech Stack:** .NET 9, NuGet `Anthropic` (SDK chính thức), Razor Pages + `tk.js`/`tourkit.css` sẵn có, xUnit.
 
@@ -20,7 +20,12 @@ Mọi task đều phải tuân các ràng buộc dưới đây.
 - **Số vòng gọi tool tối đa mỗi lượt:** 5.
 - **Prompt caching:** đặt `CacheControl = new CacheControlEphemeral()` trên block system cuối cùng (tools render trước system nên cache gộp cả hai). Ngưỡng cache tối thiểu của Opus 5 là 512 token.
 - **Phân quyền:** mọi tool khai báo `RequiredPermission` là chuỗi mã quyền. `TourKit.Ai` KHÔNG được tham chiếu `TourKit.Api` (chiều phụ thuộc), nên mã quyền là chuỗi thường; có test riêng ở tầng Api đối chiếu với `Permissions.All`.
-- **Chiều phụ thuộc:** `TourKit.Ai` → `TourKit.Application` → `TourKit.Shared`. `TourKit.Infrastructure` → `TourKit.Ai`. `TourKit.Api` → tất cả. Không có chiều ngược lại.
+- **Chiều phụ thuộc (ép bằng arch test, không bằng thoả thuận):**
+  - `TourKit.Ai.Abstractions` → **không tham chiếu gì**.
+  - `TourKit.Ai` → `Abstractions` + `TourKit.Application`.
+  - `TourKit.Ai.Anthropic` → **chỉ `Abstractions`**. Adapter KHÔNG được thấy `TourKit.Ai`; thấy rồi thì sửa vòng lặp chat sẽ bắt sửa lại mọi adapter.
+  - `TourKit.Api` → tất cả (composition root, nơi duy nhất chọn adapter nào).
+  - `TourKit.Infrastructure` KHÔNG dính gì tới AI.
 - **Không truy vấn EF trong `TourKit.Ai`** — tool chỉ gọi interface service của tầng Application.
 - **Ngày nghiệp vụ** neo offset 0 qua `TkDate.Day()` khi tool nhận tham số ngày.
 - **Tiếng Việt** cho mọi `Description` của tool và mọi chuỗi hiện ra giao diện.
@@ -33,9 +38,10 @@ Mọi task đều phải tuân các ràng buộc dưới đây.
 
 | File | Trách nhiệm |
 |---|---|
-| `src/TourKit.Ai/TourKit.Ai.csproj` | Project lõi AI, tham chiếu `TourKit.Application` |
-| `src/TourKit.Ai/Abstractions/IAiTool.cs` | Hợp đồng của một tool + `AiToolResult` |
-| `src/TourKit.Ai/Abstractions/IAiProvider.cs` | Hợp đồng gọi model, không dính nhà cung cấp cụ thể + các record request/response |
+| `src/TourKit.Ai.Abstractions/TourKit.Ai.Abstractions.csproj` | Hợp đồng dùng chung, **không tham chiếu gì** |
+| `src/TourKit.Ai.Abstractions/IAiTool.cs` | Hợp đồng của một tool + `AiToolResult` + `AiSchema` |
+| `src/TourKit.Ai.Abstractions/IChatModel.cs` | Năng lực hội thoại + gọi công cụ, không dính vendor + các record request/response |
+| `src/TourKit.Ai/TourKit.Ai.csproj` | Lõi điều phối, tham chiếu Abstractions + `TourKit.Application` |
 | `src/TourKit.Ai/AiToolRegistry.cs` | Lọc tool theo quyền, tra tool theo tên |
 | `src/TourKit.Ai/AiChatService.cs` | Vòng lặp: gọi model → chạy tool → gọi lại, tối đa 5 vòng |
 | `src/TourKit.Ai/AiPrompts.cs` | Prompt hệ thống (một chuỗi hằng, đủ dài để cache) |
@@ -45,15 +51,16 @@ Mọi task đều phải tuân các ràng buộc dưới đây.
 | `src/TourKit.Ai/Tools/CashFlowTool.cs` | Dòng tiền theo phương thức thanh toán |
 | `src/TourKit.Ai/Tools/KpiSummaryTool.cs` | Phễu kinh doanh (báo giá → đơn → thu tiền) |
 | `src/TourKit.Ai/AiServiceCollectionExtensions.cs` | Đăng ký lõi + toàn bộ tool vào DI |
-| `src/TourKit.Infrastructure/Ai/AiOptions.cs` | Cấu hình khoá + model |
-| `src/TourKit.Infrastructure/Ai/ClaudeAiProvider.cs` | Client Claude thật (SDK `Anthropic`) |
-| `src/TourKit.Infrastructure/Ai/LogAiProvider.cs` | Provider dev không cần khoá — ghi log, trả lời cố định |
+| `src/TourKit.Ai/LogChatModel.cs` | Adapter giả dev không cần khoá — ghi log, trả lời cố định |
+| `src/TourKit.Ai.Anthropic/TourKit.Ai.Anthropic.csproj` | Adapter Claude, **chỉ tham chiếu Abstractions** + SDK `Anthropic` |
+| `src/TourKit.Ai.Anthropic/AnthropicOptions.cs` | Cấu hình khoá + model của riêng Claude |
+| `src/TourKit.Ai.Anthropic/ClaudeChatModel.cs` | Client Claude thật (SDK `Anthropic`) |
 | `src/TourKit.Api/Pages/Ai/Chat.cshtml` + `.cshtml.cs` | Handler JSON `/tro-ly` |
 | `src/TourKit.Api/wwwroot/js/tk-ai.js` | Khung chat trượt phải |
 | `tests/TourKit.UnitTests/Ai/AiToolRegistryTests.cs` | Test lọc quyền — test an toàn quan trọng nhất |
 | `tests/TourKit.UnitTests/Ai/FakeReportService.cs` | Bản giả `IReportService` cho test tool |
 | `tests/TourKit.UnitTests/Ai/ReportToolsTests.cs` | Test từng tool trả đúng dữ liệu |
-| `tests/TourKit.UnitTests/Ai/FakeAiProvider.cs` | Provider giả để test vòng lặp |
+| `tests/TourKit.UnitTests/Ai/FakeChatModel.cs` | Provider giả để test vòng lặp |
 | `tests/TourKit.UnitTests/Ai/AiChatServiceTests.cs` | Test vòng lặp agent |
 | `tests/TourKit.ArchTests/AiLayeringTests.cs` | Ép chiều phụ thuộc của `TourKit.Ai` |
 | `tests/TourKit.Tests/Ai/AiPermissionCodeTests.cs` | Mã quyền của tool phải tồn tại trong `Permissions.All` |
@@ -62,9 +69,8 @@ Mọi task đều phải tuân các ràng buộc dưới đây.
 
 | File | Sửa gì |
 |---|---|
-| `TourKit.sln` | Thêm project `TourKit.Ai` |
-| `src/TourKit.Infrastructure/TourKit.Infrastructure.csproj` | Thêm ProjectReference `TourKit.Ai` + PackageReference `Anthropic` |
-| `src/TourKit.Api/TourKit.Api.csproj` | Thêm ProjectReference `TourKit.Ai` |
+| `TourKit.sln` | Thêm 3 project: `TourKit.Ai.Abstractions`, `TourKit.Ai`, `TourKit.Ai.Anthropic` |
+| `src/TourKit.Api/TourKit.Api.csproj` | Thêm ProjectReference `TourKit.Ai` + `TourKit.Ai.Anthropic` |
 | `src/TourKit.Api/Program.cs` | Đăng ký AI (theo khuôn Email/SMS ở dòng ~115-136) |
 | `src/TourKit.Api/Routing/RouteMap.cs` | Thêm `("/Ai/Chat", "tro-ly")` |
 | `src/TourKit.Api/appsettings.json` | Thêm section `Ai` |
@@ -79,8 +85,9 @@ Mọi task đều phải tuân các ràng buộc dưới đây.
 Đây là task quan trọng nhất về an toàn: phân quyền được cài đặt ở đây và không có LLM nào tham gia, nên test được tất định 100%.
 
 **Files:**
+- Create: `src/TourKit.Ai.Abstractions/TourKit.Ai.Abstractions.csproj`
+- Create: `src/TourKit.Ai.Abstractions/IAiTool.cs`
 - Create: `src/TourKit.Ai/TourKit.Ai.csproj`
-- Create: `src/TourKit.Ai/Abstractions/IAiTool.cs`
 - Create: `src/TourKit.Ai/AiToolRegistry.cs`
 - Create: `tests/TourKit.UnitTests/Ai/AiToolRegistryTests.cs`
 - Create: `tests/TourKit.ArchTests/AiLayeringTests.cs`
@@ -88,19 +95,39 @@ Mọi task đều phải tuân các ràng buộc dưới đây.
 
 **Interfaces:**
 - Consumes: không có (task đầu tiên).
-- Produces: `IAiTool` (`Name`, `Description`, `ParameterSchema`, `RequiredPermission`, `InvokeAsync`), `AiToolResult(string Text, object? Data, string? LinkUrl)`, `AiToolRegistry.For(IReadOnlySet<string>) → IReadOnlyList<IAiTool>`, `AiToolRegistry.Find(IReadOnlyList<IAiTool>, string) → IAiTool?`.
+- Produces: `IAiTool` (`Name`, `Description`, `ParameterSchema`, `RequiredPermission`, `InvokeAsync`), `AiToolResult(string Text, object? Data, string? LinkUrl)`, `AiSchema.NoParameters`, `AiToolRegistry.For(IReadOnlySet<string>) → IReadOnlyList<IAiTool>`, `AiToolRegistry.Find(IReadOnlyList<IAiTool>, string) → IAiTool?`.
 
-- [ ] **Bước 1: Tạo project và nối vào solution**
+- [ ] **Bước 1: Tạo hai project và nối vào solution**
 
 ```bash
 cd /d/MiGroup/AI/tourkit-crm/tourkit-crm
+
+dotnet new classlib -o src/TourKit.Ai.Abstractions -n TourKit.Ai.Abstractions --framework net9.0
+rm src/TourKit.Ai.Abstractions/Class1.cs
+
 dotnet new classlib -o src/TourKit.Ai -n TourKit.Ai --framework net9.0
 rm src/TourKit.Ai/Class1.cs
+dotnet add src/TourKit.Ai reference src/TourKit.Ai.Abstractions
 dotnet add src/TourKit.Ai reference src/TourKit.Application
-dotnet sln add src/TourKit.Ai
+
+dotnet sln add src/TourKit.Ai.Abstractions src/TourKit.Ai
 ```
 
-Sau đó mở `src/TourKit.Ai/TourKit.Ai.csproj` và **xoá** dòng `<TargetFramework>`, `<Nullable>`, `<ImplicitUsings>` nếu `dotnet new` sinh ra — repo này lấy chúng từ `Directory.Build.props` (nguồn duy nhất). File cuối cùng phải trông như:
+Mở cả hai `.csproj` và **xoá** dòng `<TargetFramework>`, `<Nullable>`, `<ImplicitUsings>` nếu `dotnet new` sinh ra — repo này lấy chúng từ `Directory.Build.props` (nguồn duy nhất).
+
+`src/TourKit.Ai.Abstractions/TourKit.Ai.Abstractions.csproj` — **cố ý không có ItemGroup nào**. Mỗi tham chiếu thêm vào đây là một thứ mọi adapter tương lai buộc phải kéo theo:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- TargetFramework/Nullable/ImplicitUsings kế thừa từ Directory.Build.props (nguồn duy nhất) -->
+  <!-- KHÔNG thêm ProjectReference/PackageReference vào đây: đây là hợp đồng dùng chung, -->
+  <!-- mọi adapter (Claude, OpenAI, Voyage, FPT.AI) đều phải tham chiếu nó. -->
+
+</Project>
+```
+
+`src/TourKit.Ai/TourKit.Ai.csproj`:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -108,6 +135,7 @@ Sau đó mở `src/TourKit.Ai/TourKit.Ai.csproj` và **xoá** dòng `<TargetFram
   <!-- TargetFramework/Nullable/ImplicitUsings kế thừa từ Directory.Build.props (nguồn duy nhất) -->
 
   <ItemGroup>
+    <ProjectReference Include="..\TourKit.Ai.Abstractions\TourKit.Ai.Abstractions.csproj" />
     <ProjectReference Include="..\TourKit.Application\TourKit.Application.csproj" />
   </ItemGroup>
 
@@ -116,7 +144,7 @@ Sau đó mở `src/TourKit.Ai/TourKit.Ai.csproj` và **xoá** dòng `<TargetFram
 
 - [ ] **Bước 2: Viết hợp đồng tool**
 
-Tạo `src/TourKit.Ai/Abstractions/IAiTool.cs`:
+Tạo `src/TourKit.Ai.Abstractions/IAiTool.cs`:
 
 ```csharp
 using System.Text.Json;
@@ -155,6 +183,18 @@ public interface IAiTool
 /// </summary>
 /// <param name="LinkUrl">Đường dẫn màn hình tương ứng để người dùng bấm sang xem đầy đủ.</param>
 public sealed record AiToolResult(string Text, object? Data = null, string? LinkUrl = null);
+
+/// <summary>Mảnh JSON Schema dùng lại giữa các tool.</summary>
+public static class AiSchema
+{
+    /// <summary>Schema cho tool không nhận tham số — vẫn phải là object rỗng, không được để null.</summary>
+    public static readonly IReadOnlyDictionary<string, object> NoParameters =
+        new Dictionary<string, object>
+        {
+            ["type"] = "object",
+            ["properties"] = new Dictionary<string, object>(),
+        };
+}
 ```
 
 - [ ] **Bước 3: Viết test lọc quyền (test sẽ FAIL)**
@@ -227,6 +267,7 @@ public class AiToolRegistryTests
 Thêm ProjectReference vào test project:
 
 ```bash
+dotnet add tests/TourKit.UnitTests reference src/TourKit.Ai.Abstractions
 dotnet add tests/TourKit.UnitTests reference src/TourKit.Ai
 ```
 
@@ -284,17 +325,20 @@ Tạo `tests/TourKit.ArchTests/AiLayeringTests.cs`:
 ```csharp
 using System.Reflection;
 using NetArchTest.Rules;
+using TourKit.Ai;
 using TourKit.Ai.Abstractions;
 
 namespace TourKit.ArchTests;
 
 /// <summary>
-/// Lõi AI chỉ được nói chuyện với tầng Application. Nếu nó chạm được vào Api thì mã quyền và
-/// tenant có thể bị đi vòng; nếu nó chạm được vào EF thì tool có thể tự viết truy vấn.
+/// Ép ba ranh giới của cụm AI. Hai cái đầu bảo vệ dữ liệu: lõi chạm được Api thì mã quyền và tenant
+/// có thể bị đi vòng, chạm được EF thì tool tự viết truy vấn được. Cái thứ ba bảo vệ khả năng mở
+/// rộng: Abstractions mà phình ra là mọi adapter tương lai phải gánh theo.
 /// </summary>
 public class AiLayeringTests
 {
-    private static readonly Assembly Ai = typeof(IAiTool).Assembly;
+    private static readonly Assembly Abstractions = typeof(IAiTool).Assembly;
+    private static readonly Assembly Ai = typeof(AiToolRegistry).Assembly;
 
     [Fact]
     public void Ai_khong_phu_thuoc_Api_hay_Infrastructure()
@@ -316,14 +360,32 @@ public class AiLayeringTests
         Assert.True(result.IsSuccessful, Fail(result));
     }
 
+    /// <summary>
+    /// Abstractions phải trần trụi: nó là thứ MỌI adapter tham chiếu, nên mỗi phụ thuộc thêm vào đây
+    /// là một thứ adapter OpenAI/Voyage/FPT.AI sau này buộc phải kéo theo dù không dùng.
+    /// </summary>
+    [Fact]
+    public void Abstractions_khong_phu_thuoc_bat_ky_project_TourKit_nao()
+    {
+        var result = Types.InAssembly(Abstractions)
+            .ShouldNot().HaveDependencyOnAny(
+                "TourKit.Api", "TourKit.Ai.", "TourKit.Infrastructure", "TourKit.Application", "TourKit.Shared")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Fail(result));
+    }
+
     private static string Fail(TestResult result) =>
         result.FailingTypeNames is null ? "" : string.Join(", ", result.FailingTypeNames);
 }
 ```
 
 ```bash
+dotnet add tests/TourKit.ArchTests reference src/TourKit.Ai.Abstractions
 dotnet add tests/TourKit.ArchTests reference src/TourKit.Ai
 ```
+
+> Test "adapter không được thấy `TourKit.Ai`" nằm ở Task 4, khi project adapter tồn tại.
 
 - [ ] **Bước 8: Chạy toàn bộ test**
 
@@ -336,16 +398,17 @@ Mong đợi: tất cả project PASS, không có `Failed: ` khác 0.
 - [ ] **Bước 9: Commit**
 
 ```bash
-git add src/TourKit.Ai tests/TourKit.UnitTests/Ai tests/TourKit.ArchTests/AiLayeringTests.cs TourKit.sln tests/TourKit.UnitTests/TourKit.UnitTests.csproj tests/TourKit.ArchTests/TourKit.ArchTests.csproj
+git add src/TourKit.Ai.Abstractions src/TourKit.Ai tests/TourKit.UnitTests/Ai tests/TourKit.ArchTests/AiLayeringTests.cs TourKit.sln tests/TourKit.UnitTests/TourKit.UnitTests.csproj tests/TourKit.ArchTests/TourKit.ArchTests.csproj
 git commit -m @'
-feat(ai): lõi TourKit.Ai — hợp đồng tool và lọc quyền
+feat(ai): hợp đồng tool tách riêng + lọc quyền
 
-Phân quyền của trợ lý làm bằng cách lọc danh sách tool đưa cho model, không
-phải dặn dò trong prompt: tool ngoài quyền không nằm trong danh sách nên model
-không có tên để gọi. Find() cố tình chỉ tra trên danh sách đã lọc.
+Tách Abstractions khỏi lõi ngay từ đầu vì hệ thống sẽ có nhiều adapter (Claude,
+OpenAI, Voyage, FPT.AI). Abstractions cố ý không tham chiếu gì: nó là thứ mọi
+adapter phải kéo theo, mỗi phụ thuộc thêm vào đó là gánh nặng cho tất cả.
 
-Arch test ép lõi AI không chạm Api và không chạm EF — hai đường duy nhất có thể
-đi vòng qua bộ lọc tenant và mã quyền.
+Phân quyền làm bằng cách lọc danh sách tool đưa cho model, không phải dặn dò
+trong prompt: tool ngoài quyền không nằm trong danh sách nên model không có tên
+để gọi. Find() cố tình chỉ tra trên danh sách đã lọc.
 '@
 ```
 
@@ -576,25 +639,7 @@ public sealed class TurnoverByBranchTool(IReportService reports) : IAiTool
 }
 ```
 
-- [ ] **Bước 5: Viết helper schema và tool công nợ**
-
-Tạo `src/TourKit.Ai/Abstractions/AiSchema.cs`:
-
-```csharp
-namespace TourKit.Ai.Abstractions;
-
-/// <summary>Mảnh JSON Schema dùng lại giữa các tool.</summary>
-public static class AiSchema
-{
-    /// <summary>Schema cho tool không nhận tham số — vẫn phải là object rỗng, không được để null.</summary>
-    public static readonly IReadOnlyDictionary<string, object> NoParameters =
-        new Dictionary<string, object>
-        {
-            ["type"] = "object",
-            ["properties"] = new Dictionary<string, object>(),
-        };
-}
-```
+- [ ] **Bước 5: Viết tool công nợ**
 
 Tạo `src/TourKit.Ai/Tools/OrderDebtTool.cs`:
 
@@ -679,7 +724,7 @@ Mong đợi: `Passed! - Failed: 0, Passed: 5`.
 - [ ] **Bước 8: Commit**
 
 ```bash
-git add src/TourKit.Ai/Tools src/TourKit.Ai/Abstractions/AiSchema.cs tests/TourKit.UnitTests/Ai
+git add src/TourKit.Ai/Tools tests/TourKit.UnitTests/Ai
 git commit -m @'
 feat(ai): hai tool báo cáo đầu tiên — doanh thu chi nhánh và công nợ
 
@@ -697,10 +742,10 @@ nhầm hàm thì test đỏ ngay thay vì âm thầm trả danh sách rỗng.
 ### Task 3: Vòng lặp agent (chưa cần LLM thật)
 
 **Files:**
-- Create: `src/TourKit.Ai/Abstractions/IAiProvider.cs`
+- Create: `src/TourKit.Ai.Abstractions/IChatModel.cs`
 - Create: `src/TourKit.Ai/AiPrompts.cs`
 - Create: `src/TourKit.Ai/AiChatService.cs`
-- Create: `tests/TourKit.UnitTests/Ai/FakeAiProvider.cs`
+- Create: `tests/TourKit.UnitTests/Ai/FakeChatModel.cs`
 - Create: `tests/TourKit.UnitTests/Ai/AiChatServiceTests.cs`
 
 **Interfaces:**
@@ -709,14 +754,14 @@ nhầm hàm thì test đỏ ngay thay vì âm thầm trả danh sách rỗng.
   - `AiMessage(string Role, string Text, string? ToolCallId = null)` — lịch sử hội thoại đơn giản hoá cho tầng gọi.
   - `AiToolCall(string Id, string Name, JsonElement Arguments)`
   - `AiCompletion(string? Text, IReadOnlyList<AiToolCall> ToolCalls, bool Refused = false)`
-  - `AiTurn(IReadOnlyList<AiMessage> History, IReadOnlyList<IAiTool> Tools)`
-  - `IAiProvider.CompleteAsync(AiTurn, CancellationToken) → Task<AiCompletion>`
+  - `AiTurn(string SystemPrompt, IReadOnlyList<AiMessage> History, IReadOnlyList<IAiTool> Tools)`
+  - `IChatModel.Id` và `IChatModel.CompleteAsync(AiTurn, CancellationToken) → Task<AiCompletion>`
   - `AiChatService.AskAsync(string question, IReadOnlySet<string> perms, CancellationToken) → Task<AiAnswer>`
   - `AiAnswer(string Text, IReadOnlyList<AiAnswerBlock> Blocks)`; `AiAnswerBlock(string Tool, object? Data, string? LinkUrl)`
 
-- [ ] **Bước 1: Viết hợp đồng provider**
+- [ ] **Bước 1: Viết hợp đồng năng lực hội thoại**
 
-Tạo `src/TourKit.Ai/Abstractions/IAiProvider.cs`:
+Tạo `src/TourKit.Ai.Abstractions/IChatModel.cs`:
 
 ```csharp
 using System.Text.Json;
@@ -736,12 +781,24 @@ public sealed record AiToolCall(string Id, string Name, JsonElement Arguments);
 /// </summary>
 public sealed record AiCompletion(string? Text, IReadOnlyList<AiToolCall> ToolCalls, bool Refused = false);
 
-/// <summary>Đầu vào một lần gọi model: lịch sử + danh sách tool ĐÃ LỌC THEO QUYỀN.</summary>
-public sealed record AiTurn(IReadOnlyList<AiMessage> History, IReadOnlyList<IAiTool> Tools);
+/// <summary>
+/// Đầu vào một lần gọi model: prompt hệ thống + lịch sử + danh sách tool ĐÃ LỌC THEO QUYỀN.
+/// Prompt là THAM SỐ chứ không phải hằng số adapter tự đọc — adapter không được biết gì về nghiệp vụ
+/// TourKit, nó chỉ biết cách nói chuyện với một nhà cung cấp.
+/// </summary>
+public sealed record AiTurn(string SystemPrompt, IReadOnlyList<AiMessage> History, IReadOnlyList<IAiTool> Tools);
 
-/// <summary>Cổng duy nhất ra nhà cung cấp AI. Đổi Claude sang thứ khác chỉ cần đổi lớp cài đặt.</summary>
-public interface IAiProvider
+/// <summary>
+/// NĂNG LỰC hội thoại + gọi công cụ. Một adapter = một lớp cài interface này cho một nhà cung cấp
+/// (Claude, GPT, Gemini). Các năng lực khác — nhúng vector, đọc giấy tờ — có hình dạng khác hẳn nên
+/// sẽ là interface RIÊNG, không nhét vào đây: gộp lại chỉ được một interface mà mỗi cài đặt ném
+/// NotSupportedException cho phần lớn số hàm.
+/// </summary>
+public interface IChatModel
 {
+    /// <summary>Định danh để cấu hình chọn ("claude", "gpt", "gemini").</summary>
+    string Id { get; }
+
     Task<AiCompletion> CompleteAsync(AiTurn turn, CancellationToken ct);
 }
 ```
@@ -792,7 +849,7 @@ public static class AiPrompts
 
 - [ ] **Bước 3: Viết provider giả + test vòng lặp (test sẽ FAIL)**
 
-Tạo `tests/TourKit.UnitTests/Ai/FakeAiProvider.cs`:
+Tạo `tests/TourKit.UnitTests/Ai/FakeChatModel.cs`:
 
 ```csharp
 using TourKit.Ai.Abstractions;
@@ -803,7 +860,7 @@ namespace TourKit.UnitTests.Ai;
 /// Provider giả chạy theo kịch bản dựng sẵn: mỗi lần được gọi trả về phần tử kế tiếp.
 /// Ghi lại số tool mà nó NHÌN THẤY ở từng lượt để test kiểm tra bộ lọc quyền đã áp đúng.
 /// </summary>
-internal sealed class FakeAiProvider(params AiCompletion[] script) : IAiProvider
+internal sealed class FakeChatModel(params AiCompletion[] script) : IChatModel
 {
     private int _calls;
 
@@ -850,14 +907,14 @@ public class AiChatServiceTests
         }
     }
 
-    private static AiChatService Service(IAiProvider provider, params IAiTool[] tools) =>
+    private static AiChatService Service(IChatModel provider, params IAiTool[] tools) =>
         new(provider, new AiToolRegistry(tools), NullLogger<AiChatService>.Instance);
 
     [Fact]
     public async Task Goi_tool_roi_tra_loi_bang_luot_thu_hai()
     {
         var tool = new EchoTool("doanh_thu", null, "Doanh thu 5 tỷ");
-        var provider = new FakeAiProvider(
+        var provider = new FakeChatModel(
             new AiCompletion(null, [new AiToolCall("t1", "doanh_thu", Empty())]),
             new AiCompletion("Doanh thu là 5 tỷ đồng.", []));
 
@@ -873,7 +930,7 @@ public class AiChatServiceTests
     [Fact]
     public async Task Model_khong_thay_tool_ngoai_quyen()
     {
-        var provider = new FakeAiProvider(new AiCompletion("ok", []));
+        var provider = new FakeChatModel(new AiCompletion("ok", []));
         var service = Service(provider,
             new EchoTool("cong_khai", null, "x"),
             new EchoTool("gia_von", "report.cost.view", "y"));
@@ -886,7 +943,7 @@ public class AiChatServiceTests
     [Fact]
     public async Task Model_goi_tool_khong_ton_tai_thi_bao_loi_ve_cho_model_chu_khong_nem()
     {
-        var provider = new FakeAiProvider(
+        var provider = new FakeChatModel(
             new AiCompletion(null, [new AiToolCall("t1", "khong_co_that", Empty())]),
             new AiCompletion("Tôi không tra được mục này.", []));
 
@@ -901,12 +958,12 @@ public class AiChatServiceTests
     public async Task Dung_o_vong_thu_5_neu_model_goi_tool_khong_ngung()
     {
         var tool = new EchoTool("lap", null, "z");
-        // Kịch bản gọi tool vô hạn: FakeAiProvider hết script sẽ trả "xong", nên dựng 10 lượt gọi tool.
+        // Kịch bản gọi tool vô hạn: FakeChatModel hết script sẽ trả "xong", nên dựng 10 lượt gọi tool.
         var loop = Enumerable.Range(0, 10)
             .Select(_ => new AiCompletion(null, [new AiToolCall("t", "lap", Empty())]))
             .ToArray();
 
-        var answer = await Service(new FakeAiProvider(loop), tool).AskAsync("lặp đi", new HashSet<string>(), CancellationToken.None);
+        var answer = await Service(new FakeChatModel(loop), tool).AskAsync("lặp đi", new HashSet<string>(), CancellationToken.None);
 
         Assert.Equal(5, tool.Invocations);
         Assert.Contains("chưa hoàn tất", answer.Text);
@@ -915,7 +972,7 @@ public class AiChatServiceTests
     [Fact]
     public async Task Model_tu_choi_thi_tra_ve_thong_bao_lich_su_khong_nem_loi()
     {
-        var provider = new FakeAiProvider(new AiCompletion(null, [], Refused: true));
+        var provider = new FakeChatModel(new AiCompletion(null, [], Refused: true));
 
         var answer = await Service(provider).AskAsync("nội dung nhạy cảm", new HashSet<string>(), CancellationToken.None);
 
@@ -926,7 +983,7 @@ public class AiChatServiceTests
     [Fact]
     public async Task Tool_nem_loi_nghiep_vu_thi_dua_thong_diep_ve_cho_model()
     {
-        var provider = new FakeAiProvider(
+        var provider = new FakeChatModel(
             new AiCompletion(null, [new AiToolCall("t1", "hong", Empty())]),
             new AiCompletion("Có lỗi khi tra số liệu.", []));
 
@@ -983,7 +1040,7 @@ public sealed record AiAnswer(string Text, IReadOnlyList<AiAnswerBlock> Blocks);
 /// Vòng lặp: gọi model → chạy tool model yêu cầu → gọi model lại với kết quả. Tối đa
 /// <see cref="MaxRounds"/> vòng để một model gọi tool không ngừng không đốt hết hạn mức.
 /// </summary>
-public sealed class AiChatService(IAiProvider provider, AiToolRegistry registry, ILogger<AiChatService> log)
+public sealed class AiChatService(IChatModel provider, AiToolRegistry registry, ILogger<AiChatService> log)
 {
     /// <summary>Số vòng gọi tool tối đa mỗi lượt hỏi.</summary>
     public const int MaxRounds = 5;
@@ -996,7 +1053,7 @@ public sealed class AiChatService(IAiProvider provider, AiToolRegistry registry,
 
         for (var round = 0; round < MaxRounds; round++)
         {
-            var completion = await provider.CompleteAsync(new AiTurn(history, allowed), ct);
+            var completion = await provider.CompleteAsync(new AiTurn(AiPrompts.System, history, allowed), ct);
 
             // Opus 5 có thể từ chối: HTTP 200, stop_reason "refusal", nội dung rỗng.
             // Phải chặn TRƯỚC khi đọc Text, nếu không sẽ hiện ra câu trả lời trống.
@@ -1089,71 +1146,68 @@ khớp theo tiền tố nên một byte đổi là mất toàn bộ cache phía 
 ### Task 4: Client Claude thật + đăng ký DI
 
 **Files:**
-- Create: `src/TourKit.Infrastructure/Ai/AiOptions.cs`
-- Create: `src/TourKit.Infrastructure/Ai/LogAiProvider.cs`
-- Create: `src/TourKit.Infrastructure/Ai/ClaudeAiProvider.cs`
+- Create: `src/TourKit.Ai/LogChatModel.cs`
+- Create: `src/TourKit.Ai.Anthropic/TourKit.Ai.Anthropic.csproj`
+- Create: `src/TourKit.Ai.Anthropic/AnthropicOptions.cs`
+- Create: `src/TourKit.Ai.Anthropic/ClaudeChatModel.cs`
 - Create: `src/TourKit.Ai/AiServiceCollectionExtensions.cs`
-- Modify: `src/TourKit.Infrastructure/TourKit.Infrastructure.csproj`
+- Modify: `tests/TourKit.ArchTests/AiLayeringTests.cs`
 - Modify: `src/TourKit.Api/TourKit.Api.csproj`
 - Modify: `src/TourKit.Api/Program.cs`
 - Modify: `src/TourKit.Api/appsettings.json`
+- Modify: `TourKit.sln`
 
 **Interfaces:**
-- Consumes: `IAiProvider`, `AiTurn`, `AiCompletion`, `AiToolCall`, `AiMessage`, `AiPrompts.System`, `AiChatService`, `AiToolRegistry` (Task 1, 3); các tool (Task 2).
-- Produces: `AiOptions` (`SectionName`, `Provider`, `ApiKey`, `Model`, `MaxTokens`), `ClaudeAiProvider`, `LogAiProvider`, `AiServiceCollectionExtensions.AddTourKitAi(IServiceCollection)`.
+- Consumes: `IChatModel`, `AiTurn`, `AiCompletion`, `AiToolCall`, `AiMessage`, `IAiTool` (Task 1, 3); `AiPrompts.System`, `AiChatService`, `AiToolRegistry` (Task 3); các tool (Task 2).
+- Produces: `AnthropicOptions` (`SectionName`, `ApiKey`, `Model`, `MaxTokens`), `ClaudeChatModel` (`Id` = `"claude"`), `LogChatModel` (`Id` = `"log"`), `AiServiceCollectionExtensions.AddTourKitAi(IServiceCollection)`.
 
-- [ ] **Bước 1: Thêm gói và tham chiếu**
+- [ ] **Bước 1: Tạo project adapter**
+
+Adapter nằm ở project riêng chứ không nằm trong `TourKit.Infrastructure`: khi thêm OpenAI/Voyage/FPT.AI sau này, mỗi vendor kéo đúng SDK của nó thay vì dồn hết vào một assembly mà mọi service khác phải mang theo.
 
 ```bash
 cd /d/MiGroup/AI/tourkit-crm/tourkit-crm
-dotnet add src/TourKit.Infrastructure reference src/TourKit.Ai
-dotnet add src/TourKit.Infrastructure package Anthropic
+dotnet new classlib -o src/TourKit.Ai.Anthropic -n TourKit.Ai.Anthropic --framework net9.0
+rm src/TourKit.Ai.Anthropic/Class1.cs
+dotnet add src/TourKit.Ai.Anthropic reference src/TourKit.Ai.Abstractions
+dotnet add src/TourKit.Ai.Anthropic package Anthropic
+dotnet add src/TourKit.Ai.Anthropic package Microsoft.Extensions.Options
+dotnet add src/TourKit.Ai.Anthropic package Microsoft.Extensions.Logging.Abstractions
+dotnet sln add src/TourKit.Ai.Anthropic
+
 dotnet add src/TourKit.Api reference src/TourKit.Ai
-dotnet build src/TourKit.Infrastructure -v q --nologo
+dotnet add src/TourKit.Api reference src/TourKit.Ai.Anthropic
+
+dotnet build src/TourKit.Ai.Anthropic -v q --nologo
 ```
 
-Mong đợi: build thành công. Ghi lại số phiên bản gói `Anthropic` mà lệnh trên chọn (nó sẽ nằm trong `.csproj`) — đó là bản mới nhất, đúng theo luật `.claude/rules/packages.md` của repo.
+Xoá `<TargetFramework>`/`<Nullable>`/`<ImplicitUsings>` khỏi `.csproj` mới như ở Task 1.
 
-- [ ] **Bước 2: Viết cấu hình và provider ghi log**
+**Tuyệt đối KHÔNG chạy** `dotnet add src/TourKit.Ai.Anthropic reference src/TourKit.Ai` — adapter chỉ được thấy `Abstractions`. Bước 7 có arch test chặn việc này.
 
-Tạo `src/TourKit.Infrastructure/Ai/AiOptions.cs`:
+Mong đợi: build thành công. Ghi lại số phiên bản gói `Anthropic` mà lệnh trên chọn (nó nằm trong `.csproj`) — đó là bản mới nhất, đúng theo luật `.claude/rules/packages.md` của repo.
 
-```csharp
-namespace TourKit.Infrastructure.Ai;
+- [ ] **Bước 2: Viết adapter ghi log (nằm ở lõi, không phải project vendor)**
 
-/// <summary>Cấu hình trợ lý AI. Theo đúng khuôn EmailOptions/SmsOptions đã có.</summary>
-public sealed class AiOptions
-{
-    public const string SectionName = "Ai";
+`LogChatModel` không gọi vendor nào nên thuộc về lõi — để ở project adapter thì máy chưa cấu hình gì vẫn buộc phải tham chiếu project Anthropic.
 
-    /// <summary>"Claude" để gọi thật; giá trị khác (hoặc thiếu khoá) thì dùng LogAiProvider.</summary>
-    public string Provider { get; set; } = "Log";
-
-    /// <summary>Khoá API. KHÔNG đặt trong appsettings.json — dùng user-secrets khi dev, biến môi trường khi chạy thật.</summary>
-    public string ApiKey { get; set; } = "";
-
-    public string Model { get; set; } = "claude-opus-5";
-
-    /// <summary>Giữ dưới ~16000 chừng nào còn gọi không streaming, tránh timeout HTTP của SDK.</summary>
-    public int MaxTokens { get; set; } = 16000;
-}
-```
-
-Tạo `src/TourKit.Infrastructure/Ai/LogAiProvider.cs`:
+Tạo `src/TourKit.Ai/LogChatModel.cs`:
 
 ```csharp
 using Microsoft.Extensions.Logging;
 using TourKit.Ai.Abstractions;
 
-namespace TourKit.Infrastructure.Ai;
+namespace TourKit.Ai;
 
 /// <summary>
-/// Provider mặc định khi chưa có khoá API: không gọi ra ngoài, chỉ ghi log và trả lời cố định.
+/// Adapter mặc định khi chưa cấu hình khoá API: không gọi ra ngoài, chỉ ghi log và trả lời cố định.
 /// Nhờ nó mà máy dev không có khoá vẫn chạy được toàn bộ ứng dụng — trợ lý là lớp phụ trợ,
 /// không được nằm trên đường đi chính của bất kỳ nghiệp vụ nào.
 /// </summary>
-public sealed class LogAiProvider(ILogger<LogAiProvider> log) : IAiProvider
+public sealed class LogChatModel(ILogger<LogChatModel> log) : IChatModel
 {
+    public string Id => "log";
+
     public Task<AiCompletion> CompleteAsync(AiTurn turn, CancellationToken ct)
     {
         log.LogInformation("[AI-LOG] {ToolCount} công cụ khả dụng, {MessageCount} tin nhắn.",
@@ -1165,9 +1219,33 @@ public sealed class LogAiProvider(ILogger<LogAiProvider> log) : IAiProvider
 }
 ```
 
-- [ ] **Bước 3: Viết client Claude**
+- [ ] **Bước 3: Viết adapter Claude**
 
-Tạo `src/TourKit.Infrastructure/Ai/ClaudeAiProvider.cs`. Đây là NƠI DUY NHẤT giữ khoá API.
+Tạo `src/TourKit.Ai.Anthropic/AnthropicOptions.cs`:
+
+```csharp
+namespace TourKit.Ai.Anthropic;
+
+/// <summary>
+/// Cấu hình của RIÊNG adapter Claude, đọc từ section "Ai:Providers:claude".
+/// Mỗi adapter về sau có Options riêng — không gộp thành một AiOptions chung, vì tham số của
+/// Claude, OpenAI và Voyage không giống nhau và gộp lại sẽ thành một lớp toàn field nullable.
+/// </summary>
+public sealed class AnthropicOptions
+{
+    public const string SectionName = "Ai:Providers:claude";
+
+    /// <summary>Khoá API. KHÔNG đặt trong appsettings.json — user-secrets khi dev, biến môi trường khi chạy thật.</summary>
+    public string ApiKey { get; set; } = "";
+
+    public string Model { get; set; } = "claude-opus-5";
+
+    /// <summary>Giữ dưới ~16000 chừng nào còn gọi không streaming, tránh timeout HTTP của SDK.</summary>
+    public int MaxTokens { get; set; } = 16000;
+}
+```
+
+Tạo `src/TourKit.Ai.Anthropic/ClaudeChatModel.cs`. Đây là NƠI DUY NHẤT giữ khoá Claude.
 
 ```csharp
 using System.Text.Json;
@@ -1175,27 +1253,29 @@ using Anthropic;
 using Anthropic.Models.Messages;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using TourKit.Ai;
 using TourKit.Ai.Abstractions;
 
-namespace TourKit.Infrastructure.Ai;
+namespace TourKit.Ai.Anthropic;
 
 /// <summary>
-/// Client Claude. Là NƠI DUY NHẤT trong hệ thống giữ khoá API và là nơi duy nhất biết đến SDK
-/// Anthropic — đổi nhà cung cấp chỉ cần viết một lớp khác cài IAiProvider.
+/// Adapter Claude. Là nơi duy nhất trong hệ thống giữ khoá Claude và nơi duy nhất biết đến SDK
+/// Anthropic. Chỉ tham chiếu TourKit.Ai.Abstractions — không thấy vòng lặp chat, nên sửa vòng lặp
+/// không bắt sửa adapter và ngược lại.
 /// </summary>
-public sealed class ClaudeAiProvider : IAiProvider
+public sealed class ClaudeChatModel : IChatModel
 {
     private readonly AnthropicClient _client;
-    private readonly AiOptions _options;
-    private readonly ILogger<ClaudeAiProvider> _log;
+    private readonly AnthropicOptions _options;
+    private readonly ILogger<ClaudeChatModel> _log;
 
-    public ClaudeAiProvider(IOptions<AiOptions> options, ILogger<ClaudeAiProvider> log)
+    public ClaudeChatModel(IOptions<AnthropicOptions> options, ILogger<ClaudeChatModel> log)
     {
         _options = options.Value;
         _log = log;
         _client = new AnthropicClient { ApiKey = _options.ApiKey };
     }
+
+    public string Id => "claude";
 
     public async Task<AiCompletion> CompleteAsync(AiTurn turn, CancellationToken ct)
     {
@@ -1208,7 +1288,7 @@ public sealed class ClaudeAiProvider : IAiProvider
             // cache_control trên block system cuối: tools render trước system nên cache gộp cả hai.
             System = new List<TextBlockParam>
             {
-                new() { Text = AiPrompts.System, CacheControl = new CacheControlEphemeral() },
+                new() { Text = turn.SystemPrompt, CacheControl = new CacheControlEphemeral() },
             },
             Tools = turn.Tools.Select(ToToolUnion).ToList(),
             Messages = turn.History.Select(ToMessageParam).ToList(),
@@ -1290,7 +1370,7 @@ public sealed class ClaudeAiProvider : IAiProvider
 - [ ] **Bước 4: Build và sửa theo lỗi trình biên dịch**
 
 ```bash
-dotnet build src/TourKit.Infrastructure -v q --nologo 2>&1 | head -20
+dotnet build src/TourKit.Ai.Anthropic -v q --nologo 2>&1 | head -20
 ```
 
 Tên kiểu trong SDK C# có thể lệch so với đoạn trên (SDK còn đang phát triển). **Cách sửa nhanh nhất là đọc lỗi trình biên dịch, không phải đi tra tài liệu.** Ba lỗi thường gặp và cách xử lý:
@@ -1314,7 +1394,8 @@ namespace TourKit.Ai;
 
 /// <summary>
 /// Đăng ký lõi trợ lý. Thêm tool mới = thêm MỘT dòng ở đây; registry tự nhận qua IEnumerable&lt;IAiTool&gt;.
-/// KHÔNG đăng ký IAiProvider ở đây — việc chọn Claude hay Log là quyết định của tầng Api (xem Program.cs).
+/// KHÔNG đăng ký IChatModel ở đây — chọn adapter nào là quyết định của composition root (Program.cs).
+/// Lõi không được biết Claude tồn tại, nếu không thì mỗi adapter mới lại phải sửa lõi.
 /// </summary>
 public static class AiServiceCollectionExtensions
 {
@@ -1341,54 +1422,114 @@ dotnet add src/TourKit.Ai package Microsoft.Extensions.DependencyInjection.Abstr
 Mở `src/TourKit.Api/Program.cs`, tìm khối Zalo (khoảng dòng 133-136, ngay trước dòng `// --- FluentValidation`). Chèn NGAY SAU khối Zalo:
 
 ```csharp
-// --- Trợ lý AI: dev không có khoá thì ghi log; đặt Ai:Provider=Claude + Ai:ApiKey để gọi thật (giống Email/SMS) ---
-builder.Services.Configure<TourKit.Infrastructure.Ai.AiOptions>(
-    builder.Configuration.GetSection(TourKit.Infrastructure.Ai.AiOptions.SectionName));
-if (string.Equals(builder.Configuration["Ai:Provider"], "Claude", StringComparison.OrdinalIgnoreCase)
-    && !string.IsNullOrWhiteSpace(builder.Configuration["Ai:ApiKey"]))
+// --- Trợ lý AI. Đây là COMPOSITION ROOT: nơi duy nhất biết có những adapter nào tồn tại.
+//     Thêm OpenAI/Gemini về sau = thêm một nhánh ở đây, không sửa lõi TourKit.Ai. ---
+builder.Services.Configure<TourKit.Ai.Anthropic.AnthropicOptions>(
+    builder.Configuration.GetSection(TourKit.Ai.Anthropic.AnthropicOptions.SectionName));
+
+var chatProvider = builder.Configuration["Ai:UseCases:Chat"];
+if (string.Equals(chatProvider, "claude", StringComparison.OrdinalIgnoreCase)
+    && !string.IsNullOrWhiteSpace(builder.Configuration["Ai:Providers:claude:ApiKey"]))
 {
-    builder.Services.AddScoped<TourKit.Ai.Abstractions.IAiProvider, TourKit.Infrastructure.Ai.ClaudeAiProvider>();
+    builder.Services.AddScoped<TourKit.Ai.Abstractions.IChatModel, TourKit.Ai.Anthropic.ClaudeChatModel>();
 }
 else
 {
-    builder.Services.AddScoped<TourKit.Ai.Abstractions.IAiProvider, TourKit.Infrastructure.Ai.LogAiProvider>();
+    // Thiếu khoá thì rơi về adapter ghi log chứ KHÔNG ném lỗi lúc khởi động:
+    // trợ lý hỏng không được phép làm cả ứng dụng không lên.
+    builder.Services.AddScoped<TourKit.Ai.Abstractions.IChatModel, TourKit.Ai.LogChatModel>();
 }
 builder.Services.AddTourKitAi();
 ```
 
 Thêm `using TourKit.Ai;` vào đầu `Program.cs` nếu chưa có (cần cho `AddTourKitAi`).
 
-- [ ] **Bước 7: Thêm cấu hình mặc định**
+> Giai đoạn 1 chỉ có một năng lực và một adapter nên `if/else` là đủ. Khi có adapter thứ hai cho cùng
+> năng lực, thay bằng keyed services của .NET 9 (`AddKeyedScoped<IChatModel>("claude", …)`) và một
+> `IAiModelSelector` đọc `Ai:UseCases` — **đừng dựng sẵn bây giờ**, một nhánh `if` không cần bộ chọn.
+
+- [ ] **Bước 7: Thêm arch test chặn adapter tham chiếu ngược lên lõi**
+
+Đây là ràng buộc quan trọng nhất của thiết kế adapter, và nó chỉ giữ được nếu có test — một dòng
+`dotnet add reference` gõ nhầm là đủ phá.
+
+Mở `tests/TourKit.ArchTests/AiLayeringTests.cs`, thêm `using TourKit.Ai.Anthropic;` ở đầu và thêm test:
+
+```csharp
+    /// <summary>
+    /// Adapter chỉ được thấy Abstractions. Nếu nó thấy được TourKit.Ai thì orchestration và adapter
+    /// dính nhau: sửa vòng lặp chat sẽ bắt sửa lại toàn bộ adapter, và ngược lại.
+    /// </summary>
+    [Fact]
+    public void Adapter_chi_thay_Abstractions()
+    {
+        var adapter = typeof(ClaudeChatModel).Assembly;
+
+        var result = Types.InAssembly(adapter)
+            .ShouldNot().HaveDependencyOnAny(
+                "TourKit.Ai.Tools", "TourKit.Api", "TourKit.Application", "TourKit.Infrastructure")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Fail(result));
+    }
+```
+
+> `HaveDependencyOnAny("TourKit.Ai")` sẽ khớp cả `TourKit.Ai.Abstractions` (khớp theo tiền tố tên)
+> nên không dùng được trực tiếp. Chặn bằng những namespace CỤ THỂ chỉ có ở lõi — `TourKit.Ai.Tools`
+> là namespace của tool, adapter chạm tới nó là đã sai.
+
+```bash
+dotnet add tests/TourKit.ArchTests reference src/TourKit.Ai.Anthropic
+dotnet test tests/TourKit.ArchTests --nologo
+```
+
+Mong đợi: mọi test PASS.
+
+- [ ] **Bước 8: Thêm cấu hình mặc định**
 
 Mở `src/TourKit.Api/appsettings.json` và thêm section `Ai` ngang hàng với các section khác. **Để `ApiKey` rỗng** — khoá thật đặt bằng `dotnet user-secrets` khi dev và biến môi trường khi chạy thật.
 
+Cấu trúc tách `Providers` (khai báo có những nhà cung cấp nào) khỏi `UseCases` (việc nào dùng ai) để
+sau này thêm model rẻ cho việc phân loại chỉ là thêm hai dòng cấu hình:
+
 ```json
 "Ai": {
-  "Provider": "Log",
-  "ApiKey": "",
-  "Model": "claude-opus-5",
-  "MaxTokens": 16000
+  "Providers": {
+    "claude": { "ApiKey": "", "Model": "claude-opus-5", "MaxTokens": 16000 }
+  },
+  "UseCases": {
+    "Chat": "log"
+  }
 }
 ```
 
-- [ ] **Bước 8: Build và chạy toàn bộ test**
+Đổi `"Chat": "log"` thành `"claude"` (và đặt khoá) để gọi thật.
+
+- [ ] **Bước 9: Build và chạy toàn bộ test**
 
 ```bash
 dotnet build -v q --nologo && dotnet test --nologo 2>&1 | tail -5
 ```
 
-Mong đợi: build 0 lỗi; mọi test PASS. Ứng dụng vẫn khởi động bình thường vì `LogAiProvider` không cần khoá.
+Mong đợi: build 0 lỗi; mọi test PASS. Ứng dụng vẫn khởi động bình thường vì `LogChatModel` không cần khoá.
 
-- [ ] **Bước 9: Commit**
+- [ ] **Bước 10: Commit**
 
 ```bash
-git add src/TourKit.Infrastructure/Ai src/TourKit.Ai src/TourKit.Api/Program.cs src/TourKit.Api/appsettings.json src/TourKit.Infrastructure/TourKit.Infrastructure.csproj src/TourKit.Api/TourKit.Api.csproj
+git add src/TourKit.Ai.Anthropic src/TourKit.Ai src/TourKit.Api/Program.cs src/TourKit.Api/appsettings.json src/TourKit.Api/TourKit.Api.csproj tests/TourKit.ArchTests TourKit.sln
 git commit -m @'
-feat(ai): client Claude + đăng ký DI theo khuôn Email/SMS
+feat(ai): adapter Claude ở project riêng + composition root
 
-ClaudeAiProvider là nơi duy nhất giữ khoá API và nơi duy nhất biết đến SDK
-Anthropic. Không có khoá thì rơi về LogAiProvider chứ không ném lỗi — trợ lý là
-lớp phụ trợ, máy dev không có khoá vẫn phải chạy được toàn bộ ứng dụng.
+Adapter nằm ở TourKit.Ai.Anthropic chứ không nhét vào Infrastructure: thêm
+OpenAI/Voyage/FPT.AI sau này thì mỗi vendor kéo đúng SDK của nó, thay vì dồn hết
+vào một assembly mà mọi service khác phải mang theo dù không dùng.
+
+Adapter chỉ tham chiếu Abstractions, có arch test chặn — nó không thấy vòng lặp
+chat nên sửa vòng lặp không bắt sửa adapter. Hệ quả: prompt hệ thống là tham số
+của AiTurn chứ không phải hằng số adapter tự đọc.
+
+Thiếu khoá thì rơi về LogChatModel chứ không ném lỗi lúc khởi động — trợ lý hỏng
+không được phép làm cả ứng dụng không lên.
 
 Kiểm tra stop_reason "refusal" TRƯỚC khi đọc Content: Opus 5 từ chối bằng HTTP
 200 với nội dung rỗng, đọc thẳng Content sẽ hiện ra câu trả lời trống.
@@ -1779,7 +1920,7 @@ Vào `http://localhost:5075/ban-lam-viec`, đăng nhập, rồi kiểm tra đủ
 1. Nút hình tia sáng hiện bên trái chuông thông báo.
 2. Bấm vào → panel trượt ra từ phải, tiêu đề dính trên, ô nhập dính dưới, chỉ phần giữa cuộn.
 3. Gõ "doanh thu theo chi nhánh?" + Enter → hiện bong bóng người dùng, rồi bong bóng "Đang tra...".
-4. Nhận về câu trả lời của `LogAiProvider` (chưa có khoá).
+4. Nhận về câu trả lời của `LogChatModel` (chưa có khoá).
 5. Console **không có lỗi nào** — kiểm tra bằng DevTools.
 
 Nếu điểm 2 sai (nội dung đẩy header/footer đi), kiểm tra lại các lớp `.tk-oc`, `.tk-oc-head`, `.tk-oc-body`, `.tk-oc-foot` trong `tourkit.css` — đó là bộ khung offcanvas dùng chung, không được viết CSS mới cho panel này.
@@ -2131,8 +2272,8 @@ mất niềm tin vào CI.
 
 ## Cách chạy
 
-1. Đặt khoá thật: `dotnet user-secrets set "Ai:ApiKey" "<khoá>" --project src/TourKit.Api`
-2. Đặt `Ai:Provider` = `Claude` trong `appsettings.Development.json`
+1. Đặt khoá thật: `dotnet user-secrets set "Ai:Providers:claude:ApiKey" "<khoá>" --project src/TourKit.Api`
+2. Đặt `Ai:UseCases:Chat` = `claude` trong `appsettings.Development.json`
 3. Đăng nhập bằng tài khoản có ĐỦ quyền báo cáo, hỏi từng câu, đối chiếu cột "Mong đợi"
 
 ## Bảng câu hỏi
@@ -2178,6 +2319,9 @@ Mở `docs/UI-CONVENTIONS.md`, thêm mục mới ở cuối file:
 
 - Thêm một tool = thêm một lớp trong `src/TourKit.Ai/Tools/` + một dòng trong
   `AiServiceCollectionExtensions`. Registry tự nhận qua `IEnumerable<IAiTool>`.
+- Thêm một nhà cung cấp AI = thêm project `TourKit.Ai.<Vendor>` tham chiếu **chỉ**
+  `TourKit.Ai.Abstractions`, cộng một nhánh trong `Program.cs`. KHÔNG sửa lõi `TourKit.Ai`,
+  KHÔNG cho adapter tham chiếu lõi — `AiLayeringTests` chặn cả hai.
 - Mỗi tool BẮT BUỘC khai báo `RequiredPermission` là mã có thật trong
   `TourKit.Api.Authz.Permissions.All` — `AiPermissionCodeTests` chặn lỗi gõ sai.
 - Tool chỉ được gọi interface service của tầng Application. Cấm truy vấn EF, cấm sinh SQL:
@@ -2213,7 +2357,7 @@ Sau khi xong cả 7 task, chạy hết những mục dưới đây. Đây không
 
 - [ ] `dotnet build -v q --nologo` → 0 lỗi
 - [ ] `dotnet test --nologo` → mọi project PASS
-- [ ] Đặt khoá thật và `Ai:Provider=Claude`, chạy hết 15 câu trong `docs/ai-golden-questions.md`
+- [ ] Đặt khoá thật và `Ai:UseCases:Chat=claude`, chạy hết 15 câu trong `docs/ai-golden-questions.md`
 - [ ] **Kiểm tra phân quyền bằng tài khoản thiếu quyền** (mục cuối của file câu hỏi vàng) — đây là cổng chặn cứng, đỏ thì không bật
 - [ ] Xem log một lượt hỏi: phải thấy dòng `Trợ lý: {InputTokens} token vào, ... {CacheRead} token đọc từ cache`. Nếu `CacheRead` luôn bằng 0 qua nhiều lượt thì prompt caching không ăn — kiểm tra xem có gì bị nội suy vào `AiPrompts.System` không.
 - [ ] Tắt mạng (hoặc đặt khoá sai) rồi mở một màn bất kỳ: **màn hình phải chạy bình thường**, chỉ khung chat báo lỗi. Trợ lý là lớp phụ trợ, không được nằm trên đường đi chính.
@@ -2234,19 +2378,35 @@ lõi, bộ lọc quyền và khung chat chạy đúng thì mỗi tool còn lại
 | Doanh thu theo kỳ | `GetRevenueSeriesAsync(from, to, monthly)` | `report.turnover.view` |
 | Tra danh sách đơn / khách / phiếu thu có lọc | service tương ứng của từng module | theo module |
 
+**Về kiến trúc adapter:** Giai đoạn 1 dựng đúng **một năng lực** (`IChatModel`) và **một adapter**
+(`TourKit.Ai.Anthropic`). Bốn thứ sau đã chốt hình dạng trong spec §3.3/§3.4/§4.1 nhưng **cố ý chưa
+viết** — viết khi có cái thứ hai để đối chiếu, chứ đoán trước là cách chắc chắn nhất để đoán sai:
+
+| Chưa viết | Viết khi nào |
+|---|---|
+| `ITextEmbedder` + adapter Voyage/OpenAI | Giai đoạn 3 (RAG) |
+| `IDocumentReader` + adapter FPT.AI | Khi làm OCR giấy tờ |
+| `IAiModelSelector` + keyed services | Khi có adapter thứ hai cho cùng năng lực chat |
+| `IAiModule` (mỗi phân hệ góp tool + prompt) | Khi phân hệ thứ hai ngoài Reports góp tool |
+
+Cái đã có sẵn từ Giai đoạn 1 là **chỗ để cắm**: `Abstractions` không tham chiếu gì, adapter không
+thấy lõi, và composition root là nơi duy nhất biết adapter nào tồn tại. Thêm nhà cung cấp về sau là
+thêm project + một nhánh trong `Program.cs`, không sửa lõi.
+
 **Hai điểm khác spec cần người duyệt biết:**
 
 1. **Chưa có streaming.** Spec §5 nói "trả về theo luồng để cảm giác nhanh". Kế hoạch này gọi
-   không streaming trước vì `IAiProvider.CompleteAsync` trả `Task<AiCompletion>` đơn giản hơn nhiều
+   không streaming trước vì `IChatModel.CompleteAsync` trả `Task<AiCompletion>` đơn giản hơn nhiều
    để kiểm thử, và ở `max_tokens` 16000 thì chưa chạm timeout HTTP. Đổi sang streaming về sau là
-   sửa `IAiProvider` sang `IAsyncEnumerable` — một thay đổi có kiểm soát, không phải viết lại.
+   sửa `IChatModel` sang `IAsyncEnumerable` — một thay đổi có kiểm soát, không phải viết lại.
 2. **Chưa có hạn mức token theo người dùng.** Spec §6 xếp nó vào nhóm "phải có ngay". Kế hoạch này
    để lại vì nó cần chỗ lưu số đếm, mà chỗ lưu là quyết định còn mở (§12). Trong lúc chờ, trần
    5 vòng gọi công cụ + giới hạn 2000 ký tự mỗi câu hỏi là hai hàng rào chặn chi phí chạy loạn.
 
 ## Ngoài phạm vi Giai đoạn 1 (đừng làm thêm)
 
-- Streaming câu trả lời — thêm ở giai đoạn sau, sẽ phải chuyển `IAiProvider` sang `IAsyncEnumerable`.
+- Streaming câu trả lời — thêm ở giai đoạn sau, sẽ phải chuyển `IChatModel` sang `IAsyncEnumerable`.
 - Hạn mức token theo người dùng theo ngày — cần chỗ lưu số đếm, chốt cùng lúc với quyết định lưu vector ở Giai đoạn 3.
 - Lưu hội thoại vào DB — Giai đoạn 1 ghi bằng `ILogger`; bảng hội thoại là quyết định còn mở (xem `docs/superpowers/specs/2026-08-07-ai-integration-design.md` §12).
 - Bất kỳ tool nào GHI dữ liệu — đó là Giai đoạn 2.
+- Adapter thứ hai (OpenAI/Gemini), `IAiModelSelector`, keyed services, `IAiModule`, năng lực embedding và OCR — hình dạng đã chốt ở spec §3.3/§3.4/§4.1, viết khi có cái thứ hai để đối chiếu.

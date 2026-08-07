@@ -37,26 +37,59 @@ Thay vào đó AI chỉ được gọi các **hàm nghiệp vụ đã có** (`IR
 
 Đánh đổi: chỉ trả lời được câu mà service hỗ trợ. Bù lại bằng một số tool tra danh sách có tham số lọc rộng (đơn hàng, khách, phiếu thu) — vẫn đi qua service.
 
-### 3.2 Tách project, không tách hệ thống
+### 3.2 Tách project theo adapter, không tách hệ thống
 
-Đề xuất: thêm **project `TourKit.Ai` trong cùng solution**, không tách repo/dịch vụ riêng cho phần nội bộ.
+Đề xuất: thêm **nhiều project nhỏ trong cùng solution**, không tách repo/dịch vụ riêng cho phần nội bộ.
 
-Lý do: giá trị của AI ở đây nằm ở chỗ gọi được nghiệp vụ sẵn có. Tách ra dịch vụ riêng thì phải dựng lại lớp API, xác thực, tenant, phân quyền — nhân đôi công việc mà không thêm năng lực nào, đồng thời tạo ra một chỗ thứ hai có thể sai phân quyền.
+Lý do không tách dịch vụ: giá trị của AI ở đây nằm ở chỗ gọi được nghiệp vụ sẵn có. Tách ra dịch vụ riêng thì phải dựng lại lớp API, xác thực, tenant, phân quyền — nhân đôi công việc mà không thêm năng lực nào, đồng thời tạo ra một chỗ thứ hai có thể sai phân quyền.
 
-Ngoại lệ: **chatbot khách hàng chạy tiến trình riêng**. Nó mở ra internet, lưu lượng khác, rủi ro khác, và không được phép chạm vào cùng bộ tool nội bộ. Nó dùng chung lõi `TourKit.Ai` nhưng đăng ký một bộ tool hẹp riêng.
+Lý do tách nhiều project: hệ thống sẽ tích hợp **nhiều loại AI của nhiều nhà cung cấp**. Nếu dồn hết vào một assembly thì mọi SDK vendor bị kéo vào cùng một chỗ — thêm OpenAI là mọi service khác phải build lại và mang theo SDK nó không dùng.
 
 ```
-TourKit.Ai                  ← mới. Lõi: định nghĩa tool, vòng lặp agent, hợp đồng nhà cung cấp
-  Tools/                      từng tool = 1 hàm + JSON schema + mã quyền yêu cầu
-  Agent/                      vòng lặp gọi model → chạy tool → gọi lại
-  Abstractions/               IAiProvider (không dính Claude/GPT cụ thể)
-
-TourKit.Infrastructure      ← thêm client gọi model, đi qua API Gateway đã chốt
-TourKit.Api                 ← thêm /api/v1/ai/* + khung chat trên giao diện
-TourKit.ChatBot             ← sau. Tiến trình riêng cho khách, bộ tool riêng
+TourKit.Ai.Abstractions   ← KHÔNG tham chiếu gì. Interface năng lực + IAiTool + DTO
+TourKit.Ai                ← Abstractions + Application. Registry, vòng lặp chat, prompt, tool
+TourKit.Ai.Anthropic      ← CHỈ Abstractions. Adapter Claude + SDK Anthropic
+TourKit.Ai.OpenAi         ← sau, khi cần. Chỉ Abstractions + SDK OpenAI
+TourKit.Ai.Voyage         ← sau. Embedding cho RAG
+TourKit.Ai.FptAi          ← sau. OCR giấy tờ
+TourKit.Api               ← composition root: chọn adapter nào theo cấu hình
+TourKit.ChatBot           ← sau. Tiến trình riêng cho khách, bộ tool riêng
 ```
 
-Nhà cung cấp AI đi qua **API Gateway trung tâm** đã chốt cho SMS/Zalo/Bank/OCR — cùng một chỗ giữ khoá, cùng một chỗ đếm chi phí, cùng một chỗ đổi nhà cung cấp.
+**Luật then chốt: adapter chỉ được thấy `Abstractions`, không được thấy `TourKit.Ai`.** Nếu adapter tham chiếu ngược lên orchestration thì hai thứ dính nhau và sửa vòng lặp chat sẽ bắt sửa lại mọi adapter. Ràng buộc này ép bằng arch test, không bằng thoả thuận miệng.
+
+Ngoại lệ về tiến trình: **chatbot khách hàng chạy tiến trình riêng**. Nó mở ra internet, lưu lượng khác, rủi ro khác, và không được phép chạm vào cùng bộ tool nội bộ. Nó dùng chung `TourKit.Ai.Abstractions` và các adapter nhưng đăng ký một bộ tool hẹp riêng.
+
+**Chưa đóng gói NuGet.** Project riêng trong cùng solution cho đủ lợi ích module hoá mà không phải gánh version + release. Chỉ đóng gói khi có sản phẩm thứ hai thật sự dùng lại.
+
+### 3.3 Adapter tách theo NĂNG LỰC, không theo nhà cung cấp
+
+Hội thoại, nhúng vector và đọc giấy tờ có ba hình dạng khác hẳn nhau. Gộp chúng vào một interface `IAiProvider` sẽ cho ra một interface mà mỗi cài đặt ném `NotSupportedException` cho phần lớn số hàm.
+
+```csharp
+public interface IChatModel      { string Id { get; } Task<AiCompletion> CompleteAsync(AiTurn t, CancellationToken ct); }
+public interface ITextEmbedder   { string Id { get; } int Dimensions { get; } Task<IReadOnlyList<float[]>> EmbedAsync(IReadOnlyList<string> texts, CancellationToken ct); }
+public interface IDocumentReader { string Id { get; } Task<DocumentFields> ReadAsync(Stream image, string kind, CancellationToken ct); }
+```
+
+Một adapter = một lớp, cài **một** năng lực, cho **một** vendor. Thêm Gemini là thêm `GeminiChatModel`; thêm OCR là thêm năng lực mới, không đụng gì tới chat.
+
+**Chỉ thêm interface năng lực khi cái thứ hai thực sự đến.** Giai đoạn 1 chỉ có `IChatModel`; `ITextEmbedder` viết khi làm RAG, `IDocumentReader` khi làm OCR. Dựng sẵn một "AI gateway" phổ quát cho tương lai chưa biết là cách chắc chắn nhất để đoán sai hình dạng.
+
+### 3.4 Chọn model theo việc, không theo mặc định
+
+.NET 9 có keyed services sẵn — dùng nó thay vì tự viết factory. Cấu hình khai báo provider nào phục vụ việc nào:
+
+```json
+"Ai": {
+  "Providers": { "claude": { "ApiKey": "", "Model": "claude-opus-5" } },
+  "UseCases":  { "Chat": "claude", "Classify": "claude-haiku", "Draft": "claude" }
+}
+```
+
+`IAiModelSelector.For(AiUseCase.Classify)` trả model rẻ, `For(AiUseCase.Chat)` trả model lớn. Đổi model cho một việc là sửa cấu hình, không sửa code.
+
+Đây cũng là chỗ giữ tính chất mà quyết định "API Gateway trung tâm" (đã chốt cho SMS/Zalo/Bank/OCR) hướng tới: **một chỗ giữ khoá, một chỗ đếm chi phí, một chỗ đổi nhà cung cấp**. Với AI, chỗ đó là adapter + `IAiModelSelector`, không phải một chặng HTTP trung gian — đi vòng qua HTTP sẽ mất streaming, mất tool-calling có kiểu, mất lỗi có kiểu của SDK.
 
 ## 4. Lõi: tool registry
 
@@ -67,7 +100,7 @@ public interface IAiTool
 {
     string Name { get; }            // "bao_cao_doanh_thu_theo_chi_nhanh"
     string Description { get; }     // tiếng Việt — model đọc cái này để chọn tool
-    object ParameterSchema { get; } // JSON Schema
+    IReadOnlyDictionary<string, object> ParameterSchema { get; }  // JSON Schema
     string? RequiredPermission { get; }  // mã trong Authz.Permissions.All
     Task<AiToolResult> InvokeAsync(JsonElement args, CancellationToken ct);
 }
@@ -76,6 +109,21 @@ public interface IAiTool
 **Phân quyền = lọc danh sách tool, không phải dặn dò model.** Trước mỗi lượt, hệ thống chỉ đưa cho model những tool mà claim `perm` của người dùng cho phép. Kế toán không thấy tool giá vốn thì model không có cách nào gọi nó — kể cả khi người dùng cố dụ. Đây là hàng rào thật, không phải câu nhắc trong prompt.
 
 `AiToolResult` trả về hai phần: **văn bản** cho model đọc, và **dữ liệu có cấu trúc** (bảng + link) cho giao diện vẽ. Nhờ vậy câu trả lời không phải là một đoạn văn kể số, mà là bảng thật kèm nút "mở màn báo cáo tương ứng" — người dùng kiểm chứng được ngay.
+
+### 4.1 Mỗi phân hệ tự góp tool của mình
+
+Một file đăng ký trung tâm sẽ phình theo số phân hệ và trở thành chỗ ai cũng phải sửa. Thay vào đó mỗi phân hệ góp tool và đoạn prompt riêng:
+
+```csharp
+public interface IAiModule
+{
+    string Name { get; }                   // "reports", "crm", "work"
+    IEnumerable<IAiTool> Tools { get; }
+    string? SystemPromptFragment { get; }  // ghép vào prompt khi module bật
+}
+```
+
+**Một cái bẫy phải biết trước:** prompt caching khớp theo tiền tố. Ghép fragment phải theo thứ tự **cố định** (sắp theo `Name`), nếu không cùng một tập module có thể sinh ra hai prompt khác nhau và cache không bao giờ ăn. Và nếu bật/tắt module theo tenant thì mỗi tổ hợp module là một cache riêng — tỉ lệ đọc cache sẽ thấp hơn dự tính, đó là cái giá phải trả cho khả năng tuỳ biến theo tenant.
 
 ## 5. Lộ trình bốn giai đoạn
 
@@ -164,8 +212,13 @@ Cách giảm: câu hỏi lặp lại thì lưu đệm (đã có `ITkCache`), vi�
 ## 11. Phạm vi của kế hoạch triển khai đầu tiên
 
 Tài liệu này mô tả cả bốn giai đoạn để thấy đường đi, nhưng **kế hoạch triển khai đầu tiên chỉ gồm
-Giai đoạn 1** (lõi `TourKit.Ai` + tool registry + lọc quyền + khung chat + bộ tool báo cáo). Mỗi
-giai đoạn sau có kế hoạch riêng, viết khi giai đoạn trước đã chạy thật.
+Giai đoạn 1**: `TourKit.Ai.Abstractions` + `TourKit.Ai` (registry, lọc quyền, vòng lặp chat) +
+`TourKit.Ai.Anthropic` (adapter Claude) + khung chat + bộ tool báo cáo. Mỗi giai đoạn sau có kế
+hoạch riêng, viết khi giai đoạn trước đã chạy thật.
+
+Giai đoạn 1 chỉ dựng **một** năng lực (`IChatModel`) và **một** adapter. `ITextEmbedder`,
+`IDocumentReader`, `IAiModelSelector` và `IAiModule` là hình dạng đã chốt nhưng chưa viết —
+viết khi có cái thứ hai để đối chiếu, chứ không đoán trước.
 
 ## 12. Việc cần chốt trước khi viết kế hoạch triển khai
 
