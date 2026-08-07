@@ -99,27 +99,36 @@
   </div>
 </div>
 
-@* Các số còn lại là số THAM CHIẾU: một dải mảnh, không cần mỗi số một thẻ to.
-   Không đóng khung: bốn thẻ chính ở trên đã là "hộp", thêm một hộp nữa ngay dưới thì nặng mắt. *@
-<div class="tk-card tk-card--flat mb-4">
-  <div class="tk-figures">
-    @foreach (var f in new (string Label, string Value, string Title, string Tone)[]
-    {
-        ("Tổng chi", Short(Model.Summary.TotalCost), Full(Model.Summary.TotalCost), ""),
-        ("Tổng chi thực tế", Short(Model.Summary.TotalPaid), Full(Model.Summary.TotalPaid), ""),
-        ("Công nợ NCC", Short(Model.Summary.PayableOutstanding), Full(Model.Summary.PayableOutstanding), ""),
-        ("Lợi nhuận gộp", Short(Model.Summary.GrossProfit), Full(Model.Summary.GrossProfit), Model.Summary.GrossProfit < 0 ? "text-danger" : ""),
-        ("Tiền hoa hồng", Short(Model.CommissionTotal), Full(Model.CommissionTotal), ""),
-        ("Giá trị TB / đơn", Short(Model.Kpi.AvgOrderValue), Full(Model.Kpi.AvgOrderValue), ""),
-        ("Số đơn", Model.Summary.OrderCount.ToString("#,##0", vi), "", ""),
-        ("Tỉ lệ thu tiền", (Model.Kpi.CollectionRate * 100).ToString("0.#", vi) + "%", "", ""),
-    })
-    {
-      <div class="tk-figure">
-        <small>@f.Label</small>
-        <b class="@f.Tone" title="@f.Title">@f.Value</b>
+<div class="row g-4 mb-4">
+  @* Bốn con số so sánh được (doanh thu vs đã thu, tổng chi vs đã chi) VẼ RA thì thấy ngay phần
+     nào còn kẹt — liệt kê rời từng số thì phải tự trừ nhẩm. *@
+  <div class="col-12 col-xl-8">
+    <div class="tk-card h-100">
+      <div class="tk-card-head">
+        <div>
+          <h6 class="mb-0">Thu &amp; chi</h6>
+          <small class="text-muted">Phần đã thực hiện và phần còn lại</small>
+        </div>
       </div>
-    }
+      <div class="tk-card-body">
+        <div id="moneyChart" style="min-height:200px"></div>
+      </div>
+    </div>
+  </div>
+
+  @* Bốn số còn lại là số ĐỘC LẬP, không so với cái gì — để nguyên dạng chữ. *@
+  <div class="col-12 col-xl-4">
+    <div class="tk-card h-100">
+      <div class="tk-card-head"><h6 class="mb-0">Chỉ số kinh doanh</h6></div>
+      <div class="tk-card-body">
+        <div class="tk-figures">
+          <div class="tk-figure"><small>Số đơn</small><b>@Model.Summary.OrderCount.ToString("#,##0", vi)</b></div>
+          <div class="tk-figure"><small>Giá trị TB / đơn</small><b title="@Full(Model.Kpi.AvgOrderValue)">@Short(Model.Kpi.AvgOrderValue)</b></div>
+          <div class="tk-figure"><small>Tiền hoa hồng</small><b title="@Full(Model.CommissionTotal)">@Short(Model.CommissionTotal)</b></div>
+          <div class="tk-figure"><small>Tỉ lệ thu tiền</small><b>@((Model.Kpi.CollectionRate * 100).ToString("0.#", vi))%</b></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -308,13 +317,13 @@
     </div>
   }
   <div class="col-12 col-lg-6 col-xxl-4">
-    @* Hiệu suất theo CHI NHÁNH — khác với "theo phòng ban" ở trên, bản cũ có cả hai.
-       Bảng số trơn không cho biết chi nhánh nào thu tiền tốt; thanh TỈ LỆ THU nói ngay điều đó. *@
+    @* Hiệu suất theo CHI NHÁNH — cột xếp chồng: phần xanh là tiền đã về, phần đỏ là tiền còn
+       kẹt. Nhìn tỉ lệ hai màu là biết chi nhánh nào thu tốt, khỏi đọc sáu cột số. *@
     <div class="tk-card h-100">
       <div class="tk-card-head">
         <div>
           <h6 class="mb-0">Hiệu suất theo chi nhánh</h6>
-          <small class="text-muted">Doanh thu · thực thu · còn thiếu</small>
+          <small class="text-muted">Đã thu và còn thiếu trên doanh thu</small>
         </div>
       </div>
       <div class="tk-card-body">
@@ -324,28 +333,14 @@
         }
         else
         {
-          <div class="tk-branches">
+          <div id="branchChart" style="min-height:220px"></div>
+          <div class="tk-figures mt-3">
             @foreach (var br in Model.ByBranch)
             {
               var rate = br.Turnover > 0 ? (int)Math.Round(100m * br.Received / br.Turnover) : 0;
-              var margin = br.Turnover > 0 ? Math.Round(100m * br.Profit / br.Turnover, 1) : 0m;
-              <div class="tk-branch">
-                <div class="tk-branch-head">
-                  <span class="tk-rank-av bg-label-@ToneOf(br.BranchName)">@Initials(br.BranchName)</span>
-                  <div class="lh-sm">
-                    <b>@br.BranchName</b>
-                    <small class="d-block text-muted">@br.OrderCount.ToString("#,##0", vi) đơn · biên lợi nhuận @margin.ToString("0.#", vi)%</small>
-                  </div>
-                  <b class="ms-auto" title="@Full(br.Turnover)">@Short(br.Turnover)</b>
-                </div>
-                <div class="tk-branch-bar" title="Đã thu @rate% doanh thu">
-                  <span class="bg-success" style="width:@Math.Min(rate, 100)%"></span>
-                </div>
-                <div class="tk-branch-foot">
-                  <span class="text-success"><i class="ti ti-arrow-down-circle me-1"></i>Thực thu @Short(br.Received) (@rate%)</span>
-                  <span class="@(br.Outstanding > 0 ? "text-danger" : "text-muted")"><i class="ti ti-alert-circle me-1"></i>Còn thiếu @Short(br.Outstanding)</span>
-                  <span class="@(br.Profit < 0 ? "text-danger" : "")"><i class="ti ti-coin me-1"></i>Lợi nhuận @Short(br.Profit)</span>
-                </div>
+              <div class="tk-figure">
+                <small>@br.BranchName</small>
+                <b>@br.OrderCount.ToString("#,##0", vi) đơn · thu @rate%</b>
               </div>
             }
           </div>
@@ -353,6 +348,7 @@
       </div>
     </div>
   </div>
+
   <div class="col-12 col-lg-6 col-xxl-4">
     @* Vinh danh chiến binh sales — bảng xếp hạng, không phải bảng số: thứ hạng và tỉ trọng
        doanh thu phải nhìn ra ngay, đọc con số là bước sau. *@
@@ -444,6 +440,50 @@
         }).render();
       } else {
         $('#deptChart').html('<p class="text-muted text-center py-5 mb-0">Chưa có dữ liệu doanh thu.</p>');
+      }
+
+      // Thu & chi — hai thanh xếp chồng: phần đã thực hiện và phần còn lại.
+      var moneyEl = document.querySelector('#moneyChart');
+      if (moneyEl) {
+        new ApexCharts(moneyEl, {
+          // KHÔNG dùng stackType 100%: chi thực tế đang LỚN HƠN chi trên sổ (chi vượt), quy về
+          // 100% thì thanh đó đầy xanh trông như "đã chi đủ", che mất chuyện vượt chi.
+          chart: { type: 'bar', height: 200, stacked: true, toolbar: { show: false }, parentHeightOffset: 0 },
+          series: [
+            { name: 'Đã thực hiện', data: [@Model.Summary.TotalReceived, @Model.Summary.TotalPaid] },
+            { name: 'Còn lại', data: [@Model.Summary.ReceivableOutstanding, @(Model.Summary.PayableOutstanding < 0 ? 0 : Model.Summary.PayableOutstanding)] }
+          ],
+          colors: ['#28c76f', '#ff9f43'],
+          plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '46%' } },
+          dataLabels: { enabled: false },
+          legend: { position: 'bottom', labels: { colors: label }, markers: { width: 8, height: 8 } },
+          grid: { borderColor: border, padding: { left: 4, right: 8 } },
+          xaxis: { categories: ['Doanh thu', 'Chi phí'],
+                   labels: { formatter: money, style: { colors: label } }, axisBorder: { show: false }, axisTicks: { show: false } },
+          yaxis: { labels: { style: { colors: label }, maxWidth: 160 } },
+          tooltip: { y: { formatter: function (v) { return tk.money(v) + ' ₫'; } } }
+        }).render();
+      }
+
+      // Hiệu suất chi nhánh — đã thu vs còn thiếu trên cùng một cột.
+      var branchEl = document.querySelector('#branchChart');
+      if (branchEl) {
+        new ApexCharts(branchEl, {
+          chart: { type: 'bar', height: 220, stacked: true, toolbar: { show: false }, parentHeightOffset: 0 },
+          series: [
+            { name: 'Đã thu', data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByBranch.Select(x => x.Received))) },
+            { name: 'Còn thiếu', data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByBranch.Select(x => x.Outstanding))) }
+          ],
+          colors: ['#28c76f', '#ea5455'],
+          plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '46%' } },
+          dataLabels: { enabled: false },
+          legend: { position: 'bottom', labels: { colors: label }, markers: { width: 8, height: 8 } },
+          grid: { borderColor: border, padding: { left: 4, right: 8 } },
+          xaxis: { categories: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByBranch.Select(x => x.BranchName))),
+                   labels: { formatter: money, style: { colors: label } }, axisBorder: { show: false }, axisTicks: { show: false } },
+          yaxis: { labels: { style: { colors: label }, maxWidth: 130 } },
+          tooltip: { y: { formatter: function (v) { return tk.money(v) + ' ₫'; } } }
+        }).render();
       }
 
       // Đơn hàng theo trạng thái — vòng tròn có TỔNG ở giữa.
