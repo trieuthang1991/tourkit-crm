@@ -38,9 +38,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">tài khoản</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Tên tài khoản <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên tài khoản" /></div>
       <div class="mb-3"><label class="form-label">Ngân hàng</label><input type="text" name="Input.BankName" class="form-control" placeholder="Nhập tên ngân hàng" /></div>
@@ -49,9 +50,12 @@
       <div class="mb-3"><label class="form-label">Chi nhánh</label><input type="text" name="Input.Branch" class="form-control" placeholder="Nhập chi nhánh" /></div>
       <div class="mb-3"><label class="form-label">Nội dung CK</label><input type="text" name="Input.TransferNote" class="form-control" placeholder="Nhập nội dung chuyển khoản" /></div>
       <div class="mb-3 form-check"><input type="checkbox" name="Input.IsDefault" value="true" class="form-check-input" id="chk-default" /><label class="form-check-label" for="chk-default">Mặc định</label></div>
-      <div class="mb-3"><label class="form-label">Thứ tự</label><input type="number" name="Input.SortOrder" class="form-control" value="0" /></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <div class="mb-3"><label class="form-label">Thứ tự</label><input type="number" name="Input.SortOrder" class="form-control" value="0" placeholder="0 — càng nhỏ càng lên trên" /></div>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

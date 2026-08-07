@@ -35,3 +35,46 @@
 .layout-navbar.navbar-detached {
   max-width: none;
 }
+
+/* ===== Panel trượt phải (offcanvas) sửa/thêm: ĐẦU và CHÂN đứng yên, chỉ RUỘT cuộn =====
+   Trước đây nút Lưu/Huỷ nằm cuối form nên form dài là nút trôi khỏi màn — người dùng phải cuộn
+   xuống đáy mới bấm lưu được. Quy ước: .offcanvas-body.tk-oc > form > .tk-oc-fields (cuộn)
+   + .tk-oc-actions (ghim đáy). Tiêu đề đã sẵn cố định vì .offcanvas-header là anh em của body. */
+.offcanvas-body.tk-oc {
+  display: flex; flex-direction: column; min-height: 0;
+  padding: 0; overflow: hidden;
+}
+/* Form là cột co giãn; panel không có form (xem nhanh, tạo phiếu) thì chính body làm cột đó. */
+.offcanvas-body.tk-oc > form {
+  display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto;
+}
+.tk-oc-fields {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: 1.5rem;
+}
+.tk-oc-actions {
+  flex: 0 0 auto; display: flex; align-items: center; gap: .5rem;
+  padding: .875rem 1.5rem;
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-card-bg, #fff);
+}
+/* Cuộn tới đâu cũng thấy còn nội dung phía dưới: viền trên của chân panel đủ nói điều đó,
+   thêm bóng nhẹ cho tách bạch khi danh sách dài. */
+.tk-oc-actions { box-shadow: 0 -.25rem .75rem rgba(var(--bs-primary-rgb), .06); }
+.tk-oc-actions .me-2:last-child { margin-right: 0 !important; }
+
+/* ===== Ô soạn thảo có định dạng (Quill) — mặc định Quill viền vuông, lệch hẳn với .form-control ===== */
+.tk-rte .ql-toolbar.ql-snow {
+  border: 1px solid var(--bs-border-color); border-bottom: 0;
+  border-radius: var(--bs-border-radius) var(--bs-border-radius) 0 0;
+  background: var(--bs-tertiary-bg, rgba(0, 0, 0, .02));
+}
+.tk-rte .ql-container.ql-snow {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0 0 var(--bs-border-radius) var(--bs-border-radius);
+  font-family: inherit; font-size: .9375rem;
+}
+.tk-rte .ql-editor { min-height: inherit; }
+.tk-rte .ql-editor.ql-blank::before { color: var(--bs-secondary-color); font-style: normal; }
+/* Bảng chọn của thanh công cụ nằm trong panel trượt — cho nổi lên trên mọi thứ trong panel. */
+.tk-rte .ql-snow .ql-picker-options { z-index: 3; }

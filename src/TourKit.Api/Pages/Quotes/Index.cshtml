@@ -183,7 +183,7 @@
       function actionsFor(r) {
         var items = [{ label: '<i class="ti ti-edit me-2"></i>Sửa báo giá', action: function () { window.location = '/bao-gia/soan/' + r.id; } }];
         if (CAN_MANAGE && r.status === 2 && !r.convertedOrderId) {
-          items.push({ label: '<i class="ti ti-transform me-2"></i>Chuyển thành đơn hàng', action: function () { openConvert(r); } });
+          items.push({ label: '<i class="ti ti-transfer-in me-2"></i>Chuyển thành đơn hàng', action: function () { openConvert(r); } });
         }
         if (r.convertedOrderId) {
           items.push({ label: '<i class="ti ti-external-link me-2"></i>Mở đơn đã chuyển', action: function () { window.location = '/don-hang/' + r.convertedOrderId; } });

@@ -16,7 +16,7 @@
     {
         ("kpi-total", "Tổng đơn hàng", Model.Stats.Total.ToString("#,##0"), "ti ti-clipboard-list", "primary"),
         ("kpi-unpaid", "Chưa thanh toán", Model.Stats.Unpaid.ToString("#,##0"), "ti ti-alert-circle", "danger"),
-        ("kpi-partial", "Chưa chi hết", Model.Stats.Partial.ToString("#,##0"), "ti ti-progress", "warning"),
+        ("kpi-partial", "Chưa chi hết", Model.Stats.Partial.ToString("#,##0"), "ti ti-loader", "warning"),
         ("kpi-done", "Hoàn thành", Model.Stats.Done.ToString("#,##0"), "ti ti-circle-check", "success"),
     };
 }
@@ -77,9 +77,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:480px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">Ghi nhận thanh toán</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Pay" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <p class="text-muted small mb-3" id="pay-info"></p>
       <div class="mb-3">
@@ -87,8 +88,11 @@
         <input type="number" name="Input.PaidAmount" class="form-control" placeholder="0" min="0" step="1000" />
         <span class="text-muted small">Ghi nhận tổng số tiền đã chi cho NCC của phiếu này.</span>
       </div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

@@ -41,12 +41,13 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">người dùng</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Email <span class="text-danger">*</span></label><input type="text" name="Input.Email" class="form-control" placeholder="email@congty.vn" /></div>
-      <div class="mb-3"><label class="form-label">Họ tên <span class="text-danger">*</span></label><input type="text" name="Input.FullName" class="form-control" /></div>
+      <div class="mb-3"><label class="form-label">Họ tên <span class="text-danger">*</span></label><input type="text" name="Input.FullName" class="form-control" placeholder="Họ và tên nhân viên" /></div>
       <div class="mb-3" id="row-pass"><label class="form-label">Mật khẩu <span class="text-danger">*</span></label><input type="password" name="Input.Password" class="form-control" placeholder="Chỉ nhập khi tạo mới" /></div>
       <div class="row">
         <div class="col-6 mb-3"><label class="form-label">Phòng ban</label>
@@ -60,8 +61,11 @@
         <select name="Input.RoleId" class="form-select tk-s2" data-placeholder="Chọn vai trò"><option value="">—</option>@foreach (var r in Model.Roles) { <option value="@r.Id">@r.Name</option> }</select>
       </div>
       <div class="form-check mb-3"><input type="checkbox" name="Input.IsActive" value="true" class="form-check-input" id="chk-active" checked /><label class="form-check-label" for="chk-active">Kích hoạt</label></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

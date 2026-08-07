@@ -37,15 +37,19 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">ngôn ngữ</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên ngôn ngữ" /></div>
       <div class="mb-3"><label class="form-label">Mã</label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã ngôn ngữ" /></div>
-      <div class="mb-3"><label class="form-label">Thứ tự</label><input type="number" name="Input.SortOrder" class="form-control" value="0" /></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      <div class="mb-3"><label class="form-label">Thứ tự</label><input type="number" name="Input.SortOrder" class="form-control" value="0" placeholder="0 — càng nhỏ càng lên trên" /></div>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

@@ -146,9 +146,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:560px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">ô quỹ phòng</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="row">
         <div class="col-6 mb-3"><label class="form-label">Mã NCC <span class="text-danger">*</span></label><input type="text" name="Input.ProviderRef" class="form-control" placeholder="VD: KS001" /></div>
@@ -178,8 +179,11 @@
         <div class="col-4 mb-3"><label class="form-label">Giá NET/đêm</label><input type="number" name="Input.Price" class="form-control" placeholder="0" min="0" step="1000" /></div>
       </div>
       <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Ghi chú quỹ phòng"></textarea></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

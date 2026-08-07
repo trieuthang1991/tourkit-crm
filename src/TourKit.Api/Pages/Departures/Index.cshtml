@@ -101,9 +101,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">chuyến đi</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <div class="mb-3"><label class="form-label">Mẫu tour</label>
         <select name="Input.TemplateId" class="form-select tk-s2" data-placeholder="Chọn mẫu (tuỳ chọn)"><option value="">— Không dùng mẫu —</option>@foreach (var t in Model.Templates) { <option value="@t.Id">@t.Label</option> }</select>
       </div>
@@ -116,8 +117,11 @@
         <div class="col-6 mb-3"><label class="form-label">Ngày về</label><input type="text" name="Input.EndDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
       </div>
       <div class="mb-3"><label class="form-label">Tổng số chỗ</label><input type="number" name="Input.TotalSlots" class="form-control" placeholder="0" min="0" /></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

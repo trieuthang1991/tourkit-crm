@@ -86,8 +86,9 @@
 @* Offcanvas CRUD — GIỮ NGUYÊN các trường Create/Update DTO *@
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">phân xe</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="mb-3">
         <label class="form-label">Chuyến <span class="text-danger">*</span></label>
@@ -116,8 +117,11 @@
         <select name="Input.Status" class="form-select"><option value="1">Đã điều</option><option value="2">Đang thực hiện</option></select>
       </div>
       <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Ghi chú điều xe"></textarea></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

@@ -21,7 +21,7 @@
     (string Label, string Value, string Icon, string Color)[] statCards =
     {
         ("Tổng cơ hội", Model.Stats.Total.ToString("#,##0"), "ti ti-target", "primary"),
-        ("Mới", Model.Stats.New.ToString("#,##0"), "ti ti-sparkles", "secondary"),
+        ("Mới", Model.Stats.New.ToString("#,##0"), "ti ti-seeding", "secondary"),
         ("Đã liên hệ", Model.Stats.Contacted.ToString("#,##0"), "ti ti-phone-call", "warning"),
         ("Tiềm năng", Model.Stats.Qualified.ToString("#,##0"), "ti ti-star", "info"),
         ("Chốt", Model.Stats.Won.ToString("#,##0"), "ti ti-circle-check", "success"),
@@ -112,9 +112,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">cơ hội</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Họ tên <span class="text-danger">*</span></label><input type="text" name="Input.FullName" class="form-control" placeholder="Nhập họ tên" /></div>
       <div class="row">
@@ -143,8 +144,11 @@
           @foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
         </select>
       </div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

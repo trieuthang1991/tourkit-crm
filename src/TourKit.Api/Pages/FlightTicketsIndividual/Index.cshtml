@@ -31,7 +31,7 @@
         ("kpi-receivable", "Còn nợ thu", Model.Stats.TotalReceivable.ToString("#,##0"), "ti ti-alert-circle", "danger"),
         ("kpi-cost", "Tổng chi", Model.Stats.TotalCost.ToString("#,##0"), "ti ti-cash-off", "secondary"),
         ("kpi-paid", "Thực chi", Model.Stats.TotalPaid.ToString("#,##0"), "ti ti-arrow-up-circle", "warning"),
-        ("kpi-payable", "Phải chi", Model.Stats.TotalPayable.ToString("#,##0"), "ti ti-clock-dollar", "danger"),
+        ("kpi-payable", "Phải chi", Model.Stats.TotalPayable.ToString("#,##0"), "ti ti-clock", "danger"),
         ("kpi-profit", "Lợi nhuận", Model.Stats.TotalProfit.ToString("#,##0"), "ti ti-trending-up", "success"),
     };
 }
@@ -100,8 +100,9 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:560px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">vé lẻ</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       @* Passthrough (không có editor): giữ nguyên để sửa không xoá dữ liệu *@
       <input type="hidden" name="Input.OrderRef" />
@@ -148,8 +149,11 @@
         </div>
       </div>
       <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Ghi chú thêm"></textarea></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

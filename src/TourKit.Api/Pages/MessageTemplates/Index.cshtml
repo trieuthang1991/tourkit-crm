@@ -5,6 +5,9 @@
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  @* Ô soạn thảo có định dạng cho trường lưu HTML — Quill đi kèm theme, không thêm thư viện ngoài. *@
+  <link rel="stylesheet" href="~/vendor/libs/quill/typography.css" />
+  <link rel="stylesheet" href="~/vendor/libs/quill/editor.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 
@@ -38,9 +41,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">mẫu tin nhắn</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên mẫu" /></div>
       <div class="mb-3">
@@ -52,9 +56,13 @@
         </select>
       </div>
       <div class="mb-3"><label class="form-label">Tiêu đề</label><input type="text" name="Input.Subject" class="form-control" placeholder="Nhập tiêu đề" /></div>
-      <div class="mb-3"><label class="form-label">Nội dung <span class="text-danger">*</span></label><textarea name="Input.Body" class="form-control" rows="4" placeholder="Nhập nội dung"></textarea></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      @* Email gửi HTML nên soạn bằng ô có định dạng; SMS/Zalo là văn bản thuần — xem script bên dưới. *@
+      <div class="mb-3"><label class="form-label">Nội dung <span class="text-danger">*</span></label><textarea name="Input.Body" class="form-control tk-rte-field" rows="4" placeholder="Nhập nội dung mẫu"></textarea></div>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>
@@ -62,6 +70,7 @@
 @section VendorScripts {
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/quill/quill.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
@@ -71,8 +80,15 @@
     var oc;
     $(function () {
       tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [3] }] });
+      // Email gửi đi là HTML → soạn bằng ô có định dạng. SMS/Zalo là văn bản THUẦN, gõ HTML vào
+      // là nhà mạng gửi nguyên mớ thẻ cho khách → giữ ô nhập thường.
+      var body = document.querySelector('#frm [name="Input.Body"]');
+      function syncEditor() { tk.rte.enable(body, String($('#frm [name="Input.Channel"]').val()) === '1'); }
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'mẫu tin nhắn',
-        rules: { 'Input.Name': { required: true }, 'Input.Body': { required: true } }, messages: { 'Input.Name': { required: 'Bắt buộc nhập tên' }, 'Input.Body': { required: 'Bắt buộc nhập nội dung' } } });
+        rules: { 'Input.Name': { required: true }, 'Input.Body': { required: true } }, messages: { 'Input.Name': { required: 'Bắt buộc nhập tên' }, 'Input.Body': { required: 'Bắt buộc nhập nội dung' } },
+        afterOpen: syncEditor });
+      $('#frm [name="Input.Channel"]').on('change', syncEditor);
       $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
       $('#tbl tbody').on('click', '.js-del', function () {
         var id = this.getAttribute('data-id');

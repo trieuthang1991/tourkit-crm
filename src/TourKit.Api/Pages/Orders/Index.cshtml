@@ -135,7 +135,8 @@
 @* Offcanvas XEM NHANH đơn (bám ý "view = popup") *@
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc-view" style="width:520px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title" id="ov-title">Đơn hàng</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
+    <div class="tk-oc-fields">
     <dl class="row mb-0">
       <dt class="col-5 text-muted">Khách hàng</dt><dd class="col-7" id="ov-cust">—</dd>
       <dt class="col-5 text-muted">Nội dung / Tour</dt><dd class="col-7" id="ov-tour">—</dd>
@@ -145,10 +146,11 @@
       <dt class="col-5 text-muted">Còn nợ</dt><dd class="col-7 text-danger" id="ov-out">—</dd>
       <dt class="col-5 text-muted">Lợi nhuận</dt><dd class="col-7" id="ov-profit">—</dd>
     </dl>
-    <div class="d-flex gap-2 mt-3">
+    </div>
+    <div class="tk-oc-actions">
       <button type="button" class="btn btn-sm btn-primary flex-fill" id="ov-receipt"><i class="ti ti-cash me-1"></i> Phiếu thu</button>
       <button type="button" class="btn btn-sm btn-label-secondary flex-fill" id="ov-payment"><i class="ti ti-file-invoice me-1"></i> Phiếu chi</button>
-      <a class="btn btn-sm btn-label-secondary" id="ov-detail"><i class="ti ti-external-link"></i></a>
+      <a class="btn btn-sm btn-label-secondary" id="ov-detail" title="Mở trang chi tiết"><i class="ti ti-external-link"></i></a>
     </div>
   </div>
 </div>
@@ -156,15 +158,19 @@
 @* Offcanvas TẠO PHIẾU (thu/chi) — dùng chung, đổi tiêu đề + handler theo loại *@
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc-phieu" style="width:460px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title" id="op-title">Tạo phiếu</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
+    <div class="tk-oc-fields">
     <div class="mb-2 small text-muted" id="op-order">Đơn: —</div>
-    <div class="mb-3"><label class="form-label">Số tiền <span class="text-danger">*</span></label><input type="number" id="op-amount" class="form-control" min="0" step="1000" /></div>
+    <div class="mb-3"><label class="form-label">Số tiền <span class="text-danger">*</span></label><input type="number" id="op-amount" class="form-control" min="0" step="1000" placeholder="Nhập số tiền" /></div>
     <div class="mb-3"><label class="form-label">Phương thức</label>
       <select id="op-method" class="form-select"><option value="cash">Tiền mặt</option><option value="bank">Chuyển khoản</option><option value="momo">MoMo</option><option value="vnpay">VNPay</option></select>
     </div>
     <div class="mb-3" id="op-receiver-wrap"><label class="form-label">Người nhận</label><input type="text" id="op-receiver" class="form-control" placeholder="Tên người nhận (phiếu chi)" /></div>
-    <div class="mb-3"><label class="form-label">Ghi chú</label><textarea id="op-note" class="form-control" rows="2"></textarea></div>
-    <button type="button" class="btn btn-primary" id="op-save">Lưu phiếu</button>
+    <div class="mb-3"><label class="form-label">Ghi chú</label><textarea id="op-note" class="form-control" rows="2" placeholder="Nội dung phiếu, số chứng từ…"></textarea></div>
+    </div>
+    <div class="tk-oc-actions">
+      <button type="button" class="btn btn-primary" id="op-save">Lưu phiếu</button>
+    </div>
   </div>
 </div>
 

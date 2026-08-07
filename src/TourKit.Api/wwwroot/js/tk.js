@@ -180,6 +180,66 @@
     });
   };
 
+  // ---- Ô soạn thảo có ĐỊNH DẠNG cho trường lưu HTML ----
+  // Dùng Quill — bộ soạn thảo ĐÃ đóng gói sẵn trong theme (vendor/libs/quill). Dự án KHÔNG có
+  // TinyMCE; thêm nó là thêm một thư viện ngoài nữa cho cùng một việc.
+  // Textarea gốc vẫn là nơi GIỮ giá trị (chỉ ẩn đi) nên FormData, jQuery Validate và tk.form
+  // không phải sửa gì — chỉ thêm class `tk-rte` vào textarea là xong.
+  tk.rte = function (el) {
+    el = typeof el === 'string' ? document.querySelector(el) : el;
+    if (!el || el._quill || !window.Quill) { return null; }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'tk-rte';
+    var host = document.createElement('div');
+    host.style.minHeight = (el.rows > 4 ? 220 : 160) + 'px';
+    wrap.appendChild(host);
+    el.parentNode.insertBefore(wrap, el);
+    el.classList.add('d-none');
+
+    var q = new Quill(host, {
+      theme: 'snow',
+      placeholder: el.getAttribute('placeholder') || '',
+      modules: {
+        // Chỉ những thứ soạn nội dung thật cần. Bảng màu, cỡ chữ, font… để người dùng tự do
+        // là mở đường cho email/bài viết mỗi cái một kiểu.
+        toolbar: [
+          [{ header: [2, 3, false] }],
+          ['bold', 'italic', 'underline'],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          ['link', 'blockquote'],
+          ['clean']
+        ]
+      }
+    });
+    // Rỗng thì trả CHUỖI RỖNG, đừng trả '<p><br></p>' — server sẽ tưởng là có nội dung.
+    q.on('text-change', function () {
+      el.value = q.getText().trim() === '' ? '' : q.root.innerHTML;
+    });
+    el._quill = q;
+    return q;
+  };
+
+  // Đổi qua lại giữa soạn thảo có định dạng và ô văn bản thường (vd: kênh Email dùng HTML,
+  // SMS/Zalo là văn bản thuần — cho gõ HTML vào SMS là gửi đi một mớ thẻ).
+  tk.rte.enable = function (el, on) {
+    el = typeof el === 'string' ? document.querySelector(el) : el;
+    if (!el) { return; }
+    if (on && !el._quill) { tk.rte(el); }
+    var wrap = el._quill ? el._quill.container.parentNode : null;
+    if (!wrap) { return; }
+    if (on) { tk.rte.set(el, el.value); }
+    wrap.classList.toggle('d-none', !on);
+    el.classList.toggle('d-none', !!on);
+  };
+
+  // Đổ nội dung vào ô soạn thảo (dùng khi mở form sửa).
+  tk.rte.set = function (el, html) {
+    if (!el || !el._quill) { return; }
+    el._quill.clipboard.dangerouslyPasteHTML(html || '');
+    el.value = html || '';
+  };
+
   // ---- Offcanvas form engine (Select2 + flatpickr + jQuery Validate + AJAX Result) ----
   // opts: { offcanvas:'#id', form:'#id', table:'#id'|null, saveUrl, title, rules, messages, fill(form,data), afterOpen(data) }
   tk.form = function (opts) {
@@ -194,6 +254,8 @@
     }
     // flatpickr
     if (window.flatpickr) { $form.find('.tk-date').each(function () { if (!this._flatpickr) { flatpickr(this, { altInput: true, altFormat: 'd/m/Y', dateFormat: 'Y-m-d', allowInput: true }); } }); }
+    // Trường lưu HTML: dựng ô soạn thảo có định dạng ngay khi lập form.
+    $form.find('textarea.tk-rte-field').each(function () { tk.rte(this); });
     // jQuery Validate
     if ($.fn.validate) {
       $form.validate({
@@ -210,6 +272,11 @@
       if ($(el).hasClass('tk-s2') || $(el).hasClass('tk-s2-tags')) { $(el).val(v == null || v === '' ? null : v).trigger('change'); return; }
       if (el.type === 'checkbox') { el.checked = !!v; return; }
       el.value = (v == null) ? '' : v;
+      // Thêm mới: giá trị rỗng gán vào <select> KHÔNG có mục rỗng làm ô trắng trơn, người dùng
+      // tưởng chưa chọn được gì. Rơi về mục đầu tiên — cũng chính là mặc định của server.
+      if (el.tagName === 'SELECT' && el.selectedIndex === -1) { el.selectedIndex = 0; }
+      // Ô soạn thảo giữ nội dung trong Quill, gán value cho textarea ẩn là chưa đủ.
+      if (el._quill) { tk.rte.set(el, el.value); }
     }
 
     function open(data) {

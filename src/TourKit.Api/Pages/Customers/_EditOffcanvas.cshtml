@@ -19,8 +19,9 @@
     <h5 id="ocEditLabel" class="offcanvas-title">Khách hàng</h5>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
   </div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     <form id="customerForm" data-action="@saveUrl" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
 
       <div class="mb-3">
@@ -128,12 +129,12 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Địa chỉ</label>
-        <input type="text" name="Input.Address" class="form-control" />
+        <input type="text" name="Input.Address" class="form-control" placeholder="Số nhà, đường, phường, quận" />
       </div>
       <div class="row">
         <div class="col-md-6 mb-3">
           <label class="form-label">CMT/Hộ chiếu</label>
-          <input type="text" name="Input.IdCardNumber" class="form-control" />
+          <input type="text" name="Input.IdCardNumber" class="form-control" placeholder="Số CCCD/CMND" />
         </div>
         <div class="col-md-6 mb-3">
           <label class="form-label">Ngày hết hạn</label>
@@ -142,11 +143,14 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Ghi chú</label>
-        <textarea name="Input.Note" class="form-control" rows="2"></textarea>
+        <textarea name="Input.Note" class="form-control" rows="2" placeholder="Ghi chú nội bộ về khách"></textarea>
       </div>
 
-      <button type="submit" class="btn btn-primary me-sm-3 me-1">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-sm-3 me-1">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

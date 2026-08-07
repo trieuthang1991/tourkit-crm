@@ -5,6 +5,9 @@
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  @* Ô soạn thảo có định dạng cho trường lưu HTML — Quill đi kèm theme, không thêm thư viện ngoài. *@
+  <link rel="stylesheet" href="~/vendor/libs/quill/typography.css" />
+  <link rel="stylesheet" href="~/vendor/libs/quill/editor.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
   @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
   <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
@@ -56,9 +59,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:680px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">bài viết</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <input type="hidden" name="Input.LikeCount" />
       <div class="mb-3"><label class="form-label">Tiêu đề <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Nhập tiêu đề bài viết" /></div>
@@ -74,9 +78,13 @@
         </div>
       </div>
       <div class="mb-3"><label class="form-label">Tóm tắt</label><textarea name="Input.Summary" class="form-control" rows="2" placeholder="Mô tả ngắn hiển thị ở danh sách"></textarea></div>
-      <div class="mb-3"><label class="form-label">Nội dung</label><textarea name="Input.Body" class="form-control" rows="8" placeholder="Nội dung bài viết (HTML)"></textarea></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      @* Nội dung bài viết lưu dạng HTML → soạn bằng ô có định dạng, không bắt người dùng gõ thẻ. *@
+      <div class="mb-3"><label class="form-label">Nội dung</label><textarea name="Input.Body" class="form-control tk-rte-field" rows="8" placeholder="Viết nội dung bài viết…"></textarea></div>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>
@@ -106,6 +114,7 @@
 @section VendorScripts {
   <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/quill/quill.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }

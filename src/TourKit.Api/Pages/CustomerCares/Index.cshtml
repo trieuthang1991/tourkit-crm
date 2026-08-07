@@ -16,8 +16,8 @@
     (string Label, string Value, string Icon, string Color)[] statCards =
     {
         ("Tổng lịch", Model.Stats.Total.ToString("#,##0"), "ti ti-headset", "primary"),
-        ("Mới", Model.Stats.New.ToString("#,##0"), "ti ti-sparkles", "warning"),
-        ("Đang xử lý", Model.Stats.InProgress.ToString("#,##0"), "ti ti-progress", "info"),
+        ("Mới", Model.Stats.New.ToString("#,##0"), "ti ti-star", "warning"),
+        ("Đang xử lý", Model.Stats.InProgress.ToString("#,##0"), "ti ti-loader", "info"),
         ("Hoàn thành", Model.Stats.Done.ToString("#,##0"), "ti ti-circle-check", "success"),
         ("Quá hạn", Model.Stats.Overdue.ToString("#,##0"), "ti ti-alarm", "danger"),
     };
@@ -86,9 +86,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">lịch chăm sóc</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="mb-3" id="row-customer">
         <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
@@ -115,8 +116,11 @@
         </select>
       </div>
       <div class="mb-3"><label class="form-label">Phản hồi</label><textarea name="Input.Feedback" class="form-control" rows="2" placeholder="Kết quả / phản hồi của khách"></textarea></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

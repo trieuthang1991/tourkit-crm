@@ -16,7 +16,7 @@
         ("Doanh thu", Model.Kpi.TotalRevenue.ToString("#,##0"), "ti ti-report-money", "primary", "tổng doanh thu"),
         ("Giá trị TB/đơn", Model.Kpi.AvgOrderValue.ToString("#,##0"), "ti ti-calculator", "info", "trung bình mỗi đơn"),
         ("Đã thu", Model.Kpi.TotalReceived.ToString("#,##0"), "ti ti-cash", "success", "phiếu thu đã duyệt"),
-        ("Tỉ lệ thu tiền", (Model.Kpi.CollectionRate * 100).ToString("0.#") + "%", "ti ti-progress-check", "success", "đã thu / doanh thu"),
+        ("Tỉ lệ thu tiền", (Model.Kpi.CollectionRate * 100).ToString("0.#") + "%", "ti ti-percentage", "success", "đã thu / doanh thu"),
     };
 }
 <div class="row g-4 mb-4">

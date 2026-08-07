@@ -63,13 +63,13 @@
         <div class="card-header"><h5 class="mb-0">Số khách</h5></div>
         <div class="card-body">
           <div class="row">
-            <div class="col-4 mb-3"><label class="form-label">Người lớn</label><input type="number" name="Input.Adults" id="Adults" class="form-control js-pax" value="@(q?.Adults ?? 0)" min="0" /></div>
-            <div class="col-4 mb-3"><label class="form-label">Trẻ em</label><input type="number" name="Input.Children" id="Children" class="form-control js-pax" value="@(q?.Children ?? 0)" min="0" /></div>
-            <div class="col-4 mb-3"><label class="form-label">Em bé</label><input type="number" name="Input.Infants" id="Infants" class="form-control js-pax" value="@(q?.Infants ?? 0)" min="0" /></div>
+            <div class="col-4 mb-3"><label class="form-label">Người lớn</label><input type="number" name="Input.Adults" id="Adults" class="form-control js-pax" placeholder="0" value="@(q?.Adults ?? 0)" min="0" /></div>
+            <div class="col-4 mb-3"><label class="form-label">Trẻ em</label><input type="number" name="Input.Children" id="Children" class="form-control js-pax" placeholder="0" value="@(q?.Children ?? 0)" min="0" /></div>
+            <div class="col-4 mb-3"><label class="form-label">Em bé</label><input type="number" name="Input.Infants" id="Infants" class="form-control js-pax" placeholder="0" value="@(q?.Infants ?? 0)" min="0" /></div>
           </div>
           <div class="row">
-            <div class="col-6"><label class="form-label">% giá trẻ em</label><input type="number" name="Input.ChildPercent" id="ChildPercent" class="form-control js-pax" value="@((q?.ChildPercent ?? 75m))" step="0.01" /></div>
-            <div class="col-6"><label class="form-label">% giá em bé</label><input type="number" name="Input.InfantPercent" id="InfantPercent" class="form-control js-pax" value="@((q?.InfantPercent ?? 50m))" step="0.01" /></div>
+            <div class="col-6"><label class="form-label">% giá trẻ em</label><input type="number" name="Input.ChildPercent" id="ChildPercent" class="form-control js-pax" placeholder="75" value="@((q?.ChildPercent ?? 75m))" step="0.01" /></div>
+            <div class="col-6"><label class="form-label">% giá em bé</label><input type="number" name="Input.InfantPercent" id="InfantPercent" class="form-control js-pax" placeholder="50" value="@((q?.InfantPercent ?? 50m))" step="0.01" /></div>
           </div>
         </div>
       </div>
@@ -152,13 +152,13 @@
         '<td><input class="form-control form-control-sm l-desc" value="'+ (d.description? tk.escape(d.description):'') +'" placeholder="Dịch vụ..."></td>'+
         '<td><select class="form-select form-select-sm l-type">'+opts+'</select></td>'+
         '<td><select class="form-select form-select-sm l-scope"><option value="0"'+(sc==0?' selected':'')+'>Theo đoàn</option><option value="1"'+(sc==1?' selected':'')+'>Theo khách</option></select></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-qty" value="'+(d.quantity||1)+'" min="0"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-cost" value="'+(d.unitCost||0)+'" min="0"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-margin" value="'+(d.marginPercent||0)+'"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-price" value="'+(d.unitPrice||0)+'" min="0"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-vat" value="'+(d.vatPercent||0)+'"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-sur" value="'+(d.surcharge||0)+'"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-rate" value="'+(d.exchangeRate||1)+'"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-qty" placeholder="0" value="'+(d.quantity||1)+'" min="0"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-cost" placeholder="0" value="'+(d.unitCost||0)+'" min="0"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-margin" placeholder="0" value="'+(d.marginPercent||0)+'"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-price" placeholder="0" value="'+(d.unitPrice||0)+'" min="0"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-vat" placeholder="0" value="'+(d.vatPercent||0)+'"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-sur" placeholder="0" value="'+(d.surcharge||0)+'"></td>'+
+        '<td><input type="number" class="form-control form-control-sm text-end l-rate" placeholder="1" value="'+(d.exchangeRate||1)+'"></td>'+
         '<td class="text-end l-total">0</td>'+
         '<td class="text-center"><button type="button" class="btn btn-icon btn-sm text-danger l-del"><i class="ti ti-x"></i></button></td>'
       );

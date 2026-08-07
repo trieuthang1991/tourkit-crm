@@ -98,9 +98,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:560px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">nhà cung cấp</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="row">
         <div class="col-6 mb-3"><label class="form-label">Mã <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã NCC" /></div>
@@ -157,8 +158,11 @@
           <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
         </div>
       </div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>

@@ -5,6 +5,9 @@
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  @* Ô soạn thảo có định dạng cho trường lưu HTML — Quill đi kèm theme, không thêm thư viện ngoài. *@
+  <link rel="stylesheet" href="~/vendor/libs/quill/typography.css" />
+  <link rel="stylesheet" href="~/vendor/libs/quill/editor.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
   @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
   <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
@@ -85,9 +88,10 @@
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:560px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">chiến dịch</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-  <div class="offcanvas-body">
+  <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Tên chiến dịch <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên chiến dịch" /></div>
       <div class="row">
@@ -101,9 +105,13 @@
         </div>
       </div>
       <div class="mb-3"><label class="form-label">Chủ đề</label><input type="text" name="Input.Subject" class="form-control" placeholder="Tiêu đề email/tin nhắn" /></div>
-      <div class="mb-3"><label class="form-label">Nội dung <span class="text-danger">*</span></label><textarea name="Input.Body" class="form-control" rows="6" placeholder="Nội dung chiến dịch"></textarea></div>
-      <button type="submit" class="btn btn-primary me-2">Lưu</button>
+      @* Email gửi HTML nên soạn bằng ô có định dạng; SMS/Zalo là văn bản thuần — xem script bên dưới. *@
+      <div class="mb-3"><label class="form-label">Nội dung <span class="text-danger">*</span></label><textarea name="Input.Body" class="form-control tk-rte-field" rows="6" placeholder="Nội dung gửi cho khách…"></textarea></div>
+      </div>
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
     </form>
   </div>
 </div>
@@ -155,6 +163,7 @@
 @section VendorScripts {
   <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/quill/quill.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
@@ -206,9 +215,16 @@
 
       var g = tk.g, esc = g.esc;
 
+      // Email gửi đi là HTML → soạn bằng ô có định dạng. SMS/Zalo là văn bản THUẦN, gõ HTML vào
+      // là nhà mạng gửi nguyên mớ thẻ cho khách → giữ ô nhập thường.
+      var body = document.querySelector('#frm [name="Input.Body"]');
+      function syncEditor() { tk.rte.enable(body, String($('#frm [name="Input.Channel"]').val()) === '1'); }
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'chiến dịch',
         rules: { 'Input.Name': { required: true }, 'Input.Body': { required: true } },
-        messages: { 'Input.Name': { required: 'Bắt buộc nhập tên' }, 'Input.Body': { required: 'Bắt buộc nhập nội dung' } } });
+        messages: { 'Input.Name': { required: 'Bắt buộc nhập tên' }, 'Input.Body': { required: 'Bắt buộc nhập nội dung' } },
+        afterOpen: syncEditor });
+      $('#frm [name="Input.Channel"]').on('change', syncEditor);
 
       function delRow(r) {
         tk.confirmDelete({ title: 'Xoá chiến dịch?', text: r.name || '' }).then(function (ok) {
