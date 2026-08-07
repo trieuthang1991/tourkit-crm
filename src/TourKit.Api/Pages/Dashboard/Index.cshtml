@@ -99,8 +99,9 @@
   </div>
 </div>
 
-@* Các số còn lại là số THAM CHIẾU: gom vào một dải mảnh, không cần mỗi số một thẻ to. *@
-<div class="tk-card mb-4">
+@* Các số còn lại là số THAM CHIẾU: một dải mảnh, không cần mỗi số một thẻ to.
+   Không đóng khung: bốn thẻ chính ở trên đã là "hộp", thêm một hộp nữa ngay dưới thì nặng mắt. *@
+<div class="tk-card tk-card--flat mb-4">
   <div class="tk-figures">
     @foreach (var f in new (string Label, string Value, string Title, string Tone)[]
     {
@@ -278,8 +279,9 @@
           else
           {
             var todayD = TourKit.Api.Pages.Shared.TkDate.Day(DateTimeOffset.Now);
+            @* Giữ 6 dòng cho ba thẻ cùng hàng cao xấp xỉ nhau; xem đủ thì bấm "Tất cả". *@
             <div class="tk-cares">
-              @foreach (var c in Model.Cares)
+              @foreach (var c in Model.Cares.Take(6))
               {
                 var due = c.RemindAt is { } r0 ? TourKit.Api.Pages.Shared.TkDate.Day(r0) : (DateTimeOffset?)null;
                 var late = due is { } d0 && d0 < todayD && c.Status != 2;

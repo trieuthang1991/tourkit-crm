@@ -102,6 +102,9 @@ html.dark-style {
 }
 .tk-card-head h6 { color: var(--bs-heading-color); font-weight: 600; }
 .tk-card-body { flex: 1 1 auto; min-height: 0; }
+/* Biến thể PHẲNG: vẫn là thẻ (đệm, nền) nhưng bỏ viền + bo — dùng cho dải số phụ nằm ngay dưới
+   hàng thẻ chính, để không có hai lớp hộp chồng nhau. */
+.tk-card--flat { border: 0; padding: 1.25rem 0; background: transparent; }
 
 /* FullCalendar đặt trong .tk-card: theme kéo khung lịch ra sát mép bằng `.fc-view-harness
    { margin: 0 -1.5rem }` — đúng bằng đệm 1.5rem của .card-body mà nó vốn thiết kế cho.
@@ -140,22 +143,17 @@ html.dark-style {
 
 /* Dải SỐ THAM CHIẾU (Tổng quan): những con số cần có mặt nhưng không phải thứ nhìn đầu tiên.
    Gom vào một dải mảnh thay vì mỗi số một thẻ to — 12 thẻ ngang hàng thì không số nào nổi lên. */
-/* Kẻ ngăn bằng VIỀN của từng ô, không dùng mẹo `gap: 1px` trên nền xám: hàng cuối thiếu ô thì
-   phần trống lộ nguyên một mảng xám. */
+/* KHÔNG đóng khung, cũng KHÔNG kẻ dọc: lưới ô kẻ viền đọc ra như bảng tính, mà đây chỉ là dải
+   số phụ. Khoảng trắng đủ tách các mục; nhãn nhỏ mờ ở trên, số đậm ở dưới là đã thành cặp. */
 .tk-figures {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  border: 1px solid var(--bs-border-color); border-radius: .5rem; overflow: hidden;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1.5rem 2rem;
 }
-.tk-figure {
-  display: flex; flex-direction: column; gap: .125rem;
-  padding: .75rem .875rem; background: var(--bs-card-bg, #fff);
-  border-right: 1px solid var(--bs-border-color);
-  border-bottom: 1px solid var(--bs-border-color);
-}
-.tk-figure small { font-size: .75rem; color: var(--bs-secondary-color); }
+.tk-figure { display: flex; flex-direction: column; gap: .25rem; }
+.tk-figure small { font-size: .75rem; color: var(--bs-secondary-color); line-height: 1.2; }
 .tk-figure b {
-  font-size: 1.0625rem; font-weight: 600; color: var(--bs-heading-color);
-  font-variant-numeric: tabular-nums; letter-spacing: -.01em;
+  font-size: 1.125rem; font-weight: 600; color: var(--bs-heading-color);
+  font-variant-numeric: tabular-nums; letter-spacing: -.015em; line-height: 1.2;
 }
 
 /* Thanh XẾP CHỒNG một dòng (vd tình trạng thanh toán của đơn): ba con số rời buộc phải tự chia
