@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TourKit.Api.Comments;
+using TourKit.Api.Services;
 using TourKit.Api.Web;
 using TourKit.Application.Collaboration;
 using TourKit.Application.Common;
@@ -16,7 +17,7 @@ namespace TourKit.Api.Pages.Comments;
 /// được yêu cầu. Đặt một policy cố định ở đây là sai: mỗi loại bản ghi có mã quyền khác nhau.
 /// </summary>
 [Authorize]
-public class IndexModel(IEntityCommentService comments) : PageModel
+public class IndexModel(IEntityCommentService comments, UserDirectory directory) : PageModel
 {
     public async Task<IActionResult> OnGetAsync(string entityName, string entityId, int take = 50)
     {
@@ -27,6 +28,12 @@ public class IndexModel(IEntityCommentService comments) : PageModel
 
         var items = await comments.ListAsync(entityName, entityId, take);
         var total = await comments.CountAsync(entityName, entityId);
+
+        // Trả kèm TÊN người được nhắc để giao diện tô đúng những chữ @ là người thật.
+        // Nếu để giao diện tự dò chữ "@..." trong nội dung thì "@giá tốt" cũng bị tô như một cái tên.
+        var names = items.Any(c => c.MentionedUserIds.Count > 0)
+            ? await directory.NamesAsync()
+            : new Dictionary<Guid, string>();
 
         return new JsonResult(new
         {
@@ -39,8 +46,28 @@ public class IndexModel(IEntityCommentService comments) : PageModel
                 content = c.Content,
                 createdAt = c.CreatedAt,
                 canDelete = c.CanDelete,
+                mentions = c.MentionedUserIds
+                    .Select(u => names.GetValueOrDefault(u))
+                    .Where(n => !string.IsNullOrEmpty(n))
+                    .ToList(),
             }),
         });
+    }
+
+    /// <summary>
+    /// Danh bạ nhân viên cho ô chọn khi gõ "@". Đọc qua <see cref="UserDirectory"/> (cache 60 giây,
+    /// tách theo tenant) chứ không tra thẳng bảng Users — gõ mỗi ký tự mà bắn một truy vấn thì
+    /// một câu bình luận có thể sinh ra vài chục lượt nạp cả bảng.
+    /// </summary>
+    public async Task<IActionResult> OnGetPeopleAsync()
+    {
+        var people = await directory.ListAsync();
+
+        return new JsonResult(people
+            .Where(u => u.IsActive)
+            .OrderBy(u => u.FullName, StringComparer.CurrentCulture)
+            .Select(u => new { id = u.Id, name = u.FullName, dept = u.DepartmentName })
+            .ToList());
     }
 
     public async Task<IActionResult> OnPostAsync(string entityName, string entityId, string content, string? mentions)

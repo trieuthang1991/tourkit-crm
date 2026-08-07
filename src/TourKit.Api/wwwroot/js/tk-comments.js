@@ -16,6 +16,37 @@
     return (parts[parts.length - 1][0] || '?').toUpperCase();
   }
 
+  // Bỏ dấu để gõ "cuong" cũng ra "Lê Cường" — người Việt gõ tên đồng nghiệp thường không bỏ dấu.
+  function plain(s) {
+    return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+  }
+
+  // Danh bạ nhân viên: nạp MỘT LẦN cho cả trang, dùng chung mọi luồng bình luận trên trang đó.
+  var peoplePromise = null;
+  function people() {
+    if (!peoplePromise) {
+      peoplePromise = fetch(URL + '?handler=People', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .catch(function () { return []; });
+    }
+    return peoplePromise;
+  }
+
+  function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  // Tô đậm CHỈ những cái tên server xác nhận là người thật. Tự dò chữ "@..." trong nội dung sẽ
+  // tô nhầm cả "@giá tốt" thành một cái tên.
+  function withMentions(escaped, names) {
+    if (!names || !names.length) { return escaped; }
+    // Tên dài trước để "Lê Cường" không bị "Lê" ăn mất phần sau.
+    var sorted = names.slice().sort(function (a, b) { return b.length - a.length; });
+    sorted.forEach(function (n) {
+      var re = new RegExp('@' + escapeRe(tk.escape(n)), 'g');
+      escaped = escaped.replace(re, '<span class="tk-cmt-at">@' + tk.escape(n) + '</span>');
+    });
+    return escaped;
+  }
+
   function row(c) {
     return '<li class="tk-cmt" data-id="' + c.id + '">' +
       '<div class="tk-cmt-ava">' + tk.escape(initials(c.author)) + '</div>' +
@@ -27,9 +58,95 @@
             ? '<button type="button" class="btn btn-icon btn-sm tk-cmt-del" title="Xoá"><i class="ti ti-trash"></i></button>'
             : '') +
         '</div>' +
-        // Nội dung do người dùng gõ — LUÔN escape rồi mới xuống dòng, không bao giờ đổ thẳng HTML.
-        '<div class="tk-cmt-text">' + tk.escape(c.content).replace(/\n/g, '<br>') + '</div>' +
+        // Nội dung do người dùng gõ — LUÔN escape rồi mới tô @nhắc, không bao giờ đổ thẳng HTML.
+        '<div class="tk-cmt-text">' +
+          withMentions(tk.escape(c.content), c.mentions).replace(/\n/g, '<br>') +
+        '</div>' +
       '</div></li>';
+  }
+
+  /// Ô gợi ý nhân viên khi gõ "@". Trả về đối tượng có picked() để lấy danh sách id đã chọn.
+  function mentionPicker(input, menu) {
+    var picked = {};        // tên → id, giữ để lúc gửi biết ai được nhắc
+    var matches = [];
+    var active = -1;
+
+    function close() { menu.classList.add('d-none'); matches = []; active = -1; }
+
+    // Token "@..." đang gõ dở, tính từ dấu @ gần nhất trước con trỏ.
+    function token() {
+      var pos = input.selectionStart;
+      var upto = input.value.slice(0, pos);
+      var at = upto.lastIndexOf('@');
+      if (at < 0) { return null; }
+      // Phải đứng đầu dòng hoặc sau khoảng trắng — "email@congty.vn" không được kích hoạt ô chọn.
+      if (at > 0 && !/\s/.test(upto[at - 1])) { return null; }
+      var q = upto.slice(at + 1);
+      if (/[\n]/.test(q)) { return null; }
+      return { at: at, q: q, end: pos };
+    }
+
+    function render() {
+      menu.innerHTML = matches.map(function (p, i) {
+        return '<button type="button" class="tk-cmt-at-item' + (i === active ? ' active' : '') + '" data-i="' + i + '">' +
+          '<span class="tk-cmt-at-name">' + tk.escape(p.name) + '</span>' +
+          (p.dept ? '<span class="tk-cmt-at-dept">' + tk.escape(p.dept) + '</span>' : '') +
+          '</button>';
+      }).join('');
+      menu.classList.toggle('d-none', matches.length === 0);
+    }
+
+    function choose(i) {
+      var p = matches[i];
+      var t = token();
+      if (!p || !t) { return; }
+      var before = input.value.slice(0, t.at);
+      var after = input.value.slice(t.end);
+      input.value = before + '@' + p.name + ' ' + after;
+      var caret = (before + '@' + p.name + ' ').length;
+      input.setSelectionRange(caret, caret);
+      picked[p.name] = p.id;
+      close();
+      input.focus();
+    }
+
+    input.addEventListener('input', function () {
+      var t = token();
+      if (!t) { close(); return; }
+      people().then(function (all) {
+        var q = plain(t.q);
+        matches = all.filter(function (p) { return plain(p.name).includes(q); }).slice(0, 8);
+        active = matches.length ? 0 : -1;
+        render();
+      });
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (menu.classList.contains('d-none')) { return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); active = (active + 1) % matches.length; render(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); active = (active - 1 + matches.length) % matches.length; render(); }
+      else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); choose(active); }
+      else if (e.key === 'Escape') { close(); }
+    });
+
+    menu.addEventListener('mousedown', function (e) {
+      var btn = e.target.closest('.tk-cmt-at-item');
+      if (btn) { e.preventDefault(); choose(Number(btn.dataset.i)); }
+    });
+
+    input.addEventListener('blur', function () { setTimeout(close, 120); });
+
+    return {
+      close: close,
+      reset: function () { picked = {}; },
+      // Chỉ trả id của những cái tên CÒN trong nội dung: người dùng chọn xong rồi xoá chữ đi thì
+      // không được lặng lẽ bắn thông báo cho người ta.
+      picked: function (content) {
+        return Object.keys(picked)
+          .filter(function (name) { return content.includes('@' + name); })
+          .map(function (name) { return picked[name]; });
+      }
+    };
   }
 
   function mount(root) {
@@ -45,9 +162,13 @@
         '</h5>' +
         '<div class="card-body">' +
           '<form class="tk-cmt-form mb-3">' +
-            '<textarea class="form-control" rows="2" maxlength="4000" ' +
-              'placeholder="Ghi lại trao đổi với khách, lý do chưa chốt, việc cần theo..."></textarea>' +
-            '<div class="d-flex justify-content-end mt-2">' +
+            '<div class="tk-cmt-input">' +
+              '<textarea class="form-control" rows="2" maxlength="4000" ' +
+                'placeholder="Ghi lại trao đổi với khách, lý do chưa chốt, việc cần theo... Gõ @ để nhắc đồng nghiệp."></textarea>' +
+              '<div class="tk-cmt-at-menu d-none" data-role="at"></div>' +
+            '</div>' +
+            '<div class="d-flex align-items-center justify-content-between mt-2">' +
+              '<span class="text-muted small">Gõ <kbd>@</kbd> để nhắc đồng nghiệp — người được nhắc sẽ nhận thông báo.</span>' +
               '<button type="submit" class="btn btn-sm btn-primary">Gửi</button>' +
             '</div>' +
           '</form>' +
@@ -63,6 +184,7 @@
     var more = root.querySelector('[data-role="more"]');
     var form = root.querySelector('.tk-cmt-form');
     var input = form.querySelector('textarea');
+    var picker = mentionPicker(input, root.querySelector('[data-role="at"]'));
 
     function render(data) {
       count.textContent = data.total;
@@ -104,10 +226,12 @@
       fd.append('entityName', entity);
       fd.append('entityId', entityId);
       fd.append('content', content);
+      fd.append('mentions', picker.picked(content).join(','));
 
       tk.post(URL, fd).then(function (r) {
         if (r && r.isSuccess) {
           input.value = '';
+          picker.reset();
           load();
         } else {
           tk.error((r && r.message) || 'Không gửi được, thử lại.');
@@ -116,8 +240,9 @@
     });
 
     // Ctrl/Cmd+Enter gửi — người dùng gõ nhiều dòng nên Enter phải là xuống dòng.
+    // Đăng ký SAU picker: khi ô gợi ý đang mở, Enter là "chọn người" chứ không phải "gửi".
     input.addEventListener('keydown', function (e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { form.requestSubmit(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { picker.close(); form.requestSubmit(); }
     });
 
     list.addEventListener('click', function (e) {
