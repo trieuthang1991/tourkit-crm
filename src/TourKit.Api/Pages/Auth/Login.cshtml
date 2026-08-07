@@ -7,6 +7,7 @@
 
 @section PageStyles {
   <link rel="stylesheet" href="~/vendor/css/pages/page-auth.css">
+  <link rel="stylesheet" href="~/css/auth-visuals.css" asp-append-version="true">
 }
 
 @section PageScripts {
@@ -19,12 +20,13 @@
   <div class="authentication-inner row">
     <!-- /Left Text -->
     <div class="d-none d-lg-flex col-lg-7 p-0">
-      <div class="auth-cover-bg auth-cover-bg-color d-flex justify-content-center align-items-center">
-        @* Minh hoạ riêng của TourKit (SVG). Bỏ data-app-light-img/dark-img của template vì chỉ
-           còn MỘT file dùng chung cho cả hai chế độ. Dùng chung ở cả 4 trang xác thực. *@
-        <img src="~/img/illustrations/auth-illustration-tourkit.svg" alt="" class="img-fluid my-5 auth-illustration">
-
-        <img src="~/img/illustrations/bg-shape-image-light.png" alt="" class="platform-bg" data-app-light-img="illustrations/bg-shape-image-light.png" data-app-dark-img="illustrations/bg-shape-image-dark.png">
+      <div class="auth-cover-bg auth-cover-visual">
+        <img src="~/img/illustrations/auth-login.webp" alt="" class="auth-cover-visual__image">
+        <div class="auth-cover-visual__content">
+          <div class="auth-cover-visual__eyebrow">M-Travel Management SaaS</div>
+          <h2>Vận hành rõ ràng. Ra quyết định nhanh hơn.</h2>
+          <p>Kết nối khách hàng, công việc và dữ liệu vận hành trong một không gian làm việc thống nhất.</p>
+        </div>
       </div>
     </div>
     <!-- /Left Text -->
@@ -39,7 +41,7 @@
           </a>
         </div>
         <!-- /Logo -->
-        <h3 class="mb-1 fw-bold">Chào mừng đến TourKit</h3>
+        <h3 class="mb-1 fw-bold">Chào mừng đến M-Travel</h3>
         <p class="mb-4">Đăng nhập để tiếp tục làm việc</p>
 
         @if (TempData["ok"] is string okMsg)

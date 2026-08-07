@@ -10,4 +10,6 @@ appsettings.*.local.json
 *.db-shm
 *.db-wal
 .gitnexus
+.superpowers/
+.playwright-cli/
 aspnet-core-vue.zip

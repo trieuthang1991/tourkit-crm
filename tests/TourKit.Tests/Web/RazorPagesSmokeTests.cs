@@ -53,5 +53,18 @@ public class RazorPagesSmokeTests : IClassFixture<AuthTestFactory>
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var html = await res.Content.ReadAsStringAsync();
         Assert.Contains("Đăng nhập", html, StringComparison.Ordinal);
+        Assert.Contains("M-Travel", html, StringComparison.Ordinal);
+        Assert.Contains("/img/illustrations/auth-login.webp", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Register_page_uses_its_own_auth_visual()
+    {
+        var client = _factory.CreateClient();
+        var res = await client.GetAsync("/dang-ky");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var html = await res.Content.ReadAsStringAsync();
+        Assert.Contains("M-Travel", html, StringComparison.Ordinal);
+        Assert.Contains("/img/illustrations/auth-register.webp", html, StringComparison.Ordinal);
     }
 }

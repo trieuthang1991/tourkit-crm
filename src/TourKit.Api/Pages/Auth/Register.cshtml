@@ -7,6 +7,7 @@
 
 @section PageStyles {
   <link rel="stylesheet" href="~/vendor/css/pages/page-auth.css">
+  <link rel="stylesheet" href="~/css/auth-visuals.css" asp-append-version="true">
 }
 
 @section PageScripts {
@@ -19,10 +20,13 @@
   <div class="authentication-inner row">
     <!-- /Left Text -->
     <div class="d-none d-lg-flex col-lg-7 p-0">
-      <div class="auth-cover-bg auth-cover-bg-color d-flex justify-content-center align-items-center">
-        <img src="~/img/illustrations/auth-illustration-tourkit.svg" alt="" class="img-fluid my-5 auth-illustration">
-
-        <img src="~/img/illustrations/bg-shape-image-light.png" alt="" class="platform-bg" data-app-light-img="illustrations/bg-shape-image-light.png" data-app-dark-img="illustrations/bg-shape-image-dark.png">
+      <div class="auth-cover-bg auth-cover-visual">
+        <img src="~/img/illustrations/auth-register.webp" alt="" class="auth-cover-visual__image">
+        <div class="auth-cover-visual__content">
+          <div class="auth-cover-visual__eyebrow">Bắt đầu cùng M-Travel</div>
+          <h2>Thiết lập hệ thống vận hành tốt hơn.</h2>
+          <p>Tạo không gian doanh nghiệp để đội ngũ quản lý khách hàng, công việc và hiệu suất trên một nền tảng.</p>
+        </div>
       </div>
     </div>
     <!-- /Left Text -->
@@ -37,8 +41,8 @@
           </a>
         </div>
         <!-- /Logo -->
-        <h3 class="mb-1 fw-bold">Bắt đầu cùng TourKit</h3>
-        <p class="mb-4">Tạo doanh nghiệp của bạn và quản lý tour dễ dàng hơn</p>
+        <h3 class="mb-1 fw-bold">Bắt đầu cùng M-Travel</h3>
+        <p class="mb-4">Tạo doanh nghiệp của bạn và quản lý vận hành dễ dàng hơn</p>
 
         @if (Model.Error != null)
         {
@@ -48,7 +52,7 @@
         <form id="formAuthentication" class="mb-3" method="post">
           <div class="mb-3">
             <label asp-for="Input.CompanyName" class="form-label">Tên doanh nghiệp <span class="text-danger">*</span></label>
-            <input asp-for="Input.CompanyName" class="form-control" placeholder="VD: Công ty Du lịch Biển Xanh" autofocus>
+            <input asp-for="Input.CompanyName" class="form-control" placeholder="VD: Công ty Minh Thành" autofocus>
             <span asp-validation-for="Input.CompanyName" class="text-danger"></span>
           </div>
           <div class="mb-3">

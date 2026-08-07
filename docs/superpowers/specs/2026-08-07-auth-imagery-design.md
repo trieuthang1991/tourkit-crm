@@ -1,26 +1,36 @@
-# Auth Imagery Design
+# M-Travel SaaS Brand and Auth Visual Design
 
 ## Goal
 
-Add professional, brand-aligned imagery to the React `/login` and `/register` screens without distracting from form completion or changing authentication behavior.
+Replace visible TourKit branding with **M-Travel** and give the active Razor Pages authentication screens a distinct SaaS-management visual identity. Internal `TourKit.*` namespaces, assemblies, database names, and APIs remain unchanged.
 
-## Visual Direction
+## Identity System
 
-Use a hybrid travel-and-data art direction. Each asset combines a cinematic Vietnamese travel landscape with restrained route lines and translucent, text-free operational cards. The treatment must feel editorial and premium rather than like generic 3D SaaS artwork.
+Use a **Modular M** mark: a compact rounded-square symbol whose M is assembled from connected dashboard modules. The geometry suggests coordination, structured data, and forward movement without using aircraft, pins, landscapes, or other consumer-travel clichés.
 
-- **Login:** cool violet and cyan scene suggesting an active, well-controlled tour operation.
-- **Register:** warmer violet and amber sunrise suggesting a new business journey.
-- **Shared constraints:** portrait 2:3 composition, subject concentrated toward the lower-right, generous negative space for copy, no people as focal subjects, no embedded text, logos, trademarks, or watermark.
+- Primary violet: `#7367F0`
+- Deep ink: `#2F2B3D`
+- Signal cyan: `#00BAD1`
+- Wordmark: `M-Travel`, using the application's Public Sans typography
 
-## Integration
+Create a deterministic SVG mark for navigation, auth pages, and favicon, plus a 180px PNG for Apple touch icons. `_BrandMark.cshtml` remains the single reusable source for the visible mark and wordmark.
 
-Store optimized assets under `web/src/assets/auth/`. Render the relevant image inside the existing `mk-auth__brand` panel, behind the current logo, heading, feature list, and footer. Use a gradient overlay and low visual intensity to preserve white-text contrast. Keep the existing mobile behavior: the entire brand panel, including imagery, remains hidden below 900 px.
+## Auth Artwork
 
-Login and registration receive separate images but share one reusable CSS treatment. Forms, validation, API calls, routes, and success states remain unchanged.
+Generate two portrait 2:3 bitmap backgrounds with no readable text, logos, people, or tourism scenery:
 
-## Quality Checks
+- **Login:** a premium dark SaaS operations workspace made from layered CRM pipeline, task board, calendar, and analytics modules connected by subtle data paths.
+- **Register:** modular interface blocks assembling into one coordinated operating system, suggesting setup and activation.
 
-- Confirm both images match the TourKit palette (`#7367f0`, cyan accents, restrained amber).
-- Confirm no generated text or watermark appears.
-- Verify desktop readability at common viewport heights and no image overlap with interactive controls.
-- Run frontend lint, tests, and production build after integration.
+Both images use violet/ink/cyan, controlled glass depth, asymmetric composition, and generous left-side negative space for HTML copy. They remain desktop-only through the existing Bootstrap `lg` breakpoint.
+
+## Brand Coverage
+
+Update the shared mark, browser title, metadata, favicon links, layout variables, footer, auth headings/copy, and the company short-name placeholder. Keep changes confined to user-visible branding; do not rename technical symbols or URLs.
+
+## Verification
+
+- Razor smoke tests require distinct auth artwork and visible `M-Travel` branding.
+- Search user-facing Razor/layout files for stale `TourKit` copy while excluding namespaces.
+- Verify SVG/PNG/WebP dimensions and absence of generated text/watermarks.
+- Run focused tests, Release build, diff checks, and desktop/mobile visual QA.

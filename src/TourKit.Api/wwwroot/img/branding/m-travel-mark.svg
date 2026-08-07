@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="M-Travel">
+  <rect width="32" height="32" rx="7" fill="#7367F0" />
+  <path d="M8.5 23.5V9.5L16 17l7.5-7.5v14"
+        fill="none"
+        stroke="#FFFFFF"
+        stroke-width="4.2"
+        stroke-linecap="round"
+        stroke-linejoin="round" />
+  <circle cx="16" cy="17" r="2.25" fill="#00BAD1" />
+</svg>
