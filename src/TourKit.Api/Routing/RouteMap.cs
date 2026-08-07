@@ -22,6 +22,8 @@ public static class RouteMap
         ("/Workspace/Index", "ban-lam-viec"),
         ("/Dashboard/Index", "tong-quan"),
         ("/Notifications/Index", "thong-bao"),
+        // Handler JSON cho chuông trên navbar (không có giao diện) — xem Pages/Notifications/Bell.cshtml.cs.
+        ("/Notifications/Bell", "thong-bao/chuong"),
 
         // --- Nhà cung cấp ---
         ("/Providers/Index", "nha-cung-cap"),

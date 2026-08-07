@@ -420,3 +420,17 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
 .tk-rte .ql-editor.ql-blank::before { color: var(--bs-secondary-color); font-style: normal; }
 /* Bảng chọn của thanh công cụ nằm trong panel trượt — cho nổi lên trên mọi thứ trong panel. */
 .tk-rte .ql-snow .ql-picker-options { z-index: 3; }
+
+/* ── Chuông thông báo trên navbar ────────────────────────────────────────────
+   Theme đặt sẵn max-height cho .dropdown-notifications-list nhưng để PerfectScrollbar lo phần
+   cuộn (khởi tạo lúc tải trang, trong khi danh sách của ta nạp bằng AJAX sau đó nên PS không cập
+   nhật kịp). Dùng cuộn gốc của trình duyệt cho chắc. */
+.tk-bell-list { max-height: 22rem; overflow-y: auto; overflow-x: hidden; display: block; }
+.tk-bell-list .list-group-item { border-left: 0; border-right: 0; }
+/* Dòng chưa đọc nổi hơn một chút để liếc là thấy. */
+.dropdown-notifications-item:not(.marked-as-read) { background: var(--bs-tertiary-bg, #f8f7fa); }
+.dropdown-notifications-item:not(.marked-as-read) h6 { font-weight: 600; }
+/* Theme đặt min-width 22rem cho dropdown navbar — trên máy hẹp sẽ tràn ra ngoài màn hình. */
+@media (max-width: 575.98px) {
+  #tk-bell .dropdown-menu { min-width: 0; width: calc(100vw - 2rem); }
+}

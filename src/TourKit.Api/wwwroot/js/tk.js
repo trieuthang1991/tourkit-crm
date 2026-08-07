@@ -525,9 +525,122 @@
     bootstrap.Offcanvas.getOrCreateInstance(el).show();
   };
 
+  // ---- Khoảng thời gian tương đối kiểu VN ("5 phút trước", "Hôm qua 09:30") ----
+  tk.ago = function (iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) { return ''; }
+    var s = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (s < 60) { return 'Vừa xong'; }
+    if (s < 3600) { return Math.floor(s / 60) + ' phút trước'; }
+    if (s < 86400) { return Math.floor(s / 3600) + ' giờ trước'; }
+    var hm = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    if (s < 172800) { return 'Hôm qua ' + hm; }
+    return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + hm;
+  };
+
+  // ---- Chuông thông báo trên navbar ----
+  // Dữ liệu lấy từ /thong-bao/chuong (xem Pages/Notifications/Bell.cshtml.cs). Nạp một lần lúc mở
+  // trang để hiện số chưa đọc, và nạp lại mỗi lần mở dropdown — không polling (thông báo ở đây là
+  // việc nội bộ, không cần thời gian thực; polling nền tốn truy vấn cho mọi tab đang mở).
+  var BELL_ICON = {
+    approval: ['ti-file-check', 'warning'],
+    task: ['ti-checklist', 'info'],
+    marketing: ['ti-speakerphone', 'success'],
+    system: ['ti-bell', 'primary']
+  };
+
+  tk.bell = function () {
+    var root = document.getElementById('tk-bell');
+    if (!root) { return; }
+    var list = root.querySelector('[data-role="list"]');
+    var count = root.querySelector('[data-role="count"]');
+    var label = root.querySelector('[data-role="unread-label"]');
+    var loaded = false;
+
+    function setCount(n) {
+      n = Number(n) || 0;
+      count.textContent = n > 99 ? '99+' : n;
+      count.classList.toggle('d-none', n === 0);
+      label.textContent = n + ' chưa đọc';
+      label.classList.toggle('d-none', n === 0);
+    }
+
+    function row(n) {
+      var ic = BELL_ICON[n.type] || BELL_ICON.system;
+      var body = n.message ? '<p class="mb-1 small text-muted text-truncate">' + tk.escape(n.message) + '</p>' : '';
+      return '<li class="list-group-item list-group-item-action dropdown-notifications-item' +
+               (n.isRead ? ' marked-as-read' : '') + '" data-id="' + n.id + '"' +
+               (n.linkUrl ? ' data-link="' + tk.escape(n.linkUrl) + '"' : '') + '>' +
+               '<div class="d-flex align-items-start">' +
+                 '<div class="flex-shrink-0 me-3"><div class="avatar">' +
+                   '<span class="avatar-initial rounded-circle bg-label-' + ic[1] + '"><i class="ti ' + ic[0] + '"></i></span>' +
+                 '</div></div>' +
+                 '<div class="flex-grow-1 overflow-hidden">' +
+                   '<h6 class="mb-0 text-truncate">' + tk.escape(n.title) + '</h6>' + body +
+                   '<small class="text-muted">' + tk.ago(n.createdAt) + '</small>' +
+                 '</div>' +
+                 '<div class="flex-shrink-0 dropdown-notifications-actions">' +
+                   '<a href="javascript:void(0)" class="dropdown-notifications-read" title="Đánh dấu đã đọc">' +
+                     '<span class="badge badge-dot"></span></a>' +
+                 '</div>' +
+               '</div></li>';
+    }
+
+    function load() {
+      return fetch('/thong-bao/chuong', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d) { return; }
+          loaded = true;
+          setCount(d.unread);
+          list.innerHTML = d.items.length
+            ? d.items.map(row).join('')
+            : '<li class="list-group-item text-center text-muted py-4">Chưa có thông báo nào.</li>';
+        })
+        .catch(function () { /* mất mạng thì giữ nguyên trạng thái cũ, không phá giao diện */ });
+    }
+
+    function markRead(id, li) {
+      if (!li || li.classList.contains('marked-as-read')) { return; }
+      li.classList.add('marked-as-read');
+      var fd = new FormData(); fd.append('id', id);
+      tk.post('/thong-bao/chuong?handler=Read', fd).then(function (r) {
+        if (r && r.isSuccess && r.data) { setCount(r.data.unread); }
+      });
+    }
+
+    // Mở dropdown → nạp lại cho tươi (lần đầu đã nạp sẵn để có số trên chuông).
+    root.addEventListener('show.bs.dropdown', function () { if (loaded) { load(); } });
+
+    list.addEventListener('click', function (e) {
+      var li = e.target.closest('.dropdown-notifications-item');
+      if (!li) { return; }
+      if (e.target.closest('.dropdown-notifications-read')) { markRead(li.dataset.id, li); return; }
+      // Kích cả dòng: đánh dấu đã đọc rồi đi tới nơi liên quan (nếu có link).
+      markRead(li.dataset.id, li);
+      if (li.dataset.link) { window.location.href = li.dataset.link; }
+    });
+
+    var all = root.querySelector('[data-role="read-all"]');
+    if (all) {
+      all.addEventListener('click', function () {
+        tk.post('/thong-bao/chuong?handler=ReadAll', new FormData()).then(function (r) {
+          if (r && r.isSuccess) {
+            setCount(0);
+            list.querySelectorAll('.dropdown-notifications-item').forEach(function (li) {
+              li.classList.add('marked-as-read');
+            });
+          }
+        });
+      });
+    }
+
+    load();
+  };
+
   window.tk = tk;
 
   // Gộp date-range TỰ ĐỘNG trên mọi trang. Đăng ký ở đây (tk.js nạp trước) nên callback này chạy
   // TRƯỚC $(function) của từng trang → vô hiệu ô gốc xong mới tới lúc trang flatpickr('.tk-datef').
-  $(function () { tk.dateRanges(); });
+  $(function () { tk.dateRanges(); tk.bell(); });
 })();

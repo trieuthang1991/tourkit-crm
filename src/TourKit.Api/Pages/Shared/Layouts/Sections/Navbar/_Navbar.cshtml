@@ -20,6 +20,36 @@
     </div>
 
     <ul class="navbar-nav flex-row align-items-center ms-auto">
+      @* Chuông thông báo. Dữ liệu nạp bằng AJAX từ /thong-bao/chuong (navbar dùng chung mọi trang
+         nên không có model riêng). data-bs-auto-close="outside": bấm "đã đọc" trong danh sách
+         không được đóng dropdown. *@
+      <li class="nav-item navbar-dropdown dropdown-notifications dropdown me-3 me-xl-2" id="tk-bell">
+        <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown"
+           data-bs-auto-close="outside" aria-expanded="false" title="Thông báo">
+          <i class="ti ti-bell ti-md"></i>
+          <span class="badge bg-danger rounded-pill badge-notifications d-none" data-role="count">0</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end py-0">
+          <li class="dropdown-menu-header border-bottom">
+            <div class="dropdown-header d-flex align-items-center py-3">
+              <h6 class="mb-0 me-auto">Thông báo</h6>
+              <span class="badge bg-label-primary me-2 d-none" data-role="unread-label"></span>
+              <a href="javascript:void(0)" class="text-body" data-role="read-all" title="Đánh dấu tất cả đã đọc">
+                <i class="ti ti-mail-opened fs-4"></i>
+              </a>
+            </div>
+          </li>
+          <li class="dropdown-notifications-list tk-bell-list">
+            <ul class="list-group list-group-flush" data-role="list">
+              <li class="list-group-item text-center text-muted py-4" data-role="empty">Đang tải...</li>
+            </ul>
+          </li>
+          <li class="dropdown-menu-footer border-top">
+            <a href="/thong-bao" class="dropdown-item d-flex justify-content-center p-3">Xem tất cả thông báo</a>
+          </li>
+        </ul>
+      </li>
+
       <li class="nav-item navbar-dropdown dropdown-user dropdown">
         <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
           <div class="avatar avatar-online">
