@@ -8,6 +8,11 @@
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
   @if (Model.IsMine) { <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.css" /> }
+  else
+  {
+    <link rel="stylesheet" href="~/vendor/libs/jkanban/jkanban.css" />
+    <link rel="stylesheet" href="~/vendor/css/pages/app-kanban.css" />
+  }
   @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
   <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
@@ -90,16 +95,71 @@ else
         <div class="text-muted mb-1" style="font-size:.78rem">Dự án &amp; Công việc <span class="mx-1">/</span> <span class="text-body">@Model.Heading</span></div>
         <h4 class="mb-0">@Model.Heading</h4>
       </div>
-      <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm công việc</button>
+      <div class="d-flex gap-2">
+        @* Bảng ↔ Kanban: cùng bộ lọc, chỉ đổi cách nhìn. *@
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-label-secondary active" id="view-table" title="Dạng bảng"><i class="ti ti-list"></i></button>
+          <button type="button" class="btn btn-label-secondary" id="view-kanban" title="Bảng Kanban"><i class="ti ti-layout-kanban"></i></button>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm công việc</button>
+      </div>
     </div>
 
     <div class="tk-surface">
+      @if (Model.Stats is { } all)
+      {
+        <div class="tk-stat-strip">
+          @foreach (var c in new (string Label, int Value, string Icon, string Color)[]
+          {
+              ("Tổng công việc", all.Total, "ti ti-clipboard-list", "primary"),
+              ("Cần làm", all.Todo, "ti ti-inbox", "warning"),
+              ("Đang làm", all.InProgress, "ti ti-loader", "info"),
+              ("Hoàn thành", all.Done, "ti ti-circle-check", "success"),
+              ("Quá hạn", all.Overdue, "ti ti-alert-triangle", "danger"),
+          })
+          {
+            <div class="tk-stat">
+              <span class="tk-stat-ic bg-label-@c.Color"><i class="@c.Icon"></i></span>
+              <div class="lh-sm">
+                <div class="tk-stat-value">@c.Value.ToString("#,##0")</div>
+                <small class="tk-stat-label">@c.Label</small>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="tk-pad">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã việc, tiêu đề…" /></div>
+          <div class="col-md-3">
+            <select id="f-assigneeUserId" class="form-select tk-s2f" data-placeholder="Người phụ trách"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
+          </div>
+          <div class="col-md-2">
+            <select id="f-priority" class="form-select tk-auto"><option value="">Độ ưu tiên</option><option value="2">Cao</option><option value="1">Bình thường</option><option value="0">Thấp</option></select>
+          </div>
+          <div class="col-md-2">
+            @* Kanban đã chia cột theo trạng thái nên ô này chỉ tác động lên DẠNG BẢNG. *@
+            <select id="f-status" class="form-select tk-auto"><option value="">Trạng thái</option><option value="0">Cần làm</option><option value="1">Đang làm</option><option value="2">Hoàn thành</option><option value="3">Huỷ</option></select>
+          </div>
+          <div class="col-md-1 d-flex gap-2">
+            <button type="button" class="btn btn-primary flex-fill" id="btn-search" title="Tìm"><i class="ti ti-search"></i></button>
+            <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại"><i class="ti ti-rotate"></i></button>
+          </div>
+        </div>
+      </div>
+
       <div id="bulkbar" class="d-none align-items-center gap-2">
         <span class="fw-medium"><span id="bulk-count">0</span> công việc đã chọn</span>
         <button type="button" class="btn btn-sm btn-label-secondary" id="bulk-export"><i class="ti ti-file-export me-1"></i> Xuất file</button>
         <button type="button" class="btn btn-sm btn-label-secondary ms-auto" id="bulk-clear">Bỏ chọn</button>
       </div>
       <div id="grid-tasks"></div>
+
+      @* Bảng Kanban — mỗi cột là một trạng thái, kéo thẻ sang cột khác là đổi trạng thái ở server. *@
+      <div id="pane-kanban" class="app-kanban tk-pad d-none">
+        <div class="kanban-wrapper"></div>
+      </div>
     </div>
 }
 
@@ -154,16 +214,138 @@ else
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
   <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
   @if (Model.IsMine) { <script src="~/vendor/libs/apex-charts/apexcharts.js"></script> }
+  else { <script src="~/vendor/libs/jkanban/jkanban.js"></script> }
 }
 
 @section PageScripts {
   <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
     var oc, grid;
+
+    // ===== Bảng Kanban (jKanban — đã đóng gói sẵn trong theme) =====
+    // Mỗi cột nạp RIÊNG một trang (15 thẻ) + nút "Tải thêm": cột nào cũng có thể vài nghìn việc,
+    // đổ hết ra client là treo trình duyệt.
+    var KB_STATUSES = [
+      { id: 0, name: 'Cần làm', color: 'warning' },
+      { id: 1, name: 'Đang làm', color: 'info' },
+      { id: 2, name: 'Hoàn thành', color: 'success' },
+      { id: 3, name: 'Huỷ', color: 'secondary' }
+    ];
+    var KB_SIZE = 15;
+    var kanban = null, kbPage = {}, kbCards = {};
+
+    function kbQuery(status, page) {
+      var d = grid ? grid.filters() : {};
+      var p = new URLSearchParams();
+      // Cột đã LÀ trạng thái → bỏ ô lọc trạng thái, nếu không kanban chỉ còn đúng một cột có thẻ.
+      Object.keys(d).forEach(function (k) { if (k !== 'status') { p.set(k, d[k]); } });
+      p.set('status', status); p.set('page', page); p.set('size', KB_SIZE);
+      return '?handler=KanbanColumn&' + p.toString();
+    }
+
+    function kbCardHtml(c) {
+      var esc = tk.escape;
+      var meta = [c.code && c.code !== '—' ? c.code : null, c.assigneeName].filter(Boolean).map(esc).join(' · ');
+      var tags = '<span class="badge bg-label-' + esc(c.priorityColor) + '">' + esc(c.priorityLabel) + '</span>';
+      if (c.dueDateText) {
+        tags += '<span class="badge bg-label-' + (c.overdue ? 'danger' : 'secondary') + ' ms-1">' +
+          '<i class="ti ti-clock me-1"></i>' + esc(c.dueDateText) + '</span>';
+      }
+      return '<div class="fw-medium kanban-text">' + esc(c.title) + '</div>' +
+        (meta ? '<div class="small text-muted">' + meta + '</div>' : '') +
+        '<div class="mt-1">' + tags + '</div>' +
+        (c.progress ? '<div class="progress mt-2" style="height:4px"><div class="progress-bar" style="width:' + Number(c.progress) + '%"></div></div>' : '');
+    }
+
+    function kbBoardEl(status) { return document.querySelector('.kanban-board[data-id="st-' + status + '"]'); }
+
+    function kbSyncMore(status, hasMore, total) {
+      var board = kbBoardEl(status); if (!board) { return; }
+      var head = board.querySelector('.kanban-title-board');
+      if (head && head.dataset.base) { head.textContent = head.dataset.base + ' (' + total + ')'; }
+      var btn = board.querySelector('.kb-more');
+      if (!hasMore) { if (btn) { btn.remove(); } return; }
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-label-primary w-100 kb-more mt-2';
+        btn.textContent = 'Tải thêm';
+        btn.addEventListener('click', function () { kbLoadMore(status); });
+        board.appendChild(btn);
+      }
+    }
+
+    function kbLoadMore(status) {
+      var next = (kbPage[status] || 1) + 1;
+      $.getJSON(kbQuery(status, next), function (res) {
+        kbPage[status] = next;
+        res.cards.forEach(function (c) {
+          kbCards[c.id] = c;
+          kanban.addElement('st-' + status, { id: c.id, title: kbCardHtml(c) });
+        });
+        kbSyncMore(status, res.hasMore, res.total);
+      });
+    }
+
+    function kbRender() {
+      $('.kanban-wrapper').empty();
+      kbPage = {}; kbCards = {}; kanban = null;
+      var reqs = KB_STATUSES.map(function (s) { return $.getJSON(kbQuery(s.id, 1)); });
+      $.when.apply($, reqs).done(function () {
+        var results = Array.prototype.slice.call(arguments);
+        var boards = KB_STATUSES.map(function (s, i) {
+          var res = results[i][0];
+          kbPage[s.id] = 1;
+          res.cards.forEach(function (c) { kbCards[c.id] = c; });
+          return {
+            id: 'st-' + s.id,
+            title: tk.escape(s.name) + ' (' + res.total + ')',
+            class: 'bg-label-' + s.color,
+            item: res.cards.map(function (c) { return { id: c.id, title: kbCardHtml(c) }; })
+          };
+        });
+
+        kanban = new jKanban({
+          element: '.kanban-wrapper', gutter: '12px', widthBoard: '280px',
+          dragItems: true, dragBoards: false, boards: boards,
+          // Kéo sang cột khác = đổi trạng thái ở SERVER (handler Move chỉ đụng vào trạng thái).
+          dropEl: function (el, target) {
+            var id = el.getAttribute('data-eid');
+            var toStatus = target.parentElement.getAttribute('data-id').replace('st-', '');
+            var fd = new FormData(); fd.append('id', id); fd.append('status', toStatus);
+            tk.post('?handler=Move', fd).then(function (r) {
+              if (r && r.isSuccess) { tk.toast(r.message); if (grid) { grid.reload(); } }
+              // Server từ chối thì vẽ lại để thẻ về đúng cột cũ, đừng để màn hình nói dối.
+              else { tk.error((r && r.message) || 'Không đổi được trạng thái.'); kbRender(); }
+            });
+          },
+          click: function (el) {
+            var c = kbCards[el.getAttribute('data-eid')];
+            if (c) { oc.open(c); }
+          }
+        });
+
+        KB_STATUSES.forEach(function (s, i) {
+          var board = kbBoardEl(s.id);
+          var head = board && board.querySelector('.kanban-title-board');
+          if (head) { head.dataset.base = s.name; }
+          kbSyncMore(s.id, results[i][0].hasMore, results[i][0].total);
+        });
+        // Bảng kanban cao bao nhiêu là do số thẻ quyết định → phải gò lại, nếu không trang dài
+        // thêm và mọc thanh cuộn ngoài (đúng thứ đã dẹp ở lưới danh sách).
+        tk.fitBox('#pane-kanban', 320);
+      });
+    }
+
+    function kbRefreshIfVisible() {
+      if (!$('#pane-kanban').hasClass('d-none')) { kbRender(); }
+    }
+
     $(function () {
       // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
       var g = tk.g, esc = g.esc;
       var IS_MINE = @(Model.IsMine ? "true" : "false");
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'công việc',
         rules: { 'Input.Title': { required: true } }, messages: { 'Input.Title': { required: 'Bắt buộc nhập tiêu đề' } } });
@@ -181,7 +363,9 @@ else
       // Trang "Của tôi" ẩn cột Mã Task/Người tạo/Người phụ trách/Ngày bắt đầu (thừa với ngữ cảnh cá nhân)
       // — bám cột staging /my-tasking. Trang "Danh sách" hiện đủ như staging /tasking.
       grid = tk.grid('#grid-tasks', {
-        filters: [],
+        filters: IS_MINE ? [] : ['assigneeUserId', 'priority', 'status'],
+        // Lọc xong thì khung Kanban (nếu đang mở) cũng phải vẽ lại theo đúng bộ lọc đó.
+        onData: function () { kbRefreshIfVisible(); },
         selectable: !IS_MINE,          // khung cá nhân nằm trong cột hẹp, không cần tác vụ hàng loạt
         exportName: 'cong-viec.csv',
         actions: function (r) {
@@ -262,6 +446,25 @@ else
           }).render();
         }
       }
+        </text>
+    }
+
+    @if (!Model.IsMine)
+    {
+        <text>
+      // Chuyển Bảng ↔ Kanban. Dải thống kê và thanh lọc phải Ở LẠI vì Kanban cũng dùng bộ lọc đó;
+      // chỉ đổi phần khung nhìn bên dưới. Kanban chỉ tải lần đầu khi mở.
+      $('#view-table').on('click', function () {
+        $('#pane-kanban').addClass('d-none'); $('#grid-tasks').removeClass('d-none');
+        $(this).addClass('active'); $('#view-kanban').removeClass('active');
+        grid.table.redraw(true);
+      });
+      $('#view-kanban').on('click', function () {
+        $('#grid-tasks').addClass('d-none'); $('#pane-kanban').removeClass('d-none');
+        $(this).addClass('active'); $('#view-table').removeClass('active');
+        $('#bulkbar').addClass('d-none').removeClass('d-flex');
+        if (!kanban) { kbRender(); } else { tk.fitBox('#pane-kanban', 320); }
+      });
         </text>
     }
     });

@@ -180,6 +180,29 @@
     });
   };
 
+  // ---- Gò một khối cho vừa phần màn hình còn lại ----
+  // Dùng cho khung KHÔNG phải Tabulator (bảng kanban, ma trận quỹ phòng…): cuộn NGAY TRONG khối
+  // thay vì kéo dài trang rồi sinh thanh cuộn ngoài — cùng luật với lưới danh sách.
+  // Gọi lại sau mỗi lần vẽ; tự bám sự kiện resize.
+  tk.fitBox = function (el, minHeight) {
+    el = typeof el === 'string' ? document.querySelector(el) : el;
+    if (!el) { return; }
+    function fit() {
+      if (!el.offsetParent) { return; }           // đang ẩn thì đo ra 0, để nguyên
+      var top = el.getBoundingClientRect().top;
+      el.style.maxHeight = Math.max(minHeight || 260, Math.round(window.innerHeight - top - 24)) + 'px';
+      el.style.overflowY = 'auto';
+      // Còn dư vài pixel là trang đã có thanh cuộn — trừ nốt phần dư đó.
+      var doc = document.documentElement;
+      var over = doc.scrollHeight - doc.clientHeight;
+      if (over > 2) {
+        el.style.maxHeight = Math.max(minHeight || 260, parseInt(el.style.maxHeight, 10) - over) + 'px';
+      }
+    }
+    if (!el.__tkFit) { el.__tkFit = true; window.addEventListener('resize', fit); }
+    fit();
+  };
+
   // ---- Ô soạn thảo có ĐỊNH DẠNG cho trường lưu HTML ----
   // Dùng Quill — bộ soạn thảo ĐÃ đóng gói sẵn trong theme (vendor/libs/quill). Dự án KHÔNG có
   // TinyMCE; thêm nó là thêm một thư viện ngoài nữa cho cùng một việc.

@@ -83,10 +83,8 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Users = (await _users.ListAsync()).Select(u => (u.Id, u.FullName)).ToList();
-        if (IsMine)
-        {
-            Stats = await _svc.GetStatsAsync(mineScope: true);
-        }
+        // Cả hai phạm vi đều cần dải thống kê đầu màn — "của tôi" đếm theo tôi, danh sách chung đếm tất cả.
+        Stats = await _svc.GetStatsAsync(mineScope: IsMine);
     }
 
     /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
@@ -94,8 +92,10 @@ public class IndexModel : TkListPageModel
     {
         var dt = ParseDataTables();
         var status = int.TryParse(Request.Query["status"], out var st) ? st : (int?)null;
+        var assignee = Guid.TryParse(Request.Query["assigneeUserId"], out var au) ? au : (Guid?)null;
+        var priority = int.TryParse(Request.Query["priority"], out var pr) ? pr : (int?)null;
         // "Của tôi" (mineScope): service lọc việc được giao HOẶC do tôi tạo, theo id từ claim — không tra bảng.
-        var result = await _svc.ListAsync(dt.Page, dt.Size, null, status, dt.Keyword, mineScope: IsMine);
+        var result = await _svc.ListAsync(dt.Page, dt.Size, assignee, status, dt.Keyword, priority, mineScope: IsMine);
 
         // Ngày nghiệp vụ hôm nay (neo offset 0) để tính "Cảnh báo" quá hạn — bám cột staging.
         var today = TkDate.Day(DateTimeOffset.Now);
@@ -125,6 +125,57 @@ public class IndexModel : TkListPageModel
         });
 
         return DtJson(dt.Draw, result.Total, result.Total, data);
+    }
+
+    /// <summary>Một cột của bảng Kanban — nạp theo TỪNG cột và từng trang, không get-all.</summary>
+    public async Task<IActionResult> OnGetKanbanColumnAsync(int status, int page = 1, int size = 15)
+    {
+        if (size is < 1 or > 50)
+        {
+            size = 15;
+        }
+
+        var keyword = Request.Query["q"].ToString() is { Length: > 0 } q ? q : null;
+        var assignee = Guid.TryParse(Request.Query["assigneeUserId"], out var a) ? a : (Guid?)null;
+        var priority = int.TryParse(Request.Query["priority"], out var p) ? p : (int?)null;
+        var result = await _svc.ListAsync(page, size, assignee, status, keyword, priority, mineScope: IsMine);
+
+        var today = TkDate.Day(DateTimeOffset.Now);
+        var cards = result.Items.Select(x => new
+        {
+            id = x.Id,
+            code = x.Code ?? "—",
+            title = x.Title,
+            description = x.Description,
+            assigneeUserId = x.AssigneeUserId,
+            assigneeName = x.AssigneeName,
+            startDate = x.StartDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            dueDate = x.DueDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            dueDateText = x.DueDate?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture),
+            priority = x.Priority,
+            priorityLabel = PriorityLabel(x.Priority),
+            priorityColor = PriorityColor(x.Priority),
+            progress = x.Progress,
+            overdue = x.DueDate is { } dd && dd < today && x.Status != (int)WorkTaskStatus.Done && x.Status != (int)WorkTaskStatus.Cancelled,
+            status = x.Status,
+        });
+
+        return new JsonResult(new { total = result.Total, page, size, hasMore = page * size < result.Total, cards });
+    }
+
+    /// <summary>Kéo–thả sang cột khác trên Kanban → chỉ đổi trạng thái.</summary>
+    public async Task<IActionResult> OnPostMoveAsync(Guid id, int status)
+    {
+        try
+        {
+            await _svc.MoveAsync(id, status);
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+
+        return new JsonResult(Result.Success("Đã chuyển \"" + StatusLabel(status) + "\"."));
     }
 
     public async Task<IActionResult> OnPostSaveAsync()

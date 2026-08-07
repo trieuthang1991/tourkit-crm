@@ -131,6 +131,34 @@ public sealed class WorkTaskService(
         }
     }
 
+    public async Task MoveAsync(Guid id, int status)
+    {
+        if (!Enum.IsDefined(typeof(TourKit.Shared.Enums.WorkTaskStatus), status))
+        {
+            throw new ValidationException("Trạng thái công việc không hợp lệ.");
+        }
+
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+        if (entity.Status == status)
+        {
+            return;
+        }
+
+        entity.Status = status;
+        // Tiến độ đi kèm trạng thái: xong là 100%, kéo ngược ra thì không thể vẫn 100%.
+        if (status == (int)TourKit.Shared.Enums.WorkTaskStatus.Done)
+        {
+            entity.Progress = 100;
+        }
+        else if (entity.Progress >= 100)
+        {
+            entity.Progress = 99;
+        }
+
+        repo.Update(entity);
+        await repo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
