@@ -454,13 +454,22 @@
             { name: 'Còn lại', data: [@Model.Summary.ReceivableOutstanding, @(Model.Summary.PayableOutstanding < 0 ? 0 : Model.Summary.PayableOutstanding)] }
           ],
           colors: ['#28c76f', '#ff9f43'],
-          plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '46%' } },
-          dataLabels: { enabled: false },
+          plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '58%' } },
+          dataLabels: { enabled: true, style: { fontSize: '11px', colors: ['#fff'] },
+                        // Chỉ ghi nhãn trên khúc đủ rộng, khúc mỏng ghi vào là chữ đè lên nhau.
+                        formatter: function (v, o) {
+                          var row = o.w.globals.stackedSeriesTotals[o.dataPointIndex] || 1;
+                          return v / row >= .12 ? money(v) : '';
+                        } },
           legend: { position: 'bottom', labels: { colors: label }, markers: { width: 8, height: 8 } },
-          grid: { borderColor: border, padding: { left: 4, right: 8 } },
+          // TẮT kẻ ngang: biểu đồ cột NGANG thì đường kẻ ngang chạy xuyên qua thân cột, nhìn như
+          // gạch chéo đè lên hình. Kẻ dọc theo trục tiền mới là thứ giúp ước lượng.
+          grid: { borderColor: border, strokeDashArray: 6,
+                  xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } },
+                  padding: { left: 4, right: 12 } },
           xaxis: { categories: ['Doanh thu', 'Chi phí'],
                    labels: { formatter: money, style: { colors: label } }, axisBorder: { show: false }, axisTicks: { show: false } },
-          yaxis: { labels: { style: { colors: label }, maxWidth: 160 } },
+          yaxis: { labels: { style: { colors: label, fontWeight: 500 }, maxWidth: 160 } },
           tooltip: { y: { formatter: function (v) { return tk.money(v) + ' ₫'; } } }
         }).render();
       }
@@ -478,7 +487,9 @@
           plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '46%' } },
           dataLabels: { enabled: false },
           legend: { position: 'bottom', labels: { colors: label }, markers: { width: 8, height: 8 } },
-          grid: { borderColor: border, padding: { left: 4, right: 8 } },
+          grid: { borderColor: border, strokeDashArray: 6,
+                  xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } },
+                  padding: { left: 4, right: 8 } },
           xaxis: { categories: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByBranch.Select(x => x.BranchName))),
                    labels: { formatter: money, style: { colors: label } }, axisBorder: { show: false }, axisTicks: { show: false } },
           yaxis: { labels: { style: { colors: label }, maxWidth: 130 } },
@@ -518,7 +529,9 @@
                         style: { fontSize: '11px', colors: ['#5d596c'] },
                         formatter: function (v) { return Number(v).toLocaleString('vi-VN'); } },
           legend: { show: false },
-          grid: { borderColor: border, padding: { left: 4, right: 16 } },
+          grid: { borderColor: border, strokeDashArray: 6,
+                  xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } },
+                  padding: { left: 4, right: 16 } },
           xaxis: { categories: ['Báo giá đã tạo', 'Được chấp nhận', 'Đã chuyển đơn'],
                    labels: { style: { colors: label } }, axisBorder: { show: false }, axisTicks: { show: false } },
           yaxis: { labels: { style: { colors: label }, maxWidth: 120 } },
