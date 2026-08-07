@@ -119,6 +119,53 @@ public class IndexModel : TkListPageModel
         return DtJson(dt.Draw, stats.Total, result.Total, items);
     }
 
+    /// <summary>Một cột của bảng Kanban — nạp theo TỪNG cột và từng trang, không get-all.</summary>
+    public async Task<IActionResult> OnGetKanbanColumnAsync(int status, int page = 1, int size = 15)
+    {
+        if (size is < 1 or > 50)
+        {
+            size = 15;
+        }
+
+        var keyword = Request.Query["q"].ToString() is { Length: > 0 } q ? q : null;
+        // Cột ĐÃ là trạng thái nên ghi đè tiêu chí trạng thái của thanh lọc.
+        var result = await _svc.ListAsync(page, size, BuildFilter(keyword) with { Status = status });
+
+        var now = DateTimeOffset.UtcNow;
+        var cards = result.Items.Select(c => new
+        {
+            id = c.Id,
+            customerId = c.CustomerId,
+            customerName = c.CustomerName,
+            title = c.Title,
+            detail = c.Detail,
+            remindAt = c.RemindAt?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            remindAtText = c.RemindAt?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+            overdue = c.RemindAt is DateTimeOffset r && r < now && c.Status != 2,
+            feedback = c.Feedback,
+            assignedToUserId = c.AssignedToUserId,
+            assigneeName = c.AssigneeName,
+            status = c.Status,
+        });
+
+        return new JsonResult(new { total = result.Total, page, size, hasMore = page * size < result.Total, cards });
+    }
+
+    /// <summary>Kéo–thả sang cột khác trên Kanban → chỉ đổi trạng thái chăm sóc.</summary>
+    public async Task<IActionResult> OnPostMoveAsync(Guid id, int status)
+    {
+        try
+        {
+            await _svc.MoveAsync(id, status);
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+
+        return new JsonResult(Result.Success("Đã chuyển \"" + StatusLabel(status) + "\"."));
+    }
+
     /// <summary>Xuất CSV theo đúng bộ lọc đang áp (giới hạn 5000 dòng).</summary>
     public async Task<IActionResult> OnGetExportAsync()
     {

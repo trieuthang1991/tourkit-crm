@@ -116,6 +116,25 @@ public sealed class CustomerCareService(
         await repo.SaveChangesAsync();
     }
 
+    public async Task MoveAsync(Guid id, int status)
+    {
+        // Trạng thái chăm sóc bám CARE_STATUS hệ cũ: 0 Mới · 1 Đang xử lý · 2 Hoàn thành.
+        if (status is < 0 or > 2)
+        {
+            throw new ValidationException("Trạng thái chăm sóc không hợp lệ.");
+        }
+
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+        if (entity.Status == status)
+        {
+            return;
+        }
+
+        entity.Status = status;
+        repo.Update(entity);
+        await repo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var entity = await repo.GetByIdAsync(id);
