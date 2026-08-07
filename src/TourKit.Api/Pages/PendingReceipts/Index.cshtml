@@ -200,7 +200,6 @@
         filters: ['status', 'paymentMethod', 'from', 'to', 'amountFrom', 'amountTo', 'branchId', 'salesUserId'],
         exportName: 'phieu-thu-cho-duyet.csv',
         actions: actionsFor,
-        onRowClick: showDetail,
         // Màn này LUÔN quay về hàng chờ khi đặt lại bộ lọc.
         onReset: function () { $('#f-status').val('0'); },
         columns: [

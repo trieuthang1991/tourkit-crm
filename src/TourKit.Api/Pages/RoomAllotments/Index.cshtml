@@ -309,7 +309,6 @@
             { label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá ô quỹ phòng</span>', action: function () { delRow(r); } }
           ];
         },
-        onRowClick: function (r) { oc.open(r); },
         // KPI của màn tính THEO BỘ LỌC nên server trả kèm khối stats mỗi lần tải.
         onData: function (res) { applyStats(res && res.stats); },
         columns: [

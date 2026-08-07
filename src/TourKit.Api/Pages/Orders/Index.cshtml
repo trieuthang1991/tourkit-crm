@@ -193,8 +193,9 @@
 
       function badge(label, color) { return '<span class="badge bg-label-' + color + '">' + esc(label) + '</span>'; }
 
-      // Ô trạng thái: badge hiện tại + mũi tên. Bấm vào mở menu của Tabulator (clickMenu) —
-      // KHÔNG dùng dropdown Bootstrap vì menu bị ô của lưới cắt mất.
+      // Ô trạng thái: nút g.pick (badge hiện tại + mũi tên). Bấm vào mở menu của Tabulator (clickMenu) —
+      // KHÔNG dùng dropdown Bootstrap vì menu bị ô của lưới cắt mất. Việc nắn menu cho vừa màn hình
+      // do tk-grid.js lo (xem placeMenu), trang không phải xử lý gì thêm.
       function statusOf(r) {
         if (r.bookingType === 5) { return { label: VISA_LABELS[r.visaStatus] || '—', color: VISA_COLORS[r.visaStatus] || 'secondary' }; }
         if (r.bookingType === 0 || r.bookingType === 1 || r.bookingType === 2) {
@@ -311,7 +312,6 @@
         chipGroups: ['marketTypeId'],
         exportName: 'don-hang-da-chon.csv',
         actions: actionsFor,
-        onRowClick: viewRow,   // kích dòng → mở panel xem nhanh (đơn hàng sửa ở trang chi tiết)
         columns: [
           {
             title: 'Mã đơn', field: 'code', widthGrow: 2, minWidth: 160,
@@ -399,9 +399,12 @@
             title: 'Trạng thái', field: 'status', width: 170,
             clickMenu: function (e, cell) { return statusMenu(cell.getRow().getData()); },
             formatter: function (c) {
-              var s = statusOf(c.getData());
-              return '<a href="javascript:void(0)" class="text-decoration-none" title="Đổi trạng thái">' +
-                badge(s.label, s.color) + ' <i class="ti ti-chevron-down text-muted"></i></a>';
+              var r = c.getData();
+              var s = statusOf(r);
+              // Trạng thái không còn bước hợp lệ nào (đơn đã huỷ…) → badge TĨNH.
+              // Vẽ nút mà bấm vào không ra menu thì người dùng tưởng hỏng.
+              if (!statusMenu(r).length) { return '<span class="badge bg-label-' + s.color + '">' + esc(s.label) + '</span>'; }
+              return g.pick(s.label, s.color, 'Bấm để đổi trạng thái');
             }
           }
         ]

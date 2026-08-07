@@ -91,6 +91,16 @@ a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
 .tk-grid .tabulator-calcs-top .tabulator-cell { height: 30px !important; padding-top: 0; padding-bottom: 0;
   font-size: .75rem; line-height: 30px; }
 .tk-grid .tabulator-footer { background: transparent; border-top: 1px solid var(--bs-border-color); }
+/* Nút phân trang gọn lại theo yêu cầu chủ dự án (mặc định của Tabulator quá thưa). */
+.tabulator .tabulator-footer .tabulator-page { margin: 2px; padding: 2px 10px; }
+/* Nút Đầu/Trước/Sau/Cuối là ICON → canh giữa và cho vuông cạnh để không lệch với nút số trang. */
+.tk-grid .tabulator-footer .tabulator-page[data-page="first"],
+.tk-grid .tabulator-footer .tabulator-page[data-page="prev"],
+.tk-grid .tabulator-footer .tabulator-page[data-page="next"],
+.tk-grid .tabulator-footer .tabulator-page[data-page="last"] {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 32px; padding: 2px 6px;
+}
+.tk-grid .tabulator-footer .tabulator-page > i { font-size: 1rem; line-height: 1; }
 .tk-grid .tabulator-footer .tabulator-page.active { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
 .tk-grid .tabulator-col-resize-handle { opacity: .4; }
 
@@ -128,6 +138,42 @@ a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
   max-width: calc(100% - 2rem);
 }
 .tk-bulkbar .ms-auto { margin-left: .5rem !important; }   /* dạng viên thuốc: không cần đẩy sát mép */
+
+/* ===== Menu hành động / đổi trạng thái (Tabulator popup) =====
+   `height: auto !important` là BẮT BUỘC: khi dưới điểm bấm không đủ chỗ, Tabulator ép
+   height = chiều cao cả trang, menu biến thành hộp trắng khổng lồ. Chặn ngay ở CSS để màn nào
+   quên nạp tk-grid.js cũng không dính. Quá dài thì cuộn TRONG menu, không kéo dài trang. */
+.tabulator-menu {
+  height: auto !important;
+  max-height: min(60vh, 420px); overflow-y: auto; overscroll-behavior: contain;
+  min-width: 200px; padding: .25rem;
+  border: 1px solid var(--bs-border-color); border-radius: .5rem;
+  background: var(--bs-card-bg, #fff);
+  box-shadow: 0 .35rem 1.25rem rgba(var(--bs-primary-rgb), .18);
+}
+.tabulator-menu .tabulator-menu-item {
+  border-radius: .375rem; padding: .4rem .75rem; font-size: .875rem;
+  color: var(--bs-body-color); white-space: nowrap;
+}
+.tabulator-menu .tabulator-menu-item:not(.tabulator-menu-item-disabled):hover { background: rgba(var(--bs-primary-rgb), .08); }
+.tabulator-menu .tabulator-menu-separator { border-top: 1px solid var(--bs-border-color); margin: .25rem 0; }
+
+/* Ô ĐỔI ĐƯỢC trên bảng (trạng thái/loại): trông như một nút thật — có viền + nền khi rê chuột,
+   thay vì chỉ mỗi badge phẳng khiến người dùng không biết bấm được. */
+.tk-pick {
+  display: inline-flex; align-items: center; gap: .25rem; max-width: 100%;
+  padding: .125rem .25rem .125rem .125rem; border: 1px solid transparent; border-radius: .375rem;
+  background: transparent; cursor: pointer;
+  transition: background-color .15s ease-in-out, border-color .15s ease-in-out;
+}
+.tk-pick:hover { background: var(--bs-tertiary-bg, rgba(0, 0, 0, .04)); border-color: var(--bs-border-color); }
+.tk-pick:focus-visible { outline: 0; box-shadow: 0 0 0 .18rem rgba(var(--bs-primary-rgb), .25); }
+.tk-pick > i { font-size: .9rem; color: var(--bs-secondary-color); }
+
+/* Hộp thả của select2 được gắn thẳng vào <body>. Vì khai báo width:'100%', nó ăn 100% chiều rộng
+   của BODY (không phải của ô lọc) và bắt đầu từ vị trí ô → tràn sang phải, trang mọc thanh cuộn
+   NGANG rồi kéo theo cả thanh cuộn dọc. Bản thân .select2-dropdown đã có width riêng nên để auto. */
+body > .select2-container { width: auto !important; }
 
 /* Lưới có mở chi tiết khi kích dòng → con trỏ tay để người dùng biết bấm được. */
 .tk-grid-clickable .tabulator-row { cursor: pointer; }

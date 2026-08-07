@@ -178,7 +178,6 @@
         filters: ['vehicleId', 'departureId', 'dateFrom', 'dateTo', 'status'],
         exportName: 'dieu-xe.csv',
         actions: CAN_MANAGE ? actionsFor : null,
-        onRowClick: CAN_MANAGE ? function (r) { oc.open(r); } : null,
         // KPI + số đếm trên tab lấy từ khối stats kèm theo mỗi lần tải bảng.
         onData: function (res) { applyStats(res && res.stats); },
         columns: [

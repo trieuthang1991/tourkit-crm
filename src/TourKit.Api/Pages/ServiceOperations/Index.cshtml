@@ -122,7 +122,6 @@
         actions: function (r) {
           return [{ label: '<i class="ti ti-cash me-2"></i>Ghi nhận thanh toán', action: function () { oc.open(r); } }];
         },
-        onRowClick: function (r) { oc.open(r); },
         // KPI của màn này tính THEO BỘ LỌC nên server trả kèm khối stats mỗi lần tải.
         onData: function (res) {
           var s = res && res.stats;

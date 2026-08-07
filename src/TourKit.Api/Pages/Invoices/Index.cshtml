@@ -135,7 +135,6 @@
         filters: ['status', 'dateFrom', 'dateTo'],
         exportName: 'hoa-don-da-chon.csv',
         actions: CAN_MANAGE ? actionsFor : null,
-        onRowClick: CAN_MANAGE ? function (r) { window.location = '/hoa-don/soan/' + r.id; } : null,
         columns: [
           {
             title: 'Hoá đơn', field: 'number', widthGrow: 2, minWidth: 160,

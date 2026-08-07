@@ -51,17 +51,31 @@ Stack UI: ASP.NET Core Razor Pages + Bootstrap 5 + jQuery + Vuexy. Icon: **Table
   để mọi màn cùng một kiểu: dòng chính đậm + dòng phụ mờ, tối đa 2 dòng.
 - Handler dữ liệu: `ParseDataTables()` (đã hiểu cả `page/size/q` của tk.grid) + `GridJson(dt, …)`
   ở `TkListPageModel` — payload phục vụ đồng thời Tabulator và DataTables.
-- **Bốn luật chủ dự án đã chốt** (đã cài trong `tk.grid`, đừng làm khác):
-  1. Kích ô dữ liệu **không** tích chọn dòng (`selectableRows:'highlight'`); kích dòng thì `onRowClick`
-     mở form sửa / panel chi tiết.
+- **Năm luật chủ dự án đã chốt** (đã cài trong `tk.grid`, đừng làm khác):
+  1. **Kích vào dòng KHÔNG làm gì** — không tích chọn (`selectableRows:'highlight'`), không mở form sửa.
+     Mọi hành động đi qua nút ⋮ hoặc chuột phải. (Trước đây kích dòng mở form sửa; chủ dự án đã bỏ
+     vì hay bấm nhầm.) Ngoại lệ duy nhất: ô được thiết kế riêng để đổi giá trị — xem luật 4.
   2. Thanh tác vụ hàng loạt **nổi bên trong bảng** (`.tk-bulkbar`), không đẩy nội dung, không tăng chiều cao.
   3. Badge trạng thái/loại dùng formatter chuẩn `tkBadge`/`tkStack`/`tkMedia`; `tkBadge` lấy nhãn từ
      GIÁ TRỊ cột nên cột phải trỏ `statusLabel`, không phải mã số `status`.
-  4. Số liệu kiểu Việt (app đặt vi-VN bằng `UseRequestLocalization`) + `tabular-nums` cho cột tiền.
-- **Bẫy đã gặp, đừng lặp lại:** không đặt `selectableRowsRangeMode:'click'` (chỉ chọn được 1 dòng);
-  **tuyệt đối không** gọi `setHeight` trong `renderComplete` (vòng lặp vô hạn → treo trang);
-  select2 phát sự kiện change kiểu jQuery nên phải bind qua jQuery, không `addEventListener`;
-  Tabulator 6 **bỏ** callback khai báo trong options — `rowClick` phải đăng ký qua `table.on(...)`.
+  4. Ô **đổi được ngay trên bảng** (trạng thái / loại) dựng bằng `tk.g.pick(label, color, title)` +
+     `clickMenu` của cột — nó ra một nút có viền/nền khi rê chuột nên người dùng biết bấm được.
+     Hết bước hợp lệ (đơn đã huỷ…) thì trả badge tĩnh, **đừng** vẽ nút bấm vào không ra gì.
+  5. Số liệu kiểu Việt (app đặt vi-VN bằng `UseRequestLocalization`) + `tabular-nums` cho cột tiền.
+- **Bẫy đã gặp, đừng lặp lại:**
+  - Không đặt `selectableRowsRangeMode:'click'` (chỉ chọn được 1 dòng).
+  - **Tuyệt đối không** gọi `setHeight` trong `renderComplete` (vòng lặp vô hạn → treo trang).
+  - select2 phát sự kiện change kiểu jQuery nên phải bind qua jQuery, không `addEventListener`.
+  - Tabulator 6 **bỏ** callback khai báo trong options — `rowClick` phải đăng ký qua `table.on(...)`.
+  - **Menu của Tabulator tự ép `height` = chiều cao cả trang** khi dưới điểm bấm không đủ chỗ
+    (`Popup._fitToScreen`): menu thành hộp trắng khổng lồ và kéo dài trang. `tk-grid.js/placeMenu`
+    gỡ chiều cao đó, chuyển menu sang `position:fixed` rồi lật lên trên; CSS chốt thêm
+    `height:auto !important` + `max-height`. Đừng bỏ hai chỗ này.
+  - **Hộp thả select2 gắn vào `<body>`** mà khai báo `width:'100%'` thì rộng bằng 100% BODY → tràn
+    phải, trang mọc thanh cuộn ngang rồi kéo theo cả cuộn dọc. Đã chặn bằng
+    `body > .select2-container { width: auto !important }`.
+  - Mở/đóng panel `#adv` làm đỉnh bảng tụt xuống → phải tính lại chiều cao, nếu không trang mọc
+    thanh cuộn ngoài. `tk.grid` đã gắn `ResizeObserver` lên các khối anh em của bảng.
 
 ### 3b. Màn cũ còn dùng DataTables
 

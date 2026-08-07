@@ -54,6 +54,14 @@
   g.chip = function (text) {
     return '<span class="tk-chip-sm bg-label-' + g.toneOf(text) + '" title="' + esc(text) + '">' + esc(text) + '</span>';
   };
+  // Ô ĐỔI ĐƯỢC ngay trên bảng (trạng thái / loại / phân loại…): badge hiện tại + mũi tên,
+  // dựng bằng <button> nên có nền khi rê chuột và bắt được bàn phím — người dùng nhìn là biết bấm được.
+  // Dùng kèm `clickMenu` của cột: { field:'status', clickMenu: fn, formatter: () => g.pick(label, color) }.
+  g.pick = function (label, color, title) {
+    return '<button type="button" class="tk-pick" title="' + esc(title || 'Bấm để đổi') + '">' +
+      '<span class="badge bg-label-' + esc(color || 'secondary') + '">' + esc(label || '—') + '</span>' +
+      '<i class="ti ti-chevron-down"></i></button>';
+  };
   // Ô tiền: số đậm bên phải + ghi chú mờ bên dưới.
   g.moneyCell = function (value, sub) {
     return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main ' + ((value || 0) > 0 ? 'text-success' : '') + '">' +
@@ -169,11 +177,13 @@
       langs: {
         vi: {
           pagination: {
+            // Đầu/Trước/Sau/Cuối dùng ICON cho gọn; chữ vẫn giữ ở *_title làm tooltip
+            // (Tabulator dựng nút bằng innerHTML nên nhận được markup icon).
             page_size: 'Số dòng', page_title: 'Tới trang',
-            first: 'Đầu', first_title: 'Trang đầu',
-            last: 'Cuối', last_title: 'Trang cuối',
-            prev: 'Trước', prev_title: 'Trang trước',
-            next: 'Sau', next_title: 'Trang sau',
+            first: '<i class="ti ti-chevrons-left"></i>', first_title: 'Trang đầu',
+            last: '<i class="ti ti-chevrons-right"></i>', last_title: 'Trang cuối',
+            prev: '<i class="ti ti-chevron-left"></i>', prev_title: 'Trang trước',
+            next: '<i class="ti ti-chevron-right"></i>', next_title: 'Trang sau',
             all: 'Tất cả',
             counter: { showing: 'Hiện', of: 'trên', rows: 'dòng', pages: 'trang' }
           },
@@ -242,6 +252,7 @@
     window.tkGridReload = reload;
 
     wireBulkBar(table, reload, opts);
+    tameMenus();
     fitHeight(el, table);
     if (opts.wireFilters !== false) { wireFilterBar(reload, filterKeys, collectFilters, opts); }
 
@@ -293,6 +304,45 @@
     });
   }
 
+  // ===== Nắn menu của Tabulator cho vừa màn hình =====
+  // Tabulator dựng menu ngay tại toạ độ chuột. Khi bên dưới không còn chỗ, Popup._fitToScreen
+  // KHÔNG lật menu lên mà ÉP `height` = chiều cao cả trang → hộp trắng khổng lồ (đúng cái
+  // "lỗi dropdown" hay gặp khi bấm ⋮ / đổi trạng thái ở những dòng cuối bảng), đồng thời kéo
+  // dài tài liệu nên trang mọc thêm THANH CUỘN NGOÀI.
+  // Ở đây: bỏ chiều cao bị ép, chuyển sang position:fixed (không tính vào chiều cao trang nữa)
+  // rồi tự lật lên/kẹp lại trong viewport.
+  function tameMenus() {
+    if (window.__tkMenuTamed) { return; }
+    window.__tkMenuTamed = true;
+    // MutationObserver chạy sau khi Tabulator append + _fitToScreen xong (microtask, chưa vẽ lại)
+    // nên ta luôn là người đặt vị trí cuối cùng, và không thấy nhấp nháy.
+    new MutationObserver(function (recs) {
+      recs.forEach(function (rec) {
+        Array.prototype.forEach.call(rec.addedNodes, function (n) {
+          if (n.nodeType === 1 && n.classList && n.classList.contains('tabulator-menu')) { placeMenu(n); }
+        });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+
+  function placeMenu(m) {
+    m.style.height = '';                        // gỡ chiều cao bị ép
+    var r = m.getBoundingClientRect();          // vị trí Tabulator vừa đặt, quy về toạ độ màn hình
+    var pad = 8;
+    var h = m.offsetHeight, w = m.offsetWidth;
+    var top = r.top;
+    if (top + h > window.innerHeight - pad) {
+      var above = r.top - h;                    // ưu tiên LẬT LÊN TRÊN điểm bấm
+      top = above >= pad ? above : Math.max(pad, window.innerHeight - h - pad);
+    }
+    var left = Math.max(pad, Math.min(r.left, window.innerWidth - w - pad));
+    m.style.position = 'fixed';
+    m.style.top = Math.round(top) + 'px';
+    m.style.left = Math.round(left) + 'px';
+    m.style.right = 'auto';
+    m.style.bottom = 'auto';
+  }
+
   // ===== Bảng luôn nằm gọn trong 1 màn =====
   // Cao = phần viewport còn lại tính từ đỉnh bảng. Dùng toạ độ TÀI LIỆU (rect.top + scrollY)
   // để giá trị không đổi theo vị trí cuộn, nhờ vậy setHeight không tự kích hoạt lại chính nó.
@@ -305,10 +355,13 @@
       lastH = h;
       table.setHeight(h);
       // Layout còn đệm dưới (padding content-wrapper…) → trừ đúng phần dư để trang hết cuộn.
+      // Lặp vài lượt: mỗi lần đổi chiều cao bảng, footer/thanh cuộn trong bảng lại tính lại nên
+      // một lượt trừ thường còn sót vài pixel — mà chỉ vài pixel dư là trang đã có thanh cuộn.
       var doc = document.documentElement;
-      var over = doc.scrollHeight - doc.clientHeight;
-      if (over > 2) {
-        lastH = Math.max(260, h - over);
+      for (var i = 0; i < 4; i++) {
+        var over = doc.scrollHeight - doc.clientHeight;
+        if (over <= 2) { break; }
+        lastH = Math.max(260, lastH - over);
         table.setHeight(lastH);
       }
     }
@@ -317,6 +370,14 @@
     function soon() { requestAnimationFrame(fit); setTimeout(fit, 300); }
     table.on('tableBuilt', soon);
     window.addEventListener('resize', soon);
+    // Mở panel "Lọc nâng cao", dải thống kê xuống dòng, chip lọc thêm hàng… đều đẩy đỉnh bảng
+    // xuống. Không tính lại thì trang dài thêm đúng bằng phần đó và mọc THANH CUỘN NGOÀI.
+    // Chỉ theo dõi các khối ANH EM của bảng — chiều cao của chúng không phụ thuộc setHeight
+    // nên không tạo vòng lặp quan sát.
+    if (window.ResizeObserver && el.parentElement) {
+      var ro = new ResizeObserver(soon);
+      Array.prototype.forEach.call(el.parentElement.children, function (c) { if (c !== el) { ro.observe(c); } });
+    }
   }
 
   // ===== Thanh lọc chuẩn của repo =====

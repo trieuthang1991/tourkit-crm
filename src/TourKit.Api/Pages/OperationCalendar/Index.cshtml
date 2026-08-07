@@ -218,7 +218,6 @@
         actions: function (r) {
           return [{ label: '<i class="ti ti-eye me-2"></i>Chi tiết chuyến', action: function () { window.location = '/chuyen-di/' + r.id; } }];
         },
-        onRowClick: function (r) { window.location = '/chuyen-di/' + r.id; },
         // KPI của màn tính theo bộ lọc nên server trả kèm khối stats mỗi lần tải.
         onData: function (res) { applyStats(res && res.stats); },
         columns: [
