@@ -82,6 +82,22 @@ Stack UI: ASP.NET Core Razor Pages + Bootstrap 5 + jQuery + Vuexy. Icon: **Table
   - Mở/đóng panel `#adv` làm đỉnh bảng tụt xuống → phải tính lại chiều cao, nếu không trang mọc
     thanh cuộn ngoài. `tk.grid` đã gắn `ResizeObserver` lên các khối anh em của bảng.
 
+### 3c. Khung Kanban (jKanban)
+
+Màn có vòng đời trạng thái rõ ràng thì thêm nút chuyển **Bảng ↔ Kanban** ở góc phải đầu trang
+(`#view-table` / `#view-kanban`). Đang dùng ở: Cơ hội bán hàng, Công việc, Quản lý lịch hẹn.
+
+- Thư viện: **jKanban** đi kèm theme (`vendor/libs/jkanban`) + `vendor/css/pages/app-kanban.css`.
+  Không mua thư viện Kanban trả phí (Bryntum…) — chủ dự án đã chốt bỏ mọi thứ dính license.
+- Mỗi cột nạp **riêng một trang** qua `?handler=KanbanColumn&status=..&page=..&size=15`, kèm nút
+  "Tải thêm". Không bao giờ đổ cả bảng ra client.
+- Kéo–thả gọi `?handler=Move` → service phải có **`MoveAsync(id, status)` chỉ đổi trạng thái**.
+  Đừng đọc bản ghi rồi `UpdateAsync` lại từ trang: giữa hai thao tác người khác sửa gì là mất.
+  Server từ chối thì gọi lại `kbRender()` để thẻ về đúng cột — không để màn hình nói dối.
+- Dải thống kê + thanh lọc **ở lại** khi chuyển sang Kanban (dùng chung bộ lọc); riêng tiêu chí
+  **trạng thái bị loại khỏi truy vấn Kanban** vì mỗi cột đã là một trạng thái.
+- Chiều cao khung gò bằng `tk.fitBox('#pane-kanban', 320)` — cuộn trong khung, trang không cuộn.
+
 ### 3b. Màn cũ còn dùng DataTables
 
 Chỉ còn màn **Data khách hàng bản cũ** (`/khach-hang/ban-cu`, giữ để đối chiếu) và các **danh mục nhỏ**
