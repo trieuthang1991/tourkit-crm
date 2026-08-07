@@ -128,8 +128,9 @@ public class IndexModel : TkListPageModel
     }
 
     /// <summary>Một cột của bảng Kanban — nạp theo TỪNG cột và từng trang, không get-all.</summary>
-    public async Task<IActionResult> OnGetKanbanColumnAsync(int status, int page = 1, int size = 15)
+    public async Task<IActionResult> OnGetKanbanColumnAsync(int to, int page = 1, int size = 15)
     {
+        var status = to;
         if (size is < 1 or > 50)
         {
             size = 15;
@@ -164,8 +165,9 @@ public class IndexModel : TkListPageModel
     }
 
     /// <summary>Kéo–thả sang cột khác trên Kanban → chỉ đổi trạng thái.</summary>
-    public async Task<IActionResult> OnPostMoveAsync(Guid id, int status)
+    public async Task<IActionResult> OnPostMoveAsync(Guid id, int to)
     {
+        var status = to;
         try
         {
             await _svc.MoveAsync(id, status);

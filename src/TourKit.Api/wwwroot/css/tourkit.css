@@ -63,6 +63,57 @@
 .tk-oc-actions { box-shadow: 0 -.25rem .75rem rgba(var(--bs-primary-rgb), .06); }
 .tk-oc-actions .me-2:last-child { margin-right: 0 !important; }
 
+/* ===== Bảng Kanban — bám khuôn app-kanban của theme, chỉ chỉnh cho hợp mặt trắng tk-surface =====
+   jKanban mặc định tô cột màu xám #e2e4e6 và nhồi padding 20px: đặt trên mặt trắng nhìn rất nặng. */
+/* Cuộn kiểu bảng công việc thật: khung chỉ cuộn NGANG, mỗi cột tự cuộn DỌC → tiêu đề cột luôn
+   nhìn thấy. Để cả khung cuộn dọc thì kéo xuống là mất hết tên cột, không biết đang ở cột nào. */
+.app-kanban .kanban-wrapper { height: auto; padding: 0 0 .25rem; overflow-x: auto; overflow-y: hidden; }
+.app-kanban .kanban-container { align-items: stretch; height: 100%; }
+.app-kanban .kanban-board { background: transparent; display: flex; flex-direction: column; height: 100%; }
+.app-kanban .kanban-board > header { padding: 0 .25rem .75rem; font-size: 1rem; flex: 0 0 auto; }
+.app-kanban .kanban-board .kanban-title-board {
+  display: flex; align-items: center; width: 100%; max-width: none;
+  font-size: .9375rem; font-weight: 600; color: var(--bs-heading-color);
+}
+.tk-kb-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: .5rem; flex-shrink: 0; }
+.tk-kb-dot + span, .app-kanban .kanban-title-board .badge { margin-left: auto; }
+.app-kanban .kanban-board .kanban-drag {
+  padding: 0 .25rem 0 0; min-height: 4rem;
+  flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain;
+}
+/* Thẻ: dùng đúng bề mặt của thẻ trong theme (nền, viền mảnh, bo góc) + nhấc lên khi rê chuột. */
+.app-kanban .kanban-item {
+  width: auto; padding: .875rem 1rem; margin-bottom: .75rem;
+  background: var(--bs-card-bg, #fff);
+  border: 1px solid var(--bs-border-color); border-radius: .5rem;
+  box-shadow: 0 .125rem .25rem rgba(var(--bs-black-rgb, 0, 0, 0), .04);
+  transition: box-shadow .15s ease-in-out, transform .1s ease-in-out, border-color .15s ease-in-out;
+}
+.app-kanban .kanban-item:hover {
+  border-color: rgba(var(--bs-primary-rgb), .35);
+  box-shadow: 0 .35rem .75rem rgba(var(--bs-primary-rgb), .12);
+}
+.app-kanban .kanban-item:active { transform: scale(.995); }
+.app-kanban .kanban-item .kanban-text {
+  display: block; font-weight: 500; line-height: 1.35; color: var(--bs-heading-color);
+}
+.app-kanban .kanban-item .item-badges .badge { font-size: .6875rem; }
+.tk-kb-meta {
+  margin-top: .25rem; font-size: .8125rem; color: var(--bs-secondary-color);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tk-kb-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  margin-top: .625rem; padding-top: .625rem; border-top: 1px solid var(--bs-border-color);
+  font-size: .8125rem;
+}
+/* Cột rỗng vẫn phải nhìn ra là một cột thả được, không để khoảng trắng trơ. */
+.app-kanban .kanban-drag:empty::after {
+  content: "Chưa có mục nào"; display: block; padding: 1.25rem .5rem; text-align: center;
+  font-size: .8125rem; color: var(--bs-secondary-color);
+  border: 1px dashed var(--bs-border-color); border-radius: .5rem;
+}
+
 /* ===== Ô soạn thảo có định dạng (Quill) — mặc định Quill viền vuông, lệch hẳn với .form-control ===== */
 .tk-rte .ql-toolbar.ql-snow {
   border: 1px solid var(--bs-border-color); border-bottom: 0;

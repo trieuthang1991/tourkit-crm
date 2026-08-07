@@ -21,7 +21,12 @@ public sealed class CustomerCareService(
         var all = await repo.ListAsync(c =>
             (f.CustomerId == null || c.CustomerId == f.CustomerId) &&
             (f.AssignedToUserId == null || c.AssignedToUserId == f.AssignedToUserId) &&
-            (f.Status == null || c.Status == f.Status));
+            (f.Status == null || c.Status == f.Status) &&
+            (f.ExcludeStatus == null || c.Status != f.ExcludeStatus) &&
+            // Khoảng ngày nhắc hẹn đẩy xuống SQL (bảng lịch hẹn xếp cột theo thời gian).
+            (f.RemindFrom == null || (c.RemindAt != null && c.RemindAt >= f.RemindFrom)) &&
+            (f.RemindTo == null || (c.RemindAt != null && c.RemindAt <= f.RemindTo)) &&
+            (f.RemindIsNull == null || (f.RemindIsNull.Value ? c.RemindAt == null : c.RemindAt != null)));
 
         var filtered = all
             .Where(c => kw == null || c.Title.Contains(kw, StringComparison.OrdinalIgnoreCase))
@@ -131,6 +136,21 @@ public sealed class CustomerCareService(
         }
 
         entity.Status = status;
+        repo.Update(entity);
+        await repo.SaveChangesAsync();
+    }
+
+    public async Task RescheduleAsync(Guid id, DateTimeOffset? remindAt)
+    {
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+        // Ngày nghiệp vụ (không giờ, neo offset 0) — cùng luật với mọi ngày nhắc hẹn khác.
+        var day = remindAt is null ? null : (DateTimeOffset?)new DateTimeOffset(remindAt.Value.Date, TimeSpan.Zero);
+        if (entity.RemindAt == day)
+        {
+            return;
+        }
+
+        entity.RemindAt = day;
         repo.Update(entity);
         await repo.SaveChangesAsync();
     }

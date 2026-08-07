@@ -88,9 +88,20 @@
 
   <div id="grid-cares"></div>
 
-  @* Bảng Kanban — mỗi cột là một trạng thái chăm sóc, kéo thẻ sang cột khác là đổi trạng thái. *@
-  <div id="pane-kanban" class="app-kanban tk-pad d-none">
-    <div class="kanban-wrapper"></div>
+  @* Bảng lịch hẹn. Mặc định xếp theo THỜI GIAN — câu hỏi mỗi sáng là "hôm nay phải gọi những ai",
+     xếp theo 3 trạng thái thì không trả lời được. Vẫn giữ được cách xếp theo trạng thái. *@
+  <div id="pane-kanban" class="app-kanban d-none">
+    <div class="tk-pad d-flex flex-wrap gap-2 align-items-center border-bottom">
+      <span class="text-muted small fw-medium">Nhóm theo</span>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-primary" id="kb-by-time"><i class="ti ti-calendar-event me-1"></i> Thời gian</button>
+        <button type="button" class="btn btn-label-secondary" id="kb-by-status"><i class="ti ti-flag me-1"></i> Trạng thái</button>
+      </div>
+      <span class="text-muted small ms-auto" id="kb-hint">Kéo thẻ sang cột khác để dời ngày hẹn</span>
+    </div>
+    <div class="tk-pad pt-3">
+      <div class="kanban-wrapper"></div>
+    </div>
   </div>
 </div>
 
@@ -149,117 +160,60 @@
 @section PageScripts {
   <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, grid;
+    var oc, grid, kb = null, kbMode = 'time';
 
-    // ===== Bảng Kanban (jKanban — đã đóng gói sẵn trong theme) =====
-    // Mỗi cột nạp RIÊNG một trang (15 thẻ) + nút "Tải thêm", không đổ hết dữ liệu ra client.
-    var KB_STATUSES = [
-      { id: 0, name: 'Mới', color: 'warning' },
-      { id: 1, name: 'Đang xử lý', color: 'info' },
-      { id: 2, name: 'Hoàn thành', color: 'success' }
+    // Cột theo THỜI GIAN (mặc định) và cột theo TRẠNG THÁI — cùng một bảng, đổi cách nhóm.
+    var KB_TIME = [
+      { id: 'overdue', name: 'Quá hạn', color: 'danger' },
+      { id: 'today', name: 'Hôm nay', color: 'primary' },
+      { id: 'tomorrow', name: 'Ngày mai', color: 'info' },
+      { id: 'week', name: 'Trong 7 ngày', color: 'warning' },
+      { id: 'later', name: 'Sau đó', color: 'secondary' },
+      { id: 'none', name: 'Chưa hẹn', color: 'secondary' }
     ];
-    var KB_SIZE = 15;
-    var kanban = null, kbPage = {}, kbCards = {};
+    var KB_STATUS = [
+      { id: 'st-0', name: 'Mới', color: 'warning' },
+      { id: 'st-1', name: 'Đang xử lý', color: 'info' },
+      { id: 'st-2', name: 'Hoàn thành', color: 'success' }
+    ];
+    var CARE_STATUS = { 0: ['Mới', 'warning'], 1: ['Đang xử lý', 'info'], 2: ['Hoàn thành', 'success'] };
 
-    function kbQuery(status, page) {
-      var d = grid ? grid.filters() : {};
-      var p = new URLSearchParams();
-      // Cột đã LÀ trạng thái → bỏ chip lọc trạng thái, nếu không chỉ một cột có thẻ.
-      Object.keys(d).forEach(function (k) { if (k !== 'status') { p.set(k, d[k]); } });
-      p.set('status', status); p.set('page', page); p.set('size', KB_SIZE);
-      return '?handler=KanbanColumn&' + p.toString();
-    }
-
-    function kbCardHtml(c) {
-      var esc = tk.escape;
-      var due = c.remindAtText
-        ? '<span class="badge bg-label-' + (c.overdue ? 'danger' : 'secondary') + '">' +
-          '<i class="ti ti-alarm me-1"></i>' + esc(c.remindAtText) + '</span>'
-        : '';
-      return '<div class="fw-medium kanban-text">' + esc(c.title) + '</div>' +
-        '<div class="small text-muted">' + esc(c.customerName || '—') +
-        (c.assigneeName ? ' · ' + esc(c.assigneeName) : '') + '</div>' +
-        (due ? '<div class="mt-1">' + due + '</div>' : '');
-    }
-
-    function kbBoardEl(status) { return document.querySelector('.kanban-board[data-id="st-' + status + '"]'); }
-
-    function kbSyncMore(status, hasMore, total) {
-      var board = kbBoardEl(status); if (!board) { return; }
-      var head = board.querySelector('.kanban-title-board');
-      if (head && head.dataset.base) { head.textContent = head.dataset.base + ' (' + total + ')'; }
-      var btn = board.querySelector('.kb-more');
-      if (!hasMore) { if (btn) { btn.remove(); } return; }
-      if (!btn) {
-        btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-sm btn-label-primary w-100 kb-more mt-2';
-        btn.textContent = 'Tải thêm';
-        btn.addEventListener('click', function () { kbLoadMore(status); });
-        board.appendChild(btn);
-      }
-    }
-
-    function kbLoadMore(status) {
-      var next = (kbPage[status] || 1) + 1;
-      $.getJSON(kbQuery(status, next), function (res) {
-        kbPage[status] = next;
-        res.cards.forEach(function (c) {
-          kbCards[c.id] = c;
-          kanban.addElement('st-' + status, { id: c.id, title: kbCardHtml(c) });
-        });
-        kbSyncMore(status, res.hasMore, res.total);
-      });
-    }
-
-    function kbRender() {
-      $('.kanban-wrapper').empty();
-      kbPage = {}; kbCards = {}; kanban = null;
-      var reqs = KB_STATUSES.map(function (s) { return $.getJSON(kbQuery(s.id, 1)); });
-      $.when.apply($, reqs).done(function () {
-        var results = Array.prototype.slice.call(arguments);
-        var boards = KB_STATUSES.map(function (s, i) {
-          var res = results[i][0];
-          kbPage[s.id] = 1;
-          res.cards.forEach(function (c) { kbCards[c.id] = c; });
+    function kbBuild() {
+      kb = tk.kanban({
+        pane: '#pane-kanban',
+        columns: kbMode === 'time' ? KB_TIME : KB_STATUS,
+        moveUrl: '?handler=Move',
+        url: function (colId, page, size) {
+          var d = grid ? grid.filters() : {};
+          var p = new URLSearchParams();
+          // Nhóm theo trạng thái thì cột ĐÃ là trạng thái → bỏ chip lọc trạng thái đi,
+          // nếu không chỉ đúng một cột có thẻ.
+          Object.keys(d).forEach(function (k) { if (!(kbMode === 'status' && k === 'status')) { p.set(k, d[k]); } });
+          p.set('to', colId); p.set('page', page); p.set('size', size);
+          return '?handler=KanbanColumn&' + p.toString();
+        },
+        card: function (c) {
+          var st = CARE_STATUS[c.status] || ['—', 'secondary'];
           return {
-            id: 'st-' + s.id,
-            title: tk.escape(s.name) + ' (' + res.total + ')',
-            class: 'bg-label-' + s.color,
-            item: res.cards.map(function (c) { return { id: c.id, title: kbCardHtml(c) }; })
+            // Nhóm theo thời gian thì nhãn cho biết TRẠNG THÁI, và ngược lại — đừng lặp lại
+            // đúng cái thông tin mà cột đã nói.
+            badges: kbMode === 'time' ? [{ text: st[0], color: st[1] }] : [],
+            title: c.title,
+            meta: [c.customerName, c.assigneeName].filter(Boolean).join(' · '),
+            foot: c.remindAtText || 'Chưa đặt hẹn',
+            footIcon: 'ti ti-alarm',
+            footTone: c.overdue ? 'danger' : null,
+            who: c.assigneeName
           };
-        });
-
-        kanban = new jKanban({
-          element: '.kanban-wrapper', gutter: '12px', widthBoard: '300px',
-          dragItems: true, dragBoards: false, boards: boards,
-          dropEl: function (el, target) {
-            var id = el.getAttribute('data-eid');
-            var toStatus = target.parentElement.getAttribute('data-id').replace('st-', '');
-            var fd = new FormData(); fd.append('id', id); fd.append('status', toStatus);
-            tk.post('?handler=Move', fd).then(function (r) {
-              if (r && r.isSuccess) { tk.toast(r.message); if (grid) { grid.reload(); } }
-              // Server từ chối thì vẽ lại để thẻ về đúng cột cũ, đừng để màn hình nói dối.
-              else { tk.error((r && r.message) || 'Không đổi được trạng thái.'); kbRender(); }
-            });
-          },
-          click: function (el) {
-            var c = kbCards[el.getAttribute('data-eid')];
-            if (c) { oc.open(c); }
-          }
-        });
-
-        KB_STATUSES.forEach(function (s, i) {
-          var board = kbBoardEl(s.id);
-          var head = board && board.querySelector('.kanban-title-board');
-          if (head) { head.dataset.base = s.name; }
-          kbSyncMore(s.id, results[i][0].hasMore, results[i][0].total);
-        });
-        tk.fitBox('#pane-kanban', 320);
+        },
+        onCardClick: function (row) { oc.open(row); },
+        onMoved: function () { if (grid) { grid.reload(); } }
       });
+      kb.render();
     }
 
-    function kbRefreshIfVisible() { if (!$('#pane-kanban').hasClass('d-none')) { kbRender(); } }
+    function kbRefreshIfVisible() { if (kb && !$('#pane-kanban').hasClass('d-none')) { kb.render(); } }
+
 
     $(function () {
       var g = tk.g, esc = g.esc;
@@ -386,8 +340,21 @@
         $('#grid-cares').addClass('d-none'); $('#pane-kanban').removeClass('d-none');
         $(this).addClass('active'); $('#view-table').removeClass('active');
         $('#bulkbar').addClass('d-none').removeClass('d-flex');
-        if (!kanban) { kbRender(); } else { tk.fitBox('#pane-kanban', 320); }
+        if (!kb) { kbBuild(); } else { kb.refit(); }
       });
+
+      // Đổi cách nhóm cột. Kéo thẻ ở chế độ thời gian là DỜI HẸN, ở chế độ trạng thái là ĐỔI
+      // TRẠNG THÁI — nói rõ ra ở dòng gợi ý, đừng để người dùng đoán.
+      function setMode(mode) {
+        kbMode = mode;
+        var time = mode === 'time';
+        $('#kb-by-time').toggleClass('btn-primary', time).toggleClass('btn-label-secondary', !time);
+        $('#kb-by-status').toggleClass('btn-primary', !time).toggleClass('btn-label-secondary', time);
+        $('#kb-hint').text(time ? 'Kéo thẻ sang cột khác để dời ngày hẹn' : 'Kéo thẻ sang cột khác để đổi trạng thái');
+        kbBuild();
+      }
+      $('#kb-by-time').on('click', function () { if (kbMode !== 'time') { setMode('time'); } });
+      $('#kb-by-status').on('click', function () { if (kbMode !== 'status') { setMode('status'); } });
     });
   </script>
 }

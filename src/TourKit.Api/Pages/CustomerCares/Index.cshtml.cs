@@ -119,8 +119,37 @@ public class IndexModel : TkListPageModel
         return DtJson(dt.Draw, stats.Total, result.Total, items);
     }
 
+    /// <summary>
+    /// Cột thời gian của bảng lịch hẹn. Xếp theo trạng thái thì chỉ có 3 cột, nhìn không ra
+    /// việc nào cần gọi trước — cái người dùng hỏi mỗi sáng là "hôm nay phải liên hệ những ai".
+    /// Kéo thẻ giữa các cột này = DỜI ngày hẹn (xem <c>OnPostMoveAsync</c>).
+    /// </summary>
+    public static readonly (string Key, string Name, string Color)[] TimeBuckets =
+    [
+        ("overdue", "Quá hạn", "danger"),
+        ("today", "Hôm nay", "primary"),
+        ("tomorrow", "Ngày mai", "info"),
+        ("week", "Trong 7 ngày", "warning"),
+        ("later", "Sau đó", "secondary"),
+        ("none", "Chưa hẹn", "secondary"),
+    ];
+
+    /// <summary>Quy đổi khoá cột thời gian → khoảng ngày nhắc hẹn để lọc dưới SQL.</summary>
+    private static CustomerCareListFilter ApplyBucket(CustomerCareListFilter f, string bucket, DateTimeOffset today)
+        => bucket switch
+        {
+            // Quá hạn: đã qua ngày hẹn và CHƯA hoàn thành — việc đã xong thì không còn là nợ.
+            "overdue" => f with { RemindTo = today.AddDays(-1), RemindIsNull = false, ExcludeStatus = 2 },
+            "today" => f with { RemindFrom = today, RemindTo = today },
+            "tomorrow" => f with { RemindFrom = today.AddDays(1), RemindTo = today.AddDays(1) },
+            "week" => f with { RemindFrom = today.AddDays(2), RemindTo = today.AddDays(7) },
+            "later" => f with { RemindFrom = today.AddDays(8) },
+            "none" => f with { RemindIsNull = true },
+            _ => f,
+        };
+
     /// <summary>Một cột của bảng Kanban — nạp theo TỪNG cột và từng trang, không get-all.</summary>
-    public async Task<IActionResult> OnGetKanbanColumnAsync(int status, int page = 1, int size = 15)
+    public async Task<IActionResult> OnGetKanbanColumnAsync(string to, int page = 1, int size = 15)
     {
         if (size is < 1 or > 50)
         {
@@ -128,8 +157,15 @@ public class IndexModel : TkListPageModel
         }
 
         var keyword = Request.Query["q"].ToString() is { Length: > 0 } q ? q : null;
-        // Cột ĐÃ là trạng thái nên ghi đè tiêu chí trạng thái của thanh lọc.
-        var result = await _svc.ListAsync(page, size, BuildFilter(keyword) with { Status = status });
+        var f = BuildFilter(keyword);
+        var today = TkDate.Day(DateTimeOffset.Now);
+
+        // Cột "st-N" = nhóm theo trạng thái; còn lại là nhóm theo thời gian.
+        f = to.StartsWith("st-", StringComparison.Ordinal) && int.TryParse(to[3..], out var st)
+            ? f with { Status = st }
+            : ApplyBucket(f, to, today);
+
+        var result = await _svc.ListAsync(page, size, f);
 
         var now = DateTimeOffset.UtcNow;
         var cards = result.Items.Select(c => new
@@ -151,19 +187,44 @@ public class IndexModel : TkListPageModel
         return new JsonResult(new { total = result.Total, page, size, hasMore = page * size < result.Total, cards });
     }
 
-    /// <summary>Kéo–thả sang cột khác trên Kanban → chỉ đổi trạng thái chăm sóc.</summary>
-    public async Task<IActionResult> OnPostMoveAsync(Guid id, int status)
+    /// <summary>
+    /// Kéo–thả sang cột khác. Cột trạng thái ("st-N") → đổi trạng thái; cột thời gian → DỜI ngày hẹn.
+    /// Không cho thả vào "Quá hạn" (dời hẹn về quá khứ là vô nghĩa) — trả lỗi để bảng vẽ lại.
+    /// </summary>
+    public async Task<IActionResult> OnPostMoveAsync(Guid id, string to)
     {
         try
         {
-            await _svc.MoveAsync(id, status);
+            if (to.StartsWith("st-", StringComparison.Ordinal) && int.TryParse(to[3..], out var status))
+            {
+                await _svc.MoveAsync(id, status);
+                return new JsonResult(Result.Success("Đã chuyển \"" + StatusLabel(status) + "\"."));
+            }
+
+            var today = TkDate.Day(DateTimeOffset.Now);
+            DateTimeOffset? remind = to switch
+            {
+                "today" => today,
+                "tomorrow" => today.AddDays(1),
+                "week" => today.AddDays(7),
+                "later" => today.AddDays(30),
+                "none" => null,
+                _ => today,
+            };
+
+            if (to == "overdue")
+            {
+                return new JsonResult(Result.Error("Không dời hẹn về quá khứ được. Hãy chọn cột khác."));
+            }
+
+            await _svc.RescheduleAsync(id, remind);
+            var name = Array.Find(TimeBuckets, b => b.Key == to).Name ?? to;
+            return new JsonResult(Result.Success(remind is null ? "Đã gỡ ngày hẹn." : "Đã dời hẹn sang \"" + name + "\"."));
         }
         catch (Exception ex)
         {
             return new JsonResult(Result.Error(ex.Message));
         }
-
-        return new JsonResult(Result.Success("Đã chuyển \"" + StatusLabel(status) + "\"."));
     }
 
     /// <summary>Xuất CSV theo đúng bộ lọc đang áp (giới hạn 5000 dòng).</summary>

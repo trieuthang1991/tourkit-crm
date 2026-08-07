@@ -18,5 +18,12 @@ public interface ICustomerCareService
     /// </summary>
     Task MoveAsync(Guid id, int status);
 
+    /// <summary>
+    /// Dời lịch hẹn: CHỈ đổi ngày nhắc, giữ nguyên trạng thái/phản hồi/người phụ trách.
+    /// Dùng khi kéo thẻ giữa các cột thời gian (Hôm nay → Ngày mai…) trên bảng lịch hẹn.
+    /// <paramref name="remindAt"/> null = gỡ lịch hẹn (đưa về cột "Chưa hẹn").
+    /// </summary>
+    Task RescheduleAsync(Guid id, DateTimeOffset? remindAt);
+
     Task DeleteAsync(Guid id);
 }

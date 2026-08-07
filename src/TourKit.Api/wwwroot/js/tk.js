@@ -203,6 +203,150 @@
     fit();
   };
 
+  // ---- Bảng Kanban dùng CHUNG (jKanban, theo đúng khuôn app-kanban của theme) ----
+  // Mỗi cột nạp RIÊNG một trang + nút "Tải thêm" — không đổ cả bảng ra client.
+  // opts:
+  //   pane        '#pane-kanban'          — khối chứa (có sẵn .kanban-wrapper bên trong)
+  //   columns     [{ id, name, color }]   — cột hiển thị
+  //   url         function(colId, page, size) → chuỗi URL handler
+  //   card        function(row) → { badges:[{text,color}], title, meta, foot, footIcon, footTone, who }
+  //   moveUrl     '?handler=Move'         — POST { id, to } khi kéo sang cột khác
+  //   onMoved     function()              — chạy sau khi kéo–thả thành công
+  //   onCardClick function(row)
+  //   width       '17rem'
+  tk.kanban = function (opts) {
+    var pane = document.querySelector(opts.pane || '#pane-kanban');
+    if (!pane) { return null; }
+    var wrapEl = pane.querySelector('.kanban-wrapper');
+    var size = opts.size || 15;
+    var board = null, pages = {}, rows = {};
+
+    function esc(s) { return tk.escape(s); }
+
+    // Tiêu đề cột: chấm màu + tên + số đếm. KHÔNG tô nền cả cột như bản trước — theme để
+    // đầu cột phẳng, tô nền cả khối làm bảng trông rối và nặng.
+    function headHtml(col, total) {
+      return '<span class="tk-kb-dot bg-' + esc(col.color || 'secondary') + '"></span>' +
+        esc(col.name) + '<span class="badge bg-label-secondary ms-2 fw-medium">' + total + '</span>';
+    }
+
+    // Thẻ theo đúng khuôn thẻ của theme: hàng nhãn → tiêu đề .kanban-text → dòng phụ → chân thẻ.
+    function cardHtml(row) {
+      var c = opts.card(row) || {};
+      var badges = (c.badges || []).filter(Boolean).map(function (b) {
+        return '<span class="badge rounded-pill bg-label-' + esc(b.color || 'secondary') + '">' + esc(b.text) + '</span>';
+      }).join(' ');
+      var foot = '';
+      if (c.foot) {
+        foot += '<span class="d-flex align-items-center ' + (c.footTone ? 'text-' + esc(c.footTone) : 'text-muted') + '">' +
+          (c.footIcon ? '<i class="' + esc(c.footIcon) + ' ti-xs me-1"></i>' : '') + esc(c.foot) + '</span>';
+      }
+      if (c.who) {
+        foot += '<span class="avatar avatar-xs" title="' + esc(c.who) + '">' +
+          '<span class="avatar-initial rounded-circle bg-label-' + esc(tk.g ? tk.g.toneOf(c.who) : 'primary') + '">' +
+          esc(tk.g ? tk.g.initials(c.who) : c.who.slice(0, 2)) + '</span></span>';
+      }
+      return (badges ? '<div class="item-badges mb-2">' + badges + '</div>' : '') +
+        '<span class="kanban-text">' + esc(c.title || '') + '</span>' +
+        (c.meta ? '<div class="tk-kb-meta">' + esc(c.meta) + '</div>' : '') +
+        (foot ? '<div class="tk-kb-foot">' + foot + '</div>' : '');
+    }
+
+    function colEl(id) { return pane.querySelector('.kanban-board[data-id="kb-' + id + '"]'); }
+
+    function syncMore(col, res) {
+      var el = colEl(col.id); if (!el) { return; }
+      var head = el.querySelector('.kanban-title-board');
+      if (head) { head.innerHTML = headHtml(col, res.total); }
+      var btn = el.querySelector('.kb-more');
+      if (!res.hasMore) { if (btn) { btn.remove(); } return; }
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-label-primary w-100 kb-more';
+        btn.textContent = 'Tải thêm';
+        btn.addEventListener('click', function () { loadMore(col); });
+        el.querySelector('.kanban-drag').appendChild(btn);
+      } else {
+        el.querySelector('.kanban-drag').appendChild(btn);   // luôn nằm CUỐI cột
+      }
+    }
+
+    function loadMore(col) {
+      var next = (pages[col.id] || 1) + 1;
+      $.getJSON(opts.url(col.id, next, size), function (res) {
+        pages[col.id] = next;
+        res.cards.forEach(function (c) {
+          rows[c.id] = c;
+          board.addElement('kb-' + col.id, { id: c.id, title: cardHtml(c) });
+        });
+        syncMore(col, res);
+      });
+    }
+
+    function render() {
+      $(wrapEl).empty();
+      pages = {}; rows = {}; board = null;
+      var reqs = opts.columns.map(function (col) { return $.getJSON(opts.url(col.id, 1, size)); });
+      $.when.apply($, reqs).done(function () {
+        var results = opts.columns.length === 1 ? [arguments] : Array.prototype.slice.call(arguments);
+        var boards = opts.columns.map(function (col, i) {
+          var res = results[i][0];
+          pages[col.id] = 1;
+          res.cards.forEach(function (c) { rows[c.id] = c; });
+          return {
+            id: 'kb-' + col.id,
+            title: headHtml(col, res.total),
+            item: res.cards.map(function (c) { return { id: c.id, title: cardHtml(c) }; })
+          };
+        });
+
+        board = new jKanban({
+          element: (opts.pane || '#pane-kanban') + ' .kanban-wrapper',
+          gutter: '12px', widthBoard: opts.width || '17rem',
+          dragItems: true, dragBoards: false, boards: boards,
+          dropEl: function (el, target) {
+            var id = el.getAttribute('data-eid');
+            var to = target.parentElement.getAttribute('data-id').replace('kb-', '');
+            var fd = new FormData(); fd.append('id', id); fd.append('to', to);
+            tk.post(opts.moveUrl, fd).then(function (r) {
+              if (r && r.isSuccess) { tk.toast(r.message); if (opts.onMoved) { opts.onMoved(); } render(); }
+              // Server từ chối thì vẽ lại để thẻ về đúng cột cũ — đừng để màn hình nói dối.
+              else { tk.error((r && r.message) || 'Không chuyển được.'); render(); }
+            });
+          },
+          click: function (el) {
+            var row = rows[el.getAttribute('data-eid')];
+            if (row && opts.onCardClick) { opts.onCardClick(row); }
+          }
+        });
+
+        opts.columns.forEach(function (col, i) { syncMore(col, results[i][0]); });
+        fit();
+      });
+    }
+
+    // Khung cao đúng phần màn hình còn lại; cuộn dọc nằm TRONG từng cột (xem tourkit.css).
+    // Theme đặt sẵn height: calc(100vh - 12rem) — ở đây khung nằm sâu trong trang nên tính lại,
+    // nếu không trang mọc thêm một thanh cuộn nữa.
+    function fit() {
+      if (!wrapEl.offsetParent) { return; }
+      var top = wrapEl.getBoundingClientRect().top;
+      var h = Math.max(320, Math.round(window.innerHeight - top - 24));
+      wrapEl.style.height = h + 'px';
+      var doc = document.documentElement;
+      var over = doc.scrollHeight - doc.clientHeight;
+      if (over > 2) { wrapEl.style.height = Math.max(320, h - over) + 'px'; }
+    }
+    if (!wrapEl.__tkFit) { wrapEl.__tkFit = true; window.addEventListener('resize', fit); }
+
+    return {
+      render: render,
+      refit: fit,
+      isBuilt: function () { return !!board; }
+    };
+  };
+
   // ---- Ô soạn thảo có ĐỊNH DẠNG cho trường lưu HTML ----
   // Dùng Quill — bộ soạn thảo ĐÃ đóng gói sẵn trong theme (vendor/libs/quill). Dự án KHÔNG có
   // TinyMCE; thêm nó là thêm một thư viện ngoài nữa cho cùng một việc.

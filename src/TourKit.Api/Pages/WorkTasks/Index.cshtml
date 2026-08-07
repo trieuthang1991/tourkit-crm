@@ -158,6 +158,7 @@ else
 
       @* Bảng Kanban — mỗi cột là một trạng thái, kéo thẻ sang cột khác là đổi trạng thái ở server. *@
       <div id="pane-kanban" class="app-kanban tk-pad d-none">
+        <div class="text-muted small mb-3">Kéo thẻ sang cột khác để đổi trạng thái công việc.</div>
         <div class="kanban-wrapper"></div>
       </div>
     </div>
@@ -220,126 +221,47 @@ else
 @section PageScripts {
   <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
-    var oc, grid;
+    var oc, grid, kb = null;
 
-    // ===== Bảng Kanban (jKanban — đã đóng gói sẵn trong theme) =====
-    // Mỗi cột nạp RIÊNG một trang (15 thẻ) + nút "Tải thêm": cột nào cũng có thể vài nghìn việc,
-    // đổ hết ra client là treo trình duyệt.
+    // Bảng Kanban dùng khuôn CHUNG tk.kanban (theo template app-kanban của theme).
     var KB_STATUSES = [
       { id: 0, name: 'Cần làm', color: 'warning' },
       { id: 1, name: 'Đang làm', color: 'info' },
       { id: 2, name: 'Hoàn thành', color: 'success' },
       { id: 3, name: 'Huỷ', color: 'secondary' }
     ];
-    var KB_SIZE = 15;
-    var kanban = null, kbPage = {}, kbCards = {};
 
-    function kbQuery(status, page) {
-      var d = grid ? grid.filters() : {};
-      var p = new URLSearchParams();
-      // Cột đã LÀ trạng thái → bỏ ô lọc trạng thái, nếu không kanban chỉ còn đúng một cột có thẻ.
-      Object.keys(d).forEach(function (k) { if (k !== 'status') { p.set(k, d[k]); } });
-      p.set('status', status); p.set('page', page); p.set('size', KB_SIZE);
-      return '?handler=KanbanColumn&' + p.toString();
-    }
-
-    function kbCardHtml(c) {
-      var esc = tk.escape;
-      var meta = [c.code && c.code !== '—' ? c.code : null, c.assigneeName].filter(Boolean).map(esc).join(' · ');
-      var tags = '<span class="badge bg-label-' + esc(c.priorityColor) + '">' + esc(c.priorityLabel) + '</span>';
-      if (c.dueDateText) {
-        tags += '<span class="badge bg-label-' + (c.overdue ? 'danger' : 'secondary') + ' ms-1">' +
-          '<i class="ti ti-clock me-1"></i>' + esc(c.dueDateText) + '</span>';
-      }
-      return '<div class="fw-medium kanban-text">' + esc(c.title) + '</div>' +
-        (meta ? '<div class="small text-muted">' + meta + '</div>' : '') +
-        '<div class="mt-1">' + tags + '</div>' +
-        (c.progress ? '<div class="progress mt-2" style="height:4px"><div class="progress-bar" style="width:' + Number(c.progress) + '%"></div></div>' : '');
-    }
-
-    function kbBoardEl(status) { return document.querySelector('.kanban-board[data-id="st-' + status + '"]'); }
-
-    function kbSyncMore(status, hasMore, total) {
-      var board = kbBoardEl(status); if (!board) { return; }
-      var head = board.querySelector('.kanban-title-board');
-      if (head && head.dataset.base) { head.textContent = head.dataset.base + ' (' + total + ')'; }
-      var btn = board.querySelector('.kb-more');
-      if (!hasMore) { if (btn) { btn.remove(); } return; }
-      if (!btn) {
-        btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-sm btn-label-primary w-100 kb-more mt-2';
-        btn.textContent = 'Tải thêm';
-        btn.addEventListener('click', function () { kbLoadMore(status); });
-        board.appendChild(btn);
-      }
-    }
-
-    function kbLoadMore(status) {
-      var next = (kbPage[status] || 1) + 1;
-      $.getJSON(kbQuery(status, next), function (res) {
-        kbPage[status] = next;
-        res.cards.forEach(function (c) {
-          kbCards[c.id] = c;
-          kanban.addElement('st-' + status, { id: c.id, title: kbCardHtml(c) });
-        });
-        kbSyncMore(status, res.hasMore, res.total);
-      });
-    }
-
-    function kbRender() {
-      $('.kanban-wrapper').empty();
-      kbPage = {}; kbCards = {}; kanban = null;
-      var reqs = KB_STATUSES.map(function (s) { return $.getJSON(kbQuery(s.id, 1)); });
-      $.when.apply($, reqs).done(function () {
-        var results = Array.prototype.slice.call(arguments);
-        var boards = KB_STATUSES.map(function (s, i) {
-          var res = results[i][0];
-          kbPage[s.id] = 1;
-          res.cards.forEach(function (c) { kbCards[c.id] = c; });
+    function kbBuild() {
+      kb = tk.kanban({
+        pane: '#pane-kanban',
+        columns: KB_STATUSES,
+        moveUrl: '?handler=Move',
+        url: function (colId, page, size) {
+          var d = grid ? grid.filters() : {};
+          var p = new URLSearchParams();
+          // Cột ĐÃ là trạng thái → bỏ ô lọc trạng thái, nếu không chỉ một cột có thẻ.
+          Object.keys(d).forEach(function (k) { if (k !== 'status') { p.set(k, d[k]); } });
+          p.set('to', colId); p.set('page', page); p.set('size', size);
+          return '?handler=KanbanColumn&' + p.toString();
+        },
+        card: function (c) {
           return {
-            id: 'st-' + s.id,
-            title: tk.escape(s.name) + ' (' + res.total + ')',
-            class: 'bg-label-' + s.color,
-            item: res.cards.map(function (c) { return { id: c.id, title: kbCardHtml(c) }; })
+            badges: [{ text: c.priorityLabel, color: c.priorityColor }],
+            title: c.title,
+            meta: [c.code && c.code !== '—' ? c.code : null, c.assigneeName].filter(Boolean).join(' · '),
+            foot: c.dueDateText || 'Chưa đặt hạn',
+            footIcon: 'ti ti-clock',
+            footTone: c.overdue ? 'danger' : null,
+            who: c.assigneeName
           };
-        });
-
-        kanban = new jKanban({
-          element: '.kanban-wrapper', gutter: '12px', widthBoard: '280px',
-          dragItems: true, dragBoards: false, boards: boards,
-          // Kéo sang cột khác = đổi trạng thái ở SERVER (handler Move chỉ đụng vào trạng thái).
-          dropEl: function (el, target) {
-            var id = el.getAttribute('data-eid');
-            var toStatus = target.parentElement.getAttribute('data-id').replace('st-', '');
-            var fd = new FormData(); fd.append('id', id); fd.append('status', toStatus);
-            tk.post('?handler=Move', fd).then(function (r) {
-              if (r && r.isSuccess) { tk.toast(r.message); if (grid) { grid.reload(); } }
-              // Server từ chối thì vẽ lại để thẻ về đúng cột cũ, đừng để màn hình nói dối.
-              else { tk.error((r && r.message) || 'Không đổi được trạng thái.'); kbRender(); }
-            });
-          },
-          click: function (el) {
-            var c = kbCards[el.getAttribute('data-eid')];
-            if (c) { oc.open(c); }
-          }
-        });
-
-        KB_STATUSES.forEach(function (s, i) {
-          var board = kbBoardEl(s.id);
-          var head = board && board.querySelector('.kanban-title-board');
-          if (head) { head.dataset.base = s.name; }
-          kbSyncMore(s.id, results[i][0].hasMore, results[i][0].total);
-        });
-        // Bảng kanban cao bao nhiêu là do số thẻ quyết định → phải gò lại, nếu không trang dài
-        // thêm và mọc thanh cuộn ngoài (đúng thứ đã dẹp ở lưới danh sách).
-        tk.fitBox('#pane-kanban', 320);
+        },
+        onCardClick: function (row) { oc.open(row); },
+        onMoved: function () { if (grid) { grid.reload(); } }
       });
+      kb.render();
     }
 
-    function kbRefreshIfVisible() {
-      if (!$('#pane-kanban').hasClass('d-none')) { kbRender(); }
-    }
+    function kbRefreshIfVisible() { if (kb && !$('#pane-kanban').hasClass('d-none')) { kb.render(); } }
 
     $(function () {
       // Server-side: mỗi lần chỉ tải 1 trang (không get-all).
@@ -463,7 +385,7 @@ else
         $('#grid-tasks').addClass('d-none'); $('#pane-kanban').removeClass('d-none');
         $(this).addClass('active'); $('#view-table').removeClass('active');
         $('#bulkbar').addClass('d-none').removeClass('d-flex');
-        if (!kanban) { kbRender(); } else { tk.fitBox('#pane-kanban', 320); }
+        if (!kb) { kbBuild(); } else { kb.refit(); }
       });
         </text>
     }
