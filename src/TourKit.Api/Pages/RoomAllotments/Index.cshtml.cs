@@ -1,3 +1,4 @@
+using TourKit.Application.Catalog;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
@@ -35,15 +36,20 @@ public class IndexModel : TkListPageModel
 
     private readonly IRoomAllotmentService _svc;
     private readonly IProviderService _providers;
+    private readonly IMarketTypeService _markets;
 
-    public IndexModel(IRoomAllotmentService svc, IProviderService providers)
+    public IndexModel(IRoomAllotmentService svc, IProviderService providers, IMarketTypeService markets)
     {
         _svc = svc;
         _providers = providers;
+        _markets = markets;
     }
 
     public RoomAllotmentStatsDto Stats { get; private set; } = new(0, 0, 0, 0, 0, 0, 0, 0, 0);
     public IReadOnlyList<(Guid Id, string Name)> Providers { get; private set; } = [];
+
+    /// <summary>Danh mục thị trường — ô Thị trường trước đây cho gõ tay nên sinh ra mỗi nơi một cách viết.</summary>
+    public IReadOnlyList<string> Markets { get; private set; } = [];
 
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
@@ -94,6 +100,7 @@ public class IndexModel : TkListPageModel
     {
         Stats = await _svc.GetStatsAsync();
         Providers = (await _providers.ListAsync(1, 1000)).Items.Select(p => (p.Id, p.Name)).ToList();
+        Markets = (await _markets.ListAsync()).Select(m => m.Name).ToList();
 
         var today = DateOnly.FromDateTime(DateTime.Today);
         GridFrom = today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

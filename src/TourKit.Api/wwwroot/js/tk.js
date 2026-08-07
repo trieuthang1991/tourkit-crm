@@ -432,15 +432,32 @@
       });
     }
 
+    // Bản ghi cũ có thể mang giá trị KHÔNG còn trong danh mục (dữ liệu gõ tay trước đây, hoặc danh
+    // mục đã sửa/xoá mục đó). Select không có option tương ứng thì ô hiện trống và lần Lưu kế tiếp
+    // âm thầm XOÁ MẤT giá trị cũ — không báo lỗi, không ai biết. Giữ lại bằng một option tạm.
+    function keepLegacyOption(el, v) {
+      if (!el || el.tagName !== 'SELECT' || v == null || v === '') { return; }
+      var val = String(v);
+      for (var i = 0; i < el.options.length; i++) { if (el.options[i].value === val) { return; } }
+      el.add(new Option(val + ' (ngoài danh mục)', val), el.options[1] || null);
+    }
+
     function setField(name, v) {
       var el = $form.find('[name="' + name + '"]')[0];
       if (!el) { return; }
       if (el._flatpickr) { v ? el._flatpickr.setDate(v, true) : el._flatpickr.clear(); return; }
-      if ($(el).hasClass('tk-s2') || $(el).hasClass('tk-s2-tags')) { $(el).val(v == null || v === '' ? null : v).trigger('change'); return; }
+      if ($(el).hasClass('tk-s2') || $(el).hasClass('tk-s2-tags')) {
+        // tk-s2-tags cho phép giá trị tự do sẵn nên không cần vá; tk-s2 thì cần.
+        if (!$(el).hasClass('tk-s2-tags')) { keepLegacyOption(el, v); }
+        $(el).val(v == null || v === '' ? null : v).trigger('change');
+        return;
+      }
       if (el.type === 'checkbox') { el.checked = !!v; return; }
+      keepLegacyOption(el, v);
       el.value = (v == null) ? '' : v;
-      // Thêm mới: giá trị rỗng gán vào <select> KHÔNG có mục rỗng làm ô trắng trơn, người dùng
-      // tưởng chưa chọn được gì. Rơi về mục đầu tiên — cũng chính là mặc định của server.
+      // Giá trị RỖNG gán vào <select> không có mục rỗng làm ô trắng trơn, người dùng tưởng chưa chọn
+      // được gì. Rơi về mục đầu tiên — cũng chính là mặc định của server. Chỉ áp cho giá trị rỗng:
+      // giá trị KHÁC rỗng mà không khớp đã được keepLegacyOption giữ lại ở trên.
       if (el.tagName === 'SELECT' && el.selectedIndex === -1) { el.selectedIndex = 0; }
       // Ô soạn thảo giữ nội dung trong Quill, gán value cho textarea ẩn là chưa đủ.
       if (el._quill) { tk.rte.set(el, el.value); }

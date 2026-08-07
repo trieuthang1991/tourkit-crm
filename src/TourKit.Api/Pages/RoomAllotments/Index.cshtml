@@ -154,7 +154,15 @@
       <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Mã NCC <span class="text-danger">*</span></label><input type="text" name="Input.ProviderRef" class="form-control" placeholder="VD: KS001" /></div>
+        @* NCC chọn từ danh sách, KHÔNG gõ mã tay. Ô lọc phía trên gửi Id nhà cung cấp, nên gõ tay
+           một mã kiểu "KS001" sẽ tạo ra dòng không bao giờ lọc ra được. *@
+        <div class="col-6 mb-3">
+          <label class="form-label">Nhà cung cấp <span class="text-danger">*</span></label>
+          <select name="Input.ProviderRef" class="form-select tk-s2" data-placeholder="Chọn nhà cung cấp">
+            <option value=""></option>
+            @foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }
+          </select>
+        </div>
         <div class="col-6 mb-3"><label class="form-label">Tên dịch vụ / Phòng <span class="text-danger">*</span></label><input type="text" name="Input.ServiceName" class="form-control" placeholder="VD: Deluxe Double" /></div>
       </div>
       <div class="row">
@@ -162,7 +170,13 @@
         <div class="col-6 mb-3"><label class="form-label">Tỉnh thành</label><input type="text" name="Input.Province" class="form-control" placeholder="VD: Đà Nẵng" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Thị trường</label><input type="text" name="Input.Market" class="form-control" placeholder="VD: Nội địa" /></div>
+        <div class="col-6 mb-3">
+          <label class="form-label">Thị trường</label>
+          <select name="Input.Market" class="form-select tk-s2" data-placeholder="Chọn thị trường">
+            <option value=""></option>
+            @foreach (var m in Model.Markets) { <option value="@m">@m</option> }
+          </select>
+        </div>
         <div class="col-6 mb-3"><label class="form-label">Ngày <span class="text-danger">*</span></label><input type="text" name="Input.Date" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
       </div>
       <div class="row">
