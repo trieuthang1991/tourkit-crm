@@ -47,8 +47,13 @@ Stack UI: ASP.NET Core Razor Pages + Bootstrap 5 + jQuery + Vuexy. Icon: **Table
   bảng **fit đúng 1 màn** (chỉ một thanh cuộn, nằm trong bảng), và nối sẵn thanh lọc chuẩn:
   `#f-q`, `#btn-search`, `#btn-reset`, `#btn-adv` + `#adv`, `.tk-chip` (chip lọc nhanh),
   `#type-tabs[data-field]` (tab phân loại), `#btn-export`.
-- Ô nhiều dòng phải dựng bằng `tk.g.*` (`stack` / `avatar` / `icLine` / `chip` / `moneyCell`)
+- Ô nhiều dòng phải dựng bằng `tk.g.*` (`stack` / `avatar` / `icLine` / `chip` / `moneyCell` / `pick`)
   để mọi màn cùng một kiểu: dòng chính đậm + dòng phụ mờ, tối đa 2 dòng.
+- **Ẩn/hiện cột**: có sẵn, không phải làm gì thêm. Nút ⚙ ở tiêu đề cột ⋮ (ngoài cùng phải) mở
+  danh sách cột; rê chuột vào một cột thì cột đó cũng có nút riêng để tắt nhanh. Lựa chọn lưu
+  ở `localStorage` theo `tk.cols:<đường dẫn><selector>` và **chỉ ghi cột người dùng tự bật/tắt**
+  — nếu ghi "mọi cột đang ẩn" thì cột do trang tự ẩn theo loại (vd cột Visa) sẽ mất luôn ở màn
+  đáng lẽ phải hiện.
 - Handler dữ liệu: `ParseDataTables()` (đã hiểu cả `page/size/q` của tk.grid) + `GridJson(dt, …)`
   ở `TkListPageModel` — payload phục vụ đồng thời Tabulator và DataTables.
 - **Năm luật chủ dự án đã chốt** (đã cài trong `tk.grid`, đừng làm khác):
@@ -94,6 +99,28 @@ dùng `tk.tableClient` (bảng render sẵn ở server). Toàn bộ 35 màn danh
 - Dùng **offcanvas `offcanvas-end`** (không mở trang mới cho thao tác sửa nhanh). Rộng vừa mắt (~640px), responsive `max-width:100%`.
 - Lưu **AJAX** (không rời trang) → đóng offcanvas + **toast** + reload bảng. Gửi kèm antiforgery token qua header.
 - 1 offcanvas dùng chung Thêm & Sửa (Id rỗng = thêm).
+- **Đầu và chân đứng yên, chỉ ruột cuộn** — bắt buộc, form dài mà nút Lưu trôi khỏi màn thì
+  người dùng phải cuộn xuống đáy mới lưu được. Khung chuẩn:
+
+  ```html
+  <div class="offcanvas-body tk-oc">
+    <form id="frm" …>
+      <div class="tk-oc-fields"> …các trường… </div>
+      <div class="tk-oc-actions">  <!-- ghim đáy -->
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
+        <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
+    </form>
+  </div>
+  ```
+
+  Panel không có `<form>` (xem nhanh, tạo phiếu) thì đặt thẳng `.tk-oc-fields` + `.tk-oc-actions`
+  làm con của `.offcanvas-body.tk-oc`. CSS nằm ở `wwwroot/css/tourkit.css`.
+- **Trường lưu HTML** (nội dung bài viết, thân email) đặt class `tk-rte-field` lên `<textarea>`;
+  `tk.form` tự dựng ô soạn thảo (`tk.rte`, chạy trên **Quill** — bộ soạn thảo đi kèm theme;
+  dự án KHÔNG có TinyMCE). Textarea gốc vẫn giữ giá trị nên FormData/validate không đổi.
+  Trường phụ thuộc kênh (Email = HTML, SMS/Zalo = văn bản thuần) thì gọi `tk.rte.enable(el, on)`
+  trong `afterOpen` và ở sự kiện `change` của ô chọn kênh.
 
 ## 5. Trang chi tiết
 

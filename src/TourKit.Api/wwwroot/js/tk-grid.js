@@ -163,7 +163,10 @@
     columns = columns.concat(dataCols);
     if (opts.actions) {
       columns.push({
+        // Tiêu đề cột này mang nút "chỉnh bảng" cố định (ẩn/hiện cột) — một chỗ duy nhất,
+        // luôn nhìn thấy, thay vì rải icon trên từng cột.
         title: '', field: '__act', width: 56, hozAlign: 'center', headerSort: false,
+        headerMenu: columnMenu, headerMenuIcon: '<i class="ti ti-adjustments-horizontal" title="Ẩn/hiện cột"></i>',
         clickMenu: cellActionMenu,
         formatter: function () {
           return '<button type="button" class="btn btn-icon btn-sm" title="Hành động"><i class="ti ti-dots-vertical"></i></button>';
@@ -217,7 +220,13 @@
         if (opts.onData) { opts.onData(response); }
         return response;
       },
-      columnDefaults: { headerSort: false, resizable: true, vertAlign: 'middle' },
+      columnDefaults: {
+        headerSort: false, resizable: true, vertAlign: 'middle',
+        // Nút ẩn/hiện cột nằm ở MỌI tiêu đề (đúng lối của Tabulator): ở đâu thấy vướng cột
+        // thì tắt ngay tại đó, không phải đi tìm một nút cấu hình nào khác.
+        headerMenu: columnMenu,
+        headerMenuIcon: '<i class="ti ti-adjustments-horizontal"></i>'
+      },
       columns: columns
     };
     if (opts.actions) { config.rowContextMenu = rowActionMenu; }
@@ -232,6 +241,9 @@
     Object.keys(opts.tabular || {}).forEach(function (k) { config[k] = opts.tabular[k]; });
 
     var table = new Tabulator(selector, config);
+    // Khoá lưu lựa chọn cột gắn theo selector → một trang có 2 lưới thì mỗi lưới nhớ riêng.
+    el.__tkSelector = selector;
+    table.on('tableBuilt', function () { restoreCols(table, selector); });
 
     // Tabulator 6 BỎ kiểu khai báo callback trong options (rowClick: fn không còn chạy) —
     // phải đăng ký qua bộ sự kiện. Đây là chỗ hay sai khi chuyển từ tài liệu bản 4/5.
@@ -302,6 +314,87 @@
         tk.confirmDelete({ title: 'Xoá ' + sel.length + ' mục đã chọn?' }).then(function (ok) { if (ok) { go(); } });
       } else if (window.confirm('Xoá ' + sel.length + ' mục đã chọn?')) { go(); }
     });
+  }
+
+  // ===== Ẩn / hiện cột =====
+  // Bảng nghiệp vụ nào cũng nhiều cột hơn số cột một người thực sự theo dõi hằng ngày.
+  // Cho tắt bớt cột ngay tại tiêu đề, và NHỚ lựa chọn đó theo từng màn (localStorage) —
+  // tắt xong tải lại trang mà cột hiện lại hết thì coi như không có tính năng này.
+  var COLS_KEY = 'tk.cols:';
+
+  function colsKey(selector) { return COLS_KEY + location.pathname + selector; }
+
+  function readCols(selector) {
+    var raw;
+    try { raw = localStorage.getItem(colsKey(selector)); } catch (e) { return {}; }
+    if (!raw) { return {}; }
+    try {
+      var v = JSON.parse(raw);
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    } catch (e) { return {}; }
+  }
+
+  // Lưu theo kiểu { field: hiện/ẩn } và CHỈ ghi cột người dùng tự bật/tắt.
+  // Nếu lưu "mọi cột đang ẩn" thì các cột do TRANG tự ẩn theo loại đơn (vd cột Visa chỉ hiện ở
+  // đơn Visa) cũng bị ghi vào, sang màn Visa lại mất cột dù người dùng chưa hề tắt.
+  function saveCol(selector, field, visible) {
+    if (!field) { return; }
+    var map = readCols(selector);
+    map[field] = !!visible;
+    try { localStorage.setItem(colsKey(selector), JSON.stringify(map)); } catch (e) { /* chế độ riêng tư */ }
+  }
+
+  function restoreCols(table, selector) {
+    var map = readCols(selector);
+    Object.keys(map).forEach(function (f) {
+      // Cột kỹ thuật (ô chọn, ⋮) không nằm trong danh sách chọn nên cũng không được đụng vào.
+      if (f === '__sel' || f === '__act') { return; }
+      var col = table.getColumn(f);
+      if (!col) { return; }
+      if (map[f]) { col.show(); } else { col.hide(); }
+    });
+  }
+
+  // Danh sách cột để tích/bỏ tích. Bấm một mục KHÔNG đóng menu (stopPropagation) để bật/tắt
+  // liền mấy cột trong một lần mở.
+  function columnMenu(e, column) {
+    var table = column.getTable();
+    var selector = table.element.__tkSelector || '';
+    var data = table.getColumns().filter(function (c) {
+      var f = c.getField();
+      return f && f !== '__sel' && f !== '__act' && c.getDefinition().title;
+    });
+
+    var items = [{
+      label: '<span class="text-muted"><i class="ti ti-eye me-2"></i>Hiện tất cả cột</span>',
+      action: function (ev) {
+        ev.stopPropagation();
+        data.forEach(function (c) { c.show(); saveCol(selector, c.getField(), true); });
+        ev.currentTarget.parentNode.querySelectorAll('input[type="checkbox"]').forEach(function (b) { b.checked = true; });
+      }
+    }, { separator: true }];
+
+    data.forEach(function (col) {
+      items.push({
+        label: '<label class="tk-colpick"><input type="checkbox"' + (col.isVisible() ? ' checked' : '') + '>' +
+          '<span>' + esc(col.getDefinition().title) + '</span></label>',
+        action: function (ev) {
+          ev.stopPropagation();
+          var visible = data.filter(function (c) { return c.isVisible(); });
+          // Ẩn hết cột thì còn lại một bảng trống — chặn ngay ở nước cuối cùng.
+          if (col.isVisible() && visible.length <= 1) {
+            var box0 = ev.currentTarget.querySelector('input');
+            if (box0) { box0.checked = true; }
+            return;
+          }
+          col.toggle();
+          var box = ev.currentTarget.querySelector('input');
+          if (box) { box.checked = col.isVisible(); }
+          saveCol(selector, col.getField(), col.isVisible());
+        }
+      });
+    });
+    return items;
   }
 
   // ===== Nắn menu của Tabulator cho vừa màn hình =====
