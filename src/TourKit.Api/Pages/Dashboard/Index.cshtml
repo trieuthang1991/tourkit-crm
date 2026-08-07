@@ -16,6 +16,23 @@
         return v.ToString("#,##0", vi);
     }
     string Full(decimal v) => v.ToString("#,##0", vi) + " ₫";
+
+    // Avatar chữ cái + tông màu bám TÊN — cùng một người luôn ra một màu, nhận ra nhanh hơn đọc chữ.
+    string[] tones = ["primary", "info", "success", "warning", "danger", "secondary"];
+    string ToneOf(string? name)
+    {
+        var h = 0;
+        foreach (var ch in name ?? "") { h = unchecked(h * 31 + ch); }
+        return tones[Math.Abs(h) % tones.Length];
+    }
+    string Initials(string? name)
+    {
+        var w = (name ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (w.Length == 0) { return "?"; }
+        return (w.Length == 1 ? w[0][..Math.Min(2, w[0].Length)] : string.Concat(w[^2][0], w[^1][0])).ToUpperInvariant();
+    }
+    // Tỉ lệ so với giá trị lớn nhất trong bảng — dài ngắn của thanh nói ngay ai hơn ai.
+    int Pct(decimal v, decimal max) => max > 0 ? (int)Math.Round(100m * v / max) : 0;
 }
 
 @section VendorStyles {
@@ -146,46 +163,27 @@
         </div>
       </div>
       <div class="tk-card-body">
-        <div class="row gy-3">
-          <div class="col-6">
-            <div class="d-flex align-items-center">
-              <div class="badge rounded-pill bg-label-primary me-3 p-2"><i class="ti ti-shopping-cart ti-sm"></i></div>
-              <div class="card-info"><h6 class="mb-0">@Model.Orders.Total</h6><small>Tổng đơn</small></div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="d-flex align-items-center">
-              <div class="badge rounded-pill bg-label-info me-3 p-2"><i class="ti ti-check ti-sm"></i></div>
-              <div class="card-info"><h6 class="mb-0">@Model.Orders.Confirmed</h6><small>Đã xác nhận</small></div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="d-flex align-items-center">
-              <div class="badge rounded-pill bg-label-warning me-3 p-2"><i class="ti ti-clock ti-sm"></i></div>
-              <div class="card-info"><h6 class="mb-0">@Model.Orders.Draft</h6><small>Nháp/Giữ chỗ</small></div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="d-flex align-items-center">
-              <div class="badge rounded-pill bg-label-secondary me-3 p-2"><i class="ti ti-x ti-sm"></i></div>
-              <div class="card-info"><h6 class="mb-0">@Model.Orders.Cancelled</h6><small>Đã huỷ</small></div>
-            </div>
-          </div>
+        @* Vòng tròn nói ngay tỉ trọng từng trạng thái; bốn con số rời như trước phải tự chia nhẩm. *@
+        <div id="orderDonut" style="min-height:210px"></div>
+        <div class="tk-split-label">
+          <span>Tình trạng thanh toán</span>
+          <span class="text-muted">@Model.Orders.Total.ToString("#,##0", vi) đơn</span>
         </div>
-        <hr class="my-3" />
-        <div class="row gy-3">
-          <div class="col-4 text-center">
-            <span class="badge bg-label-danger mb-1">@Model.Orders.Unpaid</span>
-            <small class="d-block">Chưa TT</small>
-          </div>
-          <div class="col-4 text-center">
-            <span class="badge bg-label-warning mb-1">@Model.Orders.Deposit</span>
-            <small class="d-block">Đã cọc</small>
-          </div>
-          <div class="col-4 text-center">
-            <span class="badge bg-label-success mb-1">@Model.Orders.Paid</span>
-            <small class="d-block">TT đủ</small>
-          </div>
+        @{
+            var oTotal = Math.Max(Model.Orders.Total, 1);
+            var pUnpaid = 100m * Model.Orders.Unpaid / oTotal;
+            var pDeposit = 100m * Model.Orders.Deposit / oTotal;
+            var pPaid = 100m * Model.Orders.Paid / oTotal;
+        }
+        <div class="tk-split" title="Chưa TT @Model.Orders.Unpaid · Đã cọc @Model.Orders.Deposit · TT đủ @Model.Orders.Paid">
+          <span class="bg-danger" style="width:@pUnpaid.ToString("0.##", CultureInfo.InvariantCulture)%"></span>
+          <span class="bg-warning" style="width:@pDeposit.ToString("0.##", CultureInfo.InvariantCulture)%"></span>
+          <span class="bg-success" style="width:@pPaid.ToString("0.##", CultureInfo.InvariantCulture)%"></span>
+        </div>
+        <div class="tk-legend">
+          <span><i class="bg-danger"></i>Chưa TT @Model.Orders.Unpaid.ToString("#,##0", vi)</span>
+          <span><i class="bg-warning"></i>Đã cọc @Model.Orders.Deposit.ToString("#,##0", vi)</span>
+          <span><i class="bg-success"></i>TT đủ @Model.Orders.Paid.ToString("#,##0", vi)</span>
         </div>
       </div>
     </div>
@@ -201,32 +199,12 @@
         </div>
       </div>
       <div class="tk-card-body">
-        <ul class="list-unstyled mb-0">
-          <li class="d-flex justify-content-between align-items-center mb-3">
-            <span><i class="ti ti-file-text text-primary me-2"></i>Báo giá đã tạo</span>
-            <h6 class="mb-0">@Model.Kpi.QuoteCount</h6>
-          </li>
-          <li class="d-flex justify-content-between align-items-center mb-3">
-            <span><i class="ti ti-thumb-up text-success me-2"></i>Được chấp nhận</span>
-            <h6 class="mb-0">@Model.Kpi.QuoteAcceptedCount</h6>
-          </li>
-          <li class="d-flex justify-content-between align-items-center mb-3">
-            <span><i class="ti ti-transfer-in text-info me-2"></i>Đã chuyển đơn</span>
-            <h6 class="mb-0">@Model.Kpi.QuoteConvertedCount</h6>
-          </li>
-        </ul>
-        <hr class="my-3" />
-        <div class="mb-3">
-          <div class="d-flex justify-content-between mb-1"><small>Tỉ lệ chấp nhận</small><small class="fw-medium">@((Model.Kpi.AcceptanceRate * 100).ToString("0.#"))%</small></div>
-          <div class="progress" style="height:6px"><div class="progress-bar bg-success" style="width:@Math.Min(100, Model.Kpi.AcceptanceRate * 100)%"></div></div>
-        </div>
-        <div class="mb-3">
-          <div class="d-flex justify-content-between mb-1"><small>Tỉ lệ chuyển đơn</small><small class="fw-medium">@((Model.Kpi.ConversionRate * 100).ToString("0.#"))%</small></div>
-          <div class="progress" style="height:6px"><div class="progress-bar bg-info" style="width:@Math.Min(100, Model.Kpi.ConversionRate * 100)%"></div></div>
-        </div>
-        <div>
-          <div class="d-flex justify-content-between mb-1"><small>Tỉ lệ thu tiền</small><small class="fw-medium">@((Model.Kpi.CollectionRate * 100).ToString("0.#"))%</small></div>
-          <div class="progress" style="height:6px"><div class="progress-bar bg-primary" style="width:@Math.Min(100, Model.Kpi.CollectionRate * 100)%"></div></div>
+        @* Phễu vẽ thành cột NGANG: độ hụt giữa các bước nhìn là thấy, không phải so ba con số rời. *@
+        <div id="quoteFunnel" style="min-height:180px"></div>
+        <div class="tk-figures mt-3">
+          <div class="tk-figure"><small>Tỉ lệ chấp nhận</small><b>@((Model.Kpi.AcceptanceRate * 100).ToString("0.#", vi))%</b></div>
+          <div class="tk-figure"><small>Tỉ lệ chuyển đơn</small><b>@((Model.Kpi.ConversionRate * 100).ToString("0.#", vi))%</b></div>
+          <div class="tk-figure"><small>Tỉ lệ thu tiền</small><b>@((Model.Kpi.CollectionRate * 100).ToString("0.#", vi))%</b></div>
         </div>
       </div>
     </div>
@@ -242,24 +220,35 @@
         </div>
         <a href="/khach-hang" class="btn btn-sm btn-label-primary">Tất cả</a>
       </div>
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead><tr><th>Khách hàng</th><th class="text-end">Doanh thu</th><th class="text-end">Đã thu</th></tr></thead>
-          <tbody>
-          @if (Model.TopCustomers.Count == 0)
-          {
-            <tr><td colspan="3" class="text-center text-muted py-4">Chưa có dữ liệu.</td></tr>
-          }
-          @foreach (var c in Model.TopCustomers)
-          {
-            <tr>
-              <td><a href="/khach-hang/@c.CustomerId" class="fw-medium">@c.CustomerName</a></td>
-              <td class="text-end">@c.Revenue.ToString("#,##0")</td>
-              <td class="text-end">@c.Received.ToString("#,##0")</td>
-            </tr>
-          }
-          </tbody>
-        </table>
+      <div class="tk-card-body">
+        @if (Model.TopCustomers.Count == 0)
+        {
+          <p class="text-muted mb-0 py-4 text-center">Chưa có dữ liệu.</p>
+        }
+        else
+        {
+          var maxRev = Model.TopCustomers.Max(x => x.Revenue);
+          <div class="tk-rank">
+            @{ var i = 0; }
+            @foreach (var c in Model.TopCustomers.Take(7))
+            {
+              i++;
+              var rate = c.Revenue > 0 ? (int)Math.Round(100m * c.Received / c.Revenue) : 0;
+              <a class="tk-rank-row" href="/khach-hang/@c.CustomerId">
+                <span class="tk-rank-no @(i <= 3 ? "is-top" : "")">@i</span>
+                <span class="tk-rank-av bg-label-@ToneOf(c.CustomerName)">@Initials(c.CustomerName)</span>
+                <span class="tk-rank-main">
+                  <b>@c.CustomerName</b>
+                  <span class="tk-rank-bar"><i style="width:@Math.Max(Pct(c.Revenue, maxRev), 2)%"></i></span>
+                </span>
+                <span class="tk-rank-val">
+                  <b title="@Full(c.Revenue)">@Short(c.Revenue)</b>
+                  <small class="@(rate >= 80 ? "text-success" : rate > 0 ? "text-warning" : "text-danger")">đã thu @rate%</small>
+                </span>
+              </a>
+            }
+          </div>
+        }
       </div>
     </div>
   </div>
@@ -267,93 +256,134 @@
 
 @if (Model.CanCare)
 {
-  @* Quản lý lịch hẹn — bản cũ có bảng CSKH ngay trên Tổng quan. *@
+  @* Quản lý lịch hẹn — danh sách quét được: khách + tiêu đề + hạn, việc QUÁ HẠN đỏ lên trước.
+     Bảng 5 cột chữ đều nhau thì không biết nên gọi ai trước. *@
   <div class="tk-card mb-4">
     <div class="tk-card-head">
-      <h6 class="mb-0">Quản lý lịch hẹn</h6>
+      <div>
+        <h6 class="mb-0">Quản lý lịch hẹn</h6>
+        <small class="text-muted">Lịch chăm sóc chưa hoàn thành</small>
+      </div>
       <a href="/lich-hen" class="btn btn-sm btn-label-primary">Tất cả</a>
     </div>
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        @* Bỏ cột "Nội dung": trên màn tổng quan nó chỉ là một đoạn văn dài cắt cụt, không giúp
-           quyết định gì. Cần đọc chi tiết thì bấm sang màn Lịch hẹn. *@
-        <thead><tr><th>Tiêu đề</th><th>Khách hàng</th><th>Nhắc lúc</th><th class="text-end">Trạng thái</th></tr></thead>
-        <tbody>
-        @if (Model.Cares.Count == 0)
-        {
-          <tr><td colspan="4" class="text-center text-muted py-4">Chưa có lịch hẹn</td></tr>
-        }
-        @foreach (var c in Model.Cares)
-        {
-          @* Ô "Nhắc hẹn" là ô NGÀY nên phần lớn bản ghi không có giờ — hiện giờ giả là nói dối. *@
-          var hasTime = c.RemindAt is { } rt && rt.UtcDateTime.TimeOfDay != TimeSpan.Zero;
-          <tr>
-            <td class="fw-medium">@c.Title</td>
-            <td>@(c.CustomerName ?? "—")</td>
-            <td>@(c.RemindAt is { } r ? (hasTime ? r.ToLocalTime().ToString("HH:mm dd/MM/yyyy", vi) : r.ToString("dd/MM/yyyy", vi)) : "—")</td>
-            <td class="text-end"><span class="badge bg-label-@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusColor(c.Status)">@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusLabel(c.Status)</span></td>
-          </tr>
-        }
-        </tbody>
-      </table>
+    <div class="tk-card-body">
+      @if (Model.Cares.Count == 0)
+      {
+        <p class="text-muted mb-0 py-4 text-center">Chưa có lịch hẹn</p>
+      }
+      else
+      {
+        var todayD = TourKit.Api.Pages.Shared.TkDate.Day(DateTimeOffset.Now);
+        <div class="tk-cares">
+          @foreach (var c in Model.Cares)
+          {
+            var due = c.RemindAt is { } r0 ? TourKit.Api.Pages.Shared.TkDate.Day(r0) : (DateTimeOffset?)null;
+            var late = due is { } d0 && d0 < todayD && c.Status != 2;
+            var isToday = due == todayD;
+            <div class="tk-care @(late ? "is-late" : "")">
+              <span class="tk-rank-av bg-label-@ToneOf(c.CustomerName)">@Initials(c.CustomerName)</span>
+              <div class="tk-care-main">
+                <b>@c.Title</b>
+                <small>@(c.CustomerName ?? "—")</small>
+              </div>
+              <div class="tk-care-when">
+                <b class="@(late ? "text-danger" : isToday ? "text-primary" : "")">
+                  @(due is null ? "Chưa hẹn" : late ? "Quá hạn" : isToday ? "Hôm nay" : due!.Value.ToString("dd/MM", vi))
+                </b>
+                <small>@(due?.ToString("dd/MM/yyyy", vi) ?? "—")</small>
+              </div>
+              <span class="badge bg-label-@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusColor(c.Status)">@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusLabel(c.Status)</span>
+            </div>
+          }
+        </div>
+      }
     </div>
   </div>
 }
 
-@* Hiệu suất theo CHI NHÁNH — khác với "theo phòng ban" ở trên, bản cũ có cả hai. *@
+@* Hiệu suất theo CHI NHÁNH — khác với "theo phòng ban" ở trên, bản cũ có cả hai.
+   Bảng số trơn không cho biết chi nhánh nào thu tiền tốt; thanh TỈ LỆ THU nói ngay điều đó. *@
 <div class="tk-card mb-4">
-  <div class="tk-card-head"><h6 class="mb-0">Hiệu suất theo chi nhánh</h6></div>
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead><tr>
-        <th>Chi nhánh</th><th class="text-end">Số đơn</th><th class="text-end">Doanh thu</th>
-        <th class="text-end">Thực thu</th><th class="text-end">Còn thiếu</th><th class="text-end">Lợi nhuận</th>
-      </tr></thead>
-      <tbody>
-      @if (Model.ByBranch.Count == 0)
-      {
-        <tr><td colspan="6" class="text-center text-muted py-4">Chưa có dữ liệu chi nhánh</td></tr>
-      }
-      @foreach (var b in Model.ByBranch)
-      {
-        <tr>
-          <td class="fw-medium">@b.BranchName</td>
-          <td class="text-end">@b.OrderCount.ToString("#,##0")</td>
-          <td class="text-end">@b.Turnover.ToString("#,##0")</td>
-          <td class="text-end text-success">@b.Received.ToString("#,##0")</td>
-          <td class="text-end @(b.Outstanding > 0 ? "text-danger" : "")">@b.Outstanding.ToString("#,##0")</td>
-          <td class="text-end">@b.Profit.ToString("#,##0")</td>
-        </tr>
-      }
-      </tbody>
-    </table>
+  <div class="tk-card-head">
+    <div>
+      <h6 class="mb-0">Hiệu suất theo chi nhánh</h6>
+      <small class="text-muted">Doanh thu · thực thu · còn thiếu</small>
+    </div>
+  </div>
+  <div class="tk-card-body">
+    @if (Model.ByBranch.Count == 0)
+    {
+      <p class="text-muted mb-0 py-4 text-center">Chưa có dữ liệu chi nhánh</p>
+    }
+    else
+    {
+      <div class="tk-branches">
+        @foreach (var br in Model.ByBranch)
+        {
+          var rate = br.Turnover > 0 ? (int)Math.Round(100m * br.Received / br.Turnover) : 0;
+          var margin = br.Turnover > 0 ? Math.Round(100m * br.Profit / br.Turnover, 1) : 0m;
+          <div class="tk-branch">
+            <div class="tk-branch-head">
+              <span class="tk-rank-av bg-label-@ToneOf(br.BranchName)">@Initials(br.BranchName)</span>
+              <div class="lh-sm">
+                <b>@br.BranchName</b>
+                <small class="d-block text-muted">@br.OrderCount.ToString("#,##0", vi) đơn · biên lợi nhuận @margin.ToString("0.#", vi)%</small>
+              </div>
+              <b class="ms-auto" title="@Full(br.Turnover)">@Short(br.Turnover)</b>
+            </div>
+            <div class="tk-branch-bar" title="Đã thu @rate% doanh thu">
+              <span class="bg-success" style="width:@Math.Min(rate, 100)%"></span>
+            </div>
+            <div class="tk-branch-foot">
+              <span class="text-success"><i class="ti ti-arrow-down-circle me-1"></i>Thực thu @Short(br.Received) (@rate%)</span>
+              <span class="@(br.Outstanding > 0 ? "text-danger" : "text-muted")"><i class="ti ti-alert-circle me-1"></i>Còn thiếu @Short(br.Outstanding)</span>
+              <span class="@(br.Profit < 0 ? "text-danger" : "")"><i class="ti ti-coin me-1"></i>Lợi nhuận @Short(br.Profit)</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
   </div>
 </div>
 
-@* Vinh danh chiến binh sales — top 5 theo doanh thu, kèm hoa hồng. *@
+@* Vinh danh chiến binh sales — bảng xếp hạng, không phải bảng số: thứ hạng và tỉ trọng
+   doanh thu phải nhìn ra ngay, đọc con số là bước sau. *@
 <div class="tk-card mb-4">
   <div class="tk-card-head">
-    <h6 class="mb-0">Vinh danh chiến binh sales</h6>
+    <div>
+      <h6 class="mb-0">Vinh danh chiến binh sales</h6>
+      <small class="text-muted">Doanh thu và hoa hồng theo nhân viên</small>
+    </div>
     <a href="/hoa-hong-theo-nguon" class="btn btn-sm btn-label-primary">Báo cáo hoa hồng</a>
   </div>
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead><tr><th>Nhân viên</th><th class="text-end">Doanh thu</th><th class="text-end">Hoa hồng</th></tr></thead>
-      <tbody>
-      @if (Model.TopSales.Count == 0)
-      {
-        <tr><td colspan="3" class="text-center text-muted py-4">Chưa có dữ liệu</td></tr>
-      }
-      @foreach (var s in Model.TopSales)
-      {
-        <tr>
-          <td class="fw-medium">@s.Name</td>
-          <td class="text-end">@s.Turnover.ToString("#,##0")</td>
-          <td class="text-end text-success">@s.Commission.ToString("#,##0")</td>
-        </tr>
-      }
-      </tbody>
-    </table>
+  <div class="tk-card-body">
+    @if (Model.TopSales.Count == 0)
+    {
+      <p class="text-muted mb-0 py-4 text-center">Chưa có dữ liệu</p>
+    }
+    else
+    {
+      var maxSale = Model.TopSales.Max(x => x.Turnover);
+      <div class="tk-rank">
+        @{ var si = 0; }
+        @foreach (var sale in Model.TopSales)
+        {
+          si++;
+          <div class="tk-rank-row">
+            <span class="tk-rank-no @(si <= 3 ? "is-top" : "")">@si</span>
+            <span class="tk-rank-av bg-label-@ToneOf(sale.Name)">@Initials(sale.Name)</span>
+            <span class="tk-rank-main">
+              <b>@sale.Name</b>
+              <span class="tk-rank-bar"><i style="width:@Math.Max(Pct(sale.Turnover, maxSale), 2)%"></i></span>
+            </span>
+            <span class="tk-rank-val">
+              <b title="@Full(sale.Turnover)">@Short(sale.Turnover)</b>
+              <small class="@(sale.Commission > 0 ? "text-success" : "text-muted")">HH @Short(sale.Commission)</small>
+            </span>
+          </div>
+        }
+      </div>
+    }
   </div>
 </div>
 
@@ -403,6 +433,48 @@
         }).render();
       } else {
         $('#deptChart').html('<p class="text-muted text-center py-5 mb-0">Chưa có dữ liệu doanh thu.</p>');
+      }
+
+      // Đơn hàng theo trạng thái — vòng tròn có TỔNG ở giữa.
+      var ORDER = [@Model.Orders.Confirmed, @Model.Orders.Draft, @Model.Orders.Cancelled];
+      if (ORDER.some(function (v) { return v > 0; })) {
+        new ApexCharts(document.querySelector('#orderDonut'), {
+          chart: { type: 'donut', height: 210 },
+          series: ORDER,
+          labels: ['Đã xác nhận', 'Nháp/Giữ chỗ', 'Đã huỷ'],
+          colors: ['#28c76f', '#ff9f43', '#a8aaae'],
+          legend: { position: 'bottom', labels: { colors: label }, fontSize: '12px', markers: { width: 8, height: 8 } },
+          dataLabels: { enabled: false }, stroke: { width: 0 },
+          plotOptions: { pie: { donut: { size: '70%', labels: { show: true,
+            value: { formatter: function (v) { return Number(v).toLocaleString('vi-VN'); } },
+            total: { show: true, label: 'Tổng đơn', color: label,
+                     formatter: function () { return (@Model.Orders.Total).toLocaleString('vi-VN'); } } } } } },
+          tooltip: { y: { formatter: function (v) { return Number(v).toLocaleString('vi-VN') + ' đơn'; } } }
+        }).render();
+      } else {
+        $('#orderDonut').html('<p class="text-muted text-center py-5 mb-0">Chưa có đơn hàng nào.</p>');
+      }
+
+      // Phễu báo giá — cột ngang, độ hụt giữa các bước nhìn là thấy.
+      var FUNNEL = [@Model.Kpi.QuoteCount, @Model.Kpi.QuoteAcceptedCount, @Model.Kpi.QuoteConvertedCount];
+      if (FUNNEL[0] > 0) {
+        new ApexCharts(document.querySelector('#quoteFunnel'), {
+          chart: { type: 'bar', height: 180, toolbar: { show: false }, parentHeightOffset: 0 },
+          series: [{ name: 'Số lượng', data: FUNNEL }],
+          colors: ['#7367f0', '#00cfe8', '#28c76f'],
+          plotOptions: { bar: { horizontal: true, distributed: true, borderRadius: 4, barHeight: '58%' } },
+          dataLabels: { enabled: true, textAnchor: 'start', offsetX: 4,
+                        style: { fontSize: '11px', colors: ['#5d596c'] },
+                        formatter: function (v) { return Number(v).toLocaleString('vi-VN'); } },
+          legend: { show: false },
+          grid: { borderColor: border, padding: { left: 4, right: 16 } },
+          xaxis: { categories: ['Báo giá đã tạo', 'Được chấp nhận', 'Đã chuyển đơn'],
+                   labels: { style: { colors: label } }, axisBorder: { show: false }, axisTicks: { show: false } },
+          yaxis: { labels: { style: { colors: label }, maxWidth: 120 } },
+          tooltip: { y: { formatter: function (v) { return Number(v).toLocaleString('vi-VN'); } } }
+        }).render();
+      } else {
+        $('#quoteFunnel').html('<p class="text-muted text-center py-5 mb-0">Chưa có báo giá nào.</p>');
       }
 
       if (CASH.length) {
