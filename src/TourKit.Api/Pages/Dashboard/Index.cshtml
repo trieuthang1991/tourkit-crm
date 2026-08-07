@@ -1,6 +1,22 @@
 @page
+@using System.Globalization
 @model TourKit.Api.Pages.Dashboard.IndexModel
-@{ ViewData["Title"] = "Tổng quan"; }
+@{
+    ViewData["Title"] = "Tổng quan";
+    var vi = new CultureInfo("vi-VN");
+
+    // Số tiền ở thẻ tóm tắt rút gọn; số đầy đủ nằm ở tooltip. "94.323.595.000" ở cỡ chữ lớn
+    // thì không liếc được, mà thẻ tổng quan là chỗ để LIẾC.
+    string Short(decimal v)
+    {
+        var a = Math.Abs(v);
+        if (a >= 1_000_000_000m) { return (v / 1_000_000_000m).ToString("0.#", vi) + " tỷ"; }
+        if (a >= 1_000_000m) { return (v / 1_000_000m).ToString("0.#", vi) + " tr"; }
+        if (a >= 1_000m) { return (v / 1_000m).ToString("0.#", vi) + " ng"; }
+        return v.ToString("#,##0", vi);
+    }
+    string Full(decimal v) => v.ToString("#,##0", vi) + " ₫";
+}
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.css" />
@@ -36,128 +52,70 @@
   </div>
 </div>
 
-<h6 class="text-muted text-uppercase small mb-2">Doanh thu &amp; cơ hội</h6>
-<div class="row">
-  <!-- 4 thẻ số liệu (khuôn "Total Profit" card của CRM dashboard) -->
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <div class="badge p-2 bg-label-primary mb-2 rounded"><i class="ti ti-cash ti-md"></i></div>
-        <h5 class="card-title mb-1 pt-2">Doanh thu</h5>
-        <small class="text-muted">Toàn bộ đơn hàng</small>
-        <p class="mb-0 mt-1 fw-medium">@Model.Summary.TotalRevenue.ToString("#,##0")</p>
-      </div>
-    </div>
+@* Bốn con số TRẢ LỜI câu hỏi hay hỏi nhất: bán được bao nhiêu · thu về bao nhiêu ·
+   còn kẹt bao nhiêu · thực lãi bao nhiêu. Mười hai thẻ ngang hàng như bản trước thì
+   không con số nào nổi lên, phải đọc hết mới biết cái nào quan trọng. *@
+<div class="tk-kpi-row mb-4">
+  <div class="tk-kpi">
+    <span class="tk-kpi-ic bg-label-primary"><i class="ti ti-cash"></i></span>
+    <div class="tk-kpi-label">Doanh thu</div>
+    <div class="tk-kpi-value" title="@Full(Model.Summary.TotalRevenue)">@Short(Model.Summary.TotalRevenue)</div>
+    <span class="tk-kpi-sub text-muted">toàn bộ đơn hàng</span>
   </div>
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <div class="badge p-2 bg-label-success mb-2 rounded"><i class="ti ti-wallet ti-md"></i></div>
-        <h5 class="card-title mb-1 pt-2">Đã thu</h5>
-        <small class="text-muted">Phiếu thu đã ghi nhận</small>
-        <p class="mb-0 mt-1 fw-medium">@Model.Summary.TotalReceived.ToString("#,##0")</p>
-      </div>
-    </div>
+  <div class="tk-kpi">
+    <span class="tk-kpi-ic bg-label-success"><i class="ti ti-wallet"></i></span>
+    <div class="tk-kpi-label">Đã thu</div>
+    <div class="tk-kpi-value" title="@Full(Model.Summary.TotalReceived)">@Short(Model.Summary.TotalReceived)</div>
+    <span class="tk-kpi-sub text-muted">@((Model.Kpi.CollectionRate * 100).ToString("0.#", vi))% doanh thu</span>
   </div>
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <div class="badge p-2 bg-label-warning mb-2 rounded"><i class="ti ti-alert-triangle ti-md"></i></div>
-        <h5 class="card-title mb-1 pt-2">Còn phải thu</h5>
-        <small class="text-muted">Công nợ khách</small>
-        <p class="mb-0 mt-1 fw-medium">@Model.Summary.ReceivableOutstanding.ToString("#,##0")</p>
-      </div>
-    </div>
+  <div class="tk-kpi">
+    <span class="tk-kpi-ic bg-label-warning"><i class="ti ti-alert-triangle"></i></span>
+    <div class="tk-kpi-label">Còn phải thu</div>
+    <div class="tk-kpi-value" title="@Full(Model.Summary.ReceivableOutstanding)">@Short(Model.Summary.ReceivableOutstanding)</div>
+    <span class="tk-kpi-sub text-muted">công nợ khách</span>
   </div>
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <div class="badge p-2 bg-label-info mb-2 rounded"><i class="ti ti-trending-up ti-md"></i></div>
-        <h5 class="card-title mb-1 pt-2">Lợi nhuận gộp</h5>
-        <small class="text-muted">Doanh thu − chi phí</small>
-        <p class="mb-0 mt-1 fw-medium @(Model.Summary.GrossProfit < 0 ? "text-danger" : "")">@Model.Summary.GrossProfit.ToString("#,##0")</p>
-      </div>
-    </div>
+  <div class="tk-kpi">
+    <span class="tk-kpi-ic bg-label-info"><i class="ti ti-coin"></i></span>
+    <div class="tk-kpi-label">Lợi nhuận thực tế</div>
+    <div class="tk-kpi-value @(Model.ActualProfit < 0 ? "text-danger" : "")" title="@Full(Model.ActualProfit)">@Short(Model.ActualProfit)</div>
+    <span class="tk-kpi-sub text-muted">đã thu − đã chi</span>
   </div>
 </div>
 
-@* ---- KPI nhóm 2: Chi phí & Công nợ (bản cũ có, bản trước thiếu hẳn) ---- *@
-<h6 class="text-muted text-uppercase small mb-2">Chi phí &amp; công nợ</h6>
-<div class="row">
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="badge p-2 bg-label-secondary mb-2 rounded"><i class="ti ti-receipt-2 ti-md"></i></div>
-      <h5 class="card-title mb-1 pt-2">Tổng chi</h5><small class="text-muted">Chi phí trên sổ</small>
-      <p class="mb-0 mt-1 fw-medium">@Model.Summary.TotalCost.ToString("#,##0")</p>
-    </div></div>
-  </div>
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="badge p-2 bg-label-info mb-2 rounded"><i class="ti ti-arrow-down-circle ti-md"></i></div>
-      <h5 class="card-title mb-1 pt-2">Tổng chi thực tế</h5><small class="text-muted">Phiếu chi đã ghi nhận</small>
-      <p class="mb-0 mt-1 fw-medium">@Model.Summary.TotalPaid.ToString("#,##0")</p>
-    </div></div>
-  </div>
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="badge p-2 bg-label-danger mb-2 rounded"><i class="ti ti-building-store ti-md"></i></div>
-      <h5 class="card-title mb-1 pt-2">Công nợ NCC</h5><small class="text-muted">Còn phải trả</small>
-      <p class="mb-0 mt-1 fw-medium">@Model.Summary.PayableOutstanding.ToString("#,##0")</p>
-    </div></div>
-  </div>
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="badge p-2 bg-label-success mb-2 rounded"><i class="ti ti-coin ti-md"></i></div>
-      <h5 class="card-title mb-1 pt-2">Lợi nhuận thực tế</h5><small class="text-muted">Đã thu − đã chi</small>
-      <p class="mb-0 mt-1 fw-medium @(Model.ActualProfit < 0 ? "text-danger" : "")">@Model.ActualProfit.ToString("#,##0")</p>
-    </div></div>
-  </div>
-</div>
-
-@* ---- KPI nhóm 3: Lợi nhuận & Hiệu quả ---- *@
-<h6 class="text-muted text-uppercase small mb-2">Lợi nhuận &amp; hiệu quả</h6>
-<div class="row">
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="badge p-2 bg-label-warning mb-2 rounded"><i class="ti ti-gift ti-md"></i></div>
-      <h5 class="card-title mb-1 pt-2">Tiền hoa hồng</h5><small class="text-muted">Toàn hệ thống</small>
-      <p class="mb-0 mt-1 fw-medium">@Model.CommissionTotal.ToString("#,##0")</p>
-    </div></div>
-  </div>
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="badge p-2 bg-label-info mb-2 rounded"><i class="ti ti-percentage ti-md"></i></div>
-      <h5 class="card-title mb-1 pt-2">Tỉ lệ thu tiền</h5><small class="text-muted">Đã thu / doanh thu</small>
-      <p class="mb-0 mt-1 fw-medium">@((Model.Kpi.CollectionRate * 100).ToString("0.0"))%</p>
-    </div></div>
-  </div>
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="badge p-2 bg-label-primary mb-2 rounded"><i class="ti ti-calculator ti-md"></i></div>
-      <h5 class="card-title mb-1 pt-2">Giá trị TB / đơn</h5><small class="text-muted">Doanh thu / số đơn</small>
-      <p class="mb-0 mt-1 fw-medium">@Model.Kpi.AvgOrderValue.ToString("#,##0")</p>
-    </div></div>
-  </div>
-  <div class="col-xl-3 col-md-6 col-6 mb-4">
-    <div class="card h-100"><div class="card-body">
-      <div class="badge p-2 bg-label-success mb-2 rounded"><i class="ti ti-shopping-cart ti-md"></i></div>
-      <h5 class="card-title mb-1 pt-2">Số đơn</h5><small class="text-muted">Toàn hệ thống</small>
-      <p class="mb-0 mt-1 fw-medium">@Model.Summary.OrderCount.ToString("#,##0")</p>
-    </div></div>
+@* Các số còn lại là số THAM CHIẾU: gom vào một dải mảnh, không cần mỗi số một thẻ to. *@
+<div class="tk-card mb-4">
+  <div class="tk-figures">
+    @foreach (var f in new (string Label, string Value, string Title, string Tone)[]
+    {
+        ("Tổng chi", Short(Model.Summary.TotalCost), Full(Model.Summary.TotalCost), ""),
+        ("Tổng chi thực tế", Short(Model.Summary.TotalPaid), Full(Model.Summary.TotalPaid), ""),
+        ("Công nợ NCC", Short(Model.Summary.PayableOutstanding), Full(Model.Summary.PayableOutstanding), ""),
+        ("Lợi nhuận gộp", Short(Model.Summary.GrossProfit), Full(Model.Summary.GrossProfit), Model.Summary.GrossProfit < 0 ? "text-danger" : ""),
+        ("Tiền hoa hồng", Short(Model.CommissionTotal), Full(Model.CommissionTotal), ""),
+        ("Giá trị TB / đơn", Short(Model.Kpi.AvgOrderValue), Full(Model.Kpi.AvgOrderValue), ""),
+        ("Số đơn", Model.Summary.OrderCount.ToString("#,##0", vi), "", ""),
+        ("Tỉ lệ thu tiền", (Model.Kpi.CollectionRate * 100).ToString("0.#", vi) + "%", "", ""),
+    })
+    {
+      <div class="tk-figure">
+        <small>@f.Label</small>
+        <b class="@f.Tone" title="@f.Title">@f.Value</b>
+      </div>
+    }
   </div>
 </div>
 
 <div class="row">
   <!-- Doanh thu theo phòng ban (bar) -->
   <div class="col-12 col-xl-8 mb-4">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between">
-        <div class="card-title mb-0">
-          <h5 class="mb-0">Doanh thu theo phòng ban</h5>
+    <div class="tk-card h-100">
+      <div class="tk-card-head">
+        <div>
+          <h6 class="mb-0">Doanh thu theo phòng ban</h6>
           <small class="text-muted">Doanh thu và lợi nhuận từng phòng</small>
         </div>
       </div>
-      <div class="card-body">
+      <div class="tk-card-body">
         <div id="deptChart"></div>
       </div>
     </div>
@@ -165,14 +123,14 @@
 
   <!-- Dòng tiền theo phương thức (donut) -->
   <div class="col-12 col-xl-4 mb-4">
-    <div class="card h-100">
-      <div class="card-header">
-        <div class="card-title mb-0">
-          <h5 class="mb-0">Tiền thu theo phương thức</h5>
+    <div class="tk-card h-100">
+      <div class="tk-card-head">
+        <div>
+          <h6 class="mb-0">Tiền thu theo phương thức</h6>
           <small class="text-muted">Phiếu thu đã ghi nhận</small>
         </div>
       </div>
-      <div class="card-body">
+      <div class="tk-card-body">
         <div id="cashDonut"></div>
       </div>
     </div>
@@ -180,35 +138,37 @@
 
   <!-- Đơn hàng (khuôn "Statistics" card của Ecommerce dashboard) -->
   <div class="col-12 col-xl-4 mb-4">
-    <div class="card h-100">
-      <div class="card-header">
-        <h5 class="card-title mb-0">Đơn hàng</h5>
-        <small class="text-muted">Theo trạng thái và thanh toán</small>
+    <div class="tk-card h-100">
+      <div class="tk-card-head">
+        <div>
+          <h6 class="mb-0">Đơn hàng</h6>
+          <small class="text-muted">Theo trạng thái và thanh toán</small>
+        </div>
       </div>
-      <div class="card-body">
+      <div class="tk-card-body">
         <div class="row gy-3">
           <div class="col-6">
             <div class="d-flex align-items-center">
               <div class="badge rounded-pill bg-label-primary me-3 p-2"><i class="ti ti-shopping-cart ti-sm"></i></div>
-              <div class="card-info"><h5 class="mb-0">@Model.Orders.Total</h5><small>Tổng đơn</small></div>
+              <div class="card-info"><h6 class="mb-0">@Model.Orders.Total</h6><small>Tổng đơn</small></div>
             </div>
           </div>
           <div class="col-6">
             <div class="d-flex align-items-center">
               <div class="badge rounded-pill bg-label-info me-3 p-2"><i class="ti ti-check ti-sm"></i></div>
-              <div class="card-info"><h5 class="mb-0">@Model.Orders.Confirmed</h5><small>Đã xác nhận</small></div>
+              <div class="card-info"><h6 class="mb-0">@Model.Orders.Confirmed</h6><small>Đã xác nhận</small></div>
             </div>
           </div>
           <div class="col-6">
             <div class="d-flex align-items-center">
               <div class="badge rounded-pill bg-label-warning me-3 p-2"><i class="ti ti-clock ti-sm"></i></div>
-              <div class="card-info"><h5 class="mb-0">@Model.Orders.Draft</h5><small>Nháp/Giữ chỗ</small></div>
+              <div class="card-info"><h6 class="mb-0">@Model.Orders.Draft</h6><small>Nháp/Giữ chỗ</small></div>
             </div>
           </div>
           <div class="col-6">
             <div class="d-flex align-items-center">
               <div class="badge rounded-pill bg-label-secondary me-3 p-2"><i class="ti ti-x ti-sm"></i></div>
-              <div class="card-info"><h5 class="mb-0">@Model.Orders.Cancelled</h5><small>Đã huỷ</small></div>
+              <div class="card-info"><h6 class="mb-0">@Model.Orders.Cancelled</h6><small>Đã huỷ</small></div>
             </div>
           </div>
         </div>
@@ -233,24 +193,26 @@
 
   <!-- Phễu báo giá (KPI) -->
   <div class="col-12 col-xl-4 mb-4">
-    <div class="card h-100">
-      <div class="card-header">
-        <h5 class="card-title mb-0">Phễu báo giá</h5>
-        <small class="text-muted">Báo giá → chấp nhận → chuyển đơn</small>
+    <div class="tk-card h-100">
+      <div class="tk-card-head">
+        <div>
+          <h6 class="mb-0">Phễu báo giá</h6>
+          <small class="text-muted">Báo giá → chấp nhận → chuyển đơn</small>
+        </div>
       </div>
-      <div class="card-body">
+      <div class="tk-card-body">
         <ul class="list-unstyled mb-0">
           <li class="d-flex justify-content-between align-items-center mb-3">
             <span><i class="ti ti-file-text text-primary me-2"></i>Báo giá đã tạo</span>
-            <h5 class="mb-0">@Model.Kpi.QuoteCount</h5>
+            <h6 class="mb-0">@Model.Kpi.QuoteCount</h6>
           </li>
           <li class="d-flex justify-content-between align-items-center mb-3">
             <span><i class="ti ti-thumb-up text-success me-2"></i>Được chấp nhận</span>
-            <h5 class="mb-0">@Model.Kpi.QuoteAcceptedCount</h5>
+            <h6 class="mb-0">@Model.Kpi.QuoteAcceptedCount</h6>
           </li>
           <li class="d-flex justify-content-between align-items-center mb-3">
             <span><i class="ti ti-transfer-in text-info me-2"></i>Đã chuyển đơn</span>
-            <h5 class="mb-0">@Model.Kpi.QuoteConvertedCount</h5>
+            <h6 class="mb-0">@Model.Kpi.QuoteConvertedCount</h6>
           </li>
         </ul>
         <hr class="my-3" />
@@ -272,10 +234,10 @@
 
   <!-- Top khách hàng -->
   <div class="col-12 col-xl-4 mb-4">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between">
-        <div class="card-title mb-0">
-          <h5 class="mb-0">Top khách hàng</h5>
+    <div class="tk-card h-100">
+      <div class="tk-card-head">
+        <div>
+          <h6 class="mb-0">Top khách hàng</h6>
           <small class="text-muted">Theo doanh thu</small>
         </div>
         <a href="/khach-hang" class="btn btn-sm btn-label-primary">Tất cả</a>
@@ -306,27 +268,30 @@
 @if (Model.CanCare)
 {
   @* Quản lý lịch hẹn — bản cũ có bảng CSKH ngay trên Tổng quan. *@
-  <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0">Quản lý lịch hẹn</h5>
+  <div class="tk-card mb-4">
+    <div class="tk-card-head">
+      <h6 class="mb-0">Quản lý lịch hẹn</h6>
       <a href="/lich-hen" class="btn btn-sm btn-label-primary">Tất cả</a>
     </div>
     <div class="table-responsive">
       <table class="table table-hover mb-0">
-        <thead><tr><th>Tiêu đề</th><th>Khách hàng</th><th>Nội dung</th><th>Nhắc lúc</th><th>Trạng thái</th></tr></thead>
+        @* Bỏ cột "Nội dung": trên màn tổng quan nó chỉ là một đoạn văn dài cắt cụt, không giúp
+           quyết định gì. Cần đọc chi tiết thì bấm sang màn Lịch hẹn. *@
+        <thead><tr><th>Tiêu đề</th><th>Khách hàng</th><th>Nhắc lúc</th><th class="text-end">Trạng thái</th></tr></thead>
         <tbody>
         @if (Model.Cares.Count == 0)
         {
-          <tr><td colspan="5" class="text-center text-muted py-4">Chưa có lịch hẹn</td></tr>
+          <tr><td colspan="4" class="text-center text-muted py-4">Chưa có lịch hẹn</td></tr>
         }
         @foreach (var c in Model.Cares)
         {
+          @* Ô "Nhắc hẹn" là ô NGÀY nên phần lớn bản ghi không có giờ — hiện giờ giả là nói dối. *@
+          var hasTime = c.RemindAt is { } rt && rt.UtcDateTime.TimeOfDay != TimeSpan.Zero;
           <tr>
             <td class="fw-medium">@c.Title</td>
             <td>@(c.CustomerName ?? "—")</td>
-            <td class="text-muted">@(string.IsNullOrWhiteSpace(c.Detail) ? "—" : c.Detail)</td>
-            <td>@(c.RemindAt?.ToLocalTime().ToString("HH:mm dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "—")</td>
-            <td><span class="badge bg-label-@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusColor(c.Status)">@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusLabel(c.Status)</span></td>
+            <td>@(c.RemindAt is { } r ? (hasTime ? r.ToLocalTime().ToString("HH:mm dd/MM/yyyy", vi) : r.ToString("dd/MM/yyyy", vi)) : "—")</td>
+            <td class="text-end"><span class="badge bg-label-@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusColor(c.Status)">@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusLabel(c.Status)</span></td>
           </tr>
         }
         </tbody>
@@ -336,8 +301,8 @@
 }
 
 @* Hiệu suất theo CHI NHÁNH — khác với "theo phòng ban" ở trên, bản cũ có cả hai. *@
-<div class="card mb-4">
-  <div class="card-header"><h5 class="mb-0">Hiệu suất theo chi nhánh</h5></div>
+<div class="tk-card mb-4">
+  <div class="tk-card-head"><h6 class="mb-0">Hiệu suất theo chi nhánh</h6></div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead><tr>
@@ -366,9 +331,9 @@
 </div>
 
 @* Vinh danh chiến binh sales — top 5 theo doanh thu, kèm hoa hồng. *@
-<div class="card mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Vinh danh chiến binh sales</h5>
+<div class="tk-card mb-4">
+  <div class="tk-card-head">
+    <h6 class="mb-0">Vinh danh chiến binh sales</h6>
     <a href="/hoa-hong-theo-nguon" class="btn btn-sm btn-label-primary">Báo cáo hoa hồng</a>
   </div>
   <div class="table-responsive">
@@ -394,12 +359,12 @@
 
 @if (Model.CanDeparture)
 {
-  <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0">Lịch khởi hành</h5>
+  <div class="tk-card mb-4">
+    <div class="tk-card-head">
+      <h6 class="mb-0">Lịch khởi hành</h6>
       <a href="/lich-dieu-hanh" class="small">Xem lịch điều hành →</a>
     </div>
-    <div class="card-body"><div id="cal"></div></div>
+    <div class="tk-card-body"><div id="cal"></div></div>
   </div>
 }
 
@@ -411,6 +376,13 @@
 
     $(function () {
       var label = '#a8aaae', border = '#dbdade';
+      // Rút gọn tiền cho nhãn biểu đồ — số đầy đủ vẫn nằm ở tooltip.
+      function money(v) {
+        v = Number(v) || 0;
+        if (Math.abs(v) >= 1e9) { return (v / 1e9).toFixed(1).replace('.', ',') + ' tỷ'; }
+        if (Math.abs(v) >= 1e6) { return Math.round(v / 1e6) + ' tr'; }
+        return v.toLocaleString('vi-VN');
+      }
 
       if (DEPT.length) {
         new ApexCharts(document.querySelector('#deptChart'), {
@@ -424,7 +396,8 @@
           dataLabels: { enabled: false },
           legend: { labels: { colors: label } },
           xaxis: { categories: DEPT.map(function (d) { return d.name; }), labels: { style: { colors: label } }, axisBorder: { show: false } },
-          yaxis: { labels: { style: { colors: label }, formatter: function (v) { return tk.money(v); } } },
+          // Trục tiền RÚT GỌN: "50.000.000.000" chiếm gần nửa bề ngang biểu đồ, đọc cũng không kịp.
+          yaxis: { labels: { style: { colors: label }, formatter: money } },
           grid: { borderColor: border, strokeDashArray: 6 },
           tooltip: { y: { formatter: function (v) { return tk.money(v); } } }
         }).render();
@@ -441,7 +414,12 @@
           legend: { position: 'bottom', labels: { colors: label } },
           dataLabels: { enabled: false },
           stroke: { width: 0 },
-          tooltip: { y: { formatter: function (v) { return tk.money(v); } } }
+          // Vòng tròn rỗng ruột mà không có TỔNG ở giữa thì phải tự cộng nhẩm mới biết quy mô.
+          plotOptions: { pie: { donut: { labels: { show: true,
+            value: { formatter: money },
+            total: { show: true, label: 'Tổng thu', color: label,
+                     formatter: function (w) { return money(w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0)); } } } } } },
+          tooltip: { y: { formatter: function (v) { return tk.money(v) + ' ₫'; } } }
         }).render();
       } else {
         $('#cashDonut').html('<p class="text-muted text-center py-5 mb-0">Chưa có phiếu thu nào.</p>');
