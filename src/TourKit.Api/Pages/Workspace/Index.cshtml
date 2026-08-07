@@ -107,7 +107,7 @@
           <option value="year">Năm nay</option>
         </select>
       </div>
-      <div id="chart-revenue" style="min-height:260px"></div>
+      <div id="chart-revenue" style="min-height:290px"></div>
       <div class="tk-minis">
         <div class="tk-mini"><small>Hôm nay</small><b title="@Full(Model.Pulse.Today)">@Short(Model.Pulse.Today)</b></div>
         <div class="tk-mini"><small>Tuần này</small><b title="@Full(Model.Pulse.ThisWeek)">@Short(Model.Pulse.ThisWeek)</b></div>
@@ -340,7 +340,7 @@
   @* ===== Top công nợ ===== *@
   @if (Model.CanDashboard)
   {
-    <div class="col-12 col-lg-6 col-xxl-4">
+    <div class="col-12 col-xl-8">
       <div class="tk-card h-100">
         <div class="tk-card-head">
           <h6 class="mb-0">Top công nợ phải thu</h6>
@@ -355,7 +355,7 @@
           {
             @* Biểu đồ cột NGANG: tên khách dài nên nằm ngang mới đọc được, và so độ dài cột là
                thấy ngay ai nợ nhiều nhất — trực quan hơn bảng số. *@
-            <div id="chart-debt" style="min-height:240px"></div>
+            <div id="chart-debt" style="min-height:320px"></div>
             <div class="tk-legend">
               <span><i class="bg-danger"></i>Trên 50tr</span>
               <span><i class="bg-warning"></i>20tr – 50tr</span>
@@ -368,7 +368,7 @@
   }
 
   @* ===== Thông báo mới ===== *@
-  <div class="col-12 col-lg-6 col-xxl-4">
+  <div class="col-12 col-xl-4">
     <div class="tk-card h-100">
       <div class="tk-card-head">
         <h6 class="mb-0">Thông báo mới</h6>
@@ -471,10 +471,10 @@
         var debtValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopDebt.Select(d => d.Outstanding)));
         var debtColors = debtValues.map(function (v) { return v >= 5e7 ? '#ff3e1d' : v >= 2e7 ? '#ffab00' : '#71dd37'; });
         new ApexCharts(debtEl, {
-          chart: { type: 'bar', height: 240, toolbar: { show: false }, parentHeightOffset: 0 },
+          chart: { type: 'bar', height: 320, toolbar: { show: false }, parentHeightOffset: 0 },
           series: [{ name: 'Còn nợ', data: debtValues }],
           colors: debtColors,
-          plotOptions: { bar: { horizontal: true, distributed: true, borderRadius: 4, barHeight: '62%' } },
+          plotOptions: { bar: { horizontal: true, distributed: true, borderRadius: 4, barHeight: '55%' } },
           dataLabels: {
             enabled: true, textAnchor: 'start', offsetX: 4,
             style: { fontSize: '11px', colors: ['#5d596c'] },
@@ -497,7 +497,7 @@
       var primary = getComputedStyle(document.documentElement).getPropertyValue('--bs-primary') || '#7367f0';
 
       var chart = new ApexCharts(el, {
-        chart: { type: 'area', height: 260, toolbar: { show: false }, parentHeightOffset: 0 },
+        chart: { type: 'area', height: 290, toolbar: { show: false }, parentHeightOffset: 0 },
         series: [{ name: 'Doanh thu', data: series }],
         colors: [primary.trim()],
         stroke: { curve: 'smooth', width: 2.5 },

@@ -89,10 +89,12 @@ html.dark-style {
    (.tk-surface của màn danh sách cố ý có kẻ ngăn giữa các vùng — dùng nhầm sang đây thì mỗi thẻ
    nhìn như hai hộp chồng lên nhau.) */
 .tk-card {
+  --tk-card-pad: 1.25rem;
   display: flex; flex-direction: column;
   background: var(--bs-card-bg, #fff);
   border: 1px solid var(--bs-border-color);
-  border-radius: .75rem; padding: 1.25rem;
+  border-radius: .75rem; padding: var(--tk-card-pad);
+  overflow: hidden;          /* lịch/biểu đồ kéo sát mép không được đè ra ngoài góc bo */
 }
 .tk-card-head {
   display: flex; align-items: center; justify-content: space-between; gap: .75rem;
@@ -100,6 +102,16 @@ html.dark-style {
 }
 .tk-card-head h6 { color: var(--bs-heading-color); font-weight: 600; }
 .tk-card-body { flex: 1 1 auto; min-height: 0; }
+
+/* FullCalendar đặt trong .tk-card: theme kéo khung lịch ra sát mép bằng `.fc-view-harness
+   { margin: 0 -1.5rem }` — đúng bằng đệm 1.5rem của .card-body mà nó vốn thiết kế cho.
+   Thẻ ở đây đệm 1.25rem nên lịch LÒI ra khỏi viền thẻ mỗi bên vài pixel.
+   Kéo đúng bằng đệm của thẻ → cạnh lịch trùng khít viền thẻ. */
+/* FullCalendar gắn class .fc lên CHÍNH #cal (không tạo thẻ .fc con) — viết `#cal .fc .fc-view-harness`
+   là không khớp gì cả. */
+.tk-card #cal .fc-view-harness {
+  margin: 0 -1.25rem -1.25rem !important;   /* khớp đúng đệm 1.25rem của .tk-card */
+}
 
 .tk-datechip {
   display: inline-flex; align-items: center; padding: .5rem .875rem;
