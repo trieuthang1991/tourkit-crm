@@ -122,7 +122,15 @@
         <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" placeholder="Nhập số điện thoại" /></div>
         <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" placeholder="Nhập email" /></div>
       </div>
-      <div class="mb-3"><label class="form-label">Nguồn</label><input type="text" name="Input.Source" class="form-control" placeholder="Facebook, Hotline…" /></div>
+      @* Nguồn lấy từ DANH MỤC (/nguon-khach), không cho gõ tay: gõ tay thì "Facebook", "facebook",
+         "FB", "Face book" thành bốn nguồn khác nhau, và mọi báo cáo theo nguồn hỏng theo. *@
+      <div class="mb-3">
+        <label class="form-label">Nguồn</label>
+        <select name="Input.Source" class="form-select tk-s2" data-placeholder="Chọn nguồn">
+          <option value="">— Chưa xác định —</option>
+          @foreach (var s in Model.SourceCatalog) { <option value="@s">@s</option> }
+        </select>
+      </div>
       <div class="mb-3">
         <label class="form-label">Trạng thái</label>
         <select name="Input.Status" class="form-select">
@@ -295,8 +303,21 @@
 
       // Bọc tk.form để gắn luồng trao đổi theo ĐÚNG cơ hội đang mở. Cơ hội mới chưa có id nên
       // ẩn hẳn — không có gì để bình luận, và gắn vào id rỗng sẽ tạo một luồng mồ côi.
+      // Cơ hội cũ có thể mang nguồn KHÔNG còn trong danh mục (dữ liệu gõ tay trước đây, hoặc danh mục
+      // đã đổi). Select không có option đó thì tk.form sẽ nhảy về option đầu và lần Lưu kế tiếp âm
+      // thầm ĐỔI MẤT nguồn cũ. Thêm tạm option cho đúng giá trị đang có để không mất dữ liệu.
+      function keepLegacySource(row) {
+        var sel = document.querySelector('#frm [name="Input.Source"]');
+        var val = row && row.source;
+        if (!sel || !val) { return; }
+        if ([].some.call(sel.options, function (o) { return o.value === val; })) { return; }
+        var opt = new Option(val + ' (ngoài danh mục)', val);
+        sel.add(opt, sel.options[1] || null);
+      }
+
       oc = {
         open: function (row) {
+          keepLegacySource(row);
           ocForm.open(row);
           var box = document.getElementById('lead-comments');
           var id = row && row.id;

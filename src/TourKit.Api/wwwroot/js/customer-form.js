@@ -10,6 +10,15 @@
     return el ? el.value : '';
   }
 
+  // Giá trị đang lưu của bản ghi có thể KHÔNG còn trong danh mục (dữ liệu cũ gõ tay, hoặc danh mục
+  // đã sửa). Select không có option đó thì select2 hiện trống và lần Lưu kế tiếp âm thầm XOÁ MẤT
+  // giá trị cũ. Thêm tạm một option cho đúng giá trị đang có.
+  function keepLegacyOption(el, v) {
+    if (!el || el.tagName !== 'SELECT' || !v) { return; }
+    if ([].some.call(el.options, function (o) { return o.value === v; })) { return; }
+    el.add(new Option(v + ' (ngoài danh mục)', v), el.options[1] || null);
+  }
+
   // Set giá trị: flatpickr -> setDate; select2 -> jQuery val+trigger; input thường -> .value.
   function setVal(name, v) {
     var el = document.querySelector('#customerForm [name="' + name + '"]');
@@ -19,9 +28,11 @@
       return;
     }
     if ($ && (el.classList.contains('oc-select2') || el.classList.contains('oc-select2-tags'))) {
+      keepLegacyOption(el, v);
       $(el).val(v === null || v === undefined || v === '' ? null : v).trigger('change');
       return;
     }
+    keepLegacyOption(el, v);
     el.value = (v === null || v === undefined) ? '' : v;
   }
 

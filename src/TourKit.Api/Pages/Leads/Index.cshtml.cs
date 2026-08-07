@@ -22,16 +22,22 @@ public class IndexModel : TkListPageModel
     private readonly ILeadService _svc;
     private readonly UserDirectory _users;
     private readonly IBranchService _branches;
+    private readonly ICustomerSourceService _sources;
 
-    public IndexModel(ILeadService svc, UserDirectory users, IBranchService branches)
+    public IndexModel(ILeadService svc, UserDirectory users, IBranchService branches, ICustomerSourceService sources)
     {
         _svc = svc;
         _users = users;
         _branches = branches;
+        _sources = sources;
     }
 
     public LeadStatsDto Stats { get; private set; } = new(0, 0, 0, 0, 0, 0, 0);
+    /// <summary>Nguồn cho Ô LỌC: danh mục + những giá trị đang thật sự có trong dữ liệu.</summary>
     public IReadOnlyList<string> Sources { get; private set; } = [];
+
+    /// <summary>Nguồn cho Ô NHẬP: CHỈ danh mục chuẩn — đây là chỗ chặn không cho sinh thêm giá trị mới.</summary>
+    public IReadOnlyList<string> SourceCatalog { get; private set; } = [];
     public IReadOnlyList<(Guid Id, string Name)> Users { get; private set; } = [];
     public IReadOnlyList<(Guid Id, string Name)> Branches { get; private set; } = [];
 
@@ -71,7 +77,16 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Sources = (await _svc.GetFilterOptionsAsync()).Sources;
+
+        SourceCatalog = (await _sources.ListAsync()).Select(x => x.Name).ToList();
+
+        // Ô LỌC gộp danh mục với giá trị đang có trong dữ liệu, KHÔNG chỉ lấy danh mục:
+        //  - danh mục mới thêm nhưng chưa có cơ hội nào vẫn lọc được;
+        //  - dữ liệu cũ (gõ tay, có thể sai chính tả) vẫn tìm lại được thay vì biến mất khỏi bộ lọc.
+        Sources = SourceCatalog
+            .Union((await _svc.GetFilterOptionsAsync()).Sources, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.CurrentCulture)
+            .ToList();
         Users = (await _users.ListAsync()).Select(u => (u.Id, u.FullName)).ToList();
         Branches = (await _branches.ListAsync()).Select(b => (b.Id, b.Name)).ToList();
     }
