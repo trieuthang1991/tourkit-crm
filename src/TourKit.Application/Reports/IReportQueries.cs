@@ -23,4 +23,6 @@ public interface IReportQueries
     Task<IReadOnlyList<TopCustomerRowDto>> GetTopCustomersAsync(int top = 10);
     Task<KpiSummaryDto> GetKpiSummaryAsync();
 
+    /// <summary>Nhịp doanh thu cho màn Bàn làm việc — xem <see cref="WorkspacePulseDto"/>.</summary>
+    Task<WorkspacePulseDto> GetWorkspacePulseAsync(int days = 7);
 }

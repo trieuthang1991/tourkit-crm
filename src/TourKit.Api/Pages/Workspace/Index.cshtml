@@ -2,245 +2,225 @@
 @using System.Globalization
 @model TourKit.Api.Pages.Workspace.IndexModel
 @{
-  ViewData["Title"] = "Bàn làm việc";
-  string Money(decimal v) => v.ToString("#,##0", CultureInfo.InvariantCulture);
-  string Compact(decimal v) => v >= 1_000_000_000 ? (v / 1_000_000_000).ToString("0.#", CultureInfo.InvariantCulture) + " tỷ"
-    : v >= 1_000_000 ? (v / 1_000_000).ToString("0.#", CultureInfo.InvariantCulture) + " tr"
-    : Money(v);
+    ViewData["Title"] = "Bàn làm việc";
+    var vi = new CultureInfo("vi-VN");
+    var today = DateTimeOffset.Now;
+
+    // Tiền hiển thị ở thẻ tóm tắt rút gọn (94,3 tỷ) — con số đầy đủ nằm ở tooltip và ở màn báo cáo.
+    // Thẻ tóm tắt để LIẾC, "94.323.595.000" ở cỡ chữ lớn thì không liếc được.
+    string Short(decimal v)
+    {
+        var a = Math.Abs(v);
+        if (a >= 1_000_000_000m) { return (v / 1_000_000_000m).ToString("0.#", vi) + " tỷ"; }
+        if (a >= 1_000_000m) { return (v / 1_000_000m).ToString("0.#", vi) + " tr"; }
+        if (a >= 1_000m) { return (v / 1_000m).ToString("0.#", vi) + " ng"; }
+        return v.ToString("#,##0", vi);
+    }
+    string Full(decimal v) => v.ToString("#,##0", vi) + " ₫";
 }
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.css" />
-  @if (Model.CanDeparture)
-  {
-    <link rel="stylesheet" href="~/vendor/libs/fullcalendar/fullcalendar.css" />
-  }
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
-<div class="mb-4">
-  <h4 class="mb-1">Bàn làm việc</h4>
-  <p class="text-muted mb-0">Chào mừng, @Model.UserName — tổng quan công việc và hoạt động hôm nay.</p>
-</div>
-
-@* Thao tác nhanh — chỉ hiện nút mà người dùng có quyền (bám quickActions hệ cũ). *@
-<div class="d-flex flex-wrap gap-2 mb-4">
-  @if (Model.CanTask)     { <a href="/cong-viec" class="btn btn-label-primary btn-sm"><i class="ti ti-checkbox me-1"></i> Tạo việc</a> }
-  @if (Model.CanLead)     { <a href="/co-hoi" class="btn btn-label-primary btn-sm"><i class="ti ti-target me-1"></i> Tạo cơ hội</a> }
-  @if (Model.CanCare)     { <a href="/lich-hen" class="btn btn-label-primary btn-sm"><i class="ti ti-calendar-event me-1"></i> Tạo lịch hẹn</a> }
-  @if (Model.CanCustomer) { <a href="/khach-hang" class="btn btn-label-primary btn-sm"><i class="ti ti-user-plus me-1"></i> Tạo Data khách</a> }
-  @if (Model.CanBooking)  { <a href="/don-hang" class="btn btn-label-primary btn-sm"><i class="ti ti-shopping-cart me-1"></i> Tạo đơn</a> }
-</div>
-
-@if (Model.CanDashboard)
-{
-  @* 4 KPI của bản cũ: doanh thu · đơn hàng · khách hàng · công nợ phải thu *@
-  <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-lg-3">
-      <div class="card h-100"><div class="card-body d-flex align-items-center">
-        <div class="avatar me-3"><span class="avatar-initial rounded bg-label-success"><i class="ti ti-wallet"></i></span></div>
-        <div><small class="text-muted d-block">Doanh thu (đã ghi nhận)</small><h5 class="mb-0" title="@Money(Model.Summary.TotalRevenue)">@Compact(Model.Summary.TotalRevenue)</h5></div>
-      </div></div>
-    </div>
-    <div class="col-sm-6 col-lg-3">
-      <div class="card h-100"><div class="card-body d-flex align-items-center">
-        <div class="avatar me-3"><span class="avatar-initial rounded bg-label-info"><i class="ti ti-shopping-cart"></i></span></div>
-        <div><small class="text-muted d-block">Đơn hàng</small><h5 class="mb-0 tk-num">@Model.Summary.OrderCount.ToString("#,##0")</h5></div>
-      </div></div>
-    </div>
-    <div class="col-sm-6 col-lg-3">
-      <div class="card h-100"><div class="card-body d-flex align-items-center">
-        <div class="avatar me-3"><span class="avatar-initial rounded bg-label-primary"><i class="ti ti-users"></i></span></div>
-        <div><small class="text-muted d-block">Khách hàng</small><h5 class="mb-0 tk-num">@Model.CustomerCount.ToString("#,##0")</h5></div>
-      </div></div>
-    </div>
-    <div class="col-sm-6 col-lg-3">
-      <div class="card h-100"><div class="card-body d-flex align-items-center">
-        <div class="avatar me-3"><span class="avatar-initial rounded bg-label-danger"><i class="ti ti-cash"></i></span></div>
-        <div><small class="text-muted d-block">Công nợ phải thu</small><h5 class="mb-0" title="@Money(Model.Summary.ReceivableOutstanding)">@Compact(Model.Summary.ReceivableOutstanding)</h5></div>
-      </div></div>
-    </div>
+@* ===== Lời chào + ngày hôm nay ===== *@
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-1">Xin chào, @Model.UserName 👋</h4>
+    <p class="text-muted mb-0">Chúc bạn một ngày làm việc hiệu quả!</p>
   </div>
-}
+  <span class="tk-datechip"><i class="ti ti-calendar me-2"></i>@today.ToString("dddd, d 'tháng' M, yyyy", vi)</span>
+</div>
 
-@* ---- Hàng 1: tỉ lệ công việc · thông báo · công nợ khách hàng ---- *@
-<div class="row g-4 mb-4">
-  @if (Model.CanTask)
-  {
-    <div class="col-lg-4">
-      <div class="card h-100">
-        <div class="card-header"><h5 class="mb-0">Tỉ lệ công việc</h5></div>
-        <div class="card-body">
-          <div id="task-donut"></div>
-          <div class="d-flex flex-wrap justify-content-center gap-3 mt-2">
-            <span class="small"><span class="badge bg-label-secondary">Cần làm</span> @Model.TaskStats.Todo</span>
-            <span class="small"><span class="badge bg-label-info">Đang làm</span> @Model.TaskStats.InProgress</span>
-            <span class="small"><span class="badge bg-label-success">Hoàn thành</span> @Model.TaskStats.Done</span>
-            <span class="small"><span class="badge bg-label-danger">Huỷ</span> @Model.TaskStats.Cancelled</span>
+@* ===== 5 thẻ số liệu ===== *@
+@{
+    // Mỗi thẻ: nhãn · số lớn · một dòng phụ NÓI ĐƯỢC điều gì đó. Không có số so sánh thật thì
+    // ghi thông tin thật khác, không bịa "+12,5% so với tuần trước".
+    var revDelta = TourKit.Api.Pages.Workspace.IndexModel.Delta(Model.Pulse.Revenue7, Model.Pulse.RevenuePrev7);
+    var ordDelta = TourKit.Api.Pages.Workspace.IndexModel.Delta(Model.Pulse.Orders7, Model.Pulse.OrdersPrev7);
+    var cusDelta = TourKit.Api.Pages.Workspace.IndexModel.Delta(Model.Pulse.Customers7, Model.Pulse.CustomersPrev7);
+
+    string DeltaHtml(decimal? d)
+    {
+        if (d is null) { return "<span class=\"tk-kpi-sub text-muted\">chưa có kỳ trước để so</span>"; }
+        var up = d >= 0;
+        var icon = up ? "ti-arrow-up-right" : "ti-arrow-down-right";
+        var tone = up ? "text-success" : "text-danger";
+        return $"<span class=\"tk-kpi-sub {tone}\"><i class=\"ti {icon}\"></i>{Math.Abs(d.Value).ToString("0.#", vi)}% so với tuần trước</span>";
+    }
+}
+<div class="tk-kpi-row mb-4">
+  <div class="tk-kpi">
+    <span class="tk-kpi-ic bg-label-primary"><i class="ti ti-cash"></i></span>
+    <div class="tk-kpi-label">Doanh thu (đã ghi nhận)</div>
+    <div class="tk-kpi-value" title="@Full(Model.Summary.TotalReceived)">@Short(Model.Summary.TotalReceived)</div>
+    @Html.Raw(DeltaHtml(revDelta))
+  </div>
+  <div class="tk-kpi">
+    <span class="tk-kpi-ic bg-label-info"><i class="ti ti-shopping-cart"></i></span>
+    <div class="tk-kpi-label">Đơn hàng</div>
+    <div class="tk-kpi-value">@Model.Summary.OrderCount.ToString("#,##0", vi)</div>
+    @Html.Raw(DeltaHtml(ordDelta))
+  </div>
+  <div class="tk-kpi">
+    <span class="tk-kpi-ic bg-label-success"><i class="ti ti-users"></i></span>
+    <div class="tk-kpi-label">Khách hàng</div>
+    <div class="tk-kpi-value">@Model.CustomerCount.ToString("#,##0", vi)</div>
+    @Html.Raw(DeltaHtml(cusDelta))
+  </div>
+  <div class="tk-kpi">
+    <span class="tk-kpi-ic bg-label-warning"><i class="ti ti-briefcase"></i></span>
+    <div class="tk-kpi-label">Tour hôm nay</div>
+    <div class="tk-kpi-value">@Model.TodayDepartures</div>
+    <span class="tk-kpi-sub text-muted">@Model.TodayDepartures khởi hành, @Model.RunningDepartures đang diễn ra</span>
+  </div>
+  <div class="tk-kpi">
+    <span class="tk-kpi-ic bg-label-danger"><i class="ti ti-report-money"></i></span>
+    <div class="tk-kpi-label">Công nợ phải thu</div>
+    <div class="tk-kpi-value" title="@Full(Model.Summary.ReceivableOutstanding)">@Short(Model.Summary.ReceivableOutstanding)</div>
+    <span class="tk-kpi-sub text-muted">@Model.DebtOrders.ToString("#,##0", vi) đơn còn nợ</span>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  @* ===== Doanh thu theo thời gian ===== *@
+  <div class="col-12 col-xl-8">
+    <div class="tk-surface h-100">
+      <div class="tk-pad pb-0 d-flex flex-wrap gap-2 justify-content-between align-items-start">
+        <div>
+          <h6 class="mb-2">Doanh thu theo thời gian</h6>
+          <div class="d-flex align-items-baseline gap-2">
+            <span class="tk-big" title="@Full(Model.Pulse.Revenue7)">@Short(Model.Pulse.Revenue7)</span>
+            @Html.Raw(DeltaHtml(revDelta))
           </div>
         </div>
+        <span class="badge bg-label-secondary">7 ngày qua</span>
+      </div>
+      <div class="tk-pad pt-2"><div id="chart-revenue" style="min-height:260px"></div></div>
+      <div class="tk-minis">
+        <div class="tk-mini"><small>Hôm nay</small><b title="@Full(Model.Pulse.Today)">@Short(Model.Pulse.Today)</b></div>
+        <div class="tk-mini"><small>Tuần này</small><b title="@Full(Model.Pulse.ThisWeek)">@Short(Model.Pulse.ThisWeek)</b></div>
+        <div class="tk-mini"><small>Tháng này</small><b title="@Full(Model.Pulse.ThisMonth)">@Short(Model.Pulse.ThisMonth)</b></div>
+        <div class="tk-mini"><small>Năm nay</small><b title="@Full(Model.Pulse.ThisYear)">@Short(Model.Pulse.ThisYear)</b></div>
       </div>
     </div>
-  }
+  </div>
 
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Thông báo bạn cần quan tâm</h5>
-        <a href="/thong-bao" class="small">Xem tất cả</a>
-      </div>
-      <div class="card-body p-0" style="max-height:340px;overflow-y:auto">
-        @if (Model.Notifications.Count == 0)
-        {
-          <div class="text-muted text-center py-5">Không có thông báo</div>
-        }
-        else
-        {
-          <ul class="list-group list-group-flush">
-            @foreach (var n in Model.Notifications)
+  @* ===== Trung tâm cần xử lý ===== *@
+  <div class="col-12 col-xl-4">
+    <div class="tk-surface h-100">
+      <div class="tk-pad pb-2"><h6 class="mb-0">Trung tâm cần xử lý</h6></div>
+      <div class="tk-pad pt-0">
+        @{
+            // Chỉ liệt kê việc CÓ số thật để bấm vào là ra đúng danh sách đó.
+            var todos = new List<(bool Show, string Icon, string Color, string Title, string Sub, int Count, string Url)>
             {
-              <li class="list-group-item d-flex align-items-start">
-                <div class="avatar avatar-sm me-3 flex-shrink-0">
-                  <span class="avatar-initial rounded-circle @(n.IsRead ? "bg-label-secondary" : "bg-label-primary")"><i class="ti ti-bell"></i></span>
-                </div>
-                <div class="flex-grow-1" style="min-width:0">
-                  <div class="d-flex justify-content-between gap-2">
-                    <span class="@(n.IsRead ? "" : "fw-medium") text-truncate">
-                      @if (!string.IsNullOrWhiteSpace(n.LinkUrl))
-                      {
-                        <a href="@n.LinkUrl" class="text-body">@n.Title</a>
-                      }
-                      else
-                      {
-                        @n.Title
-                      }
-                    </span>
-                    <small class="text-muted flex-shrink-0">@n.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM", CultureInfo.InvariantCulture)</small>
-                  </div>
-                  @if (!string.IsNullOrWhiteSpace(n.Message))
-                  {
-                    <small class="text-muted d-block text-truncate">@n.Message</small>
-                  }
-                </div>
-              </li>
-            }
-          </ul>
+                (Model.CanReceipt, "ti ti-file-invoice", "danger", "Phiếu cần duyệt", "phiếu đang chờ duyệt", Model.PendingReceiptTotal + Model.PendingPaymentTotal, "/phieu-thu-cho"),
+                (Model.CanDashboard, "ti ti-report-money", "warning", "Công nợ phải thu", "đơn còn nợ tiền khách", Model.DebtOrders, "/cong-no-khach"),
+                (Model.CanDeparture, "ti ti-plane-departure", "success", "Tour sắp khởi hành", "chuyến trong 7 ngày tới", Model.WeekDepartures.Count, "/chuyen-di"),
+                (Model.CanCare, "ti ti-alarm", "info", "Lịch hẹn quá hạn", "lịch chăm sóc đã qua ngày", Model.OverdueCares, "/lich-hen"),
+                (Model.CanTask, "ti ti-checklist", "primary", "Công việc quá hạn", "việc đã qua hạn chưa xong", Model.TaskStats.Overdue, "/cong-viec"),
+            };
+        }
+        <div class="tk-todo-list">
+          @foreach (var t in todos.Where(x => x.Show))
+          {
+            <a class="tk-todo" href="@t.Url">
+              <span class="tk-todo-ic bg-label-@t.Color"><i class="@t.Icon"></i></span>
+              <span class="tk-todo-text">
+                <b>@t.Title</b>
+                <small>@t.Count.ToString("#,##0", vi) @t.Sub</small>
+              </span>
+              <span class="badge bg-label-@(t.Count > 0 ? t.Color : "secondary")">@t.Count.ToString("#,##0", vi)</span>
+            </a>
+          }
+        </div>
+        @if (Model.CanTask)
+        {
+          <a class="tk-more" href="/cong-viec">Xem tất cả công việc <i class="ti ti-chevron-right"></i></a>
         }
       </div>
     </div>
   </div>
 
-  @if (Model.CanDashboard)
+  @* ===== Việc của tôi ===== *@
+  @if (Model.CanTask)
   {
-    <div class="col-lg-4">
-      <div class="card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Công nợ khách hàng</h5>
-          <a href="/cong-no-khach" class="small">Xem báo cáo</a>
+    <div class="col-12 col-lg-6 col-xxl-4">
+      <div class="tk-surface h-100">
+        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Việc của tôi</h6>
+          <a class="small" href="/cong-viec/cua-toi">Xem tất cả</a>
         </div>
-        <div class="card-body p-0" style="max-height:340px;overflow-y:auto">
-          @if (Model.TopDebt.Count == 0)
+        <div class="tk-pad pt-0">
+          @if (Model.MyTasks.Count == 0)
           {
-            <div class="text-muted text-center py-5">Không có công nợ</div>
+            <p class="text-muted mb-0 py-4 text-center">Bạn chưa được giao việc nào.</p>
           }
           else
           {
-            <ul class="list-group list-group-flush">
-              @{ var rank = 0; }
-              @foreach (var d in Model.TopDebt)
+            <div class="tk-list">
+              @foreach (var t in Model.MyTasks)
               {
-                rank++;
-                <li class="list-group-item d-flex align-items-center">
-                  <div class="avatar avatar-sm me-3 flex-shrink-0"><span class="avatar-initial rounded-circle bg-label-secondary">@rank</span></div>
-                  <div class="flex-grow-1" style="min-width:0">
-                    <div class="fw-medium text-truncate">@d.OrderCode</div>
-                    <small class="text-muted">Tổng @Money(d.Total) · đã thu @Money(d.Paid)</small>
-                  </div>
-                  <span class="fw-medium text-danger flex-shrink-0">@Money(d.Outstanding)</span>
-                </li>
-              }
-            </ul>
-          }
-        </div>
-      </div>
-    </div>
-  }
-</div>
-
-@* ---- Hàng 2: lịch hẹn hôm nay · phiếu cần duyệt · thông tin doanh nghiệp ---- *@
-<div class="row g-4 mb-4">
-  @if (Model.CanCare)
-  {
-    <div class="col-lg-4">
-      <div class="card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Lịch hẹn hôm nay</h5>
-          <a href="/lich-hen" class="small">Xem tất cả →</a>
-        </div>
-        <div class="card-body">
-          @if (Model.TodayCares.Count == 0)
-          {
-            <div class="text-muted">Hôm nay không có lịch hẹn</div>
-          }
-          else
-          {
-            foreach (var c in Model.TodayCares)
-            {
-              <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
-                <div style="min-width:0">
-                  <div class="text-truncate">@c.Title</div>
-                  @if (!string.IsNullOrWhiteSpace(c.CustomerName))
-                  {
-                    <small class="text-muted">@c.CustomerName</small>
-                  }
+                var over = t.DueDate is { } d && d < today && t.Status != 2 && t.Status != 3;
+                <div class="tk-line">
+                  <span class="tk-line-ic bg-label-@TourKit.Api.Pages.Workspace.IndexModel.TaskStatusColor(t.Status)"><i class="ti ti-checklist"></i></span>
+                  <span class="tk-line-text">
+                    <b>@t.Title</b>
+                    <small class="@(over ? "text-danger" : "")">@(t.DueDate?.ToString("dd/MM/yyyy", vi) ?? "Chưa đặt hạn")</small>
+                  </span>
+                  <span class="badge bg-label-@(t.Priority == 2 ? "danger" : t.Priority == 0 ? "secondary" : "info")">@TourKit.Api.Pages.Workspace.IndexModel.PriorityLabel(t.Priority)</span>
                 </div>
-                <span class="badge bg-label-warning flex-shrink-0">@c.RemindAt!.Value.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture)</span>
-              </div>
-            }
+              }
+            </div>
           }
         </div>
       </div>
     </div>
   }
 
+  @* ===== Phiếu cần duyệt ===== *@
   @if (Model.CanReceipt || Model.CanPayment)
   {
-    <div class="col-lg-4">
-      <div class="card h-100">
-        <div class="card-header pb-0"><h5 class="mb-0">Phiếu cần duyệt</h5></div>
-        <div class="card-body">
-          <ul class="nav nav-tabs" role="tablist">
+    <div class="col-12 col-lg-6 col-xxl-4">
+      <div class="tk-surface h-100">
+        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Phiếu cần duyệt</h6>
+          <a class="small" href="/phieu-thu-cho">Xem tất cả</a>
+        </div>
+        <div class="tk-pad pt-0">
+          <ul class="nav nav-tabs tk-tabs mb-2" role="tablist">
             @if (Model.CanReceipt)
             {
-              <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-receipt" type="button">Phiếu thu (@Model.PendingReceiptTotal)</button></li>
+              <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-receipt" type="button">Phiếu thu (@Model.PendingReceiptTotal.ToString("#,##0", vi))</button></li>
             }
             @if (Model.CanPayment)
             {
-              <li class="nav-item"><button class="nav-link @(Model.CanReceipt ? "" : "active")" data-bs-toggle="tab" data-bs-target="#tab-payment" type="button">Phiếu chi (@Model.PendingPaymentTotal)</button></li>
+              <li class="nav-item"><button class="nav-link @(Model.CanReceipt ? "" : "active")" data-bs-toggle="tab" data-bs-target="#tab-payment" type="button">Phiếu chi (@Model.PendingPaymentTotal.ToString("#,##0", vi))</button></li>
             }
           </ul>
-          <div class="tab-content px-0" style="max-height:280px;overflow-y:auto">
+          <div class="tab-content p-0">
             @if (Model.CanReceipt)
             {
               <div class="tab-pane fade show active" id="tab-receipt">
                 @if (Model.PendingReceipts.Count == 0)
                 {
-                  <div class="text-muted py-3">Không có phiếu chờ</div>
+                  <p class="text-muted mb-0 py-4 text-center">Không còn phiếu thu nào chờ duyệt.</p>
                 }
                 else
                 {
-                  foreach (var r in Model.PendingReceipts)
-                  {
-                    <div class="d-flex justify-content-between align-items-center gap-2 py-2 border-bottom">
-                      <div style="min-width:0">
-                        <a href="/phieu-thu" class="fw-medium d-block text-truncate">@r.Code</a>
-                        <small class="text-muted">@(r.CustomerName ?? r.OrderCode ?? "—")</small>
+                  <div class="tk-list">
+                    @foreach (var r in Model.PendingReceipts)
+                    {
+                      <div class="tk-line">
+                        <span class="tk-line-ic bg-label-success"><i class="ti ti-arrow-down-circle"></i></span>
+                        <span class="tk-line-text"><b>@r.Code</b><small>@(r.Partner ?? "—")</small></span>
+                        <span class="tk-line-money" title="@Full(r.Amount)">@Short(r.Amount)</span>
                       </div>
-                      <div class="text-end flex-shrink-0">
-                        <div class="fw-medium">@Money(r.Amount)</div>
-                        <span class="badge bg-label-success">THU</span>
-                      </div>
-                    </div>
-                  }
+                    }
+                  </div>
                 }
               </div>
             }
@@ -249,23 +229,20 @@
               <div class="tab-pane fade @(Model.CanReceipt ? "" : "show active")" id="tab-payment">
                 @if (Model.PendingPayments.Count == 0)
                 {
-                  <div class="text-muted py-3">Không có phiếu chờ</div>
+                  <p class="text-muted mb-0 py-4 text-center">Không còn phiếu chi nào chờ duyệt.</p>
                 }
                 else
                 {
-                  foreach (var p in Model.PendingPayments)
-                  {
-                    <div class="d-flex justify-content-between align-items-center gap-2 py-2 border-bottom">
-                      <div style="min-width:0">
-                        <a href="/phieu-chi" class="fw-medium d-block text-truncate">@p.Code</a>
-                        <small class="text-muted">@(p.ProviderName ?? p.OrderCode ?? "—")</small>
+                  <div class="tk-list">
+                    @foreach (var p in Model.PendingPayments)
+                    {
+                      <div class="tk-line">
+                        <span class="tk-line-ic bg-label-danger"><i class="ti ti-arrow-up-circle"></i></span>
+                        <span class="tk-line-text"><b>@p.Code</b><small>@(p.Partner ?? "—")</small></span>
+                        <span class="tk-line-money" title="@Full(p.Amount)">@Short(p.Amount)</span>
                       </div>
-                      <div class="text-end flex-shrink-0">
-                        <div class="fw-medium">@Money(p.Amount)</div>
-                        <span class="badge bg-label-danger">CHI</span>
-                      </div>
-                    </div>
-                  }
+                    }
+                  </div>
                 }
               </div>
             }
@@ -275,207 +252,212 @@
     </div>
   }
 
-  @if (Model.CanPost)
+  @* ===== Lịch hôm nay ===== *@
+  @if (Model.CanCare)
   {
-    <div class="col-lg-4">
-      <div class="card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Thông tin doanh nghiệp</h5>
-          <a href="/bai-viet" class="small">Xem thêm</a>
+    <div class="col-12 col-xxl-4">
+      <div class="tk-surface h-100">
+        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Lịch hôm nay</h6>
+          <a class="small" href="/lich-hen">Xem lịch đầy đủ</a>
         </div>
-        <div class="card-body p-0" style="max-height:300px;overflow-y:auto">
-          @if (Model.Posts.Count == 0)
+        <div class="tk-pad pt-0">
+          @if (Model.TodayCares.Count == 0)
           {
-            <div class="text-muted text-center py-5">Chưa có bài viết</div>
+            <p class="text-muted mb-0 py-4 text-center">Hôm nay không có lịch hẹn nào.</p>
           }
           else
           {
-            <ul class="list-group list-group-flush">
-              @foreach (var p in Model.Posts)
+            <div class="tk-time">
+              @foreach (var c in Model.TodayCares)
               {
-                <li class="list-group-item d-flex align-items-start">
-                  <div class="avatar avatar-sm me-3 flex-shrink-0"><span class="avatar-initial rounded-circle bg-label-info"><i class="ti ti-article"></i></span></div>
-                  <div style="min-width:0">
-                    <a href="/bai-viet" class="fw-medium d-block text-truncate">@p.Title</a>
-                    <small class="text-muted">
-                      @if (!string.IsNullOrWhiteSpace(p.CategoryName))
-                      {
-                        <span class="badge bg-label-info me-1">@p.CategoryName</span>
-                      }
-                      @(p.PublishedAt?.ToLocalTime().ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "")
-                    </small>
-                  </div>
-                </li>
+                <div class="tk-time-row">
+                  <span class="tk-time-at">@(c.RemindAt?.ToLocalTime().ToString("HH:mm", vi) ?? "--:--")</span>
+                  <span class="tk-time-dot bg-@TourKit.Api.Pages.Workspace.IndexModel.CareStatusColor(c.Status)"></span>
+                  <span class="tk-time-text">
+                    <b>@c.Title</b>
+                    <small>@(c.CustomerName ?? "—")</small>
+                  </span>
+                </div>
               }
-            </ul>
+            </div>
           }
         </div>
       </div>
     </div>
   }
-</div>
 
-@if (Model.CanTask)
-{
-  <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0">Công việc của tôi</h5>
-      <a href="/cong-viec" class="small">Xem tất cả →</a>
-    </div>
-    <div class="card-body pb-0">
-      <div class="d-flex flex-wrap gap-2 mb-3">
-        <span class="badge bg-label-secondary">Cần làm · @Model.TaskStats.Todo</span>
-        <span class="badge bg-label-info">Đang làm · @Model.TaskStats.InProgress</span>
-        <span class="badge bg-label-success">Hoàn thành · @Model.TaskStats.Done</span>
-        <span class="badge bg-label-danger">Quá hạn · @Model.TaskStats.Overdue</span>
+  @* ===== Tour khởi hành trong tuần ===== *@
+  @if (Model.CanDeparture)
+  {
+    <div class="col-12">
+      <div class="tk-surface">
+        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Tour khởi hành trong tuần</h6>
+          <a class="small" href="/chuyen-di">Xem tất cả tour</a>
+        </div>
+        <div class="tk-pad pt-0">
+          @if (Model.WeekDepartures.Count == 0)
+          {
+            <p class="text-muted mb-0 py-4 text-center">Không có chuyến nào khởi hành trong 7 ngày tới.</p>
+          }
+          else
+          {
+            <div class="tk-rail">
+              @foreach (var d in Model.WeekDepartures)
+              {
+                var nights = d.DepartureDate is { } s && d.EndDate is { } e ? (int)(e.Date - s.Date).TotalDays : 0;
+                <a class="tk-tour" href="/chuyen-di">
+                  <span class="tk-tour-date">@(d.DepartureDate?.ToString("ddd - dd/MM", vi) ?? "Chưa đặt ngày")</span>
+                  <b class="tk-tour-name">@d.Title</b>
+                  <small class="text-muted">@(nights > 0 ? $"{nights + 1} ngày {nights} đêm" : (d.TourType ?? "—"))</small>
+                  <span class="tk-tour-foot">
+                    <span><i class="ti ti-users me-1"></i>@d.SeatSold/@d.TotalSlots khách</span>
+                    <span class="badge bg-label-@(d.SeatRemaining > 0 ? "success" : "secondary")">@(d.SeatRemaining > 0 ? d.SeatRemaining + " chỗ trống" : "Hết chỗ")</span>
+                  </span>
+                </a>
+              }
+            </div>
+          }
+        </div>
       </div>
     </div>
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead><tr><th>Công việc</th><th>Phụ trách</th><th>Ưu tiên</th><th>Hạn</th><th>Trạng thái</th></tr></thead>
-        <tbody>
-          @if (Model.MyTasks.Count == 0)
+  }
+
+  @* ===== Top công nợ ===== *@
+  @if (Model.CanDashboard)
+  {
+    <div class="col-12 col-lg-6 col-xxl-4">
+      <div class="tk-surface h-100">
+        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Top công nợ phải thu</h6>
+          <a class="small" href="/cong-no-khach">Xem tất cả</a>
+        </div>
+        <div class="tk-pad pt-0">
+          @if (Model.TopDebt.Count == 0)
           {
-            <tr><td colspan="5" class="text-center text-muted py-4">Không có công việc</td></tr>
+            <p class="text-muted mb-0 py-4 text-center">Không còn khoản nợ nào.</p>
           }
           else
           {
-            foreach (var t in Model.MyTasks)
-            {
-              <tr>
-                <td class="fw-medium">@t.Title</td>
-                <td>@(t.AssigneeName ?? "—")</td>
-                <td>@TourKit.Api.Pages.Workspace.IndexModel.PriorityLabel(t.Priority)</td>
-                <td>@(t.DueDate?.ToLocalTime().ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—")</td>
-                <td><span class="badge bg-label-@TourKit.Api.Pages.Workspace.IndexModel.TaskStatusColor(t.Status)">@TourKit.Api.Pages.Workspace.IndexModel.TaskStatusLabel(t.Status)</span></td>
-              </tr>
-            }
+            var max = Model.TopDebt.Max(x => x.Outstanding);
+            <div class="tk-bars">
+              @foreach (var d in Model.TopDebt)
+              {
+                var pct = max > 0 ? (int)Math.Round(100m * d.Outstanding / max) : 0;
+                var tone = d.Outstanding >= 50_000_000m ? "danger" : d.Outstanding >= 20_000_000m ? "warning" : "success";
+                <div class="tk-bar">
+                  <div class="tk-bar-top">
+                    @{ var who = Model.DebtNames.TryGetValue(d.CustomerId, out var nm) ? nm : d.OrderCode; }
+                    <span class="text-truncate" title="@who — đơn @d.OrderCode">@who</span>
+                    <b title="@Full(d.Outstanding)">@Short(d.Outstanding)</b>
+                  </div>
+                  <div class="tk-bar-track"><span class="bg-@tone" style="width:@(Math.Max(pct, 3))%"></span></div>
+                </div>
+              }
+            </div>
+            <div class="tk-legend">
+              <span><i class="bg-danger"></i>Trên 50tr</span>
+              <span><i class="bg-warning"></i>20tr – 50tr</span>
+              <span><i class="bg-success"></i>Dưới 20tr</span>
+            </div>
           }
-        </tbody>
-      </table>
+        </div>
+      </div>
     </div>
-  </div>
-}
+  }
 
-@if (Model.CanCare)
-{
-  <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0">Lịch chăm sóc của tôi</h5>
-      <a href="/lich-hen" class="small">Xem tất cả →</a>
-    </div>
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead><tr><th>Tiêu đề</th><th>Khách hàng</th><th>Nhắc lúc</th><th>Trạng thái</th></tr></thead>
-        <tbody>
-          @if (Model.MyCares.Count == 0)
-          {
-            <tr><td colspan="4" class="text-center text-muted py-4">Không có lịch chăm sóc</td></tr>
-          }
-          else
-          {
-            foreach (var c in Model.MyCares)
+  @* ===== Thông báo mới ===== *@
+  <div class="col-12 col-lg-6 col-xxl-4">
+    <div class="tk-surface h-100">
+      <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Thông báo mới</h6>
+        <a class="small" href="/thong-bao">Xem tất cả</a>
+      </div>
+      <div class="tk-pad pt-0">
+        @if (Model.Notifications.Count == 0)
+        {
+          <p class="text-muted mb-0 py-4 text-center">Chưa có thông báo nào.</p>
+        }
+        else
+        {
+          <div class="tk-list">
+            @foreach (var n in Model.Notifications.Take(6))
             {
-              <tr>
-                <td class="fw-medium">@c.Title</td>
-                <td>@(c.CustomerName ?? "—")</td>
-                <td>@(c.RemindAt?.ToLocalTime().ToString("HH:mm dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—")</td>
-                <td><span class="badge bg-label-@TourKit.Api.Pages.Workspace.IndexModel.CareStatusColor(c.Status)">@TourKit.Api.Pages.Workspace.IndexModel.CareStatusLabel(c.Status)</span></td>
-              </tr>
+              <div class="tk-line">
+                <span class="tk-line-ic bg-label-@(n.IsRead ? "secondary" : "primary")"><i class="ti ti-bell"></i></span>
+                <span class="tk-line-text"><b>@n.Title</b><small>@(n.Message ?? "")</small></span>
+                <small class="text-muted flex-shrink-0">@n.CreatedAt.ToLocalTime().ToString("HH:mm", vi)</small>
+              </div>
             }
-          }
-        </tbody>
-      </table>
+          </div>
+        }
+      </div>
     </div>
   </div>
-}
 
-@if (Model.CanDeparture)
-{
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0">Lịch khởi hành</h5>
-      <a href="/lich-dieu-hanh" class="small">Xem lịch điều hành →</a>
+  @* ===== Lịch khởi hành 7 ngày tới ===== *@
+  @if (Model.CanDeparture)
+  {
+    <div class="col-12 col-xxl-4">
+      <div class="tk-surface h-100">
+        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Lịch khởi hành (7 ngày tới)</h6>
+          <a class="small" href="/lich-dieu-hanh">Xem lịch đầy đủ</a>
+        </div>
+        <div class="tk-pad pt-0">
+          <div class="tk-days">
+            @foreach (var d in Model.DepartureDays)
+            {
+              <div class="tk-day">
+                <small>@d.Day.ToString("ddd", vi)</small>
+                <span>@d.Day.ToString("dd/MM", vi)</span>
+                <b class="@(d.Count > 0 ? "bg-label-primary" : "bg-label-secondary")">@d.Count</b>
+              </div>
+            }
+          </div>
+          <div class="tk-minis mt-3">
+            <div class="tk-mini"><small>Tổng chuyến</small><b>@Model.DepartureDays.Sum(x => x.Count)</b></div>
+            <div class="tk-mini"><small>Tổng chỗ</small><b>@Model.WeekSlots.ToString("#,##0", vi)</b></div>
+            <div class="tk-mini"><small>Đang diễn ra</small><b>@Model.RunningDepartures</b></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="card-body"><div id="cal"></div></div>
-  </div>
-}
+  }
+
+</div>
 
 @section VendorScripts {
   <script src="~/vendor/libs/apex-charts/apexcharts.js"></script>
-  @if (Model.CanDeparture)
-  {
-    <script src="~/vendor/libs/fullcalendar/fullcalendar.js"></script>
-  }
 }
 
 @section PageScripts {
   <script>
     $(function () {
-      @if (Model.CanTask)
-      {
-        <text>
-      // Vòng tròn tỉ lệ công việc — ApexCharts của template (không tự vẽ SVG).
-      var donutEl = document.querySelector('#task-donut');
-      if (donutEl && window.ApexCharts) {
-        new ApexCharts(donutEl, {
-          chart: { type: 'donut', height: 220 },
-          series: [@Model.TaskStats.Todo, @Model.TaskStats.InProgress, @Model.TaskStats.Done, @Model.TaskStats.Cancelled],
-          labels: ['Cần làm', 'Đang làm', 'Hoàn thành', 'Huỷ'],
-          colors: ['#a8aaae', '#03c3ec', '#71dd37', '#ff3e1d'],
-          legend: { show: false },
-          dataLabels: { enabled: false },
-          plotOptions: { pie: { donut: { labels: { show: true,
-            total: { show: true, label: 'Tổng việc', formatter: function () { return '@Model.TaskStats.Total'; } } } } } }
-        }).render();
-      }
-        </text>
-      }
+      var el = document.querySelector('#chart-revenue');
+      if (!el || !window.ApexCharts) { return; }
+      var series = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pulse.Series.Select(p => p.Amount)));
+      var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pulse.Series.Select(p => p.Day.ToString("dd/MM"))));
+      var muted = getComputedStyle(document.documentElement).getPropertyValue('--bs-secondary-color') || '#8a8d93';
+      var primary = getComputedStyle(document.documentElement).getPropertyValue('--bs-primary') || '#7367f0';
 
-      @if (Model.CanDeparture)
-      {
-        <text>
-      // Lịch khởi hành: dùng CHUNG nguồn sự kiện của màn Lịch điều hành — chỉ nạp khoảng đang xem.
-      var calEl = document.querySelector('#cal');
-      if (calEl && window.Calendar) {
-        new Calendar(calEl, {
-          plugins: [dayGridPlugin, interactionPlugin],
-          initialView: 'dayGridMonth', locale: 'vi',
-          // height:'auto' — KHÔNG ép chiều cao. Lưới tháng cần ~710px; ép 520 thì thanh cuộn trong
-          // của FullCalendar bị overflow:hidden nên nội dung TRÀN ra ngoài card, đè lên chân trang.
-          // Giống hệt cấu hình màn Lịch điều hành đang chạy đúng.
-          height: 'auto',
-          firstDay: 1,        // tuần bắt đầu Thứ 2, đồng bộ với màn Lịch điều hành
-          dayMaxEvents: 3,    // ngày nhiều chuyến thì gộp "+n" thay vì kéo dãn hàng
-          headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
-          buttonText: { today: 'Hôm nay' },
-          events: function (info, success, failure) {
-            $.getJSON('/OperationCalendar?handler=Events&start=' + info.startStr + '&end=' + info.endStr)
-              .done(function (d) { success((d && d.events) || []); })
-              .fail(failure);
-          },
-          eventClick: function (i) {
-            // Mở panel trượt từ phải thay vì điều hướng — giữ nguyên tháng đang xem.
-            i.jsEvent.preventDefault();
-            var p = i.event.extendedProps || {};
-            tk.panel({
-              title: i.event.title,
-              rows: [
-                { label: 'Mã chuyến', value: p.code },
-                { label: 'Loại tour', value: p.tourType },
-                { label: 'Ngày khởi hành', value: i.event.start ? i.event.start.toLocaleDateString('vi-VN') : null },
-                { label: 'Ngày kết thúc', value: i.event.end ? new Date(i.event.end.getTime() - 86400000).toLocaleDateString('vi-VN') : null },
-                { label: 'Tổng số chỗ', value: p.totalSlots != null ? tk.money(p.totalSlots) : null },
-                { label: 'Trạng thái', value: p.statusLabel }
-              ],
-              actionUrl: '/chuyen-di/' + i.event.id,
-              actionText: 'Mở chi tiết chuyến'
-            });
-          }
-        }).render();
-      }
-        </text>
-      }
+      new ApexCharts(el, {
+        chart: { type: 'area', height: 260, toolbar: { show: false }, parentHeightOffset: 0 },
+        series: [{ name: 'Doanh thu', data: series }],
+        colors: [primary.trim()],
+        stroke: { curve: 'smooth', width: 2.5 },
+        fill: { type: 'gradient', gradient: { opacityFrom: .35, opacityTo: .02, stops: [0, 100] } },
+        dataLabels: { enabled: false },
+        grid: { borderColor: 'rgba(0,0,0,.06)', padding: { left: 8, right: 8 } },
+        markers: { size: 0, hover: { size: 5 } },
+        xaxis: { categories: labels, axisBorder: { show: false }, axisTicks: { show: false },
+                 labels: { style: { colors: muted } } },
+        yaxis: { labels: { style: { colors: muted },
+                 // Trục tiền rút gọn để không chiếm nửa bề ngang biểu đồ.
+                 formatter: function (v) { return v >= 1e9 ? (v / 1e9).toFixed(1) + ' tỷ' : v >= 1e6 ? Math.round(v / 1e6) + ' tr' : v; } } },
+        tooltip: { y: { formatter: function (v) { return (v || 0).toLocaleString('vi-VN') + ' ₫'; } } }
+      }).render();
     });
   </script>
 }

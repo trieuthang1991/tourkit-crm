@@ -17,4 +17,7 @@ public interface IReportService
     Task<IReadOnlyList<TurnoverByBranchRowDto>> GetTurnoverByBranchAsync();
     Task<IReadOnlyList<TopCustomerRowDto>> GetTopCustomersAsync(int top = 10);
     Task<KpiSummaryDto> GetKpiSummaryAsync();
+
+    /// <summary>Nhịp doanh thu cho màn Bàn làm việc (chuỗi theo ngày + mốc cộng dồn + kỳ trước).</summary>
+    Task<WorkspacePulseDto> GetWorkspacePulseAsync(int days = 7);
 }

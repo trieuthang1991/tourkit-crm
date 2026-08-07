@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TourKit.Api.Auth;
+using TourKit.Api.Pages.Shared;
+using TourKit.Application.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Content;
 using TourKit.Application.Crm;
 using TourKit.Application.Crm.Dtos;
@@ -40,12 +43,15 @@ public class IndexModel : PageModel
     private readonly IReceiptService _receipts;
     private readonly IPaymentService _payments;
     private readonly IPostService _posts;
+    private readonly IDepartureService _departures;
 
     public IndexModel(
         IWorkTaskService tasks, ICustomerCareService cares, ICurrentUser current,
         INotificationService notifications, IReportService reports, ICustomerService customers,
-        IReceiptService receipts, IPaymentService payments, IPostService posts)
+        IReceiptService receipts, IPaymentService payments, IPostService posts,
+        IDepartureService departures)
     {
+        _departures = departures;
         _tasks = tasks;
         _cares = cares;
         _current = current;
@@ -79,6 +85,30 @@ public class IndexModel : PageModel
     public int PendingReceiptTotal { get; private set; }
     public int PendingPaymentTotal { get; private set; }
     public IReadOnlyList<PostDto> Posts { get; private set; } = [];
+
+    // --- Nhịp doanh thu + chuyến khởi hành (bản dựng lại theo mẫu chủ dự án gửi) ---
+    public WorkspacePulseDto Pulse { get; private set; } = new([], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    /// <summary>Chuyến khởi hành trong 7 ngày tới — thẻ ngang "Tour khởi hành trong tuần".</summary>
+    public IReadOnlyList<DepartureDto> WeekDepartures { get; private set; } = [];
+    /// <summary>Số chuyến khởi hành theo TỪNG ngày trong 7 ngày tới — dải lịch cuối màn.</summary>
+    public IReadOnlyList<(DateTimeOffset Day, int Count)> DepartureDays { get; private set; } = [];
+    /// <summary>Số chuyến khởi hành trong HÔM NAY (thẻ KPI "Tour hôm nay").</summary>
+    public int TodayDepartures { get; private set; }
+    /// <summary>Số chuyến ĐANG diễn ra hôm nay (đã khởi hành, chưa kết thúc).</summary>
+    public int RunningDepartures { get; private set; }
+    /// <summary>Tổng chỗ + hướng dẫn viên cần cho 7 ngày tới (3 số tổng dưới dải lịch).</summary>
+    public int WeekSlots { get; private set; }
+
+    /// <summary>Lịch hẹn của tôi đã QUÁ hạn — một dòng của "Trung tâm cần xử lý".</summary>
+    public int OverdueCares { get; private set; }
+    /// <summary>Số đơn đang còn nợ (từ báo cáo công nợ) — dòng "Công nợ quá hạn".</summary>
+    public int DebtOrders { get; private set; }
+    /// <summary>Tên khách của các dòng công nợ đang hiển thị (báo cáo chỉ trả CustomerId).</summary>
+    public Dictionary<Guid, string> DebtNames { get; } = [];
+
+    /// <summary>Mức tăng/giảm so với kỳ trước, đơn vị %. null = kỳ trước bằng 0, không so được.</summary>
+    public static decimal? Delta(decimal now, decimal before)
+        => before == 0 ? null : Math.Round((now - before) / before * 100, 1);
 
     public bool CanTask => User.HasClaim("perm", "task.view");
     public bool CanCare => User.HasClaim("perm", "care.view");
@@ -146,6 +176,8 @@ public class IndexModel : PageModel
                     .Where(c => c.Status != CareDone && c.RemindAt is { } r && r.ToLocalTime().Date == today)
                     .OrderBy(c => c.RemindAt)
                     .ToList();
+
+                OverdueCares = soon.Count(c => c.Status != CareDone && c.RemindAt is { } r && r.ToLocalTime().Date < today);
             }
         }
 
@@ -155,10 +187,41 @@ public class IndexModel : PageModel
         {
             Summary = await _reports.GetDashboardAsync();
             CustomerCount = (await _customers.ListAsync(1, 1)).Total;
+            Pulse = await _reports.GetWorkspacePulseAsync(7);
 
             // Công nợ khách hàng: báo cáo trả về theo đơn còn nợ, chỉ giữ 6 khoản lớn nhất.
-            TopDebt = (await _reports.GetOrderDebtAsync())
-                .OrderByDescending(d => d.Outstanding).Take(CardRows).ToList();
+            var debt = await _reports.GetOrderDebtAsync();
+            DebtOrders = debt.Count(d => d.Outstanding > 0);
+            TopDebt = debt.OrderByDescending(d => d.Outstanding).Take(5).ToList();
+
+            // Báo cáo công nợ chỉ trả CustomerId. Thẻ này nói về "ai đang nợ" nên phải có TÊN —
+            // tra đúng 5 khách của 5 dòng đang hiện, không nạp cả bảng.
+            foreach (var d in TopDebt)
+            {
+                try { DebtNames[d.CustomerId] = (await _customers.GetAsync(d.CustomerId)).FullName; }
+                catch (Exception) { /* khách đã xoá — để trống, dòng vẫn hiện mã đơn */ }
+            }
+        }
+
+        if (CanDeparture)
+        {
+            // Chuyến trong 7 ngày tới — lấy MỘT trang có biên, không get-all.
+            var today = TkDate.Day(DateTimeOffset.Now);
+            var week = (await _departures.ListAsync(1, 60, new DepartureListFilter(
+                DepartureFrom: today, DepartureTo: today.AddDays(6), Sort: "dateAsc"))).Items;
+
+            WeekDepartures = week.Take(10).ToList();
+            WeekSlots = week.Sum(d => d.TotalSlots);
+            DepartureDays = Enumerable.Range(0, 7)
+                .Select(i => today.AddDays(i))
+                .Select(day => (Day: day, Count: week.Count(d => d.DepartureDate is { } dd && TkDate.Day(dd) == day)))
+                .ToList();
+            TodayDepartures = DepartureDays.Count > 0 ? DepartureDays[0].Count : 0;
+
+            // Đang diễn ra = đã khởi hành và chưa kết thúc (một trang có biên quanh hôm nay).
+            var running = (await _departures.ListAsync(1, 60, new DepartureListFilter(
+                DepartureTo: today, EndFrom: today))).Items;
+            RunningDepartures = running.Count;
         }
 
         if (CanReceipt)

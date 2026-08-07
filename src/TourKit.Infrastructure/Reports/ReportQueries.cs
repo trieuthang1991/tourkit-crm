@@ -576,4 +576,64 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
             orderCount, totalRevenue, OrderMath.Rate(totalRevenue, orderCount),  // giá trị đơn TB
             totalReceived, OrderMath.Rate(totalReceived, totalRevenue));         // tỉ lệ thu
     }
+
+    /// <summary>
+    /// Nhịp doanh thu của màn Bàn làm việc. Doanh thu tính theo TIỀN THỰC THU đã ghi nhận
+    /// (phiếu thu Recognized) chứ không phải doanh số ghi trên đơn — thẻ ở màn này để trả lời
+    /// "hôm nay tiền về bao nhiêu".
+    ///
+    /// Mỗi ngày một câu SUM ở SQL (7 câu cho 7 ngày). KHÔNG GROUP BY theo ngày vì hàm cắt ngày
+    /// không dịch được đồng nhất giữa SQLite và Postgres; cũng KHÔNG nạp bảng về rồi tự cộng.
+    /// </summary>
+    public async Task<WorkspacePulseDto> GetWorkspacePulseAsync(int days = 7)
+    {
+        if (days is < 1 or > 90)
+        {
+            days = 7;
+        }
+
+        var today = new DateTimeOffset(DateTimeOffset.Now.Date, TimeSpan.Zero);
+        var series = new List<RevenuePointDto>(days);
+        for (var i = days - 1; i >= 0; i--)
+        {
+            var from = today.AddDays(-i);
+            var to = from.AddDays(1);
+            var sum = await db.ReceiptVouchers.Recognized()
+                .Where(r => r.IssuedAt >= from && r.IssuedAt < to)
+                .SumAsync(r => (decimal?)r.Amount) ?? 0m;
+            series.Add(new RevenuePointDto(from, sum));
+        }
+
+        async Task<decimal> Money(DateTimeOffset from, DateTimeOffset to) =>
+            await db.ReceiptVouchers.Recognized()
+                .Where(r => r.IssuedAt >= from && r.IssuedAt < to)
+                .SumAsync(r => (decimal?)r.Amount) ?? 0m;
+
+        var tomorrow = today.AddDays(1);
+        // Tuần bắt đầu từ THỨ HAI (lịch Việt Nam), không phải Chủ nhật như mặc định của .NET.
+        var weekStart = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
+        var monthStart = new DateTimeOffset(new DateTime(today.Year, today.Month, 1), TimeSpan.Zero);
+        var yearStart = new DateTimeOffset(new DateTime(today.Year, 1, 1), TimeSpan.Zero);
+
+        var last7 = today.AddDays(-6);
+        var prev7 = today.AddDays(-13);
+
+        var revenue7 = await Money(last7, tomorrow);
+        var revenuePrev7 = await Money(prev7, last7);
+
+        var orders7 = await db.Orders.CountAsync(o => o.CreatedAt >= last7 && o.CreatedAt < tomorrow);
+        var ordersPrev7 = await db.Orders.CountAsync(o => o.CreatedAt >= prev7 && o.CreatedAt < last7);
+        var customers7 = await db.Customers.CountAsync(c => c.CreatedAt >= last7 && c.CreatedAt < tomorrow);
+        var customersPrev7 = await db.Customers.CountAsync(c => c.CreatedAt >= prev7 && c.CreatedAt < last7);
+
+        return new WorkspacePulseDto(
+            series,
+            await Money(today, tomorrow),
+            await Money(weekStart, tomorrow),
+            await Money(monthStart, tomorrow),
+            await Money(yearStart, tomorrow),
+            revenue7, revenuePrev7,
+            orders7, ordersPrev7,
+            customers7, customersPrev7);
+    }
 }

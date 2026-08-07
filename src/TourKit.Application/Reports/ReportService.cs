@@ -31,4 +31,6 @@ public sealed class ReportService(IReportQueries queries) : IReportService
     public Task<IReadOnlyList<TopCustomerRowDto>> GetTopCustomersAsync(int top = 10) => queries.GetTopCustomersAsync(top);
 
     public Task<KpiSummaryDto> GetKpiSummaryAsync() => queries.GetKpiSummaryAsync();
+
+    public Task<WorkspacePulseDto> GetWorkspacePulseAsync(int days = 7) => queries.GetWorkspacePulseAsync(days);
 }
