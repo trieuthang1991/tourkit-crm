@@ -434,3 +434,21 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
 @media (max-width: 575.98px) {
   #tk-bell .dropdown-menu { min-width: 0; width: calc(100vw - 2rem); }
 }
+
+/* ── Luồng trao đổi (bình luận) gắn vào màn chi tiết ─────────────────────── */
+.tk-cmt-list { display: flex; flex-direction: column; gap: 1rem; }
+.tk-cmt { display: flex; gap: .75rem; }
+.tk-cmt-ava {
+  flex: 0 0 2rem; height: 2rem; border-radius: 50%;
+  display: grid; place-items: center; font-size: .8125rem; font-weight: 600;
+  background: var(--bs-tertiary-bg, #f8f7fa); color: var(--bs-heading-color);
+}
+.tk-cmt-body { flex: 1 1 auto; min-width: 0; }
+.tk-cmt-head { display: flex; align-items: center; gap: .5rem; }
+.tk-cmt-author { font-weight: 600; font-size: .875rem; }
+.tk-cmt-time { color: var(--bs-secondary-color); font-size: .75rem; }
+/* Nút xoá chỉ hiện khi rê vào dòng — bớt nhiễu cho một luồng dài. */
+.tk-cmt-del { margin-left: auto; opacity: 0; transition: opacity .12s; }
+.tk-cmt:hover .tk-cmt-del, .tk-cmt-del:focus-visible { opacity: 1; }
+/* Ghi chú hay có mã đơn/số điện thoại dài — cho xuống dòng thay vì tràn ngang. */
+.tk-cmt-text { font-size: .9375rem; overflow-wrap: anywhere; }

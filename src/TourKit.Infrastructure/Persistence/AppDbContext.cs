@@ -90,6 +90,8 @@ public class AppDbContext : DbContext
     public DbSet<RoomClass> RoomClasses => Set<RoomClass>();
     public DbSet<RoomAllotment> RoomAllotments => Set<RoomAllotment>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    // Bình luận của người trên bản ghi nghiệp vụ — cặp đôi với ActivityLog, cùng khoá (EntityName, EntityId).
+    public DbSet<EntityComment> EntityComments => Set<EntityComment>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();
     public DbSet<FileUpload> FileUploads => Set<FileUpload>();

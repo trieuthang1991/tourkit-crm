@@ -1,0 +1,103 @@
+using System.Linq.Expressions;
+using TourKit.Application.Common;
+using TourKit.Shared.Entities;
+
+namespace TourKit.UnitTests.Collaboration;
+
+/// <summary>
+/// Fake repo tối giản cho unit test service (không EF). Cùng khuôn với
+/// <c>TourKit.UnitTests.Crm.FakeRepository&lt;T&gt;</c> với MỘT khác biệt có chủ ý:
+/// <see cref="PageAsync(int,int,Expression{Func{T,bool}})"/> ở đây SẮP THEO CreatedAt GIẢM DẦN,
+/// đúng như <c>Repository&lt;T&gt;</c> thật. Bản dùng thứ tự chèn sẽ khiến test luồng bình luận
+/// xanh trong khi thực tế trả sai thứ tự — luồng này bắt buộc mới nhất trước.
+/// </summary>
+public sealed class FakeRepository<T> : IRepository<T> where T : BaseEntity
+{
+    private readonly List<T> _items = [];
+    private readonly List<T> _pendingAdds = [];
+
+    /// <summary>Nạp sẵn dữ liệu cho test, bỏ qua vòng AddAsync/SaveChanges.</summary>
+    public void Seed(params T[] entities) => _items.AddRange(entities);
+
+    public IReadOnlyList<T> Items => _items;
+
+    public Task<T?> GetByIdAsync(Guid id)
+        => Task.FromResult(_items.FirstOrDefault(e => e.Id == id));
+
+    public Task<IReadOnlyList<T>> ListAsync(Expression<Func<T, bool>>? predicate = null)
+    {
+        var query = predicate is null ? _items.AsEnumerable() : _items.AsQueryable().Where(predicate);
+        return Task.FromResult<IReadOnlyList<T>>(query.ToList());
+    }
+
+    public Task<(IReadOnlyList<T> Items, int Total)> PageAsync(int page, int size, Expression<Func<T, bool>>? predicate = null)
+    {
+        var query = predicate is null ? _items.AsQueryable() : _items.AsQueryable().Where(predicate);
+        var total = query.Count();
+        var pageItems = query.OrderByDescending(e => e.CreatedAt).Skip((page - 1) * size).Take(size).ToList();
+        return Task.FromResult<(IReadOnlyList<T> Items, int Total)>((pageItems, total));
+    }
+
+    public Task AddAsync(T entity)
+    {
+        _pendingAdds.Add(entity);
+        return Task.CompletedTask;
+    }
+
+    public void Update(T entity)
+    {
+        var index = _items.FindIndex(e => e.Id == entity.Id);
+        if (index >= 0)
+        {
+            _items[index] = entity;
+        }
+    }
+
+    public void Remove(T entity) => _items.RemoveAll(e => e.Id == entity.Id);
+
+    public Task<int> SaveChangesAsync()
+    {
+        var count = _pendingAdds.Count;
+        _items.AddRange(_pendingAdds);
+        _pendingAdds.Clear();
+        return Task.FromResult(count);
+    }
+
+    public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+        => Task.FromResult(_items.AsQueryable().Any(predicate));
+
+    public Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+        => Task.FromResult(predicate is null ? _items.Count : _items.AsQueryable().Count(predicate));
+
+    public Task<(IReadOnlyList<T> Items, int Total)> PageAsync<TKey>(
+        int page, int size, Expression<Func<T, TKey>> orderBy, bool descending,
+        Expression<Func<T, bool>>? predicate = null)
+    {
+        var query = predicate is null ? _items.AsQueryable() : _items.AsQueryable().Where(predicate);
+        var total = query.Count();
+        var ordered = descending ? query.OrderByDescending(orderBy) : query.OrderBy(orderBy);
+        var pageItems = ordered.Skip((page - 1) * size).Take(size).ToList();
+        return Task.FromResult<(IReadOnlyList<T> Items, int Total)>((pageItems, total));
+    }
+
+    public Task<decimal> SumAsync(Expression<Func<T, decimal>> selector, Expression<Func<T, bool>>? predicate = null)
+    {
+        var query = predicate is null ? _items.AsQueryable() : _items.AsQueryable().Where(predicate);
+        return Task.FromResult(query.Sum(selector));
+    }
+
+    public Task<int> SumIntAsync(Expression<Func<T, int>> selector, Expression<Func<T, bool>>? predicate = null)
+    {
+        var query = predicate is null ? _items.AsQueryable() : _items.AsQueryable().Where(predicate);
+        return Task.FromResult(query.Sum(selector));
+    }
+
+    public Task<IReadOnlyDictionary<TKey, int>> CountByAsync<TKey>(
+        Expression<Func<T, TKey>> keySelector, Expression<Func<T, bool>>? predicate = null)
+        where TKey : notnull
+    {
+        var query = predicate is null ? _items.AsQueryable() : _items.AsQueryable().Where(predicate);
+        IReadOnlyDictionary<TKey, int> result = query.GroupBy(keySelector).ToDictionary(g => g.Key, g => g.Count());
+        return Task.FromResult(result);
+    }
+}
