@@ -17,12 +17,16 @@ namespace TourKit.Application.Collaboration;
 public sealed class EntityCommentService(
     IRepository<EntityComment> repo,
     IRepository<User> userRepo,
+    IRepository<FileUpload> fileRepo,
     ICurrentUserContext currentUser,
     INotificationService notifications) : IEntityCommentService
 {
     private const int MaxContentLength = 4000;
     private const int MaxTake = 200;
     private const int MaxMentions = 20;
+
+    /// <summary>Trần ảnh mỗi bình luận — luồng này còn được trợ lý AI đọc, không để một dòng nuốt cả màn.</summary>
+    private const int MaxAttachments = 5;
 
     public async Task<IReadOnlyList<EntityCommentDto>> ListAsync(string entityName, string entityId, int take = 50)
     {
@@ -37,8 +41,14 @@ public sealed class EntityCommentService(
             ? []
             : (await userRepo.ListAsync(u => authorIds.Contains(u.Id))).ToDictionary(u => u.Id, u => u.FullName);
 
+        // MỘT truy vấn cho ảnh của cả trang, không phải mỗi bình luận một lượt.
+        var fileIds = page.SelectMany(c => ParseIds(c.AttachmentIds)).ToHashSet();
+        var files = fileIds.Count == 0
+            ? []
+            : (await fileRepo.ListAsync(f => fileIds.Contains(f.Id))).ToDictionary(f => f.Id);
+
         var me = currentUser.UserId;
-        return page.Select(c => Map(c, authorNames, me)).ToList();
+        return page.Select(c => Map(c, authorNames, files, me)).ToList();
     }
 
     public Task<int> CountAsync(string entityName, string entityId)
@@ -55,14 +65,20 @@ public sealed class EntityCommentService(
         var (name, id) = Normalize(dto.EntityName, dto.EntityId);
 
         var content = (dto.Content ?? "").Trim();
-        if (content.Length == 0)
-        {
-            throw new ValidationAppException("Nội dung bình luận không được để trống.");
-        }
 
         if (content.Length > MaxContentLength)
         {
             throw new ValidationAppException($"Bình luận tối đa {MaxContentLength} ký tự.");
+        }
+
+        // Chỉ giữ tệp CÓ THẬT: id đến từ giao diện nên không tin được.
+        var attachments = await ResolveAttachmentsAsync(dto.AttachmentIds);
+
+        // Ảnh không kèm chữ vẫn là một bình luận hợp lệ — thả ảnh chụp màn hình vào rồi bắt gõ thêm
+        // một câu vô nghĩa là bắt người dùng làm việc thừa.
+        if (content.Length == 0 && attachments.Count == 0)
+        {
+            throw new ValidationAppException("Nhập nội dung hoặc đính kèm ảnh.");
         }
 
         // Chỉ giữ user CÓ THẬT: người @nhắc đến từ giao diện nên không tin được, và một Guid rác
@@ -76,6 +92,7 @@ public sealed class EntityCommentService(
             UserId = author,
             Content = content,
             MentionedUserIds = mentions.Count == 0 ? null : JsonSerializer.Serialize(mentions),
+            AttachmentIds = attachments.Count == 0 ? null : JsonSerializer.Serialize(attachments.Select(f => f.Id)),
         };
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
@@ -83,7 +100,8 @@ public sealed class EntityCommentService(
         await NotifyMentionsAsync(mentions, author, dto, content);
 
         var authorName = (await userRepo.GetByIdAsync(author))?.FullName ?? "";
-        return Map(entity, new Dictionary<Guid, string> { [author] = authorName }, author);
+        return Map(entity, new Dictionary<Guid, string> { [author] = authorName },
+            attachments.ToDictionary(f => f.Id), author);
     }
 
     public async Task DeleteAsync(Guid id)
@@ -99,6 +117,28 @@ public sealed class EntityCommentService(
 
         repo.Remove(entity);
         await repo.SaveChangesAsync();
+    }
+
+    private async Task<List<FileUpload>> ResolveAttachmentsAsync(IReadOnlyList<Guid>? requested)
+    {
+        if (requested is null || requested.Count == 0)
+        {
+            return [];
+        }
+
+        var wanted = requested.Distinct().Take(MaxAttachments).ToList();
+        var lookup = wanted.ToHashSet();
+        var found = (await fileRepo.ListAsync(f => lookup.Contains(f.Id))).ToDictionary(f => f.Id);
+
+        // Id không có thật thì báo hẳn, khác với @nhắc (bỏ im lặng): ở đây người dùng THẤY ảnh mình
+        // vừa chọn, im lặng bỏ đi sẽ khiến họ tưởng đã gửi kèm.
+        if (found.Count != wanted.Count)
+        {
+            throw new ValidationAppException("Có ảnh đính kèm không hợp lệ, thử tải lại.");
+        }
+
+        // Sắp lại theo ĐÚNG thứ tự người dùng chọn — kho trả về theo thứ tự của nó, không phải của họ.
+        return wanted.Select(id => found[id]).ToList();
     }
 
     private async Task<List<Guid>> ResolveMentionsAsync(IReadOnlyList<Guid>? requested, Guid author)
@@ -160,18 +200,27 @@ public sealed class EntityCommentService(
     }
 
     private static EntityCommentDto Map(
-        EntityComment c, IReadOnlyDictionary<Guid, string> authorNames, Guid? viewer) => new(
+        EntityComment c,
+        IReadOnlyDictionary<Guid, string> authorNames,
+        IReadOnlyDictionary<Guid, FileUpload> files,
+        Guid? viewer) => new(
         c.Id,
         c.EntityName,
         c.EntityId,
         c.UserId,
         authorNames.GetValueOrDefault(c.UserId, ""),
         c.Content,
-        ParseMentions(c.MentionedUserIds),
+        ParseIds(c.MentionedUserIds),
+        // Giữ nguyên THỨ TỰ người dùng chọn, và bỏ qua tệp đã bị xoá thay vì hiện ô ảnh hỏng.
+        ParseIds(c.AttachmentIds)
+            .Select(files.GetValueOrDefault)
+            .Where(f => f is not null)
+            .Select(f => new CommentAttachmentDto(f!.Id, f.FileName, f.ContentType, f.Size))
+            .ToList(),
         c.CreatedAt,
         viewer is not null && c.UserId == viewer);
 
-    private static List<Guid> ParseMentions(string? json)
+    private static List<Guid> ParseIds(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {

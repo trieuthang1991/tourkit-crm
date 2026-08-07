@@ -39,6 +39,7 @@ public class EntityCommentServiceTests
     private sealed record Harness(
         EntityCommentService Service,
         FakeRepository<EntityComment> Comments,
+        FakeRepository<FileUpload> Files,
         FakeNotifications Notifications,
         FakeCurrentUser CurrentUser);
 
@@ -46,6 +47,7 @@ public class EntityCommentServiceTests
     {
         var comments = new FakeRepository<EntityComment>();
         var users = new FakeRepository<User>();
+        var files = new FakeRepository<FileUpload>();
         users.Seed(
             new User { Id = Me, FullName = "Trần Bình" },
             new User { Id = Ban, FullName = "Lê Cường" },
@@ -54,9 +56,17 @@ public class EntityCommentServiceTests
         var currentUser = new FakeCurrentUser(viewer ?? Me);
         var notifications = new FakeNotifications();
         return new Harness(
-            new EntityCommentService(comments, users, currentUser, notifications),
-            comments, notifications, currentUser);
+            new EntityCommentService(comments, users, files, currentUser, notifications),
+            comments, files, notifications, currentUser);
     }
+
+    private static FileUpload Image(string name) => new()
+    {
+        FileName = name,
+        ContentType = "image/png",
+        Size = 1234,
+        StorageKey = Guid.NewGuid().ToString("N"),
+    };
 
     private static EntityComment Comment(string entityName, string entityId, Guid author, string content, int minutesAgo) =>
         new()
@@ -82,12 +92,82 @@ public class EntityCommentServiceTests
     }
 
     [Fact]
-    public async Task Noi_dung_rong_bi_tu_choi()
+    public async Task Noi_dung_rong_va_khong_co_anh_thi_bi_tu_choi()
     {
         var h = Build();
 
         await Assert.ThrowsAsync<ValidationAppException>(
             () => h.Service.CreateAsync(new CreateEntityCommentDto("Lead", "abc", "   ")));
+    }
+
+    [Fact]
+    public async Task Chi_gui_anh_khong_kem_chu_van_hop_le()
+    {
+        var h = Build();
+        var anh = Image("man-hinh.png");
+        h.Files.Seed(anh);
+
+        // Thả ảnh chụp màn hình vào rồi bắt gõ thêm một câu vô nghĩa là bắt người dùng làm việc thừa.
+        var dto = await h.Service.CreateAsync(
+            new CreateEntityCommentDto("Lead", "abc", "", AttachmentIds: [anh.Id]));
+
+        Assert.Equal("", dto.Content);
+        Assert.Single(dto.Attachments);
+        Assert.Equal("man-hinh.png", dto.Attachments[0].FileName);
+    }
+
+    [Fact]
+    public async Task Anh_khong_ton_tai_thi_bao_loi_chu_khong_am_tham_bo_qua()
+    {
+        var h = Build();
+
+        // Khác @nhắc (bỏ im lặng): ở đây người dùng THẤY ảnh mình vừa chọn, im lặng bỏ đi sẽ khiến
+        // họ tưởng đã gửi kèm.
+        await Assert.ThrowsAsync<ValidationAppException>(
+            () => h.Service.CreateAsync(
+                new CreateEntityCommentDto("Lead", "abc", "xem ảnh", AttachmentIds: [Guid.NewGuid()])));
+    }
+
+    [Fact]
+    public async Task Anh_gui_kem_hien_lai_dung_thu_tu_khi_doc_luong()
+    {
+        var h = Build();
+        var a = Image("1.png");
+        var b = Image("2.png");
+        h.Files.Seed(a, b);
+
+        await h.Service.CreateAsync(new CreateEntityCommentDto("Lead", "abc", "hai ảnh", AttachmentIds: [b.Id, a.Id]));
+        var list = await h.Service.ListAsync("Lead", "abc");
+
+        Assert.Equal(["2.png", "1.png"], list[0].Attachments.Select(x => x.FileName));
+    }
+
+    [Fact]
+    public async Task Anh_bi_xoa_khoi_kho_thi_bo_qua_chu_khong_hien_o_anh_hong()
+    {
+        var h = Build();
+        var a = Image("con.png");
+        var b = Image("se-bi-xoa.png");
+        h.Files.Seed(a, b);
+        await h.Service.CreateAsync(new CreateEntityCommentDto("Lead", "abc", "hai ảnh", AttachmentIds: [a.Id, b.Id]));
+
+        h.Files.Remove(b);
+
+        var list = await h.Service.ListAsync("Lead", "abc");
+        Assert.Equal(["con.png"], list[0].Attachments.Select(x => x.FileName));
+    }
+
+    [Fact]
+    public async Task Chi_nhan_toi_da_5_anh_moi_binh_luan()
+    {
+        var h = Build();
+        var imgs = Enumerable.Range(1, 8).Select(i => Image($"{i}.png")).ToArray();
+        h.Files.Seed(imgs);
+
+        var dto = await h.Service.CreateAsync(new CreateEntityCommentDto(
+            "Lead", "abc", "nhiều ảnh", AttachmentIds: imgs.Select(f => f.Id).ToList()));
+
+        Assert.Equal(5, dto.Attachments.Count);
     }
 
     [Fact]

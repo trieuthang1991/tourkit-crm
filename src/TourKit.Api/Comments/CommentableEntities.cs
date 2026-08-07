@@ -22,12 +22,17 @@ public static class CommentableEntities
     /// <param name="LinkTemplate">Route để người nhận thông báo bấm vào; <c>{id}</c> được thay bằng khoá bản ghi.</param>
     public sealed record Entry(string Label, string ViewPermission, string LinkTemplate);
 
+    /// <summary>
+    /// MỌI link ở đây BẮT BUỘC chứa <c>{id}</c>. Trỏ về màn danh sách thì người nhận thông báo phải
+    /// tự đi tìm lại bản ghi giữa hàng nghìn dòng — thông báo mất gần hết tác dụng.
+    /// Cơ hội chưa có màn chi tiết nên dùng đường dẫn sâu <c>?mo={id}</c>, trang tự mở offcanvas.
+    /// </summary>
     private static readonly IReadOnlyDictionary<string, Entry> Map =
         new Dictionary<string, Entry>(StringComparer.Ordinal)
         {
-            ["Lead"] = new("Cơ hội bán hàng", Permissions.LeadView, "/co-hoi"),
+            ["Lead"] = new("Cơ hội bán hàng", Permissions.LeadView, "/co-hoi?mo={id}"),
             ["Customer"] = new("Khách hàng", Permissions.CustomerView, "/khach-hang/{id}"),
-            ["Order"] = new("Đơn hàng", Permissions.BookingView, "/don-hang"),
+            ["Order"] = new("Đơn hàng", Permissions.BookingView, "/don-hang/{id}"),
         };
 
     /// <summary>Tra loại bản ghi. null = không nằm trong danh sách trắng → từ chối, KHÔNG mặc định cho qua.</summary>

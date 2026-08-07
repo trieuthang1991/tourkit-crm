@@ -144,6 +144,11 @@
           @foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
         </select>
       </div>
+      @* Trao đổi nằm TRONG vùng cuộn .tk-oc-fields để thanh Lưu/Huỷ vẫn dính đáy.
+         An toàn khi ở trong <form> vì luồng bình luận không tự dựng <form> và nút Gửi là
+         type="button" — nó không kích hoạt form cha. Textarea không có name nên cũng không bị
+         gửi kèm khi lưu cơ hội. Id đổi theo từng cơ hội nên gắn lúc mở offcanvas (xem oc.open). *@
+      <div id="lead-comments" class="tk-oc-comments d-none" data-comments data-entity="Lead"></div>
       </div>
       <div class="tk-oc-actions">
         <button type="submit" class="btn btn-primary me-2">Lưu</button>
@@ -164,6 +169,7 @@
 
 @section PageScripts {
   <script src="~/js/tk-grid.js" asp-append-version="true"></script>
+  <script src="~/js/tk-comments.js" asp-append-version="true"></script>
   <script>
     var oc, grid;
     // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
@@ -284,8 +290,42 @@
 
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
-      oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'cơ hội',
+      var ocForm = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'cơ hội',
         rules: { 'Input.FullName': { required: true } }, messages: { 'Input.FullName': { required: 'Bắt buộc nhập họ tên' } } });
+
+      // Bọc tk.form để gắn luồng trao đổi theo ĐÚNG cơ hội đang mở. Cơ hội mới chưa có id nên
+      // ẩn hẳn — không có gì để bình luận, và gắn vào id rỗng sẽ tạo một luồng mồ côi.
+      oc = {
+        open: function (row) {
+          ocForm.open(row);
+          var box = document.getElementById('lead-comments');
+          var id = row && row.id;
+          box.classList.toggle('d-none', !id);
+          if (id) {
+            box.dataset.entityId = id;
+            tk.comments.mount(box);
+          } else {
+            // Xoá hẳn id cũ, đừng chỉ ẩn đi: để sót thì lần gắn sau (hoặc vòng quét lúc tải trang)
+            // sẽ hiện trao đổi của cơ hội TRƯỚC ĐÓ trên form đang tạo mới.
+            delete box.dataset.entityId;
+            box.innerHTML = '';
+          }
+        }
+      };
+
+      // Đường dẫn sâu /co-hoi?mo={id}: mở thẳng cơ hội đó. Người bấm vào thông báo "@@nhắc bạn
+      // trong Cơ hội bán hàng" phải thấy ngay đúng cơ hội, không phải tự dò trong 3.000 dòng.
+      // Nạp riêng theo id chứ không tìm trong dữ liệu lưới — cơ hội cần mở hiếm khi ở trang đầu.
+      var openId = new URLSearchParams(location.search).get('mo');
+      if (openId) {
+        fetch('?handler=One&id=' + encodeURIComponent(openId), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (row) {
+            if (row) { oc.open(row); }
+            else { tk.error('Không mở được cơ hội này — có thể đã bị xoá.'); }
+          })
+          .catch(function () { tk.error('Không mở được cơ hội này.'); });
+      }
 
       function delRow(r) {
         tk.confirmDelete({ title: 'Xoá cơ hội?', text: r.fullName || '' }).then(function (ok) {

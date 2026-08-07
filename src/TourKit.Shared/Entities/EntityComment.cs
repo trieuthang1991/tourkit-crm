@@ -28,4 +28,10 @@ public sealed class EntityComment : BaseEntity, ITenantEntity
     /// danh sách chỉ đọc kèm bình luận, không bao giờ truy vấn ngược "user này bị nhắc ở đâu".
     /// </summary>
     public string? MentionedUserIds { get; set; }
+
+    /// <summary>
+    /// Ảnh đính kèm: JSON mảng Guid trỏ sang <see cref="FileUpload"/> (metadata ở đó, nội dung ở
+    /// <c>IFileStorage</c>). Cùng lý do dùng JSON như trên — chỉ đọc kèm bình luận, không tra ngược.
+    /// </summary>
+    public string? AttachmentIds { get; set; }
 }

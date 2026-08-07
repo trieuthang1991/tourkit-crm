@@ -59,4 +59,23 @@ public sealed class RbacStore(AppDbContext db) : IRbacStore
 
         await db.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// Cùng phép nối như lúc đăng nhập (UserRoles → RolePermissions → Permissions), chỉ đảo chiều:
+    /// từ mã quyền ra danh sách user. Toàn bộ chạy Ở SQL, không nạp bảng về lọc trong bộ nhớ.
+    /// </summary>
+    public async Task<IReadOnlyList<Guid>> UserIdsWithPermissionAsync(string permissionCode)
+    {
+        if (string.IsNullOrWhiteSpace(permissionCode))
+        {
+            return [];
+        }
+
+        return await db.Permissions
+            .Where(p => p.Code == permissionCode)
+            .Join(db.RolePermissions, p => p.Id, rp => rp.PermissionId, (p, rp) => rp.RoleId)
+            .Join(db.UserRoles, roleId => roleId, ur => ur.RoleId, (roleId, ur) => ur.UserId)
+            .Distinct()
+            .ToListAsync();
+    }
 }

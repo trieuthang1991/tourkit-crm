@@ -54,6 +54,9 @@
         </table>
       </div>
     </div>
+
+    @* Trao đổi nội bộ về đơn này — tk-comments.js tự gắn vào, xem docs/UI-CONVENTIONS.md. *@
+    <div class="mt-4" data-comments data-entity="Order" data-entity-id="@Model.Order.Id"></div>
   </div>
 
   <div class="col-lg-4">
@@ -117,3 +120,7 @@
     </div>
   </div>
 </div>
+
+@section PageScripts {
+  <script src="~/js/tk-comments.js" asp-append-version="true"></script>
+}

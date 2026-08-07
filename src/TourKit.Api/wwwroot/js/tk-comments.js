@@ -6,7 +6,7 @@
   var tk = window.tk;
   if (!tk) { return; }
 
-  var URL = '/binh-luan';
+  var API = '/binh-luan';
 
   // Thời gian tương đối dùng lại tk.ago() của chuông thông báo — cùng cách đọc trên toàn hệ thống.
   function when(iso) { return tk.ago ? tk.ago(iso) : new Date(iso).toLocaleString('vi-VN'); }
@@ -21,15 +21,17 @@
     return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
   }
 
-  // Danh bạ nhân viên: nạp MỘT LẦN cho cả trang, dùng chung mọi luồng bình luận trên trang đó.
-  var peoplePromise = null;
-  function people() {
-    if (!peoplePromise) {
-      peoplePromise = fetch(URL + '?handler=People', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+  // Danh bạ nạp MỘT LẦN cho mỗi LOẠI bản ghi (không phải cho cả trang): danh sách người được nhắc
+  // khác nhau theo loại, vì chỉ gợi ý người có quyền xem bản ghi đó.
+  var peopleCache = {};
+  function people(entity) {
+    if (!peopleCache[entity]) {
+      peopleCache[entity] = fetch(API + '?handler=People&entityName=' + encodeURIComponent(entity),
+        { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(function (r) { return r.ok ? r.json() : []; })
         .catch(function () { return []; });
     }
-    return peoplePromise;
+    return peopleCache[entity];
   }
 
   function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
@@ -59,14 +61,27 @@
             : '') +
         '</div>' +
         // Nội dung do người dùng gõ — LUÔN escape rồi mới tô @nhắc, không bao giờ đổ thẳng HTML.
-        '<div class="tk-cmt-text">' +
-          withMentions(tk.escape(c.content), c.mentions).replace(/\n/g, '<br>') +
-        '</div>' +
+        (c.content
+          ? '<div class="tk-cmt-text">' +
+              withMentions(tk.escape(c.content), c.mentions).replace(/\n/g, '<br>') +
+            '</div>'
+          : '') +
+        thumbs(c.attachments) +
       '</div></li>';
   }
 
+  // Ảnh đã gửi: bấm mở tab mới xem cỡ thật. loading="lazy" để luồng dài không tải hết ảnh một lúc.
+  function thumbs(list) {
+    if (!list || !list.length) { return ''; }
+    return '<div class="tk-cmt-imgs">' + list.map(function (a) {
+      return '<a href="' + tk.escape(a.url) + '" target="_blank" rel="noopener" title="' + tk.escape(a.name) + '">' +
+        '<img src="' + tk.escape(a.url) + '" alt="' + tk.escape(a.name) + '" loading="lazy">' +
+        '</a>';
+    }).join('') + '</div>';
+  }
+
   /// Ô gợi ý nhân viên khi gõ "@". Trả về đối tượng có picked() để lấy danh sách id đã chọn.
-  function mentionPicker(input, menu) {
+  function mentionPicker(input, menu, entity) {
     var picked = {};        // tên → id, giữ để lúc gửi biết ai được nhắc
     var matches = [];
     var active = -1;
@@ -113,7 +128,7 @@
     input.addEventListener('input', function () {
       var t = token();
       if (!t) { close(); return; }
-      people().then(function (all) {
+      people(entity).then(function (all) {
         var q = plain(t.q);
         matches = all.filter(function (p) { return plain(p.name).includes(q); }).slice(0, 8);
         active = matches.length ? 0 : -1;
@@ -161,17 +176,25 @@
           '<span class="badge bg-label-secondary ms-2" data-role="count">0</span>' +
         '</h5>' +
         '<div class="card-body">' +
-          '<form class="tk-cmt-form mb-3">' +
+          // KHÔNG dùng <form>: component này còn được gắn vào trong offcanvas sửa của màn khác,
+          // mà form lồng form là HTML không hợp lệ và nút Gửi sẽ kích hoạt luôn form cha.
+          '<div class="tk-cmt-form mb-3">' +
             '<div class="tk-cmt-input">' +
               '<textarea class="form-control" rows="2" maxlength="4000" ' +
                 'placeholder="Ghi lại trao đổi với khách, lý do chưa chốt, việc cần theo... Gõ @ để nhắc đồng nghiệp."></textarea>' +
               '<div class="tk-cmt-at-menu d-none" data-role="at"></div>' +
             '</div>' +
-            '<div class="d-flex align-items-center justify-content-between mt-2">' +
-              '<span class="text-muted small">Gõ <kbd>@</kbd> để nhắc đồng nghiệp — người được nhắc sẽ nhận thông báo.</span>' +
-              '<button type="submit" class="btn btn-sm btn-primary">Gửi</button>' +
+            '<div class="tk-cmt-drafts" data-role="drafts"></div>' +
+            '<div class="d-flex align-items-center justify-content-between mt-2 gap-2">' +
+              '<div class="d-flex align-items-center gap-2">' +
+                '<button type="button" class="btn btn-sm btn-label-secondary" data-role="pick-img" title="Đính kèm ảnh">' +
+                  '<i class="ti ti-photo"></i></button>' +
+                '<input type="file" accept="image/*" multiple class="d-none" data-role="file">' +
+                '<span class="text-muted small d-none d-sm-inline">Gõ <kbd>@</kbd> để nhắc, hoặc dán ảnh thẳng vào ô.</span>' +
+              '</div>' +
+              '<button type="button" class="btn btn-sm btn-primary" data-role="send">Gửi</button>' +
             '</div>' +
-          '</form>' +
+          '</div>' +
           '<ul class="tk-cmt-list list-unstyled mb-0" data-role="list">' +
             '<li class="text-muted small">Đang tải...</li>' +
           '</ul>' +
@@ -184,7 +207,7 @@
     var more = root.querySelector('[data-role="more"]');
     var form = root.querySelector('.tk-cmt-form');
     var input = form.querySelector('textarea');
-    var picker = mentionPicker(input, root.querySelector('[data-role="at"]'));
+    var picker = mentionPicker(input, root.querySelector('[data-role="at"]'), entity);
 
     function render(data) {
       count.textContent = data.total;
@@ -200,7 +223,7 @@
 
     function load() {
       var q = '?entityName=' + encodeURIComponent(entity) + '&entityId=' + encodeURIComponent(entityId);
-      fetch(URL + q, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      fetch(API + q, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
           if (!d) {
@@ -214,12 +237,83 @@
         });
     }
 
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var content = (input.value || '').trim();
-      if (!content) { return; }
+    var sendBtn = form.querySelector('[data-role="send"]');
+    var fileInput = form.querySelector('[data-role="file"]');
+    var draftsEl = form.querySelector('[data-role="drafts"]');
+    var drafts = [];   // ảnh đã tải lên nhưng CHƯA gửi kèm bình luận nào
 
-      var btn = form.querySelector('button[type="submit"]');
+    function renderDrafts() {
+      draftsEl.innerHTML = drafts.map(function (d, i) {
+        return '<span class="tk-cmt-draft">' +
+          (d.loading
+            ? '<span class="spinner-border spinner-border-sm"></span>'
+            : '<img src="' + tk.escape(d.preview) + '" alt="">') +
+          '<span class="tk-cmt-draft-name">' + tk.escape(d.name) + '</span>' +
+          (d.loading ? '' : '<button type="button" class="tk-cmt-draft-x" data-i="' + i + '">&times;</button>') +
+          '</span>';
+      }).join('');
+    }
+
+    function upload(file) {
+      if (drafts.length >= 5) { tk.error('Tối đa 5 ảnh mỗi bình luận.'); return; }
+
+      // Xem trước bằng blob local NGAY, không chờ server: người dùng thấy ảnh mình vừa chọn tức thì.
+      var draft = { name: file.name || 'ảnh', loading: true, preview: URL.createObjectURL(file) };
+      drafts.push(draft);
+      renderDrafts();
+
+      var fd = new FormData();
+      fd.append('entityName', entity);
+      fd.append('entityId', entityId);
+      fd.append('file', file);
+      tk.post(API + '?handler=Upload', fd).then(function (r) {
+        if (r && r.isSuccess && r.data) {
+          draft.id = r.data.id;
+          draft.loading = false;
+        } else {
+          drafts.splice(drafts.indexOf(draft), 1);
+          tk.error((r && r.message) || 'Không tải được ảnh.');
+        }
+        renderDrafts();
+      });
+    }
+
+    form.querySelector('[data-role="pick-img"]').addEventListener('click', function () { fileInput.click(); });
+    fileInput.addEventListener('change', function () {
+      Array.prototype.forEach.call(fileInput.files, upload);
+      fileInput.value = '';   // chọn lại cùng một tệp vẫn phải kích hoạt change
+    });
+
+    draftsEl.addEventListener('click', function (e) {
+      var x = e.target.closest('.tk-cmt-draft-x');
+      if (!x) { return; }
+      drafts.splice(Number(x.dataset.i), 1);
+      renderDrafts();
+    });
+
+    // Dán ảnh thẳng từ clipboard — cách nhanh nhất để đưa một ảnh chụp màn hình vào.
+    input.addEventListener('paste', function (e) {
+      var items = (e.clipboardData || {}).items || [];
+      Array.prototype.forEach.call(items, function (it) {
+        if (it.kind === 'file' && it.type.indexOf('image/') === 0) {
+          e.preventDefault();
+          upload(it.getAsFile());
+        }
+      });
+    });
+
+    function send() {
+      var content = (input.value || '').trim();
+      var ready = drafts.filter(function (d) { return d.id; });
+
+      // Ảnh không kèm chữ vẫn gửi được; nhưng đang còn ảnh tải dở thì chờ, đừng gửi thiếu.
+      if (!content && ready.length === 0) { return; }
+      if (drafts.some(function (d) { return d.loading; })) {
+        tk.error('Đang tải ảnh, chờ một chút.');
+        return;
+      }
+
+      var btn = sendBtn;
       btn.disabled = true;
 
       var fd = new FormData();
@@ -227,22 +321,28 @@
       fd.append('entityId', entityId);
       fd.append('content', content);
       fd.append('mentions', picker.picked(content).join(','));
+      fd.append('attachments', ready.map(function (d) { return d.id; }).join(','));
 
-      tk.post(URL, fd).then(function (r) {
+      tk.post(API, fd).then(function (r) {
         if (r && r.isSuccess) {
           input.value = '';
           picker.reset();
+          drafts.forEach(function (d) { URL.revokeObjectURL(d.preview); });
+          drafts = [];
+          renderDrafts();
           load();
         } else {
           tk.error((r && r.message) || 'Không gửi được, thử lại.');
         }
       }).finally(function () { btn.disabled = false; });
-    });
+    }
+
+    sendBtn.addEventListener('click', send);
 
     // Ctrl/Cmd+Enter gửi — người dùng gõ nhiều dòng nên Enter phải là xuống dòng.
     // Đăng ký SAU picker: khi ô gợi ý đang mở, Enter là "chọn người" chứ không phải "gửi".
     input.addEventListener('keydown', function (e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { picker.close(); form.requestSubmit(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { picker.close(); send(); }
     });
 
     list.addEventListener('click', function (e) {
@@ -254,7 +354,7 @@
         if (!ok) { return; }
         var fd = new FormData();
         fd.append('id', id);
-        tk.post(URL + '?handler=Delete', fd).then(function (r) {
+        tk.post(API + '?handler=Delete', fd).then(function (r) {
           if (r && r.isSuccess) { load(); } else { tk.error((r && r.message) || 'Không xoá được.'); }
         });
       });

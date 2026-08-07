@@ -27,6 +27,8 @@ public class UserAdminServiceTests
         public Task ReplaceUserRolesAsync(Guid userId, IReadOnlyCollection<Guid> roleIds)
             => Task.CompletedTask;
         public Task DeleteRoleCascadeAsync(Guid roleId) => Task.CompletedTask;
+        public Task<IReadOnlyList<Guid>> UserIdsWithPermissionAsync(string permissionCode)
+            => Task.FromResult<IReadOnlyList<Guid>>([]);
     }
 
     [Fact]

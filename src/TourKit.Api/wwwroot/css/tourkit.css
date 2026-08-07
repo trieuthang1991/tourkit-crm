@@ -468,3 +468,26 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
 .tk-cmt-at-name { font-weight: 500; }
 .tk-cmt-at-dept { color: var(--bs-secondary-color); font-size: .75rem; margin-left: auto; }
 .tk-cmt-at { color: var(--bs-primary); font-weight: 500; }
+/* Luồng trao đổi khi nằm trong offcanvas sửa: tách khỏi form phía trên bằng một đường kẻ,
+   và bỏ viền card (đã có viền của offcanvas rồi, hai lớp viền trông nặng). */
+.tk-oc-comments { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--bs-border-color); }
+.tk-oc-comments .tk-cmt-card { border: 0; box-shadow: none; }
+.tk-oc-comments .tk-cmt-card > .card-header { padding-left: 0; padding-right: 0; }
+.tk-oc-comments .tk-cmt-card > .card-body { padding-left: 0; padding-right: 0; padding-bottom: 0; }
+/* Ảnh đính kèm trong bình luận */
+.tk-cmt-imgs { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.tk-cmt-imgs img {
+  width: 7.5rem; height: 7.5rem; object-fit: cover;
+  border-radius: var(--bs-border-radius); border: 1px solid var(--bs-border-color);
+}
+/* Ảnh đã chọn nhưng chưa gửi */
+.tk-cmt-drafts:not(:empty) { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.tk-cmt-draft {
+  display: inline-flex; align-items: center; gap: .375rem;
+  padding: .25rem .5rem .25rem .25rem; font-size: .75rem;
+  background: var(--bs-tertiary-bg, #f8f7fa); border-radius: 999px;
+}
+.tk-cmt-draft img { width: 1.5rem; height: 1.5rem; object-fit: cover; border-radius: 50%; }
+.tk-cmt-draft-name { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tk-cmt-draft-x { border: 0; background: none; line-height: 1; color: var(--bs-secondary-color); padding: 0 .125rem; }
+.tk-cmt-draft-x:hover { color: var(--bs-danger); }

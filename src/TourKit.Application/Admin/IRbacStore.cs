@@ -16,4 +16,12 @@ public interface IRbacStore
 
     /// <summary>Xoá hẳn vai trò + toàn bộ RolePermission của nó (đã chặn nếu còn user ở tầng service).</summary>
     Task DeleteRoleCascadeAsync(Guid roleId);
+
+    /// <summary>
+    /// Id những user CÓ mã quyền này (qua vai trò), trong tenant hiện tại.
+    ///
+    /// Dùng để chỉ gợi ý @nhắc những người MỞ ĐƯỢC bản ghi. Nhắc người không có quyền xem thì họ
+    /// nhận thông báo rồi bấm vào bị đá về màn đăng nhập — trông như hết phiên, không ai hiểu vì sao.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> UserIdsWithPermissionAsync(string permissionCode);
 }

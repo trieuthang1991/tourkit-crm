@@ -7,6 +7,7 @@ using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
 using TourKit.Application.Catalog;
 using TourKit.Application.Crm;
+using TourKit.Application.Common;
 using TourKit.Application.Crm.Dtos;
 using TourKit.Shared.Enums;
 
@@ -123,6 +124,46 @@ public class IndexModel : TkListPageModel
         }).ToList();
 
         return DtJson(dt.Draw, stats.Total, result.Total, items);
+    }
+
+    /// <summary>
+    /// MỘT cơ hội theo id, cùng hình dạng với dòng lưới để mở thẳng offcanvas sửa.
+    ///
+    /// Dùng cho đường dẫn sâu <c>/co-hoi?mo={id}</c> — người nhận thông báo "@nhắc bạn trong Cơ hội
+    /// bán hàng" bấm vào phải mở ĐÚNG cơ hội đó. Không thể lấy từ dữ liệu lưới đã tải: cơ hội cần mở
+    /// thường không nằm ở trang đầu.
+    /// </summary>
+    public async Task<IActionResult> OnGetOneAsync(Guid id)
+    {
+        LeadDto lead;
+        try
+        {
+            lead = await _svc.GetAsync(id);
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+
+        var userNames = (await _users.ListAsync()).ToDictionary(u => u.Id, u => u.FullName);
+        var branchNames = (await _branches.ListAsync()).ToDictionary(b => b.Id, b => b.Name);
+
+        return new JsonResult(new
+        {
+            id = lead.Id,
+            fullName = lead.FullName,
+            phone = lead.Phone,
+            email = lead.Email,
+            source = lead.Source,
+            status = (int)lead.Status,
+            statusLabel = StatusLabel(lead.Status),
+            statusColor = StatusColor(lead.Status),
+            assignedToUserId = lead.AssignedToUserId,
+            assigneeName = lead.AssignedToUserId is Guid u && userNames.TryGetValue(u, out var un) ? un : null,
+            branchId = lead.BranchId,
+            branchName = lead.BranchId is Guid b && branchNames.TryGetValue(b, out var bn) ? bn : null,
+            convertedCustomerId = lead.ConvertedCustomerId,
+        });
     }
 
     /// <summary>
