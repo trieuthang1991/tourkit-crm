@@ -37,6 +37,10 @@ a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
 .tk-surface { background: var(--bs-card-bg, #fff); border-radius: 12px; overflow: hidden;
               display: flex; flex-direction: column; min-height: 0; position: relative; }
 .tk-surface > * + * { border-top: 1px solid var(--bs-border-color); }
+/* Dải thống kê đứng RIÊNG mà lại mang thêm .tk-surface (mấy màn lịch đang vậy): hai rule trên
+   khai báo SAU nên thắng, các thẻ KPI bị xếp dọc kèm kẻ ngang. Ghim lại bằng selector 2 class. */
+.tk-stat-strip.tk-surface { flex-direction: row; }
+.tk-stat-strip.tk-surface > * + * { border-top: 0; }
 .tk-pad { padding: 1rem 1.25rem; }
 /* Bảng chiếm hết chiều cao còn lại của màn → luôn gọn trong 1 màn, cuộn NGAY TRONG bảng. */
 .tk-surface > .tk-grid { flex: 1 1 auto; min-height: 240px; }
