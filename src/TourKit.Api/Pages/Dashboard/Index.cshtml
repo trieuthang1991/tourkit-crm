@@ -254,138 +254,147 @@
   </div>
 </div>
 
-@if (Model.CanCare)
-{
-  @* Quản lý lịch hẹn — danh sách quét được: khách + tiêu đề + hạn, việc QUÁ HẠN đỏ lên trước.
-     Bảng 5 cột chữ đều nhau thì không biết nên gọi ai trước. *@
-  <div class="tk-card mb-4">
-    <div class="tk-card-head">
-      <div>
-        <h6 class="mb-0">Quản lý lịch hẹn</h6>
-        <small class="text-muted">Lịch chăm sóc chưa hoàn thành</small>
-      </div>
-      <a href="/lich-hen" class="btn btn-sm btn-label-primary">Tất cả</a>
-    </div>
-    <div class="tk-card-body">
-      @if (Model.Cares.Count == 0)
-      {
-        <p class="text-muted mb-0 py-4 text-center">Chưa có lịch hẹn</p>
-      }
-      else
-      {
-        var todayD = TourKit.Api.Pages.Shared.TkDate.Day(DateTimeOffset.Now);
-        <div class="tk-cares">
-          @foreach (var c in Model.Cares)
+@* Ba thẻ này nội dung ít: xếp mỗi thẻ một hàng ngang thì trang dài ra mà nửa bề ngang bỏ trống.
+   Gom vào MỘT hàng ba cột, màn hẹp thì tự xuống dòng. *@
+<div class="row g-4 mb-4">
+  @if (Model.CanCare)
+  {
+    <div class="col-12 col-lg-6 col-xxl-4">
+      @* Quản lý lịch hẹn — danh sách quét được: khách + tiêu đề + hạn, việc QUÁ HẠN đỏ lên trước.
+         Bảng 5 cột chữ đều nhau thì không biết nên gọi ai trước. *@
+      <div class="tk-card h-100">
+        <div class="tk-card-head">
+          <div>
+            <h6 class="mb-0">Quản lý lịch hẹn</h6>
+            <small class="text-muted">Lịch chăm sóc chưa hoàn thành</small>
+          </div>
+          <a href="/lich-hen" class="btn btn-sm btn-label-primary">Tất cả</a>
+        </div>
+        <div class="tk-card-body">
+          @if (Model.Cares.Count == 0)
           {
-            var due = c.RemindAt is { } r0 ? TourKit.Api.Pages.Shared.TkDate.Day(r0) : (DateTimeOffset?)null;
-            var late = due is { } d0 && d0 < todayD && c.Status != 2;
-            var isToday = due == todayD;
-            <div class="tk-care @(late ? "is-late" : "")">
-              <span class="tk-rank-av bg-label-@ToneOf(c.CustomerName)">@Initials(c.CustomerName)</span>
-              <div class="tk-care-main">
-                <b>@c.Title</b>
-                <small>@(c.CustomerName ?? "—")</small>
-              </div>
-              <div class="tk-care-when">
-                <b class="@(late ? "text-danger" : isToday ? "text-primary" : "")">
-                  @(due is null ? "Chưa hẹn" : late ? "Quá hạn" : isToday ? "Hôm nay" : due!.Value.ToString("dd/MM", vi))
-                </b>
-                <small>@(due?.ToString("dd/MM/yyyy", vi) ?? "—")</small>
-              </div>
-              <span class="badge bg-label-@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusColor(c.Status)">@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusLabel(c.Status)</span>
+            <p class="text-muted mb-0 py-4 text-center">Chưa có lịch hẹn</p>
+          }
+          else
+          {
+            var todayD = TourKit.Api.Pages.Shared.TkDate.Day(DateTimeOffset.Now);
+            <div class="tk-cares">
+              @foreach (var c in Model.Cares)
+              {
+                var due = c.RemindAt is { } r0 ? TourKit.Api.Pages.Shared.TkDate.Day(r0) : (DateTimeOffset?)null;
+                var late = due is { } d0 && d0 < todayD && c.Status != 2;
+                var isToday = due == todayD;
+                <div class="tk-care @(late ? "is-late" : "")">
+                  <span class="tk-rank-av bg-label-@ToneOf(c.CustomerName)">@Initials(c.CustomerName)</span>
+                  <div class="tk-care-main">
+                    <b>@c.Title</b>
+                    <small>@(c.CustomerName ?? "—")</small>
+                  </div>
+                  <div class="tk-care-when">
+                    <b class="@(late ? "text-danger" : isToday ? "text-primary" : "")">
+                      @(due is null ? "Chưa hẹn" : late ? "Quá hạn" : isToday ? "Hôm nay" : due!.Value.ToString("dd/MM", vi))
+                    </b>
+                    <small>@(due?.ToString("dd/MM/yyyy", vi) ?? "—")</small>
+                  </div>
+                  <span class="badge bg-label-@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusColor(c.Status)">@TourKit.Api.Pages.Dashboard.IndexModel.CareStatusLabel(c.Status)</span>
+                </div>
+              }
             </div>
           }
         </div>
-      }
+      </div>
     </div>
-  </div>
-}
-
-@* Hiệu suất theo CHI NHÁNH — khác với "theo phòng ban" ở trên, bản cũ có cả hai.
-   Bảng số trơn không cho biết chi nhánh nào thu tiền tốt; thanh TỈ LỆ THU nói ngay điều đó. *@
-<div class="tk-card mb-4">
-  <div class="tk-card-head">
-    <div>
-      <h6 class="mb-0">Hiệu suất theo chi nhánh</h6>
-      <small class="text-muted">Doanh thu · thực thu · còn thiếu</small>
-    </div>
-  </div>
-  <div class="tk-card-body">
-    @if (Model.ByBranch.Count == 0)
-    {
-      <p class="text-muted mb-0 py-4 text-center">Chưa có dữ liệu chi nhánh</p>
-    }
-    else
-    {
-      <div class="tk-branches">
-        @foreach (var br in Model.ByBranch)
+  }
+  <div class="col-12 col-lg-6 col-xxl-4">
+    @* Hiệu suất theo CHI NHÁNH — khác với "theo phòng ban" ở trên, bản cũ có cả hai.
+       Bảng số trơn không cho biết chi nhánh nào thu tiền tốt; thanh TỈ LỆ THU nói ngay điều đó. *@
+    <div class="tk-card h-100">
+      <div class="tk-card-head">
+        <div>
+          <h6 class="mb-0">Hiệu suất theo chi nhánh</h6>
+          <small class="text-muted">Doanh thu · thực thu · còn thiếu</small>
+        </div>
+      </div>
+      <div class="tk-card-body">
+        @if (Model.ByBranch.Count == 0)
         {
-          var rate = br.Turnover > 0 ? (int)Math.Round(100m * br.Received / br.Turnover) : 0;
-          var margin = br.Turnover > 0 ? Math.Round(100m * br.Profit / br.Turnover, 1) : 0m;
-          <div class="tk-branch">
-            <div class="tk-branch-head">
-              <span class="tk-rank-av bg-label-@ToneOf(br.BranchName)">@Initials(br.BranchName)</span>
-              <div class="lh-sm">
-                <b>@br.BranchName</b>
-                <small class="d-block text-muted">@br.OrderCount.ToString("#,##0", vi) đơn · biên lợi nhuận @margin.ToString("0.#", vi)%</small>
+          <p class="text-muted mb-0 py-4 text-center">Chưa có dữ liệu chi nhánh</p>
+        }
+        else
+        {
+          <div class="tk-branches">
+            @foreach (var br in Model.ByBranch)
+            {
+              var rate = br.Turnover > 0 ? (int)Math.Round(100m * br.Received / br.Turnover) : 0;
+              var margin = br.Turnover > 0 ? Math.Round(100m * br.Profit / br.Turnover, 1) : 0m;
+              <div class="tk-branch">
+                <div class="tk-branch-head">
+                  <span class="tk-rank-av bg-label-@ToneOf(br.BranchName)">@Initials(br.BranchName)</span>
+                  <div class="lh-sm">
+                    <b>@br.BranchName</b>
+                    <small class="d-block text-muted">@br.OrderCount.ToString("#,##0", vi) đơn · biên lợi nhuận @margin.ToString("0.#", vi)%</small>
+                  </div>
+                  <b class="ms-auto" title="@Full(br.Turnover)">@Short(br.Turnover)</b>
+                </div>
+                <div class="tk-branch-bar" title="Đã thu @rate% doanh thu">
+                  <span class="bg-success" style="width:@Math.Min(rate, 100)%"></span>
+                </div>
+                <div class="tk-branch-foot">
+                  <span class="text-success"><i class="ti ti-arrow-down-circle me-1"></i>Thực thu @Short(br.Received) (@rate%)</span>
+                  <span class="@(br.Outstanding > 0 ? "text-danger" : "text-muted")"><i class="ti ti-alert-circle me-1"></i>Còn thiếu @Short(br.Outstanding)</span>
+                  <span class="@(br.Profit < 0 ? "text-danger" : "")"><i class="ti ti-coin me-1"></i>Lợi nhuận @Short(br.Profit)</span>
+                </div>
               </div>
-              <b class="ms-auto" title="@Full(br.Turnover)">@Short(br.Turnover)</b>
-            </div>
-            <div class="tk-branch-bar" title="Đã thu @rate% doanh thu">
-              <span class="bg-success" style="width:@Math.Min(rate, 100)%"></span>
-            </div>
-            <div class="tk-branch-foot">
-              <span class="text-success"><i class="ti ti-arrow-down-circle me-1"></i>Thực thu @Short(br.Received) (@rate%)</span>
-              <span class="@(br.Outstanding > 0 ? "text-danger" : "text-muted")"><i class="ti ti-alert-circle me-1"></i>Còn thiếu @Short(br.Outstanding)</span>
-              <span class="@(br.Profit < 0 ? "text-danger" : "")"><i class="ti ti-coin me-1"></i>Lợi nhuận @Short(br.Profit)</span>
-            </div>
+            }
           </div>
         }
       </div>
-    }
+    </div>
+  </div>
+  <div class="col-12 col-lg-6 col-xxl-4">
+    @* Vinh danh chiến binh sales — bảng xếp hạng, không phải bảng số: thứ hạng và tỉ trọng
+       doanh thu phải nhìn ra ngay, đọc con số là bước sau. *@
+    <div class="tk-card h-100">
+      <div class="tk-card-head">
+        <div>
+          <h6 class="mb-0">Vinh danh chiến binh sales</h6>
+          <small class="text-muted">Doanh thu và hoa hồng theo nhân viên</small>
+        </div>
+        <a href="/hoa-hong-theo-nguon" class="btn btn-sm btn-label-primary">Báo cáo hoa hồng</a>
+      </div>
+      <div class="tk-card-body">
+        @if (Model.TopSales.Count == 0)
+        {
+          <p class="text-muted mb-0 py-4 text-center">Chưa có dữ liệu</p>
+        }
+        else
+        {
+          var maxSale = Model.TopSales.Max(x => x.Turnover);
+          <div class="tk-rank">
+            @{ var si = 0; }
+            @foreach (var sale in Model.TopSales)
+            {
+              si++;
+              <div class="tk-rank-row">
+                <span class="tk-rank-no @(si <= 3 ? "is-top" : "")">@si</span>
+                <span class="tk-rank-av bg-label-@ToneOf(sale.Name)">@Initials(sale.Name)</span>
+                <span class="tk-rank-main">
+                  <b>@sale.Name</b>
+                  <span class="tk-rank-bar"><i style="width:@Math.Max(Pct(sale.Turnover, maxSale), 2)%"></i></span>
+                </span>
+                <span class="tk-rank-val">
+                  <b title="@Full(sale.Turnover)">@Short(sale.Turnover)</b>
+                  <small class="@(sale.Commission > 0 ? "text-success" : "text-muted")">HH @Short(sale.Commission)</small>
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
   </div>
 </div>
 
-@* Vinh danh chiến binh sales — bảng xếp hạng, không phải bảng số: thứ hạng và tỉ trọng
-   doanh thu phải nhìn ra ngay, đọc con số là bước sau. *@
-<div class="tk-card mb-4">
-  <div class="tk-card-head">
-    <div>
-      <h6 class="mb-0">Vinh danh chiến binh sales</h6>
-      <small class="text-muted">Doanh thu và hoa hồng theo nhân viên</small>
-    </div>
-    <a href="/hoa-hong-theo-nguon" class="btn btn-sm btn-label-primary">Báo cáo hoa hồng</a>
-  </div>
-  <div class="tk-card-body">
-    @if (Model.TopSales.Count == 0)
-    {
-      <p class="text-muted mb-0 py-4 text-center">Chưa có dữ liệu</p>
-    }
-    else
-    {
-      var maxSale = Model.TopSales.Max(x => x.Turnover);
-      <div class="tk-rank">
-        @{ var si = 0; }
-        @foreach (var sale in Model.TopSales)
-        {
-          si++;
-          <div class="tk-rank-row">
-            <span class="tk-rank-no @(si <= 3 ? "is-top" : "")">@si</span>
-            <span class="tk-rank-av bg-label-@ToneOf(sale.Name)">@Initials(sale.Name)</span>
-            <span class="tk-rank-main">
-              <b>@sale.Name</b>
-              <span class="tk-rank-bar"><i style="width:@Math.Max(Pct(sale.Turnover, maxSale), 2)%"></i></span>
-            </span>
-            <span class="tk-rank-val">
-              <b title="@Full(sale.Turnover)">@Short(sale.Turnover)</b>
-              <small class="@(sale.Commission > 0 ? "text-success" : "text-muted")">HH @Short(sale.Commission)</small>
-            </span>
-          </div>
-        }
-      </div>
-    }
-  </div>
-</div>
 
 @if (Model.CanDeparture)
 {

@@ -204,7 +204,7 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
 .tk-rank-val small { font-size: .7rem; }
 
 /* ===== Hiệu suất chi nhánh — mỗi chi nhánh một khối, thanh = tỉ lệ ĐÃ THU ===== */
-.tk-branches { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+.tk-branches { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .75rem; }
 .tk-branch { border: 1px solid var(--bs-border-color); border-radius: .625rem; padding: .875rem 1rem; }
 .tk-branch-head { display: flex; align-items: center; gap: .625rem; margin-bottom: .75rem; }
 .tk-branch-head b { font-size: .9375rem; color: var(--bs-heading-color); }
