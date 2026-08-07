@@ -25,4 +25,7 @@ public interface IReportQueries
 
     /// <summary>Nhịp doanh thu cho màn Bàn làm việc — xem <see cref="WorkspacePulseDto"/>.</summary>
     Task<WorkspacePulseDto> GetWorkspacePulseAsync(int days = 7);
+
+    /// <summary>Chuỗi doanh thu theo ngày (monthly=false) hoặc theo tháng (monthly=true).</summary>
+    Task<IReadOnlyList<RevenuePointDto>> GetRevenueSeriesAsync(DateTimeOffset from, DateTimeOffset to, bool monthly);
 }

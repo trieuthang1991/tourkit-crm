@@ -33,4 +33,7 @@ public sealed class ReportService(IReportQueries queries) : IReportService
     public Task<KpiSummaryDto> GetKpiSummaryAsync() => queries.GetKpiSummaryAsync();
 
     public Task<WorkspacePulseDto> GetWorkspacePulseAsync(int days = 7) => queries.GetWorkspacePulseAsync(days);
+
+    public Task<IReadOnlyList<RevenuePointDto>> GetRevenueSeriesAsync(DateTimeOffset from, DateTimeOffset to, bool monthly) =>
+        queries.GetRevenueSeriesAsync(from, to, monthly);
 }

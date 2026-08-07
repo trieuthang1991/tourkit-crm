@@ -285,6 +285,11 @@ using (var scope = app.Services.CreateScope())
             scope.ServiceProvider.GetRequiredService<TourKit.Application.Provisioning.IProvisioningService>(),
             scope.ServiceProvider.GetRequiredService<TourKit.Application.Auth.IPasswordHasher>());
 
+        // DEV-ONLY: bơm dữ liệu NEO VÀO HÔM NAY để các màn thống kê có gì mà hiện.
+        // Hai seeder trên rải dữ liệu quanh lúc CHÚNG chạy; xem lại sau vài tuần thì mọi mốc đã
+        // trôi vào quá khứ và Bàn làm việc trông như hỏng dù dữ liệu vẫn đúng.
+        await TourKit.Api.DevData.RecentDataSeeder.SeedAsync(db, ambient);
+
         // DEV-ONLY: bơm KHỐI LƯỢNG LỚN (hàng nghìn dòng/bảng) để test hiệu năng lưới/phân trang.
         // Chỉ chạy khi đặt biến môi trường SEED_PERF_COUNT>0 (vd SEED_PERF_COUNT=3000). Idempotent.
         var perfCountStr = Environment.GetEnvironmentVariable("SEED_PERF_COUNT");

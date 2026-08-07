@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TourKit.Api.Auth;
 using TourKit.Api.Pages.Shared;
@@ -76,6 +77,8 @@ public class IndexModel : PageModel
     // --- CSKH ---
     public IReadOnlyList<CustomerCareDto> MyCares { get; private set; } = [];
     public IReadOnlyList<CustomerCareDto> TodayCares { get; private set; } = [];
+    /// <summary>Lịch hẹn 7 ngày tới của tôi, đã GOM THEO NGÀY để thẻ chỉ việc vẽ.</summary>
+    public IReadOnlyList<(DateTimeOffset Day, IReadOnlyList<CustomerCareDto> Items)> WeekCares { get; private set; } = [];
 
     // --- Các thẻ còn lại ---
     public IReadOnlyList<NotificationDto> Notifications { get; private set; } = [];
@@ -88,7 +91,11 @@ public class IndexModel : PageModel
 
     // --- Nhịp doanh thu + chuyến khởi hành (bản dựng lại theo mẫu chủ dự án gửi) ---
     public WorkspacePulseDto Pulse { get; private set; } = new([], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    /// <summary>Chuyến khởi hành trong 7 ngày tới — thẻ ngang "Tour khởi hành trong tuần".</summary>
+    /// <summary>Chuyến khởi hành trong 30 ngày tới — dải thẻ ngang "Tour khởi hành trong tháng".</summary>
+    public IReadOnlyList<DepartureDto> MonthDepartures { get; private set; } = [];
+    /// <summary>Tổng số chuyến khởi hành trong 30 ngày tới (dải thẻ chỉ hiện một phần).</summary>
+    public int MonthDepartureTotal { get; private set; }
+    /// <summary>Chuyến khởi hành trong 7 ngày tới — dòng "Tour sắp khởi hành" ở Trung tâm cần xử lý.</summary>
     public IReadOnlyList<DepartureDto> WeekDepartures { get; private set; } = [];
     /// <summary>Số chuyến khởi hành theo TỪNG ngày trong 7 ngày tới — dải lịch cuối màn.</summary>
     public IReadOnlyList<(DateTimeOffset Day, int Count)> DepartureDays { get; private set; } = [];
@@ -109,6 +116,48 @@ public class IndexModel : PageModel
     /// <summary>Mức tăng/giảm so với kỳ trước, đơn vị %. null = kỳ trước bằng 0, không so được.</summary>
     public static decimal? Delta(decimal now, decimal before)
         => before == 0 ? null : Math.Round((now - before) / before * 100, 1);
+
+    /// <summary>Chuỗi doanh thu của kỳ đang xem (mặc định THÁNG NÀY, chia theo ngày).</summary>
+    public IReadOnlyList<RevenuePointDto> RevenueSeries { get; private set; } = [];
+    /// <summary>Tổng doanh thu của kỳ đang xem — con số lớn cạnh tiêu đề biểu đồ.</summary>
+    public decimal RevenueRangeTotal => RevenueSeries.Sum(p => p.Amount);
+
+    /// <summary>Quy đổi mã kỳ → khoảng ngày + cách chia cột. Dùng chung cho lần dựng trang và handler đổi kỳ.</summary>
+    public static (DateTimeOffset From, DateTimeOffset To, bool Monthly, string Label) RangeOf(string? key)
+    {
+        var today = TkDate.Day(DateTimeOffset.Now);
+        return key switch
+        {
+            "week" => (today.AddDays(-6), today.AddDays(1), false, "7 ngày qua"),
+            "year" => (new DateTimeOffset(new DateTime(today.Year, 1, 1), TimeSpan.Zero), today.AddDays(1), true, "Năm " + today.Year),
+            "prevmonth" => (new DateTimeOffset(new DateTime(today.Year, today.Month, 1), TimeSpan.Zero).AddMonths(-1),
+                            new DateTimeOffset(new DateTime(today.Year, today.Month, 1), TimeSpan.Zero), false, "Tháng trước"),
+            // Mặc định: THÁNG NÀY, mỗi cột một ngày — hỏi "tháng này bán được bao nhiêu" là câu
+            // hay hỏi nhất, và chia theo ngày mới thấy được ngày nào tiền về.
+            _ => (new DateTimeOffset(new DateTime(today.Year, today.Month, 1), TimeSpan.Zero), today.AddDays(1), false, "Tháng này"),
+        };
+    }
+
+    /// <summary>Đổi kỳ xem của biểu đồ doanh thu — trả JSON cho biểu đồ vẽ lại tại chỗ.</summary>
+    public async Task<IActionResult> OnGetRevenueAsync(string? range)
+    {
+        if (!CanDashboard)
+        {
+            return new JsonResult(new { labels = Array.Empty<string>(), values = Array.Empty<decimal>(), total = 0m });
+        }
+
+        var (from, to, monthly, label) = RangeOf(range);
+        var series = await _reports.GetRevenueSeriesAsync(from, to, monthly);
+        var vi = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+
+        return new JsonResult(new
+        {
+            label,
+            labels = series.Select(p => monthly ? "T" + p.Day.Month : p.Day.ToString("dd/MM", vi)),
+            values = series.Select(p => p.Amount),
+            total = series.Sum(p => p.Amount),
+        });
+    }
 
     public bool CanTask => User.HasClaim("perm", "task.view");
     public bool CanCare => User.HasClaim("perm", "care.view");
@@ -168,16 +217,27 @@ public class IndexModel : PageModel
                 MyCares = (await _cares.ListAsync(1, CardRows, new CustomerCareListFilter(AssignedToUserId: g))).Items
                     .OrderBy(c => c.RemindAt ?? DateTimeOffset.MaxValue).ToList();
 
-                // "Lịch hẹn hôm nay": lọc trong nhóm việc CHƯA xong của chính mình. Lấy rộng hơn thẻ
-                // một chút vì phải sàng theo ngày, nhưng vẫn là trang nhỏ chứ không phải cả bảng.
-                var soon = (await _cares.ListAsync(1, 50, new CustomerCareListFilter(AssignedToUserId: g))).Items;
-                var today = DateTimeOffset.Now.Date;
-                TodayCares = soon
-                    .Where(c => c.Status != CareDone && c.RemindAt is { } r && r.ToLocalTime().Date == today)
-                    .OrderBy(c => c.RemindAt)
+                // "Lịch hôm nay" hỏi ĐÚNG khoảng ngày ở SQL. Trước đây nạp 50 dòng gần nhất rồi sàng
+                // theo ngày ở bộ nhớ — ai có vài trăm lịch cũ thì lịch HÔM NAY rơi khỏi 50 dòng đó
+                // và thẻ luôn báo "không có lịch hẹn nào" dù thực tế có.
+                var today = TkDate.Day(DateTimeOffset.Now);
+                TodayCares = (await _cares.ListAsync(1, CardRows, new CustomerCareListFilter(
+                    AssignedToUserId: g, RemindFrom: today, RemindTo: today, ExcludeStatus: CareDone))).Items
+                    .OrderBy(c => c.RemindAt).ToList();
+
+                // Cả TUẦN chứ không chỉ hôm nay: xem trước được mấy ngày tới mới sắp xếp được việc.
+                // Gom theo ngày ở đây (tối đa 60 dòng đã cắt trang ở SQL), thẻ chỉ việc vẽ.
+                var week = (await _cares.ListAsync(1, 60, new CustomerCareListFilter(
+                    AssignedToUserId: g, RemindFrom: today, RemindTo: today.AddDays(6), ExcludeStatus: CareDone))).Items;
+                WeekCares = week
+                    .Where(c => c.RemindAt is not null)
+                    .GroupBy(c => TkDate.Day(c.RemindAt!.Value))
+                    .OrderBy(x => x.Key)
+                    .Select(x => (Day: x.Key, Items: (IReadOnlyList<CustomerCareDto>)x.OrderBy(c => c.RemindAt).ToList()))
                     .ToList();
 
-                OverdueCares = soon.Count(c => c.Status != CareDone && c.RemindAt is { } r && r.ToLocalTime().Date < today);
+                OverdueCares = (await _cares.ListAsync(1, 1, new CustomerCareListFilter(
+                    AssignedToUserId: g, RemindTo: today.AddDays(-1), RemindIsNull: false, ExcludeStatus: CareDone))).Total;
             }
         }
 
@@ -188,6 +248,10 @@ public class IndexModel : PageModel
             Summary = await _reports.GetDashboardAsync();
             CustomerCount = (await _customers.ListAsync(1, 1)).Total;
             Pulse = await _reports.GetWorkspacePulseAsync(7);
+
+            // Biểu đồ mở lên là THÁNG NÀY chia theo ngày; đổi kỳ gọi ?handler=Revenue.
+            var (rFrom, rTo, rMonthly, _) = RangeOf(null);
+            RevenueSeries = await _reports.GetRevenueSeriesAsync(rFrom, rTo, rMonthly);
 
             // Công nợ khách hàng: báo cáo trả về theo đơn còn nợ, chỉ giữ 6 khoản lớn nhất.
             var debt = await _reports.GetOrderDebtAsync();
@@ -205,12 +269,17 @@ public class IndexModel : PageModel
 
         if (CanDeparture)
         {
-            // Chuyến trong 7 ngày tới — lấy MỘT trang có biên, không get-all.
+            // Chuyến trong 30 ngày tới — MỘT trang có biên, không get-all. Dải thẻ "trong tháng"
+            // và dải 7 ngày cùng đọc từ tập này, khỏi gọi hai lượt.
             var today = TkDate.Day(DateTimeOffset.Now);
-            var week = (await _departures.ListAsync(1, 60, new DepartureListFilter(
-                DepartureFrom: today, DepartureTo: today.AddDays(6), Sort: "dateAsc"))).Items;
+            var month = await _departures.ListAsync(1, 200, new DepartureListFilter(
+                DepartureFrom: today, DepartureTo: today.AddDays(30), Sort: "dateAsc"));
 
-            WeekDepartures = week.Take(10).ToList();
+            MonthDepartureTotal = month.Total;
+            MonthDepartures = month.Items.Take(12).ToList();
+
+            var week = month.Items.Where(d => d.DepartureDate is { } dd && TkDate.Day(dd) <= today.AddDays(6)).ToList();
+            WeekDepartures = week;
             WeekSlots = week.Sum(d => d.TotalSlots);
             DepartureDays = Enumerable.Range(0, 7)
                 .Select(i => today.AddDays(i))

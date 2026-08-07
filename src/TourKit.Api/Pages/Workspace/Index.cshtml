@@ -21,6 +21,7 @@
 
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.css" />
+  <link rel="stylesheet" href="~/vendor/libs/fullcalendar/fullcalendar.css" />
   <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
 
@@ -87,18 +88,26 @@
 
   @* ===== Doanh thu theo thời gian ===== *@
   <div class="col-12 col-xl-8">
-    <div class="tk-surface h-100">
-      <div class="tk-pad pb-0 d-flex flex-wrap gap-2 justify-content-between align-items-start">
+    <div class="tk-card h-100">
+      <div class="tk-card-head align-items-start">
         <div>
           <h6 class="mb-2">Doanh thu theo thời gian</h6>
           <div class="d-flex align-items-baseline gap-2">
-            <span class="tk-big" title="@Full(Model.Pulse.Revenue7)">@Short(Model.Pulse.Revenue7)</span>
-            @Html.Raw(DeltaHtml(revDelta))
+            <span class="tk-big" id="rev-total" title="@Full(Model.RevenueRangeTotal)">@Short(Model.RevenueRangeTotal)</span>
+            @* Mức tăng giảm chỉ đúng cho 7 ngày gần nhất; đổi sang kỳ khác thì đổi thành TÊN KỲ,
+               giữ nguyên "so với tuần trước" là nói sai về con số đang hiện. *@
+            <span id="rev-note" class="tk-kpi-sub text-muted">tháng này</span>
           </div>
         </div>
-        <span class="badge bg-label-secondary">7 ngày qua</span>
+        @* Đổi kỳ xem: gọi ?handler=Revenue rồi vẽ lại tại chỗ, không tải lại cả trang. *@
+        <select id="rev-range" class="form-select form-select-sm" style="width:auto" aria-label="Kỳ xem doanh thu">
+          <option value="month" selected>Tháng này</option>
+          <option value="prevmonth">Tháng trước</option>
+          <option value="week">7 ngày qua</option>
+          <option value="year">Năm nay</option>
+        </select>
       </div>
-      <div class="tk-pad pt-2"><div id="chart-revenue" style="min-height:260px"></div></div>
+      <div id="chart-revenue" style="min-height:260px"></div>
       <div class="tk-minis">
         <div class="tk-mini"><small>Hôm nay</small><b title="@Full(Model.Pulse.Today)">@Short(Model.Pulse.Today)</b></div>
         <div class="tk-mini"><small>Tuần này</small><b title="@Full(Model.Pulse.ThisWeek)">@Short(Model.Pulse.ThisWeek)</b></div>
@@ -110,9 +119,9 @@
 
   @* ===== Trung tâm cần xử lý ===== *@
   <div class="col-12 col-xl-4">
-    <div class="tk-surface h-100">
-      <div class="tk-pad pb-2"><h6 class="mb-0">Trung tâm cần xử lý</h6></div>
-      <div class="tk-pad pt-0">
+    <div class="tk-card h-100">
+      <div class="tk-card-head"><h6 class="mb-0">Trung tâm cần xử lý</h6></div>
+      <div class="tk-card-body">
         @{
             // Chỉ liệt kê việc CÓ số thật để bấm vào là ra đúng danh sách đó.
             var todos = new List<(bool Show, string Icon, string Color, string Title, string Sub, int Count, string Url)>
@@ -149,29 +158,53 @@
   @if (Model.CanTask)
   {
     <div class="col-12 col-lg-6 col-xxl-4">
-      <div class="tk-surface h-100">
-        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+      <div class="tk-card h-100">
+        <div class="tk-card-head">
           <h6 class="mb-0">Việc của tôi</h6>
           <a class="small" href="/cong-viec/cua-toi">Xem tất cả</a>
         </div>
-        <div class="tk-pad pt-0">
+        <div class="tk-card-body">
           @if (Model.MyTasks.Count == 0)
           {
             <p class="text-muted mb-0 py-4 text-center">Bạn chưa được giao việc nào.</p>
           }
           else
           {
-            <div class="tk-list">
-              @foreach (var t in Model.MyTasks)
+            @* Lọc ngay tại thẻ (không gọi lại server): 6 dòng đang có sẵn ở client. *@
+            var dayNow = today.Date;
+            var todayTasks = Model.MyTasks.Where(t => t.DueDate is { } d && d.Date == dayNow).ToList();
+            var lateTasks = Model.MyTasks.Where(t => t.DueDate is { } d && d.Date < dayNow && t.Status != 2 && t.Status != 3).ToList();
+
+            <ul class="nav nav-tabs tk-tabs mb-2" role="tablist">
+              <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#task-all" type="button">Tất cả (@Model.MyTasks.Count)</button></li>
+              <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#task-today" type="button">Hôm nay (@todayTasks.Count)</button></li>
+              <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#task-late" type="button">Quá hạn (@lateTasks.Count)</button></li>
+            </ul>
+            <div class="tab-content p-0">
+              @foreach (var pane in new[] { ("task-all", Model.MyTasks), ("task-today", (IReadOnlyList<TourKit.Application.Work.WorkTaskDto>)todayTasks), ("task-late", (IReadOnlyList<TourKit.Application.Work.WorkTaskDto>)lateTasks) })
               {
-                var over = t.DueDate is { } d && d < today && t.Status != 2 && t.Status != 3;
-                <div class="tk-line">
-                  <span class="tk-line-ic bg-label-@TourKit.Api.Pages.Workspace.IndexModel.TaskStatusColor(t.Status)"><i class="ti ti-checklist"></i></span>
-                  <span class="tk-line-text">
-                    <b>@t.Title</b>
-                    <small class="@(over ? "text-danger" : "")">@(t.DueDate?.ToString("dd/MM/yyyy", vi) ?? "Chưa đặt hạn")</small>
-                  </span>
-                  <span class="badge bg-label-@(t.Priority == 2 ? "danger" : t.Priority == 0 ? "secondary" : "info")">@TourKit.Api.Pages.Workspace.IndexModel.PriorityLabel(t.Priority)</span>
+                <div class="tab-pane fade @(pane.Item1 == "task-all" ? "show active" : "")" id="@pane.Item1">
+                  @if (pane.Item2.Count == 0)
+                  {
+                    <p class="text-muted mb-0 py-4 text-center">Không có việc nào ở nhóm này.</p>
+                  }
+                  else
+                  {
+                    <div class="tk-list">
+                      @foreach (var t in pane.Item2)
+                      {
+                        var over = t.DueDate is { } d && d < today && t.Status != 2 && t.Status != 3;
+                        <div class="tk-line">
+                          <span class="tk-line-ic bg-label-@TourKit.Api.Pages.Workspace.IndexModel.TaskStatusColor(t.Status)"><i class="ti ti-checklist"></i></span>
+                          <span class="tk-line-text">
+                            <b>@t.Title</b>
+                            <small class="@(over ? "text-danger" : "")">@(t.DueDate?.ToString("dd/MM/yyyy", vi) ?? "Chưa đặt hạn")</small>
+                          </span>
+                          <span class="badge bg-label-@(t.Priority == 2 ? "danger" : t.Priority == 0 ? "secondary" : "info")">@TourKit.Api.Pages.Workspace.IndexModel.PriorityLabel(t.Priority)</span>
+                        </div>
+                      }
+                    </div>
+                  }
                 </div>
               }
             </div>
@@ -185,12 +218,12 @@
   @if (Model.CanReceipt || Model.CanPayment)
   {
     <div class="col-12 col-lg-6 col-xxl-4">
-      <div class="tk-surface h-100">
-        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+      <div class="tk-card h-100">
+        <div class="tk-card-head">
           <h6 class="mb-0">Phiếu cần duyệt</h6>
           <a class="small" href="/phieu-thu-cho">Xem tất cả</a>
         </div>
-        <div class="tk-pad pt-0">
+        <div class="tk-card-body">
           <ul class="nav nav-tabs tk-tabs mb-2" role="tablist">
             @if (Model.CanReceipt)
             {
@@ -252,70 +285,50 @@
     </div>
   }
 
-  @* ===== Lịch hôm nay ===== *@
+  @* ===== Lịch hẹn tuần này ===== *@
   @if (Model.CanCare)
   {
     <div class="col-12 col-xxl-4">
-      <div class="tk-surface h-100">
-        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
-          <h6 class="mb-0">Lịch hôm nay</h6>
+      <div class="tk-card h-100">
+        <div class="tk-card-head">
+          <div>
+            <h6 class="mb-0">Lịch hẹn tuần này</h6>
+            <small class="text-muted">@Model.WeekCares.Sum(x => x.Items.Count) lịch trong 7 ngày tới</small>
+          </div>
           <a class="small" href="/lich-hen">Xem lịch đầy đủ</a>
         </div>
-        <div class="tk-pad pt-0">
-          @if (Model.TodayCares.Count == 0)
+        <div class="tk-card-body">
+          @if (Model.WeekCares.Count == 0)
           {
-            <p class="text-muted mb-0 py-4 text-center">Hôm nay không có lịch hẹn nào.</p>
+            <p class="text-muted mb-0 py-4 text-center">7 ngày tới bạn không có lịch hẹn nào.</p>
           }
           else
           {
-            <div class="tk-time">
-              @foreach (var c in Model.TodayCares)
+            @* Gom THEO NGÀY: một danh sách phẳng 7 ngày trộn lẫn thì phải tự dò xem cái nào của
+               hôm nay. Mỗi ngày một đầu mục dính trên khi cuộn, ngày hôm nay tô nhấn. *@
+            var dayNow = TourKit.Api.Pages.Shared.TkDate.Day(DateTimeOffset.Now);
+            <div class="tk-week">
+              @foreach (var g in Model.WeekCares)
               {
-                <div class="tk-time-row">
-                  <span class="tk-time-at">@(c.RemindAt?.ToLocalTime().ToString("HH:mm", vi) ?? "--:--")</span>
-                  <span class="tk-time-dot bg-@TourKit.Api.Pages.Workspace.IndexModel.CareStatusColor(c.Status)"></span>
-                  <span class="tk-time-text">
-                    <b>@c.Title</b>
-                    <small>@(c.CustomerName ?? "—")</small>
-                  </span>
+                var isToday = g.Day == dayNow;
+                var dayLabel = isToday ? "Hôm nay" : (g.Day == dayNow.AddDays(1) ? "Ngày mai" : g.Day.ToString("dddd", vi));
+                <div class="tk-week-day @(isToday ? "is-today" : "")">
+                  <div class="tk-week-head">
+                    <span class="tk-week-name">@dayLabel</span>
+                    <span class="tk-week-date">@g.Day.ToString("dd/MM", vi)</span>
+                    <span class="badge bg-label-@(isToday ? "primary" : "secondary")">@g.Items.Count</span>
+                  </div>
+                  @foreach (var c in g.Items)
+                  {
+                    <a class="tk-week-item" href="/lich-hen">
+                      <span class="tk-time-dot bg-@TourKit.Api.Pages.Workspace.IndexModel.CareStatusColor(c.Status)"></span>
+                      <span class="tk-line-text">
+                        <b>@c.Title</b>
+                        <small>@(c.CustomerName ?? "—")</small>
+                      </span>
+                    </a>
+                  }
                 </div>
-              }
-            </div>
-          }
-        </div>
-      </div>
-    </div>
-  }
-
-  @* ===== Tour khởi hành trong tuần ===== *@
-  @if (Model.CanDeparture)
-  {
-    <div class="col-12">
-      <div class="tk-surface">
-        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
-          <h6 class="mb-0">Tour khởi hành trong tuần</h6>
-          <a class="small" href="/chuyen-di">Xem tất cả tour</a>
-        </div>
-        <div class="tk-pad pt-0">
-          @if (Model.WeekDepartures.Count == 0)
-          {
-            <p class="text-muted mb-0 py-4 text-center">Không có chuyến nào khởi hành trong 7 ngày tới.</p>
-          }
-          else
-          {
-            <div class="tk-rail">
-              @foreach (var d in Model.WeekDepartures)
-              {
-                var nights = d.DepartureDate is { } s && d.EndDate is { } e ? (int)(e.Date - s.Date).TotalDays : 0;
-                <a class="tk-tour" href="/chuyen-di">
-                  <span class="tk-tour-date">@(d.DepartureDate?.ToString("ddd - dd/MM", vi) ?? "Chưa đặt ngày")</span>
-                  <b class="tk-tour-name">@d.Title</b>
-                  <small class="text-muted">@(nights > 0 ? $"{nights + 1} ngày {nights} đêm" : (d.TourType ?? "—"))</small>
-                  <span class="tk-tour-foot">
-                    <span><i class="ti ti-users me-1"></i>@d.SeatSold/@d.TotalSlots khách</span>
-                    <span class="badge bg-label-@(d.SeatRemaining > 0 ? "success" : "secondary")">@(d.SeatRemaining > 0 ? d.SeatRemaining + " chỗ trống" : "Hết chỗ")</span>
-                  </span>
-                </a>
               }
             </div>
           }
@@ -328,34 +341,21 @@
   @if (Model.CanDashboard)
   {
     <div class="col-12 col-lg-6 col-xxl-4">
-      <div class="tk-surface h-100">
-        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+      <div class="tk-card h-100">
+        <div class="tk-card-head">
           <h6 class="mb-0">Top công nợ phải thu</h6>
           <a class="small" href="/cong-no-khach">Xem tất cả</a>
         </div>
-        <div class="tk-pad pt-0">
+        <div class="tk-card-body">
           @if (Model.TopDebt.Count == 0)
           {
             <p class="text-muted mb-0 py-4 text-center">Không còn khoản nợ nào.</p>
           }
           else
           {
-            var max = Model.TopDebt.Max(x => x.Outstanding);
-            <div class="tk-bars">
-              @foreach (var d in Model.TopDebt)
-              {
-                var pct = max > 0 ? (int)Math.Round(100m * d.Outstanding / max) : 0;
-                var tone = d.Outstanding >= 50_000_000m ? "danger" : d.Outstanding >= 20_000_000m ? "warning" : "success";
-                <div class="tk-bar">
-                  <div class="tk-bar-top">
-                    @{ var who = Model.DebtNames.TryGetValue(d.CustomerId, out var nm) ? nm : d.OrderCode; }
-                    <span class="text-truncate" title="@who — đơn @d.OrderCode">@who</span>
-                    <b title="@Full(d.Outstanding)">@Short(d.Outstanding)</b>
-                  </div>
-                  <div class="tk-bar-track"><span class="bg-@tone" style="width:@(Math.Max(pct, 3))%"></span></div>
-                </div>
-              }
-            </div>
+            @* Biểu đồ cột NGANG: tên khách dài nên nằm ngang mới đọc được, và so độ dài cột là
+               thấy ngay ai nợ nhiều nhất — trực quan hơn bảng số. *@
+            <div id="chart-debt" style="min-height:240px"></div>
             <div class="tk-legend">
               <span><i class="bg-danger"></i>Trên 50tr</span>
               <span><i class="bg-warning"></i>20tr – 50tr</span>
@@ -369,12 +369,12 @@
 
   @* ===== Thông báo mới ===== *@
   <div class="col-12 col-lg-6 col-xxl-4">
-    <div class="tk-surface h-100">
-      <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
+    <div class="tk-card h-100">
+      <div class="tk-card-head">
         <h6 class="mb-0">Thông báo mới</h6>
         <a class="small" href="/thong-bao">Xem tất cả</a>
       </div>
-      <div class="tk-pad pt-0">
+      <div class="tk-card-body">
         @if (Model.Notifications.Count == 0)
         {
           <p class="text-muted mb-0 py-4 text-center">Chưa có thông báo nào.</p>
@@ -396,53 +396,107 @@
     </div>
   </div>
 
-  @* ===== Lịch khởi hành 7 ngày tới ===== *@
+  @* ===== Lịch khởi hành ===== *@
   @if (Model.CanDeparture)
   {
-    <div class="col-12 col-xxl-4">
-      <div class="tk-surface h-100">
-        <div class="tk-pad pb-2 d-flex justify-content-between align-items-center">
-          <h6 class="mb-0">Lịch khởi hành (7 ngày tới)</h6>
-          <a class="small" href="/lich-dieu-hanh">Xem lịch đầy đủ</a>
-        </div>
-        <div class="tk-pad pt-0">
-          <div class="tk-days">
-            @foreach (var d in Model.DepartureDays)
-            {
-              <div class="tk-day">
-                <small>@d.Day.ToString("ddd", vi)</small>
-                <span>@d.Day.ToString("dd/MM", vi)</span>
-                <b class="@(d.Count > 0 ? "bg-label-primary" : "bg-label-secondary")">@d.Count</b>
-              </div>
-            }
+    <div class="col-12">
+      <div class="tk-card">
+        <div class="tk-card-head">
+          <div>
+            <h6 class="mb-0">Lịch khởi hành</h6>
+            <small class="text-muted">@Model.MonthDepartureTotal.ToString("#,##0", vi) chuyến trong 30 ngày tới · @Model.RunningDepartures chuyến đang chạy</small>
           </div>
-          <div class="tk-minis mt-3">
-            <div class="tk-mini"><small>Tổng chuyến</small><b>@Model.DepartureDays.Sum(x => x.Count)</b></div>
-            <div class="tk-mini"><small>Tổng chỗ</small><b>@Model.WeekSlots.ToString("#,##0", vi)</b></div>
-            <div class="tk-mini"><small>Đang diễn ra</small><b>@Model.RunningDepartures</b></div>
-          </div>
+          <a class="small" href="/lich-dieu-hanh">Xem lịch điều hành</a>
         </div>
+        @* Lưới THÁNG dễ theo dõi hơn dải thẻ ngang: nhìn một cái là thấy tuần nào dày, tuần nào trống.
+           Dùng chung nguồn sự kiện với màn Lịch điều hành, chỉ nạp khoảng đang xem. *@
+        <div class="tk-minis mb-3">
+          <div class="tk-mini"><small>Khởi hành hôm nay</small><b>@Model.TodayDepartures</b></div>
+          <div class="tk-mini"><small>Đang diễn ra</small><b>@Model.RunningDepartures</b></div>
+          <div class="tk-mini"><small>7 ngày tới</small><b>@Model.WeekDepartures.Count</b></div>
+          <div class="tk-mini"><small>Tổng chỗ 7 ngày</small><b>@Model.WeekSlots.ToString("#,##0", vi)</b></div>
+        </div>
+        <div id="cal"></div>
       </div>
     </div>
   }
-
 </div>
 
 @section VendorScripts {
   <script src="~/vendor/libs/apex-charts/apexcharts.js"></script>
+  <script src="~/vendor/libs/fullcalendar/fullcalendar.js"></script>
 }
 
 @section PageScripts {
   <script>
     $(function () {
+      // Lịch khởi hành — lưới tháng, dùng chung nguồn sự kiện với màn Lịch điều hành.
+      var calEl = document.querySelector('#cal');
+      if (calEl && window.Calendar) {
+        new Calendar(calEl, {
+          plugins: [dayGridPlugin, interactionPlugin],
+          initialView: 'dayGridMonth', locale: 'vi',
+          // height:'auto' — KHÔNG ép chiều cao: lưới tháng cần ~710px, ép thấp hơn thì nội dung
+          // tràn ra ngoài thẻ vì FullCalendar cắt bằng overflow:hidden.
+          height: 'auto', firstDay: 1, dayMaxEvents: 3,
+          headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+          buttonText: { today: 'Hôm nay' },
+          events: function (info, success, failure) {
+            $.getJSON('/OperationCalendar?handler=Events&start=' + info.startStr + '&end=' + info.endStr)
+              .done(function (d) { success((d && d.events) || []); })
+              .fail(failure);
+          },
+          eventClick: function (i) {
+            i.jsEvent.preventDefault();
+            var p = i.event.extendedProps || {};
+            tk.panel({
+              title: i.event.title,
+              rows: [
+                { label: 'Mã chuyến', value: p.code },
+                { label: 'Loại tour', value: p.tourType },
+                { label: 'Ngày khởi hành', value: i.event.start ? i.event.start.toLocaleDateString('vi-VN') : null },
+                { label: 'Ngày kết thúc', value: i.event.end ? new Date(i.event.end.getTime() - 86400000).toLocaleDateString('vi-VN') : null },
+                { label: 'Tổng số chỗ', value: p.totalSlots != null ? tk.money(p.totalSlots) : null },
+                { label: 'Trạng thái', value: p.statusLabel }
+              ]
+            });
+          }
+        }).render();
+      }
+
+      // Top công nợ — cột NGANG, tô màu theo mức nợ (trên 50tr đỏ · 20–50tr cam · dưới 20tr xanh).
+      var debtEl = document.querySelector('#chart-debt');
+      if (debtEl && window.ApexCharts) {
+        var debtNames = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopDebt.Select(d => Model.DebtNames.TryGetValue(d.CustomerId, out var n) ? n : d.OrderCode)));
+        var debtValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopDebt.Select(d => d.Outstanding)));
+        var debtColors = debtValues.map(function (v) { return v >= 5e7 ? '#ff3e1d' : v >= 2e7 ? '#ffab00' : '#71dd37'; });
+        new ApexCharts(debtEl, {
+          chart: { type: 'bar', height: 240, toolbar: { show: false }, parentHeightOffset: 0 },
+          series: [{ name: 'Còn nợ', data: debtValues }],
+          colors: debtColors,
+          plotOptions: { bar: { horizontal: true, distributed: true, borderRadius: 4, barHeight: '62%' } },
+          dataLabels: {
+            enabled: true, textAnchor: 'start', offsetX: 4,
+            style: { fontSize: '11px', colors: ['#5d596c'] },
+            formatter: function (v) { return v >= 1e9 ? (v / 1e9).toFixed(1) + ' tỷ' : Math.round(v / 1e6) + ' tr'; }
+          },
+          legend: { show: false },
+          grid: { borderColor: 'rgba(0,0,0,.06)', xaxis: { lines: { show: true } }, padding: { left: 4, right: 16 } },
+          xaxis: { categories: debtNames, axisBorder: { show: false }, axisTicks: { show: false },
+                   labels: { formatter: function (v) { return Math.round(v / 1e6) + ' tr'; }, style: { colors: '#a5a3ae' } } },
+          yaxis: { labels: { style: { colors: '#a5a3ae' }, maxWidth: 140 } },
+          tooltip: { y: { formatter: function (v) { return (v || 0).toLocaleString('vi-VN') + ' ₫'; } } }
+        }).render();
+      }
+
       var el = document.querySelector('#chart-revenue');
       if (!el || !window.ApexCharts) { return; }
-      var series = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pulse.Series.Select(p => p.Amount)));
-      var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pulse.Series.Select(p => p.Day.ToString("dd/MM"))));
+      var series = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueSeries.Select(p => p.Amount)));
+      var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueSeries.Select(p => p.Day.ToString("dd/MM"))));
       var muted = getComputedStyle(document.documentElement).getPropertyValue('--bs-secondary-color') || '#8a8d93';
       var primary = getComputedStyle(document.documentElement).getPropertyValue('--bs-primary') || '#7367f0';
 
-      new ApexCharts(el, {
+      var chart = new ApexCharts(el, {
         chart: { type: 'area', height: 260, toolbar: { show: false }, parentHeightOffset: 0 },
         series: [{ name: 'Doanh thu', data: series }],
         colors: [primary.trim()],
@@ -457,7 +511,23 @@
                  // Trục tiền rút gọn để không chiếm nửa bề ngang biểu đồ.
                  formatter: function (v) { return v >= 1e9 ? (v / 1e9).toFixed(1) + ' tỷ' : v >= 1e6 ? Math.round(v / 1e6) + ' tr' : v; } } },
         tooltip: { y: { formatter: function (v) { return (v || 0).toLocaleString('vi-VN') + ' ₫'; } } }
-      }).render();
+      });
+      chart.render();
+
+      // Đổi kỳ: hỏi server đúng khoảng đó rồi vẽ lại, không tải lại cả trang.
+      $('#rev-range').on('change', function () {
+        var range = this.value;
+        $.getJSON('?handler=Revenue&range=' + encodeURIComponent(range)).done(function (d) {
+          chart.updateOptions({ xaxis: { categories: d.labels } }, false, false);
+          chart.updateSeries([{ name: 'Doanh thu', data: d.values }]);
+          var t = Number(d.total) || 0;
+          var short = t >= 1e9 ? (t / 1e9).toFixed(1).replace('.', ',') + ' tỷ'
+                    : t >= 1e6 ? Math.round(t / 1e6) + ' tr'
+                    : t.toLocaleString('vi-VN');
+          $('#rev-total').text(short).attr('title', t.toLocaleString('vi-VN') + ' ₫');
+          $('#rev-note').text((d.label || '').toLowerCase());
+        });
+      });
     });
   </script>
 }

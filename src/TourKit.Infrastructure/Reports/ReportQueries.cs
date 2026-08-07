@@ -578,7 +578,50 @@ public sealed class ReportQueries(AppDbContext db) : IReportQueries
     }
 
     /// <summary>
-    /// Nhịp doanh thu của màn Bàn làm việc. Doanh thu tính theo TIỀN THỰC THU đã ghi nhận
+    /// Chuỗi doanh thu theo NGÀY hoặc theo THÁNG trong một khoảng.
+    /// Một câu GROUP BY duy nhất: EF dịch Year/Month/Day sang hàm ngày của cả SQLite lẫn Postgres,
+    /// nên không phải bắn mỗi ngày một câu SUM (một tháng là 31 lượt đi–về) cũng không nạp bảng
+    /// về rồi tự cộng ở bộ nhớ.
+    /// </summary>
+    public async Task<IReadOnlyList<RevenuePointDto>> GetRevenueSeriesAsync(
+        DateTimeOffset from, DateTimeOffset to, bool monthly)
+    {
+        var q = db.ReceiptVouchers.Recognized().Where(r => r.IssuedAt >= from && r.IssuedAt < to);
+
+        if (monthly)
+        {
+            var byMonth = (await q
+                .GroupBy(r => new { r.IssuedAt.Year, r.IssuedAt.Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, Sum = g.Sum(x => x.Amount) })
+                .ToListAsync())
+                .ToDictionary(x => (x.Year, x.Month), x => x.Sum);
+
+            var months = new List<RevenuePointDto>();
+            for (var m = new DateTimeOffset(new DateTime(from.Year, from.Month, 1), TimeSpan.Zero); m < to; m = m.AddMonths(1))
+            {
+                months.Add(new RevenuePointDto(m, byMonth.TryGetValue((m.Year, m.Month), out var v) ? v : 0m));
+            }
+
+            return months;
+        }
+
+        var byDay = (await q
+            .GroupBy(r => new { r.IssuedAt.Year, r.IssuedAt.Month, r.IssuedAt.Day })
+            .Select(g => new { g.Key.Year, g.Key.Month, g.Key.Day, Sum = g.Sum(x => x.Amount) })
+            .ToListAsync())
+            .ToDictionary(x => (x.Year, x.Month, x.Day), x => x.Sum);
+
+        var days = new List<RevenuePointDto>();
+        for (var d = new DateTimeOffset(from.Date, TimeSpan.Zero); d < to; d = d.AddDays(1))
+        {
+            days.Add(new RevenuePointDto(d, byDay.TryGetValue((d.Year, d.Month, d.Day), out var v) ? v : 0m));
+        }
+
+        return days;
+    }
+
+    /// <summary>
+    /// Nhịp doanh thu của màn Bàn làm việc.
     /// (phiếu thu Recognized) chứ không phải doanh số ghi trên đơn — thẻ ở màn này để trả lời
     /// "hôm nay tiền về bao nhiêu".
     ///

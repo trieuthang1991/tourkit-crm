@@ -2,6 +2,26 @@
    Vuexy default đã là tím nên phần lớn để trống; đắp dần khi cần. */
 .app-brand-logo b { color: var(--bs-primary); }
 
+/* ===== Bù các biến màu Bootstrap mà bản Vuexy này KHÔNG khai báo =====
+   Kiểm tra thực tế trên trình duyệt: --bs-heading-color, --bs-secondary-color, --bs-card-bg,
+   --bs-tertiary-bg đều RỖNG. Mọi rule viết `color: var(--bs-heading-color)` vì thế im lặng rơi
+   về màu kế thừa — chữ chính và chữ phụ ra CÙNG một màu, mất hẳn tầng bậc; tệ hơn là ở trong
+   những khối theme tô nền tối (slide Swiper) thì kế thừa luôn màu TRẮNG và chữ biến mất.
+   Khai báo một lần ở đây, lấy đúng giá trị theme đang dùng, để mọi chỗ đã viết chạy như ý.
+   (Sửa ở đây thay vì sửa file vendor để không mất khi cập nhật theme.) */
+:root {
+  --bs-heading-color: #5d596c;      /* màu tiêu đề h1..h6 của theme */
+  --bs-secondary-color: #a5a3ae;    /* .text-muted */
+  --bs-card-bg: #fff;
+  --bs-tertiary-bg: #f8f7fa;        /* nền trang — dùng làm nền chìm cho ô/thanh phụ */
+}
+html.dark-style {
+  --bs-heading-color: #cfd3ec;
+  --bs-secondary-color: #7983bb;
+  --bs-card-bg: #2f3349;
+  --bs-tertiary-bg: #25293c;
+}
+
 /* Số tiền/số lượng ở thẻ thống kê: KHÔNG được ngắt giữa số.
    Trên mobile "94,323,595,000" từng bị bẻ thành "94,323,595," + "000" — đọc ra số khác hẳn.
    Giữ NGUYÊN số đầy đủ (không rút gọn kiểu "94 tỷ" vì đây là số liệu tài chính), chỉ thu nhỏ
@@ -64,6 +84,23 @@
 .tk-oc-actions .me-2:last-child { margin-right: 0 !important; }
 
 /* ===== Bàn làm việc ===== */
+
+/* Thẻ dashboard: MỘT khối liền, tiêu đề và nội dung KHÔNG bị kẻ ngang cắt đôi.
+   (.tk-surface của màn danh sách cố ý có kẻ ngăn giữa các vùng — dùng nhầm sang đây thì mỗi thẻ
+   nhìn như hai hộp chồng lên nhau.) */
+.tk-card {
+  display: flex; flex-direction: column;
+  background: var(--bs-card-bg, #fff);
+  border: 1px solid var(--bs-border-color);
+  border-radius: .75rem; padding: 1.25rem;
+}
+.tk-card-head {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  margin-bottom: 1rem;
+}
+.tk-card-head h6 { color: var(--bs-heading-color); font-weight: 600; }
+.tk-card-body { flex: 1 1 auto; min-height: 0; }
+
 .tk-datechip {
   display: inline-flex; align-items: center; padding: .5rem .875rem;
   background: var(--bs-card-bg, #fff); border: 1px solid var(--bs-border-color);
@@ -90,8 +127,7 @@
 .tk-big { font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; color: var(--bs-heading-color); font-variant-numeric: tabular-nums; }
 
 /* Dải số phụ dưới biểu đồ / dưới dải lịch. */
-.tk-minis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: .75rem; padding: 0 1.25rem 1.25rem; }
-.tk-surface > .tk-minis { border-top: 0; }
+.tk-minis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: .75rem; margin-top: 1rem; }
 .tk-mini {
   border: 1px solid var(--bs-border-color); border-radius: .5rem; padding: .625rem .75rem;
   display: flex; flex-direction: column; gap: .125rem;
@@ -130,25 +166,61 @@
 .tk-line-money { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--bs-heading-color); flex-shrink: 0; }
 .tk-tabs .nav-link { padding: .375rem .75rem; font-size: .875rem; }
 
+/* Lịch hẹn tuần này: gom theo NGÀY, mỗi ngày một đầu mục dính trên khi cuộn.
+   Danh sách phẳng 7 ngày trộn lẫn thì phải tự dò xem cái nào của hôm nay. */
+.tk-week { display: flex; flex-direction: column; max-height: 26rem; overflow-y: auto; overscroll-behavior: contain; }
+.tk-week-day + .tk-week-day { margin-top: .25rem; }
+.tk-week-head {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: center; gap: .5rem;
+  padding: .375rem 0; background: var(--bs-card-bg, #fff);
+  border-bottom: 1px solid var(--bs-border-color);
+}
+.tk-week-name { font-size: .8125rem; font-weight: 600; color: var(--bs-heading-color); text-transform: capitalize; }
+.tk-week-date { font-size: .75rem; color: var(--bs-secondary-color); font-variant-numeric: tabular-nums; }
+.tk-week-head .badge { margin-left: auto; }
+.tk-week-day.is-today .tk-week-name { color: var(--bs-primary); }
+.tk-week-item {
+  display: flex; align-items: flex-start; gap: .625rem; padding: .5rem .25rem;
+  text-decoration: none; color: var(--bs-body-color); border-radius: .375rem;
+}
+.tk-week-item:hover { color: var(--bs-body-color); background: rgba(var(--bs-primary-rgb), .06); }
+.tk-week-item .tk-time-dot { margin-top: .45rem; }
+
 /* Lịch hôm nay: mốc giờ · chấm màu · nội dung. */
 .tk-time { display: flex; flex-direction: column; }
 .tk-time-row { display: flex; align-items: flex-start; gap: .75rem; padding: .625rem 0; border-bottom: 1px solid var(--bs-border-color); }
 .tk-time-row:last-child { border-bottom: 0; }
-.tk-time-at { font-size: .8125rem; font-variant-numeric: tabular-nums; color: var(--bs-secondary-color); width: 3rem; flex-shrink: 0; }
+.tk-time-at { font-size: .8125rem; font-variant-numeric: tabular-nums; color: var(--bs-secondary-color); width: 4rem; flex-shrink: 0; }
 .tk-time-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: .375rem; flex-shrink: 0; }
 .tk-time-text { display: flex; flex-direction: column; min-width: 0; }
 .tk-time-text b { font-weight: 500; font-size: .875rem; color: var(--bs-heading-color); }
 .tk-time-text small { font-size: .75rem; color: var(--bs-secondary-color); }
 
-/* Dải thẻ tour: cuộn NGANG, không bẻ dòng — nhìn được cả tuần trong một dải. */
+/* Dải thẻ tour: SLIDE lật bằng hai nút mũi tên (Swiper), không bẻ dòng. */
+.tk-tour-slider { overflow: hidden; }
+.tk-tour-slider .swiper-slide { width: 15.5rem; height: auto; }
+.tk-tour-slider .swiper-slide > .tk-tour { height: 100%; }
+/* Nút lật khi hết dải: Swiper gắn class `disabled` — làm mờ hẳn cho biết không lật thêm được. */
+#tour-prev.disabled, #tour-next.disabled { opacity: .4; pointer-events: none; }
+/* Dải màu thay ảnh điểm đến: model chuyến chưa có trường ảnh nên KHÔNG chèn ảnh giả. */
+.tk-tour-cover {
+  display: flex; align-items: center; justify-content: center; gap: .375rem;
+  margin-top: .75rem; height: 4.5rem; border-radius: .5rem;
+  font-size: .8125rem; font-weight: 500;
+}
+.tk-tour-cover > i { font-size: 1.1rem; }
 .tk-rail { display: flex; gap: .875rem; overflow-x: auto; padding-bottom: .5rem; }
 .tk-tour {
   flex: 0 0 15rem; display: flex; flex-direction: column; gap: .25rem;
-  padding: .875rem 1rem; text-decoration: none; color: inherit;
+  padding: .875rem 1rem; text-decoration: none;
+  /* KHÔNG dùng `color: inherit`: swiper.css của theme đặt màu TRẮNG cho .swiper-slide,
+     thẻ nằm trong slide sẽ thừa kế màu trắng và chữ biến mất trên nền trắng. */
+  color: var(--bs-body-color);
   border: 1px solid var(--bs-border-color); border-radius: .625rem;
   transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
 }
-.tk-tour:hover { color: inherit; border-color: rgba(var(--bs-primary-rgb), .35); box-shadow: 0 .35rem .75rem rgba(var(--bs-primary-rgb), .1); }
+.tk-tour:hover { color: var(--bs-body-color); border-color: rgba(var(--bs-primary-rgb), .35); box-shadow: 0 .35rem .75rem rgba(var(--bs-primary-rgb), .1); }
 .tk-tour-date { font-size: .75rem; font-weight: 600; color: var(--bs-primary); }
 .tk-tour-name { font-size: .9375rem; line-height: 1.3; color: var(--bs-heading-color); }
 .tk-tour-foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .5rem; font-size: .75rem; color: var(--bs-secondary-color); }

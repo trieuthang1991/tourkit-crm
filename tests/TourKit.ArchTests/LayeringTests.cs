@@ -35,6 +35,7 @@ public class LayeringTests
         "TourKit.Api.BackgroundJobs.HoldReminderJob",
         "TourKit.Api.DevData.DemoDataSeeder",
         "TourKit.Api.DevData.PerfDataSeeder",
+        "TourKit.Api.DevData.RecentDataSeeder",
     ];
 
     [Fact]
