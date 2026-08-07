@@ -1,2 +1,6 @@
 @namespace TourKit.Api.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@* _CommonMasterLayout dùng @inject IHttpContextAccessor. Lúc BUILD thì implicit usings của
+   SDK web che được, nhưng Razor RuntimeCompilation (Development) không có nên vừa sửa file
+   layout là cả app 500 với CS0246. Khai báo thẳng ở đây cho cả hai đường biên dịch cùng thấy. *@
+@using Microsoft.AspNetCore.Http

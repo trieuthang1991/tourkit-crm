@@ -469,7 +469,12 @@
                   padding: { left: 4, right: 12 } },
           xaxis: { categories: ['Doanh thu', 'Chi phí'],
                    labels: { formatter: money, style: { colors: label } }, axisBorder: { show: false }, axisTicks: { show: false } },
-          yaxis: { labels: { style: { colors: label, fontWeight: 500 }, maxWidth: 160 } },
+          // KHÔNG đặt maxWidth: nhãn "Doanh thu"/"Chi phí" vốn ngắn, mà maxWidth bật cơ chế
+          // cắt chữ của Apex và làm nhãn lệch xuống ~13px so với thân cột.
+          // offsetY: nhãn trục của biểu đồ này bị Apex đặt thấp hơn tâm cột 13px (đo trên trình
+          // duyệt; cùng bộ option nhưng đặt trong khung khác lại canh đúng, nên là lệch do kích
+          // thước khung chứ không phải do option). Kéo lên đúng 13px cho nhãn ngang tâm cột.
+          yaxis: { labels: { offsetY: -13, style: { colors: label, fontWeight: 500 } } },
           tooltip: { y: { formatter: function (v) { return tk.money(v) + ' ₫'; } } }
         }).render();
       }
