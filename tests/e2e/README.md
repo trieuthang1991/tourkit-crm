@@ -13,6 +13,8 @@ Ba lỗi thật đã lọt qua toàn bộ 763 bài kiểm thử C# và chỉ l�
 | JS gọi `?handler=Review`, C# vẫn là `OnPostRunAsync` | Razor trả HTML kèm mã 200 cho handler không tồn tại — không có ngoại lệ nào |
 | Trang đăng nhập nạp script mẫu gọi thư viện chưa nạp | Lỗi nằm trong console trình duyệt |
 
+| Nút "Thêm báo giá" trỏ `/bao-gia/Edit` trong khi route thật là `/bao-gia/soan` → 404 | Đường dẫn ghi tay trong `.cshtml`, trình biên dịch không kiểm |
+
 Hai lỗi đầu nay đã có bài kiểm thử C# canh riêng (`UrlPageTargetTests`, `AiHandlerNameTests`). Lỗi
 thứ ba thì chỉ e2e mới thấy — và **mọi bài ở đây tự động đỏ nếu trang có lỗi JavaScript**.
 
@@ -64,6 +66,17 @@ if (await loi.count()) { throw new Error(await loi.first().innerText()); }
 
 **Đừng nới danh sách bỏ qua lỗi JavaScript** (`BO_QUA` trong `fixtures.js`) để làm bài test xanh.
 Thêm bừa vào đó là vô hiệu hoá đúng thứ mà bộ kiểm thử này sinh ra để bắt.
+
+## Các nhóm bài
+
+| Nhóm | Soát gì |
+|---|---|
+| `smoke` | 16 màn mở được, không lỗi JavaScript, sai mật khẩu bị chặn |
+| `audit-lists` | Lưới có dòng hoặc nói rõ là rỗng · không có chữ rác `undefined`/`NaN` · trang không cuộn ngang · ô chọn có lựa chọn · nút "Thêm" mở được thật · nút icon phải có tooltip |
+| `audit-lists` (lọc) | Gõ chuỗi vô nghĩa vào `#f-q` phải ra ít dòng hơn; xoá đi phải trở lại như cũ |
+| `audit-links` | Mọi `<a href>` nội bộ trên 28 màn không được dẫn tới 404 |
+| `customer-save` | Lưu từ màn chi tiết, kiểm tra bằng cách tải lại trang |
+| `ai-*` | Trợ lý tra cứu và ba nút AI trên bản ghi |
 
 ## Chưa phủ
 

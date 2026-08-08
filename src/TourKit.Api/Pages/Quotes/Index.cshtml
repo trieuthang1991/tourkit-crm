@@ -17,7 +17,7 @@
     <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
     @if (Model.CanManage)
     {
-      <a href="/bao-gia/Edit@(Model.QuoteType is int t ? $"?type={t}" : "")" class="btn btn-primary"><i class="ti ti-plus me-1"></i> Thêm báo giá</a>
+      <a href="/bao-gia/soan@(Model.QuoteType is int t ? $"?type={t}" : "")" class="btn btn-primary"><i class="ti ti-plus me-1"></i> Thêm báo giá</a>
     }
   </div>
 </div>
