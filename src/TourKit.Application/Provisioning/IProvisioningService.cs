@@ -7,4 +7,7 @@ public sealed record RegistrationOutcome(RegistrationError Error, RegistrationRe
 public interface IProvisioningService
 {
     Task<RegistrationOutcome> RegisterAsync(RegisterTenantRequest req);
+
+    /// <summary>Đăng ký công ty cho người vừa xác minh danh tính qua nhà cung cấp ngoài.</summary>
+    Task<RegistrationOutcome> RegisterExternalAsync(RegisterExternalTenantRequest req);
 }

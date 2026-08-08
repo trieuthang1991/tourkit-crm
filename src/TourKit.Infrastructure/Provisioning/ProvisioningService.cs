@@ -41,9 +41,52 @@ public sealed class ProvisioningService : IProvisioningService
 
     public async Task<RegistrationOutcome> RegisterAsync(RegisterTenantRequest req)
     {
-        var slug = (req.Slug ?? string.Empty).Trim().ToLowerInvariant();
-        if (string.IsNullOrWhiteSpace(slug) || string.IsNullOrWhiteSpace(req.CompanyName)
-            || string.IsNullOrWhiteSpace(req.AdminEmail) || (req.AdminPassword?.Length ?? 0) < 8)
+        ArgumentNullException.ThrowIfNull(req);
+        if ((req.AdminPassword?.Length ?? 0) < 8)
+        {
+            return new RegistrationOutcome(RegistrationError.Invalid, null);
+        }
+
+        return await CapPhatAsync(
+            req.CompanyName, req.Slug, req.AdminEmail, req.AdminFullName,
+            _hasher.Hash(req.AdminPassword!), lienKetNgoai: null);
+    }
+
+    public async Task<RegistrationOutcome> RegisterExternalAsync(RegisterExternalTenantRequest req)
+    {
+        ArgumentNullException.ThrowIfNull(req);
+        if (string.IsNullOrWhiteSpace(req.Provider) || string.IsNullOrWhiteSpace(req.ProviderSubject))
+        {
+            return new RegistrationOutcome(RegistrationError.Invalid, null);
+        }
+
+        // Tài khoản tạo qua nhà cung cấp ngoài vẫn PHẢI có mật khẩu băm, vì cột đó là bắt buộc và vì
+        // để trống nghĩa là mở đường cho một tài khoản đăng nhập được bằng mật khẩu rỗng. Sinh 32
+        // byte ngẫu nhiên, băm, rồi bỏ — không gán vào entity, không trả ra, không ghi log. Người
+        // dùng muốn có mật khẩu thì đi qua chức năng quên mật khẩu như mọi người.
+        //
+        // Tuyệt đối không dùng một chuỗi cố định kiểu "Google@123": chỉ cần một người đọc mã nguồn
+        // là mọi tài khoản tạo bằng Google trên mọi bản cài đặt đều mở được.
+        var matKhauBam = _hasher.Hash(
+            Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
+
+        return await CapPhatAsync(
+            req.CompanyName, req.Slug, req.AdminEmail, req.AdminFullName, matKhauBam,
+            lienKetNgoai: (req.Provider, req.ProviderSubject));
+    }
+
+    /// <summary>
+    /// Lõi dùng chung cho cả hai luồng đăng ký. Gộp lại vì trước đó chỉ khác nhau đúng hai chỗ —
+    /// mật khẩu ở đâu ra, và có tạo liên kết nhà cung cấp ngoài hay không. Tách thành hai bản chép
+    /// thì lần sau ai sửa quy tắc cấp quyền hoặc gói mặc định sẽ chỉ sửa một bên.
+    /// </summary>
+    private async Task<RegistrationOutcome> CapPhatAsync(
+        string companyName, string slugThô, string email, string fullName,
+        string passwordHash, (string Provider, string Subject)? lienKetNgoai)
+    {
+        var slug = (slugThô ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(slug) || string.IsNullOrWhiteSpace(companyName)
+            || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(fullName))
         {
             return new RegistrationOutcome(RegistrationError.Invalid, null);
         }
@@ -53,19 +96,19 @@ public sealed class ProvisioningService : IProvisioningService
             return new RegistrationOutcome(RegistrationError.SlugTaken, null);
         }
 
-        if (await _identity.EmailExistsAsync(req.AdminEmail))
+        if (await _identity.EmailExistsAsync(email))
         {
             return new RegistrationOutcome(RegistrationError.EmailTaken, null);
         }
 
-        var tenant = new Tenant { Name = req.CompanyName.Trim(), Slug = slug };
+        var tenant = new Tenant { Name = companyName.Trim(), Slug = slug };
         _tenant.SetTenant(tenant.Id);
 
         var user = new User
         {
-            Email = req.AdminEmail.Trim(),
-            FullName = req.AdminFullName.Trim(),
-            PasswordHash = _hasher.Hash(req.AdminPassword!),
+            Email = email.Trim(),
+            FullName = fullName.Trim(),
+            PasswordHash = passwordHash,
         };
         var role = new Role { Name = "Admin" };
 
@@ -95,6 +138,21 @@ public sealed class ProvisioningService : IProvisioningService
         if (subscription is not null)
         {
             _db.Subscriptions.Add(subscription);
+        }
+
+        // Liên kết nhà cung cấp nằm TRONG cùng một SaveChanges với tenant/user. Lưu tách ra thì một
+        // lần lưu hỏng giữa chừng để lại công ty đã tạo mà người dùng không đăng nhập lại được bằng
+        // Google — và cũng không đăng nhập được bằng mật khẩu vì mật khẩu là chuỗi ngẫu nhiên đã vứt.
+        if (lienKetNgoai is { } lk)
+        {
+            _db.UserExternalLogins.Add(new UserExternalLogin
+            {
+                TenantId = tenant.Id,
+                UserId = user.Id,
+                Provider = lk.Provider,
+                ProviderSubject = lk.Subject,
+                ProviderEmail = email.Trim(),
+            });
         }
 
         try

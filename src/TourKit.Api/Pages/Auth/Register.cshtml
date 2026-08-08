@@ -44,8 +44,16 @@
           </a>
         </div>
         <!-- /Logo -->
-        <h3 class="mb-1 fw-bold">Bắt đầu cùng M-Travel</h3>
-        <p class="mb-4">Tạo doanh nghiệp của bạn và quản lý vận hành dễ dàng hơn</p>
+        @if (Model.IsGoogleRegistration)
+        {
+          <h3 class="mb-1 fw-bold">Hoàn tất đăng ký với Google</h3>
+          <p class="mb-4">Chỉ còn vài thông tin về doanh nghiệp của bạn</p>
+        }
+        else
+        {
+          <h3 class="mb-1 fw-bold">Bắt đầu cùng M-Travel</h3>
+          <p class="mb-4">Tạo doanh nghiệp của bạn và quản lý vận hành dễ dàng hơn</p>
+        }
 
         @if (Model.Error != null)
         {
@@ -69,11 +77,31 @@
             <input asp-for="Input.AdminFullName" class="form-control" placeholder="Nhập họ tên của bạn">
             <span asp-validation-for="Input.AdminFullName" class="text-danger"></span>
           </div>
-          <div class="mb-3">
-            <label asp-for="Input.AdminEmail" class="form-label">Email <span class="text-danger">*</span></label>
-            <input asp-for="Input.AdminEmail" class="form-control" placeholder="Nhập email của bạn">
-            <span asp-validation-for="Input.AdminEmail" class="text-danger"></span>
-          </div>
+          @if (Model.IsGoogleRegistration)
+          {
+            @* Chỉ đọc, và KHÔNG gửi lên: máy chủ lấy email từ cookie đã xác minh chứ không đọc form.
+               Để một ô sửa được ở đây chỉ tạo cảm giác sai rằng đổi được, trong khi giá trị bị bỏ qua. *@
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <div class="form-control-plaintext d-flex align-items-center gap-2 border rounded px-3 bg-body-secondary">
+                <i class="ti ti-circle-check text-success"></i>
+                <span>@Model.GoogleEmail</span>
+              </div>
+              <div class="form-text">Email đã được Google xác minh.</div>
+            </div>
+          }
+          else
+          {
+            <div class="mb-3">
+              <label asp-for="Input.AdminEmail" class="form-label">Email <span class="text-danger">*</span></label>
+              <input asp-for="Input.AdminEmail" class="form-control" placeholder="Nhập email của bạn">
+              <span asp-validation-for="Input.AdminEmail" class="text-danger"></span>
+            </div>
+          }
+          @* Đăng nhập bằng Google thì không có mật khẩu để đặt — hệ thống sinh chuỗi ngẫu nhiên rồi
+             băm và vứt bỏ. Hiện ô này ra chỉ khiến người dùng đặt một mật khẩu không bao giờ dùng tới. *@
+          @if (!Model.IsGoogleRegistration)
+          {
           <div class="mb-3 form-password-toggle">
             <label class="form-label" asp-for="Input.AdminPassword">Mật khẩu <span class="text-danger">*</span></label>
             <div class="input-group input-group-merge">
@@ -83,6 +111,7 @@
             <div class="form-text">Tối thiểu 8 ký tự.</div>
             <span asp-validation-for="Input.AdminPassword" class="text-danger"></span>
           </div>
+          }
 
           <div class="mb-3">
             <div class="form-check">
