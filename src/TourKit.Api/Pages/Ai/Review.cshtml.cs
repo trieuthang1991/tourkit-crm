@@ -1,9 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TourKit.Api.Ai;
-using TourKit.Api.Comments;
 using TourKit.Api.Web;
 
 namespace TourKit.Api.Pages.Ai;
@@ -11,7 +9,7 @@ namespace TourKit.Api.Pages.Ai;
 /// <summary>
 /// Handler JSON của tính năng đánh giá.
 ///
-/// Dùng lại <see cref="CommentableEntities"/> làm danh sách trắng: chỉ loại bản ghi có trong đó mới
+/// Dùng lại <see cref="AiRecordAccess"/> làm danh sách trắng: chỉ loại bản ghi có trong đó mới
 /// chấm được, và phải có đúng quyền XEM bản ghi đó. Dùng chung một bảng với bình luận là có chủ ý —
 /// hai danh sách riêng sớm muộn sẽ lệch nhau và cho ra tổ hợp "không xem được bản ghi nhưng chấm
 /// điểm được nó", mà nhận định thì kể lại chính nội dung bản ghi.
@@ -49,7 +47,7 @@ public class ReviewModel(AiReviewer reviewer, AiComposer composer, ILogger<Revie
         Func<string, string, Guid, Task<(string? Text, string? Error)>> run,
         string what)
     {
-        var guard = Check(entity, id);
+        var guard = AiRecordAccess.Check(User, entity, id);
         if (guard.Error is not null)
         {
             return new JsonResult(Result.Error(guard.Error));
@@ -75,49 +73,18 @@ public class ReviewModel(AiReviewer reviewer, AiComposer composer, ILogger<Revie
         }
     }
 
-    /// <summary>Soát danh sách trắng + quyền xem bản ghi + định danh người dùng.</summary>
-    private (string? Error, Guid UserId) Check(string? entity, string? id)
-    {
-        var entry = CommentableEntities.Find(entity);
-        if (entry is null || string.IsNullOrWhiteSpace(id))
-        {
-            return ("Không xử lý được loại bản ghi này.", Guid.Empty);
-        }
-
-        if (!User.HasClaim("perm", entry.ViewPermission))
-        {
-            return ("Bạn không có quyền xem bản ghi này.", Guid.Empty);
-        }
-
-        var userId = ReadUserId(User);
-        return userId is null
-            ? ("Phiên đăng nhập có vấn đề. Bạn đăng nhập lại nhé.", Guid.Empty)
-            : (null, userId.Value);
-    }
-
     /// <summary>Chấm điểm một bản ghi.</summary>
     public async Task<IActionResult> OnPostRunAsync(string? entity, string? id, CancellationToken ct)
     {
-        var entry = CommentableEntities.Find(entity);
-        if (entry is null || string.IsNullOrWhiteSpace(id))
+        var guard = AiRecordAccess.Check(User, entity, id);
+        if (guard.Error is not null)
         {
-            return new JsonResult(Result.Error("Không đánh giá được loại bản ghi này."));
-        }
-
-        if (!User.HasClaim("perm", entry.ViewPermission))
-        {
-            return new JsonResult(Result.Error("Bạn không có quyền xem bản ghi này."));
-        }
-
-        var userId = ReadUserId(User);
-        if (userId is null)
-        {
-            return new JsonResult(Result.Error("Phiên đăng nhập có vấn đề. Bạn đăng nhập lại nhé."));
+            return new JsonResult(Result.Error(guard.Error));
         }
 
         try
         {
-            var (review, error) = await reviewer.ReviewAsync(entity!, id!, userId.Value, ct);
+            var (review, error) = await reviewer.ReviewAsync(entity!, id!, guard.UserId, ct);
             if (review is null)
             {
                 return new JsonResult(Result.Error(error ?? "Chưa đánh giá được."));
@@ -144,11 +111,5 @@ public class ReviewModel(AiReviewer reviewer, AiComposer composer, ILogger<Revie
             logger.LogError(ex, "Lỗi khi đánh giá {Entity}.", entity);
             return new JsonResult(Result.Error("Trợ lý đang bận hoặc gặp sự cố, bạn thử lại sau ít phút nhé."));
         }
-    }
-
-    private static Guid? ReadUserId(ClaimsPrincipal user)
-    {
-        var raw = user.FindFirst("sub")?.Value ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(raw, out var id) ? id : null;
     }
 }
