@@ -23,9 +23,13 @@ public sealed class OrderDebtTool : IAiTool
         Function = AIFunctionFactory.Create(
             RunAsync,
             "bao_cao_cong_no_phai_thu",
-            "Công nợ KHÁCH HÀNG còn nợ công ty: tổng tiền đơn, đã thu, còn nợ, theo từng đơn hàng. " +
-            $"Trả về tổng công nợ và {MaxRows} đơn nợ nhiều nhất. " +
-            "Dùng khi người hỏi muốn biết đang bị nợ bao nhiêu, đơn nào nợ nhiều nhất, hoặc tổng phải thu.");
+            "Danh sách ĐƠN HÀNG còn nợ tiền khách: tổng tiền đơn, đã thu, còn nợ. " +
+            $"Trả về {MaxRows} đơn nợ nhiều nhất và tổng của riêng các đơn còn nợ. " +
+            "Dùng khi người hỏi đơn nào đang nợ, ai nợ nhiều nhất. " +
+            "LƯU Ý: con số ở đây CHỈ cộng các đơn còn nợ, KHÁC với 'còn phải thu' của báo cáo tổng " +
+            "quan (số đó bù trừ cả các đơn đã thu thừa nên luôn nhỏ hơn hoặc bằng). Nếu dùng cả hai " +
+            "trong một câu trả lời thì phải nói rõ đó là hai cách tính khác nhau, đừng để người đọc " +
+            "tưởng số liệu mâu thuẫn.");
     }
 
     /// <inheritdoc/>
@@ -47,9 +51,15 @@ public sealed class OrderDebtTool : IAiTool
         }
 
         var rows = all.Take(MaxRows).ToList();
+
+        // Gọi đúng tên phạm vi của con số này. Trước đây gọi là "tổng công nợ phải thu" — trùng tên
+        // với chỉ tiêu của báo cáo tổng quan nhưng tính khác (bên kia bù trừ cả đơn đã thu thừa), nên
+        // khi trợ lý gọi cả hai công cụ trong một câu trả lời thì hai con số trông như mâu thuẫn.
         var sb = new StringBuilder()
-            .Append("Tổng công nợ phải thu: ").Append(AiFormat.Money(all.Sum(r => r.Outstanding)))
-            .Append(" đồng, trên ").Append(AiFormat.Count(all.Count)).Append(" đơn còn nợ.\n");
+            .Append(AiFormat.Count(all.Count)).Append(" đơn đang còn nợ, cộng lại ")
+            .Append(AiFormat.Money(all.Sum(r => r.Outstanding))).Append(" đồng.\n")
+            .Append("(Đây là tổng của RIÊNG các đơn còn nợ. Chỉ tiêu \"còn phải thu\" ở báo cáo tổng quan ")
+            .Append("tính bù trừ cả các đơn đã thu thừa nên sẽ nhỏ hơn — hai cách tính khác nhau, không phải sai lệch.)\n");
 
         if (all.Count > MaxRows)
         {

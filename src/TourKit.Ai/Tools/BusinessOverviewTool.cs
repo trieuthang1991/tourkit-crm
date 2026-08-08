@@ -39,10 +39,10 @@ public sealed class BusinessOverviewTool : IAiTool
             .Append("- Số đơn hàng: ").Append(AiFormat.Count(d.OrderCount)).Append('\n')
             .Append("- Doanh thu: ").Append(AiFormat.Money(d.TotalRevenue)).Append('\n')
             .Append("- Đã thu của khách: ").Append(AiFormat.Money(d.TotalReceived))
-            .Append(", còn phải thu: ").Append(AiFormat.Money(d.ReceivableOutstanding)).Append('\n')
+            .Append(", ").Append(Balance(d.ReceivableOutstanding, "còn phải thu", "khách đã trả thừa")).Append('\n')
             .Append("- Tổng chi phí: ").Append(AiFormat.Money(d.TotalCost))
             .Append(", đã chi: ").Append(AiFormat.Money(d.TotalPaid))
-            .Append(", còn phải trả: ").Append(AiFormat.Money(d.PayableOutstanding)).Append('\n')
+            .Append(", ").Append(Balance(d.PayableOutstanding, "còn phải trả", "đã trả thừa so với chi phí đã ghi nhận")).Append('\n')
             .Append("- Lãi gộp: ").Append(AiFormat.Money(d.GrossProfit)).Append('\n')
             .ToString();
 
@@ -62,4 +62,14 @@ public sealed class BusinessOverviewTool : IAiTool
 
         return new AiToolResult(text, table, "/tong-quan");
     }
+
+    /// <summary>
+    /// Số dư âm nói bằng lời, không in dấu trừ. "Còn phải trả: -1.827.614.000" đọc như lỗi hệ thống,
+    /// trong khi nó chỉ có nghĩa là đã chi nhiều hơn phần chi phí đã ghi nhận — một tình trạng có
+    /// thật và kế toán cần biết, nên phải nói ra chứ không phải giấu đi.
+    /// </summary>
+    private static string Balance(decimal value, string whenOwing, string whenOverpaid) =>
+        value >= 0
+            ? $"{whenOwing}: {AiFormat.Money(value)}"
+            : $"{whenOverpaid}: {AiFormat.Money(-value)}";
 }
