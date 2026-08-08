@@ -12,6 +12,8 @@ namespace TourKit.Api.Ai;
 public sealed class AiAssistant(
     AiChatClientFactory factory,
     AiToolRegistry registry,
+    AiUsageGuard usage,
+    ILogger<AiAssistant> logger,
     ILoggerFactory loggers)
 {
     /// <summary>Tính năng trợ lý có đang bật và có adapter phục vụ được không.</summary>
@@ -33,6 +35,20 @@ public sealed class AiAssistant(
             return null;
         }
 
+        // Hạn mức tính theo người, nên phải có định danh. Không có thì không cho hỏi — thà chặn còn
+        // hơn để một đường vào không đếm được tồn tại.
+        var userId = ReadUserId(user);
+        if (userId is null)
+        {
+            logger.LogWarning("Không đọc được định danh người dùng từ claim — từ chối lượt hỏi.");
+            return new AiAnswer("Phiên đăng nhập của bạn có vấn đề. Bạn đăng nhập lại rồi hỏi nhé.", []);
+        }
+
+        if (usage.Reject(userId.Value) is { } refusal)
+        {
+            return new AiAnswer(refusal, []);
+        }
+
         var (client, config) = resolved.Value;
         var perms = user.FindAll("perm").Select(c => c.Value).ToHashSet(StringComparer.Ordinal);
 
@@ -43,6 +59,29 @@ public sealed class AiAssistant(
             config.Settings.Temperature);
 
         var service = new AiChatService(client, registry, settings, loggers.CreateLogger<AiChatService>());
-        return await service.AskAsync(question, perms, ct).ConfigureAwait(false);
+
+        var answer = await service.AskAsync(question, perms, ct).ConfigureAwait(false);
+
+        usage.Record(userId.Value, answer.TokensUsed);
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            var id = userId.Value;
+            var length = question.Length;
+            var spent = answer.TokensUsed;
+            var today = usage.TokensUsedToday(id);
+            logger.LogInformation(
+                "Trợ lý: người {UserId} hỏi {Length} ký tự, tốn {Tokens} token (hôm nay {Total}).",
+                id, length, spent, today);
+        }
+
+        return answer;
+    }
+
+    /// <summary>Định danh người dùng: JWT dùng claim "sub", cookie dùng NameIdentifier.</summary>
+    private static Guid? ReadUserId(ClaimsPrincipal user)
+    {
+        var raw = user.FindFirst("sub")?.Value ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(raw, out var id) ? id : null;
     }
 }

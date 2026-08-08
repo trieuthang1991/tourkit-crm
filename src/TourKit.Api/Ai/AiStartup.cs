@@ -46,6 +46,10 @@ public static class AiStartup
         builder.Services.AddSingleton<IChatClientProvider, OpenAiCompatibleChatClientProvider>();
 
         builder.Services.AddSingleton<AiChatClientFactory>();
+        // Singleton vì bộ đếm hạn mức phải sống qua nhiều request mới có ý nghĩa.
+        builder.Services.AddSingleton<AiUsageGuard>();
+        Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions
+            .TryAddSingleton(builder.Services, TimeProvider.System);
         builder.Services.AddScoped<AiAssistant>();
     }
 

@@ -80,8 +80,32 @@ muốn mở màn hình trợ lý: đổi `Provider` của tính năng sang `log`
 
 ## Hạn mức
 
-`Ai:Limits:DailyTokensPerUser` và `Ai:Limits:RequestsPerMinutePerUser` (0 = không giới hạn). Hiện mới
-là cấu hình; phần cưỡng chế nằm ở việc còn lại của giai đoạn 1.
+| Khoá | Ý nghĩa |
+|---|---|
+| `Ai:Limits:DailyTokensPerUser` | Tổng token một người được dùng trong ngày (0 = không giới hạn). |
+| `Ai:Limits:RequestsPerMinutePerUser` | Số lượt hỏi một người được gửi trong một phút (0 = không giới hạn). |
+
+Vượt hạn mức thì bị chặn **trước khi gọi model** và người dùng thấy lời giải thích rõ ràng chứ không
+phải một câu trả lời cụt.
+
+Bộ đếm nằm trong bộ nhớ tiến trình — không thêm bảng, không thêm hạ tầng. Thứ nó bảo vệ là ngân sách
+trước một vòng lặp gọi công cụ hỏng, chứ không phải sổ sách tính tiền. **Đánh đổi:** chạy nhiều tiến
+trình thì mỗi tiến trình có hạn mức riêng (hạn mức thực tế = số tiến trình × cấu hình), và khởi động
+lại thì bộ đếm về 0. Muốn đếm chính xác toàn cụm thì cần bộ đếm nguyên tử dùng chung (Redis `INCR`) —
+làm khi thật sự chạy nhiều tiến trình, đừng làm trước.
+
+## Nhật ký
+
+Mỗi lượt hỏi ghi ba dòng vào log có cấu trúc (Serilog):
+
+```
+Trợ lý gọi công cụ bao_cao_top_khach_hang(top=3)
+Trợ lý xong sau 2 vòng, 4992 token, 1 bảng.
+Trợ lý: người 05be5d29-… hỏi 42 ký tự, tốn 4992 token (hôm nay 4992).
+```
+
+Dòng đầu là quan trọng nhất: không có nó thì lúc trợ lý trả lời sai sẽ không phân biệt được nó gọi
+nhầm công cụ hay gọi đúng nhưng truyền tham số bậy.
 
 ## Đang dùng gì
 

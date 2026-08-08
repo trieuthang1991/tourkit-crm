@@ -14,7 +14,11 @@ public sealed record AiAnswerBlock(string Tool, object? Data, string? LinkUrl);
 /// <summary>Câu trả lời hoàn chỉnh gửi về giao diện.</summary>
 /// <param name="Text">Lời của trợ lý.</param>
 /// <param name="Blocks">Các bảng số liệu kèm theo.</param>
-public sealed record AiAnswer(string Text, IReadOnlyList<AiAnswerBlock> Blocks);
+/// <param name="TokensUsed">
+/// Tổng token của CẢ lượt hỏi (cộng dồn mọi vòng gọi công cụ). 0 khi nhà cung cấp không báo về.
+/// Đây là con số tầng trên dùng để trừ hạn mức, nên phải là tổng chứ không phải của vòng cuối.
+/// </param>
+public sealed record AiAnswer(string Text, IReadOnlyList<AiAnswerBlock> Blocks, long TokensUsed = 0);
 
 /// <summary>Thông số một lượt hỏi, lấy từ <c>Ai:Features:Assistant</c>.</summary>
 /// <param name="Model">Mã model của hãng.</param>
@@ -55,6 +59,7 @@ public sealed class AiChatService(
         }
 
         var blocks = new List<AiAnswerBlock>();
+        var tokens = 0L;
 
         var messages = new List<ChatMessage>
         {
@@ -75,6 +80,10 @@ public sealed class AiChatService(
             var response = await client.GetResponseAsync(messages, options, ct).ConfigureAwait(false);
             messages.AddRange(response.Messages);
 
+            // Cộng dồn qua MỌI vòng: một lượt hỏi gọi công cụ 3 lần tốn gấp mấy lần một lượt trả lời
+            // thẳng, mà chỉ đếm vòng cuối thì hạn mức sẽ luôn thấy con số nhỏ hơn thực tế nhiều lần.
+            tokens += response.Usage?.TotalTokenCount ?? 0;
+
             var calls = response.Messages
                 .SelectMany(m => m.Contents)
                 .OfType<FunctionCallContent>()
@@ -82,7 +91,14 @@ public sealed class AiChatService(
 
             if (calls.Count == 0)
             {
-                return new AiAnswer(Clean(response.Text), blocks);
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    var tables = blocks.Count;
+                    logger.LogInformation(
+                        "Trợ lý xong sau {Rounds} vòng, {Tokens} token, {Blocks} bảng.", round, tokens, tables);
+                }
+
+                return new AiAnswer(Clean(response.Text), blocks, tokens);
             }
 
             var results = new List<AIContent>(calls.Count);
@@ -94,10 +110,13 @@ public sealed class AiChatService(
             messages.Add(new ChatMessage(ChatRole.Tool, results));
         }
 
-        logger.LogWarning("Trợ lý chạm trần {Rounds} vòng gọi công cụ mà chưa chốt câu trả lời.", settings.MaxToolRounds);
+        logger.LogWarning(
+            "Trợ lý chạm trần {Rounds} vòng gọi công cụ mà chưa chốt câu trả lời ({Tokens} token).",
+            settings.MaxToolRounds, tokens);
         return new AiAnswer(
             "Câu hỏi này cần tra nhiều mục quá nên tôi chưa hoàn tất được. Bạn thử hỏi gọn lại từng ý một nhé.",
-            blocks);
+            blocks,
+            tokens);
     }
 
     /// <summary>
@@ -124,6 +143,15 @@ public sealed class AiChatService(
         try
         {
             var args = new AIFunctionArguments(call.Arguments);
+
+            // Ghi lại tham số model đã chọn. Không có dòng này thì lúc trợ lý trả lời sai sẽ không có
+            // cách nào biết là nó gọi nhầm công cụ, hay gọi đúng nhưng truyền tham số bậy.
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                var shown = string.Join(", ", args.Select(a => $"{a.Key}={a.Value}"));
+                logger.LogInformation("Trợ lý gọi công cụ {Name}({Args})", name, shown);
+            }
+
             var raw = await tool.Function.InvokeAsync(args, ct).ConfigureAwait(false);
             var result = Unwrap(raw);
 
