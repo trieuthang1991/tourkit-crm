@@ -1,5 +1,29 @@
 # Trợ lý AI — Giai đoạn 1 (tra cứu tiếng Việt) — Implementation Plan
 
+> # ⚠️ ĐÃ LÀM XONG, NHƯNG KHÁC KẾ HOẠCH NÀY. ĐỪNG THI CÔNG THEO ĐÂY.
+>
+> Giai đoạn 1 đã chạy thật (commit `c0bf5db` + `43f34fd`). Kế hoạch dưới đây giữ lại để tra cứu lý do
+> của các quyết định, **không** còn khớp với mã nguồn.
+>
+> **Khác ở đâu, và vì sao:** kế hoạch định tự viết hợp đồng hội thoại (`IChatModel`, `AiTurn`,
+> `AiCompletion`, JSON Schema viết tay) và một adapter Claude. Thực tế dùng **`Microsoft.Extensions.AI`**
+> — `IChatClient` + `AIFunction`, schema tham số **sinh tự động từ chữ ký hàm C#** nên không bao giờ
+> lệch khỏi code, và một adapter `TourKit.Ai.OpenAiCompatible` phục vụ mọi hãng nói giao thức OpenAI.
+> Nhà cung cấp giai đoạn 1 là **DeepSeek**, không phải Claude.
+>
+> | Kế hoạch | Thực tế |
+> |---|---|
+> | `IChatModel`, `AiTurn`, `AiCompletion`, `AiMessage` | `IChatClient`, `ChatMessage`, `ChatOptions`, `ChatResponse` |
+> | `IAiTool.ParameterSchema` viết tay | `IAiTool.Function` (`AIFunction`), schema tự sinh |
+> | `TourKit.Ai.Anthropic` + SDK `Anthropic` | `TourKit.Ai.OpenAiCompatible` + `Microsoft.Extensions.AI.OpenAI` |
+> | Abstractions không tham chiếu gì | Tham chiếu `Microsoft.Extensions.AI.Abstractions` (ngoại lệ duy nhất, có ghi lý do) |
+> | 2 tool báo cáo | 9 tool |
+> | — | Hạn mức token/lượt theo người + nhật ký tool call |
+>
+> **Đọc cái gì thay thế:** `docs/ai-config.md` (cấu hình, cách đặt khoá, hạn mức, nhật ký) và
+> §3.2b của `docs/superpowers/specs/2026-08-07-ai-integration-design.md` (lý do chọn
+> `Microsoft.Extensions.AI`).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Nhân viên hỏi bằng tiếng Việt trong một khung chat có ở mọi trang, và nhận lại số liệu thật kèm bảng + link sang màn báo cáo tương ứng.
