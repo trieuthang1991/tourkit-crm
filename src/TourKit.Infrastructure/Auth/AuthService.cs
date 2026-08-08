@@ -31,7 +31,8 @@ public sealed class AuthService : IAuthService
     public async Task<AuthResponse?> LoginAsync(LoginRequest req)
     {
         var user = await _identities.FindByEmailAsync(req.Email);
-        if (user is null || !user.IsActive || !_hasher.Verify(user.PasswordHash, req.Password))
+        var passwordValid = PasswordLoginVerifier.Verify(_hasher, user, req.Password);
+        if (user is null || !user.IsActive || !passwordValid)
         {
             return null;
         }

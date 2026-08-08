@@ -34,7 +34,8 @@ public sealed class CookieAuthService : ICookieAuthService
     public async Task<ClaimsPrincipal?> AuthenticateAsync(string email, string password)
     {
         var user = await _identities.FindByEmailAsync(email);
-        if (user is null || !user.IsActive || !_hasher.Verify(user.PasswordHash, password))
+        var passwordValid = PasswordLoginVerifier.Verify(_hasher, user, password);
+        if (user is null || !user.IsActive || !passwordValid)
         {
             return null;
         }
