@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using TourKit.Api.Ai;
 using TourKit.Api.Auth;
 using TourKit.Api.Billing;
 using TourKit.Api.Middleware;
@@ -38,6 +39,7 @@ builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");            // mọi trang cần đăng nhập
     options.Conventions.AllowAnonymousToFolder("/Auth"); // trừ đăng nhập/đăng xuất
+    options.Conventions.AllowAnonymousToPage("/Index");  // landing page công khai
     options.Conventions.AllowAnonymousToPage("/Ping");   // trang smoke hạ tầng
 
     // Route tiếng Việt thân thiện (RouteMap là nguồn duy nhất). AddPageRoute THÊM route mới, route
@@ -133,6 +135,11 @@ builder.Services.AddScoped<TourKit.Application.Notifications.ISmsSender, TourKit
 builder.Services.Configure<TourKit.Infrastructure.Notifications.ZaloOptions>(
     builder.Configuration.GetSection(TourKit.Infrastructure.Notifications.ZaloOptions.SectionName));
 builder.Services.AddScoped<TourKit.Application.Notifications.IZaloSender, TourKit.Infrastructure.Notifications.LogZaloSender>();
+
+// --- AI: cấu hình theo TÍNH NĂNG (Ai:Features), mỗi tính năng tự chọn nhà cung cấp + model.
+// Soát ngay lúc khởi động: gõ sai tên nhà cung cấp hay quên đặt khoá đều KHÔNG gây lỗi khi chạy,
+// chúng chỉ làm tính năng im lặng không hoạt động. Khoá nạp từ user-secrets/biến môi trường.
+builder.AddTourKitAi();
 
 // --- FluentValidation: quét validator ở tầng Application ---
 builder.Services.AddValidatorsFromAssemblyContaining<TourKit.Application.Customers.Validators.CreateCustomerValidator>();

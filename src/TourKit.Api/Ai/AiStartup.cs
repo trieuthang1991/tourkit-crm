@@ -1,0 +1,103 @@
+using System.Globalization;
+using TourKit.Ai;
+using TourKit.Ai.Abstractions;
+using TourKit.Ai.OpenAiCompatible;
+
+namespace TourKit.Api.Ai;
+
+/// <summary>
+/// Nạp và soát section <c>Ai</c> lúc khởi động.
+///
+/// Soát ở đây chứ không phải lúc gọi vì hai lỗi cấu hình hay gặp nhất — gõ sai tên nhà cung cấp và
+/// quên đặt khoá — đều KHÔNG gây lỗi rõ ràng khi chạy: chúng chỉ làm tính năng im lặng không hoạt
+/// động. Thà hỏng lúc deploy còn hơn để người dùng bấm nút và không hiểu vì sao không có gì xảy ra.
+/// </summary>
+public static class AiStartup
+{
+    /// <summary>Đăng ký <see cref="AiOptions"/> sau khi đã soát; ném ngoại lệ nếu cấu hình sai.</summary>
+    public static void AddTourKitAi(this WebApplicationBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        var section = builder.Configuration.GetSection(AiOptions.SectionName);
+        var options = section.Get<AiOptions>() ?? new AiOptions();
+
+        // Lỗi cấu trúc file: sai ở mọi môi trường, chặn luôn.
+        var errors = options.Validate();
+        if (errors.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "Section \"Ai\" trong appsettings không hợp lệ:" + Environment.NewLine +
+                string.Join(Environment.NewLine, errors.Select(e => "  - " + e)));
+        }
+
+        if (options.Enabled)
+        {
+            GuardApiKeys(builder, options);
+        }
+
+        builder.Services.Configure<AiOptions>(section);
+
+        // Lõi + công cụ. Nằm ở TourKit.Ai, không biết hãng nào cả.
+        builder.Services.AddTourKitAiCore();
+
+        // ADAPTER: mỗi Kind một cài đặt. Thêm hãng có giao thức riêng (Anthropic, Gemini) = thêm một
+        // project rồi thêm đúng một dòng ở đây. "Log" đã được AddTourKitAiCore đăng ký sẵn.
+        builder.Services.AddSingleton<IChatClientProvider, OpenAiCompatibleChatClientProvider>();
+
+        builder.Services.AddSingleton<AiChatClientFactory>();
+        builder.Services.AddScoped<AiAssistant>();
+    }
+
+    private static void GuardApiKeys(WebApplicationBuilder builder, AiOptions options)
+    {
+        var missing = options.ProvidersMissingApiKey();
+        if (missing.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Ai:Enabled = true nhưng chưa có khoá cho: {string.Join(", ", missing)}." + Environment.NewLine +
+                "Đặt khoá ở NGOÀI appsettings.json (file này nằm trong git):" + Environment.NewLine +
+                $"  - máy cá nhân: dotnet user-secrets set \"Ai:Providers:{missing[0]}:ApiKey\" \"<khoá>\" --project src/TourKit.Api" + Environment.NewLine +
+                $"  - máy chạy thật: biến môi trường Ai__Providers__{missing[0]}__ApiKey" + Environment.NewLine +
+                "Hoặc tạm đổi Provider của tính năng sang \"log\" để chạy không cần khoá.");
+        }
+
+        if (builder.Environment.IsDevelopment())
+        {
+            return;
+        }
+
+        // Cùng luật với Redis/Email/ConnectionStrings ở Program.cs: khoá giải "ENC:" nằm trong mã nguồn
+        // nên đó là che mắt, không phải mã hoá — không được dùng cho bí mật thật.
+        foreach (var (name, provider) in options.Providers)
+        {
+            if (provider.ApiKey.StartsWith("ENC:", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Ai:Providers:{name}:ApiKey vẫn ở dạng ENC: — khoá giải nằm trong mã nguồn nên đây KHÔNG phải " +
+                    $"mã hoá. Đặt giá trị thật qua biến môi trường Ai__Providers__{name}__ApiKey.");
+            }
+        }
+    }
+
+    /// <summary>Tóm tắt một dòng cho log khởi động — nhìn là biết tính năng nào đang chạy bằng model gì.</summary>
+    public static string Describe(this AiOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        if (!options.Enabled)
+        {
+            return "AI: tắt (Ai:Enabled = false)";
+        }
+
+        var running = AiFeatures.All
+            .Select(options.Resolve)
+            .OfType<AiFeatureResolution>()
+            .Select(r => string.Create(CultureInfo.InvariantCulture, $"{r.Feature}={r.ProviderName}/{r.Settings.Model}"))
+            .ToList();
+
+        return running.Count == 0
+            ? "AI: bật nhưng chưa tính năng nào được kích hoạt"
+            : "AI: " + string.Join(", ", running);
+    }
+}

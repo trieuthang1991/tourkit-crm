@@ -1,4 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!-- Kho bí mật cục bộ (ngoài git) cho khoá AI, SMTP… Cách đặt khoá: xem docs/ai-config.md. -->
+    <UserSecretsId>b1c3fa6c-157c-475d-b25f-0e3a0d459eef</UserSecretsId>
+  </PropertyGroup>
 
   <!-- TargetFramework/Nullable/ImplicitUsings kế thừa từ Directory.Build.props -->
 
@@ -7,6 +12,9 @@
     <ProjectReference Include="..\TourKit.Infrastructure\TourKit.Infrastructure.csproj" />
     <ProjectReference Include="..\TourKit.Shared\TourKit.Shared.csproj" />
     <ProjectReference Include="..\TourKit.Caching\TourKit.Caching.csproj" />
+    <ProjectReference Include="..\TourKit.Ai.Abstractions\TourKit.Ai.Abstractions.csproj" />
+    <ProjectReference Include="..\TourKit.Ai\TourKit.Ai.csproj" />
+    <ProjectReference Include="..\TourKit.Ai.OpenAiCompatible\TourKit.Ai.OpenAiCompatible.csproj" />
   </ItemGroup>
 
   <ItemGroup>

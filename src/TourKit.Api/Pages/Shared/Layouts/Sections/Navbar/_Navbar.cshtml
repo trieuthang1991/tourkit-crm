@@ -20,6 +20,14 @@
     </div>
 
     <ul class="navbar-nav flex-row align-items-center ms-auto">
+      @* Trợ lý AI. Nút ẩn sẵn (d-none) và chỉ hiện khi /tro-ly?handler=Status báo tính năng đang bật —
+         chưa cấu hình khoá thì không bày ra một nút bấm vào chỉ báo lỗi. *@
+      <li class="nav-item me-3 me-xl-2 d-none" id="tk-ai-launch">
+        <a class="nav-link" href="javascript:void(0);" title="Trợ lý AI (Ctrl+K)">
+          <i class="ti ti-sparkles ti-md"></i>
+        </a>
+      </li>
+
       @* Chuông thông báo. Dữ liệu nạp bằng AJAX từ /thong-bao/chuong (navbar dùng chung mọi trang
          nên không có model riêng). data-bs-auto-close="outside": bấm "đã đọc" trong danh sách
          không được đóng dropdown. *@

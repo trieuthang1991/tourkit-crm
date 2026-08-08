@@ -491,3 +491,29 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
 .tk-cmt-draft-name { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tk-cmt-draft-x { border: 0; background: none; line-height: 1; color: var(--bs-secondary-color); padding: 0 .125rem; }
 .tk-cmt-draft-x:hover { color: var(--bs-danger); }
+
+/* ===== Trợ lý AI (tk-ai.js) =====
+   Panel rộng hơn offcanvas mặc định vì nội dung chính là BẢNG số liệu, không phải form một cột. */
+.tk-ai { width: min(32rem, 100vw); }
+.tk-ai .tk-ai-log { background: var(--bs-body-bg); }
+.tk-ai-msg {
+  max-width: 90%; padding: .625rem .875rem; border-radius: var(--bs-border-radius-lg, .5rem);
+  font-size: .9375rem; line-height: 1.55; word-break: break-word;
+}
+.tk-ai-user { background: var(--bs-primary); color: #fff; border-bottom-right-radius: .25rem; }
+.tk-ai-bot { background: var(--bs-tertiary-bg, #f8f7fa); border-bottom-left-radius: .25rem; }
+/* Bảng trong bong bóng: nền trong suốt để không thành "khối trắng trong khối xám". */
+.tk-ai-bot .table { background: transparent; }
+.tk-ai-bot .table > :not(caption) > * > * { background: transparent; padding: .25rem .5rem; }
+.tk-ai-bot .table thead th { font-size: .75rem; text-transform: none; color: var(--bs-secondary-color); }
+.tk-ai .tk-ai-input { resize: none; max-height: 8.75rem; }
+/* Ba chấm "đang nghĩ" — báo cho người dùng biết hệ thống còn sống trong lúc chờ model trả lời. */
+.tk-ai-dots { display: inline-flex; gap: .25rem; align-items: center; height: 1.25rem; }
+.tk-ai-dots span {
+  width: .4rem; height: .4rem; border-radius: 50%; background: var(--bs-secondary-color);
+  animation: tk-ai-blink 1.2s infinite ease-in-out;
+}
+.tk-ai-dots span:nth-child(2) { animation-delay: .2s; }
+.tk-ai-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes tk-ai-blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .tk-ai-dots span { animation: none; opacity: .5; } }

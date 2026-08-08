@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- TargetFramework/Nullable/ImplicitUsings kế thừa từ Directory.Build.props (nguồn duy nhất) -->
+
+  <!-- KHÔNG thêm ProjectReference tới bất kỳ project TourKit nào: đây là hợp đồng dùng chung mà MỌI
+       adapter (DeepSeek, Claude, OpenAI, FPT.AI…) đều phải tham chiếu.
+       Ngoại lệ DUY NHẤT là Microsoft.Extensions.AI.Abstractions — đó chính là hợp đồng trung lập của
+       .NET cho hội thoại + gọi công cụ (IChatClient, AIFunction). Mọi adapter đều cần nó, nên đặt ở
+       đây là gom một lần thay vì mỗi adapter tự khai. Tự viết interface hội thoại riêng thì phải tự
+       viết cả adapter cho từng hãng. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.8.3" />
+  </ItemGroup>
+
+</Project>

@@ -62,6 +62,39 @@ Ngoại lệ về tiến trình: **chatbot khách hàng chạy tiến trình ri�
 
 **Chưa đóng gói NuGet.** Project riêng trong cùng solution cho đủ lợi ích module hoá mà không phải gánh version + release. Chỉ đóng gói khi có sản phẩm thứ hai thật sự dùng lại.
 
+### 3.2b Dùng `Microsoft.Extensions.AI`, không tự viết hợp đồng hội thoại
+
+*(Bổ sung 2026-08-08, sau khi triển khai. Thay thế phần khung interface tự viết mô tả ở §3.3.)*
+
+Câu hỏi đặt ra khi bắt tay làm: .NET không có LangChain thì lấy gì thay? Câu trả lời là
+**`Microsoft.Extensions.AI`** (gói chính chủ của Microsoft, bản 10.8.3 đã phát hành chính thức). Nó
+đúng là lớp mà §3.3 định tự viết:
+
+| Thứ định tự viết | Thứ có sẵn |
+|---|---|
+| `IChatModel` | `IChatClient` |
+| `AiTurn` / `AiCompletion` / `AiMessage` | `ChatMessage` / `ChatOptions` / `ChatResponse` |
+| `AiToolCall` + JSON Schema viết tay | `AIFunction` — **schema sinh tự động từ chữ ký hàm C#** |
+| Adapter riêng cho từng hãng | `Microsoft.Extensions.AI.OpenAI` và các gói cùng họ |
+
+Lợi ích quyết định nằm ở hai dòng cuối. Schema viết tay là thứ chắc chắn sẽ lệch khỏi code sau vài lần
+sửa tham số, và không có gì bắt được sự lệch đó. Còn adapter: DeepSeek, OpenAI, Groq, Together, Ollama
+đều nói cùng giao thức, nên **một** adapter phục vụ cả nhóm — khác biệt giữa chúng chỉ là `BaseUrl` và
+tên model.
+
+Đổi lại, `TourKit.Ai.Abstractions` không còn "không tham chiếu gì" như §3.2 nêu: nó tham chiếu
+`Microsoft.Extensions.AI.Abstractions`. Đây là ngoại lệ có chủ ý và là ngoại lệ **duy nhất** — gói đó
+chính là hợp đồng trung lập với nhà cung cấp, thứ mà mọi adapter đều cần; gom một lần ở đây tốt hơn
+để mỗi adapter tự khai. Ràng buộc "không tham chiếu project TourKit nào" vẫn giữ nguyên và vẫn được
+ép bằng arch test.
+
+**Không dùng `UseFunctionInvocation()`** dù nó tự chạy được vòng lặp gọi công cụ. Tự chạy thì mất hai
+thứ bắt buộc phải có: chặn cứng số vòng (§6), và giữ lại phần dữ liệu có cấu trúc để giao diện vẽ
+bảng — bộ tự động chỉ trả lại đoạn văn cuối cùng.
+
+Semantic Kernel là lựa chọn còn lại và đã bị loại: nó kéo theo planner, memory, plugin — cả một mô
+hình lập trình — trong khi việc cần làm chỉ là gọi model và chạy công cụ.
+
 ### 3.3 Adapter tách theo NĂNG LỰC, không theo nhà cung cấp
 
 Hội thoại, nhúng vector và đọc giấy tờ có ba hình dạng khác hẳn nhau. Gộp chúng vào một interface `IAiProvider` sẽ cho ra một interface mà mỗi cài đặt ném `NotSupportedException` cho phần lớn số hàm.

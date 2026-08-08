@@ -22,6 +22,8 @@
     <ProjectReference Include="..\..\src\TourKit.Api\TourKit.Api.csproj" />
     <ProjectReference Include="..\..\src\TourKit.Infrastructure\TourKit.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\TourKit.Shared\TourKit.Shared.csproj" />
+    <ProjectReference Include="..\..\src\TourKit.Ai.Abstractions\TourKit.Ai.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\TourKit.Ai\TourKit.Ai.csproj" />
   </ItemGroup>
 
 </Project>

@@ -26,6 +26,8 @@ public static class RouteMap
         ("/Notifications/Bell", "thong-bao/chuong"),
         // Handler JSON cho luồng bình luận gắn vào các màn chi tiết — xem Pages/Comments/Index.cshtml.cs.
         ("/Comments/Index", "binh-luan"),
+        // Handler JSON của trợ lý AI (khung chat là panel trượt do tk-ai.js dựng trên mọi trang).
+        ("/Ai/Chat", "tro-ly"),
 
         // --- Nhà cung cấp ---
         ("/Providers/Index", "nha-cung-cap"),
