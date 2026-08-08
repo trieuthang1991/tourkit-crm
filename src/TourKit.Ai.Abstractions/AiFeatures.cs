@@ -71,6 +71,21 @@ public static class AiFeatures
         Assistant, Draft, Classify, Summarize, Scoring, Embedding, DocumentRead, CustomerChat,
     ];
 
+    /// <summary>
+    /// Những tính năng ĐÃ CÓ CODE chạy. Các tên còn lại trong <see cref="All"/> mới chỉ có chỗ trong
+    /// cấu hình — hình dạng đã chốt nhưng chưa viết.
+    ///
+    /// Danh sách này tồn tại vì cấu hình không tự biết nó có được ai dùng hay không: đặt
+    /// <c>Draft:Enabled = true</c> lúc chưa viết Draft thì hệ thống vẫn khởi động, vẫn đòi khoá cho
+    /// nhà cung cấp của nó, và người đọc appsettings tưởng tính năng đang chạy. Viết xong tính năng
+    /// nào thì thêm tên nó vào đây — đúng một dòng.
+    /// </summary>
+    public static IReadOnlySet<string> Implemented { get; } =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Assistant };
+
+    /// <summary>Tính năng này đã có code chạy chưa.</summary>
+    public static bool IsImplemented(string name) => Implemented.Contains(name);
+
     /// <summary>Tên này có phải một tính năng đã biết không (so sánh không phân biệt hoa thường).</summary>
     public static bool IsKnown(string name) => Catalog.ContainsKey(name);
 

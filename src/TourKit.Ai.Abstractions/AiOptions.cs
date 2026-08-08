@@ -168,6 +168,15 @@ public sealed class AiOptions
             return;
         }
 
+        // Bật một tính năng chưa viết thì không có gì hỏng, và đó mới là vấn đề: người đọc cấu hình
+        // tưởng nó đang chạy, còn chốt chặn khởi động thì đòi khoá cho một thứ không tồn tại.
+        if (settings.Enabled && !AiFeatures.IsImplemented(name))
+        {
+            errors.Add(
+                $"{path} đang bật nhưng \"{AiFeatures.Label(name)}\" CHƯA được triển khai — chưa có mã nguồn nào " +
+                "dùng tới nó. Đặt Enabled=false, hoặc nếu bạn vừa viết xong thì thêm tên nó vào AiFeatures.Implemented.");
+        }
+
         if (string.IsNullOrWhiteSpace(settings.Provider))
         {
             errors.Add($"{path}:Provider đang trống nhưng tính năng \"{AiFeatures.Label(name)}\" đang bật.");

@@ -90,6 +90,36 @@ public class AiOptionsTests
         Assert.Contains(options.Validate(), e => e.Contains("không có trong Ai:Providers", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Bật một tính năng chưa viết thì không có gì hỏng — và đó mới là vấn đề: người đọc cấu hình
+    /// tưởng nó đang chạy, còn chốt chặn khởi động đòi khoá cho một thứ không tồn tại.
+    /// </summary>
+    [Fact]
+    public void Bat_tinh_nang_chua_trien_khai_thi_bi_chan()
+    {
+        var options = WithDeepSeek(feature: AiFeatures.Draft);
+
+        var errors = options.Validate();
+
+        Assert.Contains(errors, e => e.Contains("CHƯA được triển khai", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Tinh_nang_chua_trien_khai_nhung_dang_tat_thi_khong_sao()
+    {
+        var options = WithDeepSeek(s => s.Enabled = false, AiFeatures.Draft);
+
+        Assert.Empty(options.Validate());
+    }
+
+    /// <summary>Danh sách đã triển khai phải là tập con của danh mục — chống gõ sai tên.</summary>
+    [Fact]
+    public void Danh_sach_da_trien_khai_nam_trong_danh_muc()
+    {
+        Assert.All(AiFeatures.Implemented, name => Assert.True(AiFeatures.IsKnown(name), name));
+        Assert.Contains(AiFeatures.Assistant, AiFeatures.Implemented);
+    }
+
     [Fact]
     public void Tinh_nang_chua_khai_bao_gi_thi_khong_bao_loi()
     {
