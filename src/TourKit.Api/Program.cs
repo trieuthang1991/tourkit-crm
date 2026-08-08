@@ -6,9 +6,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Microsoft.Extensions.Options;
 using TourKit.Api.Ai;
 using TourKit.Api.Auth;
 using TourKit.Api.Billing;
+using TourKit.Api.Configuration;
+using TourKit.Infrastructure.Notifications;
+using TourKit.Infrastructure.Storage;
 using TourKit.Api.Middleware;
 using TourKit.Api.Tenancy;
 using TourKit.Application.Auth;
@@ -61,11 +65,13 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
 }
 
+// Mọi section cấu hình -> lớp có kiểu, tiêm được ở bất kỳ đâu. Xem Configuration/OptionsStartup.cs.
+builder.AddTourKitOptions();
+
 // CORS cho SPA (Vite dev mặc định 5173/4173; prod cấu hình qua Cors:Origins).
-var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
-    ?? ["http://localhost:5173", "http://localhost:4173"];
 builder.Services.AddCors(options => options.AddPolicy("web", policy => policy
-    .WithOrigins(corsOrigins)
+    .WithOrigins(builder.Read<TourKit.Api.Configuration.CorsOptions>(
+        TourKit.Api.Configuration.CorsOptions.SectionName).ResolveOrigins())
     .AllowAnyHeader()
     .AllowAnyMethod()));
 
@@ -74,21 +80,20 @@ builder.Services.AddScoped<AmbientTenantContext>();
 builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<AmbientTenantContext>());
 
 // --- Cache (thư viện TourKit.Caching): có cấu hình Redis thì dùng Redis, không thì bộ nhớ tiến trình ---
-builder.Services.AddTourKitCaching(builder.Configuration);
+builder.Services.AddTourKitCaching(builder.Read<RedisOptions>(RedisOptions.SectionName));
 builder.Services.AddScoped<TourKit.Api.Services.UserDirectory>();
 
 // --- DB provider theo cấu hình ---
-var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
-var connectionString = builder.Configuration.GetConnectionString("Default");
+var database = builder.Read<DatabaseOptions>(DatabaseOptions.SectionName);
+var connectionString = builder.Configuration.GetConnectionString(DatabaseOptions.ConnectionName);
 builder.Services.AddScoped<AuditSaveChangesInterceptor>();
 builder.Services.AddDbContext<AppDbContext>((sp, opt) =>
 {
-    if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
+    if (database.IsSqlServer)
     {
         opt.UseSqlServer(connectionString);
     }
-    else if (string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(provider, "PostgreSQL", StringComparison.OrdinalIgnoreCase))
+    else if (database.IsPostgres)
     {
         opt.UseNpgsql(connectionString);
     }
@@ -101,8 +106,7 @@ builder.Services.AddDbContext<AppDbContext>((sp, opt) =>
     opt.AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>());
 });
 
-// --- Auth services ---
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+// --- Auth services --- (JwtOptions đăng ký ở AddTourKitOptions)
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -115,9 +119,7 @@ builder.Services.AddScoped<TourKit.Shared.Security.ICurrentUserContext>(
     sp => (TourKit.Shared.Security.ICurrentUserContext)sp.GetRequiredService<ICurrentUser>());
 
 // --- Email (conventions §8): dev ghi log; prod dùng SMTP khi Email:Provider=Smtp (giống IFileStorage) ---
-builder.Services.Configure<TourKit.Infrastructure.Notifications.EmailOptions>(
-    builder.Configuration.GetSection(TourKit.Infrastructure.Notifications.EmailOptions.SectionName));
-if (string.Equals(builder.Configuration["Email:Provider"], "Smtp", StringComparison.OrdinalIgnoreCase))
+if (builder.Read<EmailOptions>(EmailOptions.SectionName).IsSmtp)
 {
     builder.Services.AddScoped<TourKit.Application.Notifications.IEmailSender, TourKit.Infrastructure.Notifications.SmtpEmailSender>();
 }
@@ -127,18 +129,14 @@ else
 }
 
 // --- SMS: dev ghi log; prod thêm provider thật (Twilio/eSMS…) + đổi Sms:Provider (giống Email) ---
-builder.Services.Configure<TourKit.Infrastructure.Notifications.SmsOptions>(
-    builder.Configuration.GetSection(TourKit.Infrastructure.Notifications.SmsOptions.SectionName));
 builder.Services.AddScoped<TourKit.Application.Notifications.ISmsSender, TourKit.Infrastructure.Notifications.LogSmsSender>();
 
 // --- Zalo OA: dev ghi log; prod thêm provider Zalo OA thật + đổi Zalo:Provider (giống SMS) ---
-builder.Services.Configure<TourKit.Infrastructure.Notifications.ZaloOptions>(
-    builder.Configuration.GetSection(TourKit.Infrastructure.Notifications.ZaloOptions.SectionName));
 builder.Services.AddScoped<TourKit.Application.Notifications.IZaloSender, TourKit.Infrastructure.Notifications.LogZaloSender>();
 
 // --- AI: cấu hình theo TÍNH NĂNG (Ai:Features), mỗi tính năng tự chọn nhà cung cấp + model.
 // Soát ngay lúc khởi động: gõ sai tên nhà cung cấp hay quên đặt khoá đều KHÔNG gây lỗi khi chạy,
-// chúng chỉ làm tính năng im lặng không hoạt động. Khoá nạp từ user-secrets/biến môi trường.
+// chúng chỉ làm tính năng im lặng không hoạt động.
 builder.AddTourKitAi();
 
 // --- FluentValidation: quét validator ở tầng Application ---
@@ -157,8 +155,7 @@ builder.Services.AddScoped<TourKit.Application.Admin.IRbacStore, TourKit.Infrast
 builder.Services.AddScoped<TourKit.Application.Files.IFileStorage>(sp =>
     new TourKit.Infrastructure.Storage.LocalFileStorage(
         sp.GetRequiredService<TourKit.Shared.Tenancy.ITenantContext>(),
-        builder.Configuration["FileStorage:LocalRoot"]
-            ?? Path.Combine(AppContext.BaseDirectory, "App_Data", "uploads")));
+        sp.GetRequiredService<IOptions<FileStorageOptions>>().Value.ResolveLocalRoot()));
 // Auto-register mọi Application service (I<X>Service → <X>Service) — khỏi khai báo tay từng cái.
 builder.Services.Scan(scan => scan.FromAssemblyOf<TourKit.Application.Customers.ICustomerService>()
     .AddClasses(c => c.Where(t => t.Name.EndsWith("Service", StringComparison.Ordinal)))
@@ -173,13 +170,13 @@ builder.Services.AddScoped<TourKit.Api.BackgroundJobs.HoldReminderJob>();
 builder.Services.AddScoped<TourKit.Api.BackgroundJobs.HoldReleaseJob>();
 var enableBackgroundJobs =
     System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name?.Contains("testhost", StringComparison.OrdinalIgnoreCase) != true
-    && builder.Configuration.GetValue("BackgroundJobs:Enabled", true);
+    && builder.Read<BackgroundJobsOptions>(BackgroundJobsOptions.SectionName).Enabled;
 if (enableBackgroundJobs)
 {
     builder.Services.AddHangfireServer();
 }
 
-var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+var jwt = builder.Read<JwtOptions>(JwtOptions.SectionName);
 
 // CHỐT CHẶN KHỞI ĐỘNG — khoá ký JWT là thứ duy nhất giữ ranh giới giữa các tenant: ai biết khoá thì
 // tự ký được token với tenant_id bất kỳ + toàn bộ quyền, đọc/ghi dữ liệu của MỌI đơn vị. Khoá mẫu

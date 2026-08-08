@@ -1,34 +1,30 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TourKit.Shared.Security;
 
 namespace TourKit.Caching;
 
 /// <summary>
-/// Điểm đăng ký DUY NHẤT của hạ tầng cache. Ứng dụng chỉ gọi <c>AddTourKitCaching(configuration)</c>
-/// và không cần biết gì về Redis — cấu hình quyết định chạy Redis hay bộ nhớ tiến trình.
+/// Điểm đăng ký DUY NHẤT của hạ tầng cache. Ứng dụng chỉ gọi <c>AddTourKitCaching(options)</c> và
+/// không cần biết gì về Redis — cấu hình quyết định chạy Redis hay bộ nhớ tiến trình.
 /// </summary>
 public static class CachingServiceCollectionExtensions
 {
-    /// <summary>Khoá cấu hình chứa chuỗi kết nối Redis (chấp nhận cả dạng ENC: mã hoá).</summary>
-    public const string ConnectionStringKey = "Redis:ConnectionString";
-
-    /// <summary>Tiền tố khoá trên Redis, để nhiều ứng dụng dùng chung một máy chủ Redis không đụng nhau.</summary>
-    public const string InstanceName = "tourkit:";
-
     /// <summary>
     /// Dựng HybridCache (mặc định từ .NET 9): L1 trong bộ nhớ tiến trình, L2 là Redis nếu có cấu hình.
     ///
     /// Có chuỗi kết nối Redis → L2 = Redis, nhiều tiến trình/nhiều máy chủ dùng CHUNG bộ nhớ đệm.
     /// Không có → chỉ còn L1, ứng dụng vẫn chạy bình thường (máy lập trình, môi trường kiểm thử,
     /// hoặc khi cố tình tắt Redis).
+    ///
+    /// Nhận <see cref="RedisOptions"/> chứ không nhận <c>IConfiguration</c>: thư viện này không cần
+    /// biết cấu hình nằm ở section nào hay đọc từ đâu, đó là việc của composition root.
     /// </summary>
-    public static IServiceCollection AddTourKitCaching(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddTourKitCaching(this IServiceCollection services, RedisOptions options)
     {
-        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(options);
 
         // Chuỗi kết nối để dạng "ENC:..." trong appsettings, giải mã bằng Crypton như cấu hình SMTP.
-        var connection = Crypton.Unwrap(configuration[ConnectionStringKey]);
+        var connection = Crypton.Unwrap(options.ConnectionString);
 
         if (!string.IsNullOrWhiteSpace(connection))
         {
@@ -36,7 +32,7 @@ public static class CachingServiceCollectionExtensions
             services.AddStackExchangeRedisCache(o =>
             {
                 o.Configuration = connection;
-                o.InstanceName = InstanceName;
+                o.InstanceName = options.InstanceName;
             });
         }
 

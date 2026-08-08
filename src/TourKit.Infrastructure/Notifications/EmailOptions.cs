@@ -17,4 +17,7 @@ public sealed class EmailOptions
 
     public string From { get; set; } = "no-reply@tourkit.vn";
     public string FromName { get; set; } = "TourKit";
+
+    /// <summary>Có gửi thật qua SMTP không. So sánh nằm ở đây để mọi nơi hỏi cùng một câu.</summary>
+    public bool IsSmtp => string.Equals(Provider, "Smtp", StringComparison.OrdinalIgnoreCase);
 }
