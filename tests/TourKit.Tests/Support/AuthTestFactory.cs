@@ -14,8 +14,24 @@ public sealed class AuthTestFactory : WebApplicationFactory<Program>
 {
     private readonly string _dbName = "AuthTests-" + Guid.NewGuid();
 
+    /// <summary>
+    /// Cấp khoá Google GIẢ để kiểm phần hiển thị và định tuyến. Giá trị chỉ để scheme đăng ký được;
+    /// không bài test nào gọi ra máy chủ Google, và đây không phải khoá thật.
+    /// </summary>
+    public bool GoogleConfigured { get; init; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        if (GoogleConfigured)
+        {
+            // UseSetting chứ không phải ConfigureAppConfiguration: việc đăng ký scheme Google xảy ra
+            // lúc DỰNG ứng dụng, còn nguồn cấu hình thêm bằng ConfigureAppConfiguration chỉ có hiệu
+            // lực sau khi Build() — tới lúc đó thì Program.cs đã quyết định xong là không có Google.
+            builder.UseSetting("Authentication:Google:Enabled", "true");
+            builder.UseSetting("Authentication:Google:ClientId", "test-client-id.apps.googleusercontent.com");
+            builder.UseSetting("Authentication:Google:ClientSecret", "test-client-secret-khong-that");
+        }
+
         builder.ConfigureServices(services =>
         {
             var toRemove = services.Where(d =>

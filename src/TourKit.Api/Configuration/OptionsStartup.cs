@@ -30,6 +30,7 @@ public static class OptionsStartup
         Bind<RedisOptions>(builder, RedisOptions.SectionName);
         Bind<CorsOptions>(builder, CorsOptions.SectionName);
         Bind<BackgroundJobsOptions>(builder, BackgroundJobsOptions.SectionName);
+        Bind<GoogleAuthOptions>(builder, GoogleAuthOptions.SectionName);
 
         // Section "Ai" do AiStartup đăng ký, vì nó còn phải soát cấu hình trước khi cho chạy tiếp.
     }

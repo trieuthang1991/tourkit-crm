@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
 using FluentValidation;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -111,6 +112,7 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICookieAuthService, CookieAuthService>();   // xác thực cookie cho UI Razor Pages
+builder.Services.AddScoped<IExternalAuthService, TourKit.Infrastructure.Auth.ExternalAuthService>();
 builder.Services.AddScoped<IUserIdentityStore, UserIdentityStore>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>(); // quên/đặt lại mật khẩu (token DataProtection có hạn)
 builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
@@ -208,7 +210,10 @@ if (!builder.Environment.IsDevelopment())
     }
 }
 
-builder.Services.AddAuthentication(options =>
+var google = builder.Read<TourKit.Api.Configuration.GoogleAuthOptions>(
+    TourKit.Api.Configuration.GoogleAuthOptions.SectionName);
+
+var authBuilder = builder.Services.AddAuthentication(options =>
     {
         // "smart": chọn scheme theo request — API gửi Bearer → JWT; trang HTML (không Bearer) → Cookie.
         options.DefaultScheme = "smart";
@@ -259,7 +264,39 @@ builder.Services.AddAuthentication(options =>
             ? CookieSecurePolicy.SameAsRequest   // dev chạy http://localhost, ép Always sẽ mất phiên
             : CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
+    })
+    // Cookie tạm của chặng đăng nhập ngoài. Đăng ký VÔ ĐIỀU KIỆN, kể cả khi chưa có khoá Google:
+    // các trang và test đọc scheme này qua tên, thiếu nó thì lỗi là "scheme không tồn tại" ở giữa
+    // luồng chứ không phải một thông báo nói rõ chưa bật Google.
+    .AddCookie(TourKit.Api.Auth.ExternalAuthDefaults.Scheme, options =>
+    {
+        options.ExpireTimeSpan = TourKit.Api.Auth.ExternalAuthDefaults.Lifetime;
+        options.SlidingExpiration = false;   // 10 phút là 10 phút, không gia hạn theo thao tác
+        options.Cookie.HttpOnly = true;
+        options.Cookie.Name = TourKit.Api.Auth.ExternalAuthDefaults.Scheme;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
     });
+
+if (google.IsConfigured)
+{
+    authBuilder.AddGoogle(options =>
+    {
+        options.ClientId = google.ClientId;
+        options.ClientSecret = google.ClientSecret;
+
+        // Kết quả của Google đi vào cookie TẠM, không vào cookie đăng nhập chính: lúc này mới biết
+        // "email này đã được Google xác minh", chưa biết nó thuộc tài khoản nào bên mình.
+        options.SignInScheme = TourKit.Api.Auth.ExternalAuthDefaults.Scheme;
+
+        // Không có claim này thì không cách nào phân biệt email đã xác minh với email người ta tự
+        // khai — mà nhận nhầm email chưa xác minh là trao thẳng tài khoản cho người khai bừa.
+        options.ClaimActions.MapJsonKey("email_verified", "email_verified", "boolean");
+    });
+}
+
 builder.Services.AddAuthorization(options =>
 {
     foreach (var (code, _) in TourKit.Api.Authz.Permissions.All)
