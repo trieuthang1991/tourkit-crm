@@ -53,7 +53,7 @@ public sealed class AiAssistant(
         var perms = user.FindAll("perm").Select(c => c.Value).ToHashSet(StringComparer.Ordinal);
 
         var settings = new AiChatSettings(
-            config.Settings.Model,
+            config.Model,
             config.Settings.MaxOutputTokens,
             config.Settings.MaxToolRounds,
             config.Settings.Temperature);

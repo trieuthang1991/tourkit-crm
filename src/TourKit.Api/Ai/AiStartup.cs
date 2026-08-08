@@ -97,7 +97,7 @@ public static class AiStartup
         var running = AiFeatures.All
             .Select(options.Resolve)
             .OfType<AiFeatureResolution>()
-            .Select(r => string.Create(CultureInfo.InvariantCulture, $"{r.Feature}={r.ProviderName}/{r.Settings.Model}"))
+            .Select(r => string.Create(CultureInfo.InvariantCulture, $"{r.Feature}={r.ProviderName}/{r.Model}"))
             .ToList();
 
         return running.Count == 0

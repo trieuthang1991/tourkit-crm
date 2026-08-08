@@ -155,24 +155,73 @@ public class AiOptionsTests
     public void Model_ngoai_danh_muc_cua_hang_bi_bat()
     {
         var options = WithDeepSeek(s => s.Model = "deepseek-chatt");
-        options.Providers["deepseek"].Models.Add("deepseek-chat");
+        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
 
         var errors = options.Validate();
 
         Assert.Contains(errors, e => e.Contains("deepseek-chatt", StringComparison.Ordinal)
-                                  && e.Contains("không có trong danh mục model", StringComparison.Ordinal));
+                                  && e.Contains("không phải tên model nào", StringComparison.Ordinal));
     }
 
     [Fact]
     public void Model_trong_danh_muc_thi_hop_le()
     {
         var options = WithDeepSeek();
-        options.Providers["deepseek"].Models.Add("deepseek-chat");
+        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
 
         Assert.Empty(options.Validate());
     }
 
-    /// <summary>Chưa khai danh mục = không giới hạn — để dùng được model mới mà chưa kịp cập nhật.</summary>
+    /// <summary>
+    /// Tính năng khai TÊN tự đặt; nơi gọi phải nhận được MÃ THẬT. Gửi nhầm tên tự đặt lên hãng sẽ
+    /// nhận về lỗi "model không tồn tại" — mà lúc đó chỉ người dùng cuối thấy.
+    /// </summary>
+    [Fact]
+    public void Ten_tu_dat_duoc_doi_thanh_ma_that_truoc_khi_goi_hang()
+    {
+        var options = WithDeepSeek(s => s.Model = "fast");
+        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
+        options.Providers["deepseek"].Models["reasoner"] = "deepseek-reasoner";
+
+        var resolved = options.Resolve(AiFeatures.Assistant);
+
+        Assert.Equal("fast", resolved!.Settings.Model);
+        Assert.Equal("deepseek-chat", resolved.Model);
+        Assert.Empty(options.Validate());
+    }
+
+    /// <summary>Khai thẳng mã thật vẫn chạy — không bắt ai phải đặt tên cho mọi model.</summary>
+    [Fact]
+    public void Khai_thang_ma_that_van_duoc_chap_nhan()
+    {
+        var options = WithDeepSeek(s => s.Model = "deepseek-reasoner");
+        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
+        options.Providers["deepseek"].Models["reasoner"] = "deepseek-reasoner";
+
+        Assert.Empty(options.Validate());
+        Assert.Equal("deepseek-reasoner", options.Resolve(AiFeatures.Assistant)!.Model);
+    }
+
+    /// <summary>
+    /// Đây là lợi ích chính của việc đặt tên: đổi model cho một VAI TRÒ là sửa một dòng, mọi tính
+    /// năng dùng vai trò đó đổi theo — thay vì đi sửa từng tính năng và chắc chắn sót một cái.
+    /// </summary>
+    [Fact]
+    public void Doi_mot_dong_trong_bang_ten_thi_moi_tinh_nang_dung_ten_do_deu_doi_theo()
+    {
+        var options = WithDeepSeek(s => s.Model = "fast");
+        options.Features[AiFeatures.Scoring] =
+            new AiFeatureOptions { Enabled = false, Provider = "deepseek", Model = "fast" };
+        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
+
+        Assert.Equal("deepseek-chat", options.Resolve(AiFeatures.Assistant)!.Model);
+
+        options.Providers["deepseek"].Models["fast"] = "deepseek-reasoner";
+
+        Assert.Equal("deepseek-reasoner", options.Resolve(AiFeatures.Assistant)!.Model);
+    }
+
+    /// <summary>Chưa khai bảng tên = không giới hạn — để dùng được model mới mà chưa kịp cập nhật.</summary>
     [Fact]
     public void Hang_chua_khai_danh_muc_thi_go_ma_nao_cung_duoc()
     {

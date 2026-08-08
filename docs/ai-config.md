@@ -102,29 +102,48 @@ sang `deepseek-chat` (~4 giây) — bộ tiêu chí đã gánh phần lớn vi�
 
 ## Chọn model cho từng việc
 
-Mỗi hãng khai các mã model được phép dùng. Chọn model cho một tính năng là sửa
-`Ai:Features:<Tên>:Model` bằng một mã trong danh sách của hãng đó.
+Hai khối tách riêng: **nhà cung cấp** khai model của mình, **tính năng** khai dùng model nào.
 
 ```jsonc
-"deepseek": {
-  "Capabilities": [ "Chat" ],
-  "Models": [ "deepseek-chat", "deepseek-reasoner" ]
+"Providers": {
+  "deepseek": {
+    "Models": { "fast": "deepseek-chat", "reasoner": "deepseek-reasoner" }
+  }
+},
+"Features": {
+  "Assistant": { "Provider": "deepseek", "Model": "fast" },
+  "Scoring":   { "Provider": "deepseek", "Model": "reasoner" }
 }
 ```
 
-**Gõ sai mã thì ứng dụng không khởi động**, kèm danh sách mã hợp lệ. Không có bước soát này thì mã sai
-chỉ lộ ra lúc người dùng bấm nút và nhận về một lỗi khó hiểu của hãng.
+`Models` là bảng **tên bạn tự đặt → mã thật của hãng**. Tính năng gọi theo tên. Lợi ích: đổi model cho
+một *vai trò* là sửa đúng một dòng, mọi tính năng đang dùng vai trò đó đổi theo — thay vì đi sửa từng
+tính năng và chắc chắn sót một cái.
 
-Bỏ trống danh sách = không giới hạn — dùng khi hãng vừa ra model mới mà chưa kịp khai.
+Ví dụ muốn cả hệ thống chuyển sang model mạnh hơn cho các việc nhanh:
+
+```jsonc
+"Models": { "fast": "deepseek-reasoner", "reasoner": "deepseek-reasoner" }
+```
+
+Khai thẳng mã thật ở tính năng cũng được (`"Model": "deepseek-chat"`) — không bắt phải đặt tên cho
+mọi model. Bỏ trống bảng `Models` = không giới hạn, gõ mã nào cũng chạy.
+
+**Gõ sai tên thì ứng dụng không khởi động**, kèm danh sách tên hợp lệ:
+
+```
+Ai:Features:Assistant:Model = "fastt" không phải tên model nào của "deepseek".
+Đang khai: fast → deepseek-chat, reasoner → deepseek-reasoner.
+```
 
 Nên dùng model nào cho việc gì (tri thức cho người đọc, không phải dữ liệu cho máy):
 
-| Việc | Nên dùng | Vì sao |
+| Việc | Vai trò | Vì sao |
 |---|---|---|
-| Trợ lý tra cứu | `deepseek-chat` | Cần gọi công cụ và trả lời nhanh; model suy luận làm người dùng chờ vô lý |
-| Soạn thảo, tóm tắt | `deepseek-chat` | Việc diễn đạt, không cần lập luận nhiều bước |
-| Phân loại, gán nhãn | model rẻ nhất của hãng | Việc đơn giản, chạy số lượng lớn |
-| Chấm điểm, phân tích | `deepseek-reasoner` | Cần lập luận; đổi lại chậm hơn ~5 lần (~20 giây một lượt) |
+| Trợ lý tra cứu | `fast` | Cần gọi công cụ và trả lời nhanh; model suy luận làm người dùng chờ vô lý |
+| Soạn thảo, tóm tắt | `fast` | Việc diễn đạt, không cần lập luận nhiều bước |
+| Phân loại, gán nhãn | `fast` | Việc đơn giản, chạy số lượng lớn |
+| Chấm điểm, phân tích | `reasoner` | Cần lập luận; đổi lại chậm hơn ~5 lần (~20 giây một lượt) |
 
 ## Thông số mỗi tính năng
 

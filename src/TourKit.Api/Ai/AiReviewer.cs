@@ -57,7 +57,7 @@ public sealed class AiReviewer(
 
         var (client, config) = resolved.Value;
         var settings = new AiChatSettings(
-            config.Settings.Model,
+            config.Model,
             config.Settings.MaxOutputTokens,
             config.Settings.MaxToolRounds,
             config.Settings.Temperature);

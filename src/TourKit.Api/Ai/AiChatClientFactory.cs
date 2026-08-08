@@ -50,9 +50,9 @@ public sealed class AiChatClientFactory(
 
         // Khoá nằm trong khoá tra: đổi khoá hay đổi địa chỉ lúc chạy sẽ tự sinh client mới, không dùng lại cái cũ.
         var key = string.Create(CultureInfo.InvariantCulture,
-            $"{resolved.ProviderName}|{resolved.Settings.Model}|{resolved.Provider.BaseUrl}|{resolved.Provider.ApiKey.GetHashCode(StringComparison.Ordinal)}|{resolved.TimeoutSeconds}");
+            $"{resolved.ProviderName}|{resolved.Model}|{resolved.Provider.BaseUrl}|{resolved.Provider.ApiKey.GetHashCode(StringComparison.Ordinal)}|{resolved.TimeoutSeconds}");
 
-        var client = _clients.GetOrAdd(key, _ => adapter.Create(resolved.Provider, resolved.Settings.Model));
+        var client = _clients.GetOrAdd(key, _ => adapter.Create(resolved.Provider, resolved.Model));
         return (client, resolved);
     }
 }

@@ -244,11 +244,11 @@ public sealed class AiOptions
         // vì để người dùng bấm nút rồi nhận về một lỗi khó hiểu của hãng.
         if (provider.Models.Count > 0
             && !string.IsNullOrWhiteSpace(settings.Model)
-            && !provider.Models.Contains(settings.Model, StringComparer.OrdinalIgnoreCase))
+            && provider.ResolveModel(settings.Model) is null)
         {
             errors.Add(
-                $"{path}:Model = \"{settings.Model}\" không có trong danh mục model của \"{settings.Provider}\". " +
-                $"Đang khai: {string.Join(", ", provider.Models)}.");
+                $"{path}:Model = \"{settings.Model}\" không phải tên model nào của \"{settings.Provider}\". " +
+                $"Đang khai: {string.Join(", ", provider.Models.Select(m => $"{m.Key} → {m.Value}"))}.");
         }
 
         // OCR gọi một dịch vụ REST cố định, không có "model" để chọn.
@@ -319,14 +319,45 @@ public sealed class AiProviderOptions
     public IList<string> Capabilities { get; } = [];
 
     /// <summary>
-    /// Các mã model của hãng này được phép dùng. Bỏ trống = không giới hạn, gõ mã nào cũng được
-    /// (dùng khi hãng vừa ra model mới mà chưa kịp khai).
+    /// Bảng đặt TÊN cho model: tên bạn tự đặt → mã thật của hãng.
     ///
-    /// Khai ra để gõ sai mã bị bắt ngay lúc khởi động, thay vì lúc người dùng bấm nút rồi nhận về một
-    /// lỗi khó hiểu của hãng. Nên dùng model nào cho việc gì thì xem docs/ai-config.md — đó là tri
-    /// thức cho người đọc, không phải dữ liệu cho máy chạy.
+    /// <code>
+    /// "Models": { "fast": "deepseek-chat", "reasoner": "deepseek-reasoner" }
+    /// </code>
+    ///
+    /// Tính năng khai <c>"Model": "fast"</c> thay vì mã thật. Nhờ vậy đổi model cho một VAI TRÒ là
+    /// sửa đúng một dòng ở đây, mọi tính năng đang dùng vai trò đó đổi theo — thay vì phải đi sửa
+    /// từng tính năng và chắc chắn sẽ sót một cái.
+    ///
+    /// Vẫn khai thẳng mã thật ở tính năng được. Bỏ trống bảng này = không giới hạn.
     /// </summary>
-    public IList<string> Models { get; } = [];
+    public IDictionary<string, string> Models { get; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Đổi tên gọi thành mã model thật. Nhận cả tên tự đặt lẫn mã thật. Trả <c>null</c> khi hãng đã
+    /// khai bảng mà giá trị không khớp gì cả.
+    /// </summary>
+    public string? ResolveModel(string? nameOrId)
+    {
+        if (string.IsNullOrWhiteSpace(nameOrId))
+        {
+            return null;
+        }
+
+        if (Models.Count == 0)
+        {
+            return nameOrId;
+        }
+
+        if (Models.TryGetValue(nameOrId, out var real))
+        {
+            return real;
+        }
+
+        // Khai thẳng mã thật cũng chấp nhận — không bắt ai phải đặt tên cho mọi model.
+        return Models.Values.Contains(nameOrId, StringComparer.OrdinalIgnoreCase) ? nameOrId : null;
+    }
 
     /// <summary>Nhà cung cấp giả (chỉ ghi log) — không cần khoá, không cần địa chỉ.</summary>
     public bool IsFake => string.Equals(Kind, "Log", StringComparison.OrdinalIgnoreCase);
@@ -428,6 +459,13 @@ public sealed record AiFeatureResolution(
     AiProviderOptions Provider,
     AiFeatureOptions Settings)
 {
+    /// <summary>
+    /// Mã model THẬT để gửi cho hãng — đã đổi từ tên tự đặt ("fast") sang mã thật ("deepseek-chat").
+    /// Nơi gọi luôn dùng cái này, không dùng <c>Settings.Model</c>, nếu không sẽ gửi tên tự đặt lên
+    /// hãng và nhận về lỗi "model không tồn tại".
+    /// </summary>
+    public string Model => Provider.ResolveModel(Settings.Model) ?? Settings.Model;
+
     /// <summary>Hết giờ chờ thực tế: tính năng khai báo riêng thì theo tính năng, không thì theo nhà cung cấp.</summary>
     public int TimeoutSeconds => Settings.TimeoutSeconds > 0 ? Settings.TimeoutSeconds : Provider.TimeoutSeconds;
 }
