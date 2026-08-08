@@ -74,7 +74,7 @@ public class ReviewModel(AiReviewer reviewer, AiComposer composer, ILogger<Revie
     }
 
     /// <summary>Chấm điểm một bản ghi.</summary>
-    public async Task<IActionResult> OnPostRunAsync(string? entity, string? id, CancellationToken ct)
+    public async Task<IActionResult> OnPostReviewAsync(string? entity, string? id, CancellationToken ct)
     {
         var guard = AiRecordAccess.Check(User, entity, id);
         if (guard.Error is not null)

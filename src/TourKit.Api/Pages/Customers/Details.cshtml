@@ -2,7 +2,11 @@
 @model TourKit.Api.Pages.Customers.DetailsModel
 @{
     ViewData["Title"] = "Chi tiết khách hàng";
-    ViewData["SaveUrl"] = Url.Page("/khach-hang/Index", "Save");
+    @* Url.Page nhận ĐƯỜNG DẪN TRANG, không phải route tiếng Việt. Truyền route vào thì nó trả null,
+       partial rơi về mặc định "?handler=Save", form gửi vào chính trang này — mà trang này không có
+       handler Save. Razor trả về HTML kèm mã 200, JavaScript đọc JSON thất bại và người dùng chỉ thấy
+       "Lỗi kết nối, thử lại" trong khi chẳng có lỗi kết nối nào. *@
+    ViewData["SaveUrl"] = Url.Page("/CustomersTabulator/Index", "Save");
     var c = Model.Customer;
 }
 
