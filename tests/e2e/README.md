@@ -5,18 +5,17 @@ không biết gì về nó.
 
 ## Vì sao cần
 
-Ba lỗi thật đã lọt qua toàn bộ 763 bài kiểm thử C# và chỉ lộ ra khi có người mở trình duyệt:
+Bốn lỗi thật đã lọt qua toàn bộ 763 bài kiểm thử C# và chỉ lộ ra khi có người mở trình duyệt:
 
 | Lỗi | Vì sao C# không bắt được |
 |---|---|
 | `Url.Page("/khach-hang/Index")` sai kiểu tham số → sửa khách hàng không lưu được | `Url.Page` trả `null` chứ không ném lỗi; đường dẫn chỉ được giải lúc dựng trang |
 | JS gọi `?handler=Review`, C# vẫn là `OnPostRunAsync` | Razor trả HTML kèm mã 200 cho handler không tồn tại — không có ngoại lệ nào |
 | Trang đăng nhập nạp script mẫu gọi thư viện chưa nạp | Lỗi nằm trong console trình duyệt |
-
 | Nút "Thêm báo giá" trỏ `/bao-gia/Edit` trong khi route thật là `/bao-gia/soan` → 404 | Đường dẫn ghi tay trong `.cshtml`, trình biên dịch không kiểm |
 
-Hai lỗi đầu nay đã có bài kiểm thử C# canh riêng (`UrlPageTargetTests`, `AiHandlerNameTests`). Lỗi
-thứ ba thì chỉ e2e mới thấy — và **mọi bài ở đây tự động đỏ nếu trang có lỗi JavaScript**.
+Hai lỗi đầu nay đã có bài kiểm thử C# canh riêng (`UrlPageTargetTests`, `AiHandlerNameTests`). Hai
+lỗi còn lại chỉ e2e mới thấy — và **mọi bài ở đây tự động đỏ nếu trang có lỗi JavaScript**.
 
 ## Chạy
 
