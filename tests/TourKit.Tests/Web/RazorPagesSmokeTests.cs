@@ -55,6 +55,8 @@ public class RazorPagesSmokeTests : IClassFixture<AuthTestFactory>
         Assert.Contains("Đăng nhập", html, StringComparison.Ordinal);
         Assert.Contains("M-Travel", html, StringComparison.Ordinal);
         Assert.Contains("/img/illustrations/auth-login.webp", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Input.TenantSlug", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Mã doanh nghiệp", html, StringComparison.Ordinal);
     }
 
     [Fact]

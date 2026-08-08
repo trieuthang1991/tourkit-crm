@@ -16,11 +16,11 @@ public class AuthEndpointTests : IClassFixture<AuthTestFactory>
     [Fact]
     public async Task Login_valid_returns_token_then_can_call_protected_endpoint()
     {
-        var (slug, email, password) = await _factory.SeedTenantUserAsync("acme");
+        var (_, email, password) = await _factory.SeedTenantUserAsync("acme");
         var client = _factory.CreateClient();
 
         var login = await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest(slug, email, password));
+            new LoginRequest($"  {email.ToUpperInvariant()}  ", password));
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var auth = await login.Content.ReadFromJsonAsync<AuthResponse>();
         Assert.NotNull(auth);
@@ -38,11 +38,11 @@ public class AuthEndpointTests : IClassFixture<AuthTestFactory>
     [Fact]
     public async Task Login_wrong_password_returns_401()
     {
-        var (slug, email, _) = await _factory.SeedTenantUserAsync("beta");
+        var (_, email, _) = await _factory.SeedTenantUserAsync("beta");
         var client = _factory.CreateClient();
 
         var res = await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest(slug, email, "wrong-password"));
+            new LoginRequest(email, "wrong-password"));
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
 
@@ -55,13 +55,13 @@ public class AuthEndpointTests : IClassFixture<AuthTestFactory>
 
         // user A tạo khách
         var loginA = await (await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest(a.slug, a.email, a.password))).Content.ReadFromJsonAsync<AuthResponse>();
+            new LoginRequest(a.email, a.password))).Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginA!.AccessToken);
         await client.PostAsJsonAsync("/api/v1/customers", new { FullName = "Khach cua A", Phone = (string?)null });
 
         // user B đọc — không thấy khách của A
         var loginB = await (await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest(b.slug, b.email, b.password))).Content.ReadFromJsonAsync<AuthResponse>();
+            new LoginRequest(b.email, b.password))).Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginB!.AccessToken);
         var listB = await client.GetFromJsonAsync<PagedResult<CustomerRow>>("/api/v1/customers");
 

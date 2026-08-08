@@ -28,7 +28,7 @@ public class RegistrationEndpointTests : IClassFixture<AuthTestFactory>
 
         // login bằng admin vừa tạo
         var login = await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest("newco", "admin@newco.com", "P@ssw0rd!"));
+            new LoginRequest("admin@newco.com", "P@ssw0rd!"));
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var auth = await login.Content.ReadFromJsonAsync<AuthResponse>();
 

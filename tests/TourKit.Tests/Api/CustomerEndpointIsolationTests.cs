@@ -20,13 +20,13 @@ public class CustomerEndpointIsolationTests : IClassFixture<AuthTestFactory>
         var client = _factory.CreateClient();
 
         var tokenA = (await (await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest(a.slug, a.email, a.password))).Content.ReadFromJsonAsync<AuthResponse>())!.AccessToken;
+            new LoginRequest(a.email, a.password))).Content.ReadFromJsonAsync<AuthResponse>())!.AccessToken;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenA);
         (await client.PostAsJsonAsync("/api/v1/customers",
             new { FullName = "A-http", Phone = (string?)null })).EnsureSuccessStatusCode();
 
         var tokenB = (await (await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest(b.slug, b.email, b.password))).Content.ReadFromJsonAsync<AuthResponse>())!.AccessToken;
+            new LoginRequest(b.email, b.password))).Content.ReadFromJsonAsync<AuthResponse>())!.AccessToken;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenB);
         var listB = await client.GetFromJsonAsync<PagedResult<CustomerDto>>("/api/v1/customers");
 

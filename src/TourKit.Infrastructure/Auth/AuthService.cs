@@ -12,15 +12,17 @@ public sealed class AuthService : IAuthService
 {
     private readonly AppDbContext _db;
     private readonly AmbientTenantContext _tenant;
+    private readonly IUserIdentityStore _identities;
     private readonly IPasswordHasher _hasher;
     private readonly IJwtTokenService _jwt;
     private readonly JwtOptions _opt;
 
-    public AuthService(AppDbContext db, AmbientTenantContext tenant, IPasswordHasher hasher,
+    public AuthService(AppDbContext db, AmbientTenantContext tenant, IUserIdentityStore identities, IPasswordHasher hasher,
         IJwtTokenService jwt, Microsoft.Extensions.Options.IOptions<JwtOptions> opt)
     {
         _db = db;
         _tenant = tenant;
+        _identities = identities;
         _hasher = hasher;
         _jwt = jwt;
         _opt = opt.Value;
@@ -28,23 +30,18 @@ public sealed class AuthService : IAuthService
 
     public async Task<AuthResponse?> LoginAsync(LoginRequest req)
     {
-        // Tenant KHÔNG phải ITenantEntity → không bị query filter; tra thẳng theo slug.
-        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Slug == req.TenantSlug && !t.IsDeleted);
-        if (tenant is null)
-        {
-            return null;
-        }
-
-        // Chưa có tenant context → phải IgnoreQueryFilters, lọc tay theo tenant + email.
-        var user = await _db.Users.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Email == req.Email && !u.IsDeleted);
+        var user = await _identities.FindByEmailAsync(req.Email);
         if (user is null || !user.IsActive || !_hasher.Verify(user.PasswordHash, req.Password))
         {
             return null;
         }
 
-        // Từ đây ĐÃ biết tenant → set ambient để ghi RefreshToken đúng tenant qua interceptor.
-        _tenant.SetTenant(tenant.Id);
+        if (!await _identities.TenantIsActiveAsync(user.TenantId))
+        {
+            return null;
+        }
+
+        _tenant.SetTenant(user.TenantId);
         return await IssueAsync(user);
     }
 
