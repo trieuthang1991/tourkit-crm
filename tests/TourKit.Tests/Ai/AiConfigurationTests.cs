@@ -32,7 +32,7 @@ public class AiConfigurationTests(AuthTestFactory factory) : IClassFixture<AuthT
         var deepseek = options.Providers["deepseek"];
         Assert.Equal("OpenAiCompatible", deepseek.Kind);
         Assert.Equal("https://api.deepseek.com/v1", deepseek.BaseUrl);
-        Assert.Contains("Chat", deepseek.Capabilities);   // danh sách chỉ-đọc phải được binder đổ vào
+        Assert.Equal(60, deepseek.TimeoutSeconds);
     }
 
     [Fact]

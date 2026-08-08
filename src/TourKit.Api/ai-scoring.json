@@ -1,0 +1,91 @@
+{
+  "AiScoring": {
+    "//": "LUẬT CHẤM ĐIỂM — tách khỏi appsettings.json vì đây là nghiệp vụ, không phải cấu hình hạ tầng.",
+    "//1": "File này CÓ trong git: luật thay đổi thì phải xem lại được ai đổi gì, lúc nào, vì sao.",
+    "//2": "Model chấm TỪNG tiêu chí 0-100; he thong tinh diem tong theo Weight. Tong Weight moi bo = 100.",
+    "Bands": [
+      {
+        "Min": 80,
+        "Label": "Nóng"
+      },
+      {
+        "Min": 50,
+        "Label": "Ấm"
+      },
+      {
+        "Min": 0,
+        "Label": "Nguội"
+      }
+    ],
+    "Profiles": {
+      "Lead": {
+        "Criteria": [
+          {
+            "Key": "nhu_cau",
+            "Label": "Độ rõ của nhu cầu",
+            "Weight": 30,
+            "Guide": "Trao đổi đã nêu được điểm đến, thời gian đi, số khách hay ngân sách chưa? Nêu đủ và cụ thể thì điểm cao; chỉ có tên và số điện thoại thì điểm rất thấp."
+          },
+          {
+            "Key": "tuong_tac",
+            "Label": "Mức độ tương tác",
+            "Weight": 25,
+            "Guide": "Khách có phản hồi không, trao đổi gần đây hay đã lâu không có gì mới. Khách chủ động hỏi lại thì điểm cao; im lặng dài thì điểm thấp."
+          },
+          {
+            "Key": "tien_do",
+            "Label": "Tiến độ trong phễu bán hàng",
+            "Weight": 20,
+            "Guide": "Trạng thái New là mới tinh (điểm thấp), Contacted là đã chạm được, Qualified là đã xác định có nhu cầu thật (điểm cao), Lost thì điểm gần 0."
+          },
+          {
+            "Key": "lien_he",
+            "Label": "Chất lượng thông tin liên hệ",
+            "Weight": 15,
+            "Guide": "Có số điện thoại và email thì điểm cao; chỉ có một kênh thì trung bình; không có kênh nào liên hệ được thì 0."
+          },
+          {
+            "Key": "khong_vuong_mac",
+            "Label": "Không có trở ngại",
+            "Weight": 10,
+            "Guide": "Điểm CAO khi không thấy trở ngại. Trừ điểm khi trao đổi cho thấy khách chê giá, đã chọn bên khác, hoãn vô thời hạn, hoặc yêu cầu ngừng liên hệ."
+          }
+        ]
+      },
+      "Customer": {
+        "Criteria": [
+          {
+            "Key": "gia_tri",
+            "Label": "Giá trị và tiềm năng chi tiêu",
+            "Weight": 30,
+            "Guide": "Dựa vào phân khúc, nhóm thị trường, quy mô nhu cầu đã trao đổi. Khách đoàn lớn hoặc khách đã mua nhiều lần thì điểm cao; chưa có dấu hiệu gì thì thấp."
+          },
+          {
+            "Key": "tuong_tac",
+            "Label": "Mức độ tương tác gần đây",
+            "Weight": 25,
+            "Guide": "Có trao đổi trong thời gian gần đây không, khách có phản hồi không. Lâu không có tương tác nào thì điểm thấp."
+          },
+          {
+            "Key": "nhu_cau_ke_tiep",
+            "Label": "Độ rõ của nhu cầu kế tiếp",
+            "Weight": 20,
+            "Guide": "Có dấu hiệu khách sắp đi tiếp (hỏi tour mới, hỏi lịch khởi hành, nhắc dịp lễ) không. Không có gì thì điểm thấp."
+          },
+          {
+            "Key": "ho_so",
+            "Label": "Độ đầy đủ hồ sơ",
+            "Weight": 15,
+            "Guide": "Có đủ liên hệ, nguồn, nhóm thị trường, nhu cầu ban đầu, phân khúc hay không. Hồ sơ trống nhiều trường thì điểm thấp vì không đủ căn cứ chăm sóc."
+          },
+          {
+            "Key": "khong_rui_ro",
+            "Label": "Không có rủi ro",
+            "Weight": 10,
+            "Guide": "Điểm CAO khi không thấy rủi ro. Trừ điểm khi có công nợ quá hạn, phàn nàn chưa xử lý, hoặc dấu hiệu khách không hài lòng trong trao đổi."
+          }
+        ]
+      }
+    }
+  }
+}

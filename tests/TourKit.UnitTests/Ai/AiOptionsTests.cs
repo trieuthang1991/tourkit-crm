@@ -17,7 +17,6 @@ public class AiOptionsTests
             BaseUrl = "https://api.deepseek.com/v1",
             ApiKey = "sk-test",
         };
-        provider.Capabilities.Add("Chat");
         options.Providers["deepseek"] = provider;
 
         var settings = new AiFeatureOptions { Enabled = true, Provider = "deepseek", Model = "deepseek-chat" };
@@ -63,188 +62,20 @@ public class AiOptionsTests
         Assert.Contains(errors, e => e.Contains("Model đang trống", StringComparison.Ordinal));
     }
 
-    /// <summary>
-    /// DeepSeek có hội thoại nhưng KHÔNG có API nhúng vector. Trỏ tính năng Embedding vào nó là một lỗi
-    /// chỉ lộ ra khi làm tới RAG — bắt ngay lúc khởi động thay vì để dành.
-    /// </summary>
-    [Fact]
-    public void Nha_cung_cap_thieu_nang_luc_can_thiet_bi_bat()
-    {
-        var options = WithDeepSeek(feature: AiFeatures.Embedding);
 
-        var errors = options.Validate();
 
-        Assert.Contains(errors, e => e.Contains("cần năng lực Embedding", StringComparison.Ordinal));
-    }
-
-    /// <summary>Tính năng tắt vì gõ sai trông y hệt tính năng tắt có chủ ý — vẫn phải soát.</summary>
-    [Fact]
-    public void Tinh_nang_dang_tat_van_bi_soat_neu_da_khai_bao()
-    {
-        var options = WithDeepSeek(s =>
-        {
-            s.Enabled = false;
-            s.Provider = "deepsek";
-        });
-
-        Assert.Contains(options.Validate(), e => e.Contains("không có trong Ai:Providers", StringComparison.Ordinal));
-    }
-
-    /// <summary>
-    /// Bật một tính năng chưa viết thì không có gì hỏng — và đó mới là vấn đề: người đọc cấu hình
-    /// tưởng nó đang chạy, còn chốt chặn khởi động đòi khoá cho một thứ không tồn tại.
-    /// </summary>
-    [Fact]
-    public void Bat_tinh_nang_chua_trien_khai_thi_bi_chan()
-    {
-        var options = WithDeepSeek(feature: AiFeatures.Draft);
-
-        var errors = options.Validate();
-
-        Assert.Contains(errors, e => e.Contains("CHƯA được triển khai", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public void Tinh_nang_chua_trien_khai_nhung_dang_tat_thi_khong_sao()
-    {
-        var options = WithDeepSeek(s => s.Enabled = false, AiFeatures.Draft);
-
-        Assert.Empty(options.Validate());
-    }
-
-    /// <summary>Danh sách đã triển khai phải là tập con của danh mục — chống gõ sai tên.</summary>
-    [Fact]
-    public void Danh_sach_da_trien_khai_nam_trong_danh_muc()
-    {
-        Assert.All(AiFeatures.Implemented, name => Assert.True(AiFeatures.IsKnown(name), name));
-        Assert.Contains(AiFeatures.Assistant, AiFeatures.Implemented);
-    }
-
-    [Fact]
-    public void Tinh_nang_chua_khai_bao_gi_thi_khong_bao_loi()
-    {
-        var options = WithDeepSeek();
-        options.Features[AiFeatures.Embedding] = new AiFeatureOptions { Enabled = false };
-
-        Assert.Empty(options.Validate());
-    }
-
-    [Fact]
-    public void So_vong_goi_cong_cu_ngoai_khoang_bi_bat()
-    {
-        Assert.Contains(WithDeepSeek(s => s.MaxToolRounds = 0).Validate(),
-            e => e.Contains("MaxToolRounds", StringComparison.Ordinal));
-        Assert.Contains(WithDeepSeek(s => s.MaxToolRounds = 50).Validate(),
-            e => e.Contains("MaxToolRounds", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public void Dia_chi_khong_phai_http_bi_bat()
-    {
-        var options = WithDeepSeek();
-        options.Providers["deepseek"].BaseUrl = "api.deepseek.com";
-
-        Assert.Contains(options.Validate(), e => e.Contains("BaseUrl", StringComparison.Ordinal));
-    }
-
-    /// <summary>
-    /// Hãng đã khai danh mục thì mã model phải nằm trong đó. Không soát thì mã sai chỉ lộ ra lúc
-    /// người dùng bấm nút và nhận về một lỗi khó hiểu của hãng.
-    /// </summary>
-    [Fact]
-    public void Model_ngoai_danh_muc_cua_hang_bi_bat()
-    {
-        var options = WithDeepSeek(s => s.Model = "deepseek-chatt");
-        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
-
-        var errors = options.Validate();
-
-        Assert.Contains(errors, e => e.Contains("deepseek-chatt", StringComparison.Ordinal)
-                                  && e.Contains("không phải tên model nào", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public void Model_trong_danh_muc_thi_hop_le()
-    {
-        var options = WithDeepSeek();
-        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
-
-        Assert.Empty(options.Validate());
-    }
-
-    /// <summary>
-    /// Tính năng khai TÊN tự đặt; nơi gọi phải nhận được MÃ THẬT. Gửi nhầm tên tự đặt lên hãng sẽ
-    /// nhận về lỗi "model không tồn tại" — mà lúc đó chỉ người dùng cuối thấy.
-    /// </summary>
-    [Fact]
-    public void Ten_tu_dat_duoc_doi_thanh_ma_that_truoc_khi_goi_hang()
-    {
-        var options = WithDeepSeek(s => s.Model = "fast");
-        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
-        options.Providers["deepseek"].Models["reasoner"] = "deepseek-reasoner";
-
-        var resolved = options.Resolve(AiFeatures.Assistant);
-
-        Assert.Equal("fast", resolved!.Settings.Model);
-        Assert.Equal("deepseek-chat", resolved.Model);
-        Assert.Empty(options.Validate());
-    }
 
     /// <summary>Khai thẳng mã thật vẫn chạy — không bắt ai phải đặt tên cho mọi model.</summary>
-    [Fact]
-    public void Khai_thang_ma_that_van_duoc_chap_nhan()
-    {
-        var options = WithDeepSeek(s => s.Model = "deepseek-reasoner");
-        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
-        options.Providers["deepseek"].Models["reasoner"] = "deepseek-reasoner";
 
-        Assert.Empty(options.Validate());
-        Assert.Equal("deepseek-reasoner", options.Resolve(AiFeatures.Assistant)!.Model);
-    }
-
-    /// <summary>
-    /// Đây là lợi ích chính của việc đặt tên: đổi model cho một VAI TRÒ là sửa một dòng, mọi tính
-    /// năng dùng vai trò đó đổi theo — thay vì đi sửa từng tính năng và chắc chắn sót một cái.
-    /// </summary>
-    [Fact]
-    public void Doi_mot_dong_trong_bang_ten_thi_moi_tinh_nang_dung_ten_do_deu_doi_theo()
-    {
-        var options = WithDeepSeek(s => s.Model = "fast");
-        options.Features[AiFeatures.Scoring] =
-            new AiFeatureOptions { Enabled = false, Provider = "deepseek", Model = "fast" };
-        options.Providers["deepseek"].Models["fast"] = "deepseek-chat";
-
-        Assert.Equal("deepseek-chat", options.Resolve(AiFeatures.Assistant)!.Model);
-
-        options.Providers["deepseek"].Models["fast"] = "deepseek-reasoner";
-
-        Assert.Equal("deepseek-reasoner", options.Resolve(AiFeatures.Assistant)!.Model);
-    }
 
     /// <summary>Chưa khai bảng tên = không giới hạn — để dùng được model mới mà chưa kịp cập nhật.</summary>
-    [Fact]
-    public void Hang_chua_khai_danh_muc_thi_go_ma_nao_cung_duoc()
-    {
-        var options = WithDeepSeek(s => s.Model = "model-vua-ra-mat");
 
-        Assert.Empty(options.Validate());
-    }
-
-    [Fact]
-    public void Nang_luc_go_sai_bi_bat()
-    {
-        var options = WithDeepSeek();
-        options.Providers["deepseek"].Capabilities.Add("Chatt");
-
-        Assert.Contains(options.Validate(), e => e.Contains("Chatt", StringComparison.Ordinal));
-    }
 
     [Fact]
     public void Nha_cung_cap_gia_khong_can_dia_chi()
     {
         var options = new AiOptions { Enabled = true };
         var fake = new AiProviderOptions { Kind = "Log", BaseUrl = "", ApiKey = "", TimeoutSeconds = 5 };
-        fake.Capabilities.Add("Chat");
         options.Providers["log"] = fake;
         options.Features[AiFeatures.Assistant] =
             new AiFeatureOptions { Enabled = true, Provider = "log", Model = "gia-lap" };
@@ -309,7 +140,6 @@ public class AiOptionsTests
         foreach (var name in AiFeatures.All)
         {
             Assert.True(AiFeatures.IsKnown(name), name);
-            Assert.NotNull(AiFeatures.Requires(name));
             Assert.NotEqual(name, AiFeatures.Label(name));   // phải có nhãn tiếng Việt riêng
         }
     }

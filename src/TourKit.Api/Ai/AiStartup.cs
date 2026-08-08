@@ -38,6 +38,8 @@ public static class AiStartup
 
         builder.Services.Configure<AiOptions>(section);
 
+        AddScoringRules(builder);
+
         // Lõi + công cụ. Nằm ở TourKit.Ai, không biết hãng nào cả.
         builder.Services.AddTourKitAiCore();
 
@@ -52,6 +54,34 @@ public static class AiStartup
             .TryAddSingleton(builder.Services, TimeProvider.System);
         builder.Services.AddScoped<AiAssistant>();
         builder.Services.AddScoped<AiReviewer>();
+    }
+
+    /// <summary>
+    /// Nạp LUẬT chấm điểm từ file riêng.
+    ///
+    /// Nguồn cấu hình riêng chứ không nhét vào appsettings vì hai file có vòng đời khác nhau:
+    /// appsettings.json chứa khoá nên nằm ngoài git và khác nhau theo máy; file luật không có bí mật,
+    /// giống nhau ở mọi máy, và phải xem lại được lịch sử ai đổi trọng số chấm điểm lúc nào.
+    ///
+    /// reloadOnChange: sửa luật là có hiệu lực ngay, không phải khởi động lại — luật nghiệp vụ được
+    /// chỉnh thường xuyên hơn hạ tầng nhiều.
+    /// </summary>
+    private static void AddScoringRules(WebApplicationBuilder builder)
+    {
+        builder.Configuration.AddJsonFile(AiScoringOptions.FileName, optional: true, reloadOnChange: true);
+
+        var section = builder.Configuration.GetSection(AiScoringOptions.SectionName);
+        var rules = section.Get<AiScoringOptions>() ?? new AiScoringOptions();
+
+        var errors = rules.Validate();
+        if (errors.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"File {AiScoringOptions.FileName} không hợp lệ:" + Environment.NewLine +
+                string.Join(Environment.NewLine, errors.Select(e => "  - " + e)));
+        }
+
+        builder.Services.Configure<AiScoringOptions>(section);
     }
 
     private static void GuardApiKeys(WebApplicationBuilder builder, AiOptions options)

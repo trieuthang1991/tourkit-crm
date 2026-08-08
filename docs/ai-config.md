@@ -62,18 +62,21 @@ Viết xong một tính năng thì thêm tên nó vào `AiFeatures.Implemented` 
 Thêm tính năng mới: thêm hằng số trong `AiFeatures` **và** một mục trong `appsettings.json`. Thiếu một
 trong hai thì hệ thống báo lỗi lúc khởi động chứ không im lặng bỏ qua.
 
-## Tiêu chí chấm điểm (tính năng `Scoring`)
+## Luật chấm điểm (`ai-scoring.json`)
 
 Đây là phần nghiệp vụ, nằm hết trong JSON để sửa được mà không đụng mã nguồn.
 
 ```jsonc
-"Scoring": {
-  "Bands": [ {"Min": 80, "Label": "Nóng"}, {"Min": 50, "Label": "Ấm"}, {"Min": 0, "Label": "Nguội"} ],
-  "Profiles": {
-    "Customer": {
-      "Criteria": [
-        { "Key": "gia_tri", "Label": "Giá trị và tiềm năng chi tiêu", "Weight": 30, "Guide": "..." }
-      ]
+// src/TourKit.Api/ai-scoring.json
+{
+  "AiScoring": {
+    "Bands": [ {"Min": 80, "Label": "Nóng"}, {"Min": 50, "Label": "Ấm"}, {"Min": 0, "Label": "Nguội"} ],
+    "Profiles": {
+      "Customer": {
+        "Criteria": [
+          { "Key": "gia_tri", "Label": "Giá trị và tiềm năng chi tiêu", "Weight": 30, "Guide": "..." }
+        ]
+      }
     }
   }
 }
@@ -100,50 +103,47 @@ dạng thì hệ thống không đọc nổi câu trả lời và tính năng ch
 `deepseek-reasoner` cho nhận định sâu hơn nhưng mất ~20 giây một lần chấm. Cần nhanh thì đổi `Model`
 sang `deepseek-chat` (~4 giây) — bộ tiêu chí đã gánh phần lớn việc suy luận.
 
-## Chọn model cho từng việc
+## Hai file, hai loại nội dung
 
-Hai khối tách riêng: **nhà cung cấp** khai model của mình, **tính năng** khai dùng model nào.
+| File | Chứa gì | Trong git? |
+|---|---|---|
+| `src/TourKit.Api/appsettings.json` | **Cấu hình**: kết nối tới hãng nào, tính năng nào dùng hãng/model gì | **Không** — có khoá thật |
+| `src/TourKit.Api/ai-scoring.json` | **Luật nghiệp vụ**: tiêu chí chấm điểm, trọng số, thang xếp nhóm | **Có** |
+
+Tách vì hai thứ khác bản chất. Cấu hình khác nhau theo từng máy và chứa bí mật. Luật giống nhau ở mọi
+máy, không có bí mật, và khi ai đó đổi trọng số chấm điểm thì phải xem lại được **đổi gì, lúc nào, vì
+sao** — tức là phải nằm trong git. Trộn chung thì hoặc luật biến mất khỏi git theo bí mật, hoặc bí mật
+bị kéo vào git theo luật.
+
+Sửa `ai-scoring.json` có hiệu lực ngay, không cần khởi động lại.
+
+## Cấu hình: hãng và model
 
 ```jsonc
 "Providers": {
   "deepseek": {
-    "Models": { "fast": "deepseek-chat", "reasoner": "deepseek-reasoner" }
+    "Kind": "OpenAiCompatible",
+    "BaseUrl": "https://api.deepseek.com/v1",
+    "ApiKey": "sk-...",
+    "TimeoutSeconds": 60
   }
 },
 "Features": {
-  "Assistant": { "Provider": "deepseek", "Model": "fast" },
-  "Scoring":   { "Provider": "deepseek", "Model": "reasoner" }
+  "Assistant": { "Enabled": true, "Provider": "deepseek", "Model": "deepseek-chat",     "MaxOutputTokens": 8000, "MaxToolRounds": 5 },
+  "Scoring":   { "Enabled": true, "Provider": "deepseek", "Model": "deepseek-reasoner", "MaxOutputTokens": 4000, "MaxToolRounds": 1 }
 }
 ```
 
-`Models` là bảng **tên bạn tự đặt → mã thật của hãng**. Tính năng gọi theo tên. Lợi ích: đổi model cho
-một *vai trò* là sửa đúng một dòng, mọi tính năng đang dùng vai trò đó đổi theo — thay vì đi sửa từng
-tính năng và chắc chắn sót một cái.
+**Provider = cách kết nối. Feature = dùng gì.** Model ghi thẳng mã thật của hãng, không qua bí danh:
+đọc một dòng là biết đang chạy bằng model gì, không phải lần theo một bảng ánh xạ ở chỗ khác.
 
-Ví dụ muốn cả hệ thống chuyển sang model mạnh hơn cho các việc nhanh:
+Nên chọn model nào (bạn tự quyết, hệ thống không ép):
 
-```jsonc
-"Models": { "fast": "deepseek-reasoner", "reasoner": "deepseek-reasoner" }
-```
-
-Khai thẳng mã thật ở tính năng cũng được (`"Model": "deepseek-chat"`) — không bắt phải đặt tên cho
-mọi model. Bỏ trống bảng `Models` = không giới hạn, gõ mã nào cũng chạy.
-
-**Gõ sai tên thì ứng dụng không khởi động**, kèm danh sách tên hợp lệ:
-
-```
-Ai:Features:Assistant:Model = "fastt" không phải tên model nào của "deepseek".
-Đang khai: fast → deepseek-chat, reasoner → deepseek-reasoner.
-```
-
-Nên dùng model nào cho việc gì (tri thức cho người đọc, không phải dữ liệu cho máy):
-
-| Việc | Vai trò | Vì sao |
+| Việc | Gợi ý | Vì sao |
 |---|---|---|
-| Trợ lý tra cứu | `fast` | Cần gọi công cụ và trả lời nhanh; model suy luận làm người dùng chờ vô lý |
-| Soạn thảo, tóm tắt | `fast` | Việc diễn đạt, không cần lập luận nhiều bước |
-| Phân loại, gán nhãn | `fast` | Việc đơn giản, chạy số lượng lớn |
-| Chấm điểm, phân tích | `reasoner` | Cần lập luận; đổi lại chậm hơn ~5 lần (~20 giây một lượt) |
+| Trợ lý tra cứu | `deepseek-chat` | Cần gọi công cụ và trả lời nhanh; model suy luận làm người dùng chờ vô lý |
+| Soạn thảo, tóm tắt | `deepseek-chat` | Việc diễn đạt, không cần lập luận nhiều bước |
+| Chấm điểm, phân tích | `deepseek-reasoner` | Cần lập luận; đổi lại chậm hơn ~5 lần (~15–20 giây một lượt) |
 
 ## Thông số mỗi tính năng
 
@@ -162,7 +162,6 @@ Nên dùng model nào cho việc gì (tri thức cho người đọc, không ph�
 |---|---|
 | `Kind` | `OpenAiCompatible` (DeepSeek, OpenAI, Groq, Ollama…), `Anthropic`, `Http`, `Log`. |
 | `BaseUrl` | Địa chỉ http(s) đầy đủ. Bỏ trống khi `Kind = Log`. |
-| `Capabilities` | `Chat`, `Embedding`, `DocumentRead`. Trỏ tính năng vào hãng thiếu năng lực → lỗi lúc khởi động. |
 
 `Kind` quyết định adapter nào được dựng lên. Thêm hãng có giao thức riêng = thêm một project cài
 `IChatClientProvider` rồi thêm một dòng đăng ký ở `AiStartup`.

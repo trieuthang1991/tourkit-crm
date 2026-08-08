@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Options;
 using System.Text;
 using TourKit.Ai;
 using TourKit.Ai.Abstractions;
@@ -21,6 +22,7 @@ namespace TourKit.Api.Ai;
 public sealed class AiReviewer(
     AiChatClientFactory factory,
     AiUsageGuard usage,
+    IOptionsMonitor<AiScoringOptions> scoring,
     ILeadService leads,
     ICustomerService customers,
     IEntityCommentService comments,
@@ -62,15 +64,18 @@ public sealed class AiReviewer(
             config.Settings.MaxToolRounds,
             config.Settings.Temperature);
 
-        // Bộ tiêu chí lấy theo LOẠI bản ghi. Không khai thì không chấm — thà nói thẳng còn hơn chấm
-        // bằng một bộ tiêu chí của loại khác rồi cho ra điểm vô nghĩa.
-        if (!config.Settings.Profiles.TryGetValue(entityName, out var profile) || profile.Criteria.Count == 0)
+        // Luật chấm điểm nằm ở ai-scoring.json, không phải appsettings. Không khai bộ tiêu chí cho
+        // loại này thì KHÔNG chấm — thà nói thẳng còn hơn chấm bằng bộ tiêu chí của loại khác rồi cho
+        // ra một con số vô nghĩa.
+        var rules = scoring.CurrentValue;
+        var profile = rules.For(entityName);
+        if (profile is null)
         {
-            return (null, $"Chưa khai bộ tiêu chí chấm điểm cho loại này (Ai:Features:Scoring:Profiles:{entityName}).");
+            return (null, $"Chưa khai bộ tiêu chí chấm điểm cho loại này (AiScoring:Profiles:{entityName} trong ai-scoring.json).");
         }
 
         var service = new AiReviewService(
-            client, settings, profile, [.. config.Settings.Bands], loggers.CreateLogger<AiReviewService>());
+            client, settings, profile, [.. rules.Bands], loggers.CreateLogger<AiReviewService>());
         var review = await service.ReviewAsync(sheet, ct).ConfigureAwait(false);
 
         // Chấm điểm không đi qua vòng lặp công cụ nên không có số token trả về theo lượt; trừ tạm

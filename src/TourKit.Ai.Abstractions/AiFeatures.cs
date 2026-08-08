@@ -1,24 +1,6 @@
 namespace TourKit.Ai.Abstractions;
 
 /// <summary>
-/// Năng lực mà một nhà cung cấp AI có thể phục vụ. Hội thoại, nhúng vector và đọc giấy tờ có ba hình
-/// dạng API khác hẳn nhau — một hãng làm được cái này không có nghĩa là làm được cái kia (DeepSeek có
-/// hội thoại nhưng KHÔNG có API nhúng vector). Cấu hình khai báo rõ để gắn nhầm thì hỏng lúc khởi
-/// động, chứ không phải lúc người dùng bấm nút.
-/// </summary>
-public enum AiCapability
-{
-    /// <summary>Hội thoại + gọi công cụ (tool calling).</summary>
-    Chat,
-
-    /// <summary>Nhúng văn bản thành vector — dùng cho tra cứu tài liệu quy trình (RAG).</summary>
-    Embedding,
-
-    /// <summary>Đọc giấy tờ ảnh thành trường dữ liệu (OCR hộ chiếu/CCCD).</summary>
-    DocumentRead,
-}
-
-/// <summary>
 /// Danh mục TÍNH NĂNG AI của hệ thống. Cấu hình đi theo tính năng chứ không theo nhà cung cấp: mỗi
 /// tính năng tự khai báo dùng hãng nào, model nào. Nhờ vậy đổi model cho riêng phần chấm điểm khách
 /// hàng là sửa một dòng cấu hình, không ảnh hưởng trợ lý tra cứu.
@@ -52,17 +34,17 @@ public static class AiFeatures
     /// <summary>Chatbot cho khách hàng cuối (giai đoạn 4) — chạy tiến trình riêng, bộ công cụ hẹp.</summary>
     public const string CustomerChat = "CustomerChat";
 
-    private static readonly Dictionary<string, (AiCapability Capability, string Label)> Catalog =
+    private static readonly Dictionary<string, string> Catalog =
         new(StringComparer.OrdinalIgnoreCase)
         {
-            [Assistant] = (AiCapability.Chat, "Trợ lý tra cứu"),
-            [Draft] = (AiCapability.Chat, "Soạn sẵn nội dung"),
-            [Classify] = (AiCapability.Chat, "Phân loại nhanh"),
-            [Summarize] = (AiCapability.Chat, "Tóm tắt bản ghi"),
-            [Scoring] = (AiCapability.Chat, "Chấm điểm khách hàng và cơ hội"),
-            [Embedding] = (AiCapability.Embedding, "Nhúng vector cho tra cứu tài liệu"),
-            [DocumentRead] = (AiCapability.DocumentRead, "Đọc giấy tờ (OCR)"),
-            [CustomerChat] = (AiCapability.Chat, "Chatbot khách hàng"),
+            [Assistant] = "Trợ lý tra cứu",
+            [Draft] = "Soạn sẵn nội dung",
+            [Classify] = "Phân loại nhanh",
+            [Summarize] = "Tóm tắt bản ghi",
+            [Scoring] = "Chấm điểm khách hàng và cơ hội",
+            [Embedding] = "Nhúng vector cho tra cứu tài liệu",
+            [DocumentRead] = "Đọc giấy tờ (OCR)",
+            [CustomerChat] = "Chatbot khách hàng",
         };
 
     /// <summary>Toàn bộ tên tính năng hợp lệ, theo thứ tự lộ trình triển khai.</summary>
@@ -89,11 +71,7 @@ public static class AiFeatures
     /// <summary>Tên này có phải một tính năng đã biết không (so sánh không phân biệt hoa thường).</summary>
     public static bool IsKnown(string name) => Catalog.ContainsKey(name);
 
-    /// <summary>Năng lực mà tính năng đòi hỏi ở nhà cung cấp. null nếu tên tính năng không tồn tại.</summary>
-    public static AiCapability? Requires(string name) =>
-        Catalog.TryGetValue(name, out var entry) ? entry.Capability : null;
-
     /// <summary>Nhãn tiếng Việt để đưa vào thông báo lỗi và màn hình quản trị.</summary>
     public static string Label(string name) =>
-        Catalog.TryGetValue(name, out var entry) ? entry.Label : name;
+        Catalog.TryGetValue(name, out var label) ? label : name;
 }

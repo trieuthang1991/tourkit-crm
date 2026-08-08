@@ -3,15 +3,18 @@ using System.Globalization;
 namespace TourKit.Ai.Abstractions;
 
 /// <summary>
-/// Cấu hình AI của toàn hệ thống, đọc từ section <c>Ai</c> trong appsettings.
+/// CẤU HÌNH AI — đọc từ section <c>Ai</c> trong appsettings.json.
 ///
-/// Hình dạng cố ý tách làm hai bảng: <see cref="Providers"/> khai báo NHÀ CUNG CẤP (khoá, địa chỉ,
-/// năng lực), <see cref="Features"/> khai báo TÍNH NĂNG dùng nhà cung cấp nào với model nào. Đổi model
-/// cho một tính năng là sửa một dòng; đổi hẳn nhà cung cấp cho mọi tính năng là sửa một chỗ.
+/// Chỉ chứa hai thứ, tách bạch:
+///   • <see cref="Providers"/> — CÁCH KẾT NỐI tới một hãng: giao thức, địa chỉ, khoá, hết giờ chờ.
+///   • <see cref="Features"/> — TÍNH NĂNG nào dùng hãng nào, model nào.
 ///
-/// KHÔNG để khoá thật trong appsettings.json — file đó nằm trong git. Đặt qua user-secrets khi chạy
-/// máy cá nhân (<c>dotnet user-secrets set "Ai:Providers:deepseek:ApiKey" "sk-..."</c>) hoặc biến môi
-/// trường khi chạy thật (<c>Ai__Providers__deepseek__ApiKey</c>).
+/// Model ghi thẳng MÃ THẬT của hãng (<c>deepseek-chat</c>, <c>deepseek-reasoner</c>), không qua bí
+/// danh trung gian: người cấu hình đọc một dòng là biết đang chạy bằng model gì, không phải lần theo
+/// một bảng ánh xạ ở chỗ khác.
+///
+/// LUẬT NGHIỆP VỤ (tiêu chí chấm điểm, trọng số, thang xếp nhóm) KHÔNG nằm ở đây — nó ở
+/// <c>ai-scoring.json</c>. Xem <see cref="AiScoringOptions"/> để biết vì sao tách.
 /// </summary>
 public sealed class AiOptions
 {
@@ -24,7 +27,7 @@ public sealed class AiOptions
     /// </summary>
     public bool Enabled { get; set; }
 
-    /// <summary>Nhà cung cấp theo khoá tự đặt ("deepseek", "claude", "fptai", "log").</summary>
+    /// <summary>Nhà cung cấp theo khoá tự đặt ("deepseek", "claude", "log").</summary>
     public IDictionary<string, AiProviderOptions> Providers { get; } =
         new Dictionary<string, AiProviderOptions>(StringComparer.OrdinalIgnoreCase);
 
@@ -36,9 +39,9 @@ public sealed class AiOptions
     public AiLimitOptions Limits { get; } = new();
 
     /// <summary>
-    /// Tra cấu hình một tính năng. Trả về <c>null</c> khi công tắc tổng tắt, tính năng tắt, tính năng
-    /// chưa khai báo, hoặc nhà cung cấp nó trỏ tới không tồn tại — nơi gọi chỉ cần kiểm tra null là đủ
-    /// để rẽ sang đường lui.
+    /// Tra cấu hình một tính năng. Trả <c>null</c> khi công tắc tổng tắt, tính năng tắt, tính năng
+    /// chưa khai báo, hoặc nhà cung cấp nó trỏ tới không tồn tại — nơi gọi chỉ cần kiểm tra null là
+    /// đủ để rẽ sang đường lui.
     /// </summary>
     public AiFeatureResolution? Resolve(string feature)
     {
@@ -96,7 +99,7 @@ public sealed class AiOptions
     {
         var missing = new List<string>();
 
-        foreach (var (name, settings) in Features)
+        foreach (var (_, settings) in Features)
         {
             if (!settings.Enabled || !Providers.TryGetValue(settings.Provider, out var provider))
             {
@@ -114,48 +117,6 @@ public sealed class AiOptions
         return missing;
     }
 
-    /// <summary>
-    /// Soát một bộ tiêu chí. Tổng trọng số PHẢI bằng 100 — lệch đi thì điểm tổng vẫn ra một con số
-    /// trông bình thường nhưng không còn nằm trên thang 100, và không ai phát hiện bằng mắt.
-    /// </summary>
-    private static void ValidateProfile(string path, AiScoringProfile profile, List<string> errors)
-    {
-        if (profile.Criteria.Count == 0)
-        {
-            errors.Add($"{path}:Criteria đang rỗng — phải có ít nhất một tiêu chí.");
-            return;
-        }
-
-        foreach (var c in profile.Criteria)
-        {
-            if (string.IsNullOrWhiteSpace(c.Key) || string.IsNullOrWhiteSpace(c.Label))
-            {
-                errors.Add($"{path}:Criteria có tiêu chí thiếu Key hoặc Label.");
-                return;
-            }
-
-            if (c.Weight is < 1 or > 100)
-            {
-                errors.Add($"{path}:Criteria \"{c.Key}\" có Weight = {c.Weight.ToString(CultureInfo.InvariantCulture)}, phải trong khoảng 1–100.");
-                return;
-            }
-        }
-
-        var duplicate = profile.Criteria.GroupBy(c => c.Key, StringComparer.OrdinalIgnoreCase)
-            .FirstOrDefault(g => g.Count() > 1);
-        if (duplicate is not null)
-        {
-            errors.Add($"{path}:Criteria có Key trùng nhau: \"{duplicate.Key}\".");
-            return;
-        }
-
-        var total = profile.Criteria.Sum(c => c.Weight);
-        if (total != 100)
-        {
-            errors.Add($"{path}:Criteria có tổng Weight = {total.ToString(CultureInfo.InvariantCulture)}, phải bằng đúng 100.");
-        }
-    }
-
     private static void ValidateProvider(string name, AiProviderOptions provider, List<string> errors)
     {
         var path = $"Ai:Providers:{name}";
@@ -164,19 +125,6 @@ public sealed class AiOptions
         {
             errors.Add(
                 $"{path}:Kind = \"{provider.Kind}\" không hợp lệ. Nhận: {string.Join(", ", AiProviderOptions.KnownKinds)}.");
-        }
-
-        if (provider.Capabilities.Count == 0)
-        {
-            errors.Add($"{path}:Capabilities đang rỗng — phải khai báo ít nhất một năng lực (Chat, Embedding, DocumentRead).");
-        }
-
-        foreach (var capability in provider.Capabilities)
-        {
-            if (!Enum.TryParse<AiCapability>(capability, ignoreCase: true, out _))
-            {
-                errors.Add($"{path}:Capabilities chứa \"{capability}\" không hợp lệ. Nhận: Chat, Embedding, DocumentRead.");
-            }
         }
 
         // Nhà cung cấp giả chỉ ghi log nên không có địa chỉ để gọi.
@@ -197,8 +145,7 @@ public sealed class AiOptions
     {
         var path = $"Ai:Features:{name}";
 
-        var required = AiFeatures.Requires(name);
-        if (required is null)
+        if (!AiFeatures.IsKnown(name))
         {
             errors.Add($"{path} không phải tính năng đã biết. Tên hợp lệ: {string.Join(", ", AiFeatures.All)}.");
             return;
@@ -225,34 +172,17 @@ public sealed class AiOptions
             return;
         }
 
-        if (!Providers.TryGetValue(settings.Provider, out var provider))
+        if (!Providers.ContainsKey(settings.Provider))
         {
             errors.Add(
                 $"{path}:Provider = \"{settings.Provider}\" không có trong Ai:Providers. " +
-                $"Đang khai báo: {(Providers.Count == 0 ? "(chưa có)" : string.Join(", ", Providers.Keys))}.");
+                $"Đang khai: {(Providers.Count == 0 ? "(chưa có)" : string.Join(", ", Providers.Keys))}.");
             return;
         }
 
-        if (!provider.Capabilities.Contains(required.Value.ToString(), StringComparer.OrdinalIgnoreCase))
-        {
-            errors.Add(
-                $"{path} cần năng lực {required.Value} nhưng nhà cung cấp \"{settings.Provider}\" chỉ khai báo " +
-                $"{string.Join(", ", provider.Capabilities)}.");
-        }
-
-        // Hãng đã khai danh mục thì model phải nằm trong đó — bắt lỗi gõ sai ngay lúc khởi động thay
-        // vì để người dùng bấm nút rồi nhận về một lỗi khó hiểu của hãng.
-        if (provider.Models.Count > 0
-            && !string.IsNullOrWhiteSpace(settings.Model)
-            && provider.ResolveModel(settings.Model) is null)
-        {
-            errors.Add(
-                $"{path}:Model = \"{settings.Model}\" không phải tên model nào của \"{settings.Provider}\". " +
-                $"Đang khai: {string.Join(", ", provider.Models.Select(m => $"{m.Key} → {m.Value}"))}.");
-        }
-
         // OCR gọi một dịch vụ REST cố định, không có "model" để chọn.
-        if (required.Value != AiCapability.DocumentRead && string.IsNullOrWhiteSpace(settings.Model))
+        if (!string.Equals(name, AiFeatures.DocumentRead, StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrWhiteSpace(settings.Model))
         {
             errors.Add($"{path}:Model đang trống — phải nêu rõ model, không có giá trị mặc định ngầm.");
         }
@@ -267,30 +197,16 @@ public sealed class AiOptions
         {
             errors.Add($"{path}:MaxToolRounds phải trong khoảng 1–10, đang là {settings.MaxToolRounds.ToString(CultureInfo.InvariantCulture)}.");
         }
-
-        foreach (var band in settings.Bands)
-        {
-            if (band.Min is < 0 or > 100 || string.IsNullOrWhiteSpace(band.Label))
-            {
-                errors.Add($"{path}:Bands có bậc không hợp lệ (Min phải 0–100 và Label không được trống).");
-                break;
-            }
-        }
-
-        // Không có bậc nào phủ điểm 0 thì một bản ghi điểm thấp sẽ không có nhãn nào để hiện.
-        if (settings.Bands.Count > 0 && !settings.Bands.Any(b => b.Min <= 0))
-        {
-            errors.Add($"{path}:Bands phải có một bậc bắt đầu từ 0, nếu không điểm thấp sẽ không rơi vào nhóm nào.");
-        }
-
-        foreach (var (profileName, profile) in settings.Profiles)
-        {
-            ValidateProfile($"{path}:Profiles:{profileName}", profile, errors);
-        }
     }
 }
 
-/// <summary>Một nhà cung cấp AI: gọi ở đâu, bằng khoá nào, làm được những việc gì.</summary>
+/// <summary>
+/// CÁCH KẾT NỐI tới một hãng AI.
+///
+/// Cố ý KHÔNG mô tả hãng đó làm được những việc gì: người cấu hình tự chọn hãng và model cho từng
+/// tính năng, nên một bảng "năng lực" song song chỉ lặp lại lựa chọn đó và sẽ lệch khỏi thực tế ngay
+/// lần đầu hãng ra thêm dịch vụ mới.
+/// </summary>
 public sealed class AiProviderOptions
 {
     /// <summary>Các giá trị <see cref="Kind"/> hợp lệ.</summary>
@@ -298,72 +214,25 @@ public sealed class AiProviderOptions
 
     /// <summary>
     /// Kiểu giao thức, quyết định adapter nào được dựng lên:
-    /// <c>OpenAiCompatible</c> (DeepSeek, OpenAI, Groq…), <c>Anthropic</c>, <c>Http</c> (REST riêng như
-    /// FPT.AI), <c>Log</c> (giả — chỉ ghi log, dùng khi chưa có khoá).
+    /// <c>OpenAiCompatible</c> (DeepSeek, OpenAI, Groq, Ollama…), <c>Anthropic</c>, <c>Http</c> (REST
+    /// riêng như FPT.AI), <c>Log</c> (giả — chỉ ghi log, dùng khi chưa có khoá).
     /// </summary>
     public string Kind { get; set; } = "OpenAiCompatible";
 
     /// <summary>Địa chỉ gốc của API. Bỏ trống khi <see cref="Kind"/> = <c>Log</c>.</summary>
     public string BaseUrl { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Khoá API. ĐỂ TRỐNG trong appsettings.json — nạp qua user-secrets hoặc biến môi trường
-    /// <c>Ai__Providers__&lt;tên&gt;__ApiKey</c>.
-    /// </summary>
+    /// <summary>Khoá API của hãng.</summary>
     public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>Hết giờ chờ cho một lần gọi.</summary>
     public int TimeoutSeconds { get; set; } = 60;
 
-    /// <summary>Năng lực hãng này phục vụ được: <c>Chat</c>, <c>Embedding</c>, <c>DocumentRead</c>.</summary>
-    public IList<string> Capabilities { get; } = [];
-
-    /// <summary>
-    /// Bảng đặt TÊN cho model: tên bạn tự đặt → mã thật của hãng.
-    ///
-    /// <code>
-    /// "Models": { "fast": "deepseek-chat", "reasoner": "deepseek-reasoner" }
-    /// </code>
-    ///
-    /// Tính năng khai <c>"Model": "fast"</c> thay vì mã thật. Nhờ vậy đổi model cho một VAI TRÒ là
-    /// sửa đúng một dòng ở đây, mọi tính năng đang dùng vai trò đó đổi theo — thay vì phải đi sửa
-    /// từng tính năng và chắc chắn sẽ sót một cái.
-    ///
-    /// Vẫn khai thẳng mã thật ở tính năng được. Bỏ trống bảng này = không giới hạn.
-    /// </summary>
-    public IDictionary<string, string> Models { get; } =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// Đổi tên gọi thành mã model thật. Nhận cả tên tự đặt lẫn mã thật. Trả <c>null</c> khi hãng đã
-    /// khai bảng mà giá trị không khớp gì cả.
-    /// </summary>
-    public string? ResolveModel(string? nameOrId)
-    {
-        if (string.IsNullOrWhiteSpace(nameOrId))
-        {
-            return null;
-        }
-
-        if (Models.Count == 0)
-        {
-            return nameOrId;
-        }
-
-        if (Models.TryGetValue(nameOrId, out var real))
-        {
-            return real;
-        }
-
-        // Khai thẳng mã thật cũng chấp nhận — không bắt ai phải đặt tên cho mọi model.
-        return Models.Values.Contains(nameOrId, StringComparer.OrdinalIgnoreCase) ? nameOrId : null;
-    }
-
     /// <summary>Nhà cung cấp giả (chỉ ghi log) — không cần khoá, không cần địa chỉ.</summary>
     public bool IsFake => string.Equals(Kind, "Log", StringComparison.OrdinalIgnoreCase);
 }
 
-/// <summary>Một tính năng AI dùng nhà cung cấp nào, model nào, với giới hạn nào.</summary>
+/// <summary>TÍNH NĂNG này dùng nhà cung cấp nào, model nào, với giới hạn nào.</summary>
 public sealed class AiFeatureOptions
 {
     /// <summary>Bật/tắt riêng tính năng này (vẫn phải bật cả <see cref="AiOptions.Enabled"/>).</summary>
@@ -372,7 +241,7 @@ public sealed class AiFeatureOptions
     /// <summary>Khoá của nhà cung cấp trong <see cref="AiOptions.Providers"/>.</summary>
     public string Provider { get; set; } = string.Empty;
 
-    /// <summary>Mã model chính xác của hãng, ví dụ <c>deepseek-chat</c>. Không có mặc định ngầm.</summary>
+    /// <summary>Mã model CHÍNH XÁC của hãng, ví dụ <c>deepseek-chat</c>. Không có mặc định ngầm.</summary>
     public string Model { get; set; } = string.Empty;
 
     /// <summary>Số token tối đa cho câu trả lời.</summary>
@@ -389,54 +258,7 @@ public sealed class AiFeatureOptions
 
     /// <summary>Riêng tính năng này chờ lâu hơn/ngắn hơn nhà cung cấp. 0 = theo nhà cung cấp.</summary>
     public int TimeoutSeconds { get; set; }
-
-    /// <summary>
-    /// Hướng dẫn NGHIỆP VỤ cho model, mỗi phần tử một dòng. Bỏ trống = dùng bản mặc định trong mã.
-    ///
-    /// Đây là phần người dùng được sửa: tiêu chí chấm điểm, giọng văn, điều cần chú ý. Phần khung —
-    /// vai trò và ĐỊNH DẠNG TRẢ VỀ — vẫn nằm trong mã và không sửa được từ cấu hình, vì sửa hỏng
-    /// định dạng thì hệ thống không đọc nổi câu trả lời và tính năng chết hẳn.
-    /// </summary>
-    public IList<string> Instructions { get; } = [];
-
-    /// <summary>
-    /// Ngưỡng xếp nhóm theo điểm. Bỏ trống = dùng thang mặc định. Chỉ có ý nghĩa với tính năng chấm điểm.
-    /// </summary>
-    public IList<AiScoreBand> Bands { get; } = [];
-
-    /// <summary>
-    /// Bộ tiêu chí chấm điểm theo LOẠI BẢN GHI ("Lead", "Customer"). Chỉ có ý nghĩa với tính năng
-    /// chấm điểm. Đánh giá khách hàng và đánh giá cơ hội nhìn vào những thứ khác nhau, nên mỗi loại
-    /// một bộ tiêu chí riêng.
-    /// </summary>
-    public IDictionary<string, AiScoringProfile> Profiles { get; } =
-        new Dictionary<string, AiScoringProfile>(StringComparer.OrdinalIgnoreCase);
 }
-
-/// <summary>Bộ tiêu chí chấm điểm cho một loại bản ghi.</summary>
-public sealed class AiScoringProfile
-{
-    /// <summary>Các tiêu chí. Tổng trọng số phải bằng 100.</summary>
-    public IList<AiScoreCriterion> Criteria { get; } = [];
-}
-
-/// <summary>
-/// Một tiêu chí chấm điểm.
-///
-/// Model chỉ chấm TỪNG tiêu chí 0–100; điểm tổng do hệ thống tính theo trọng số, không phải model tự
-/// nghĩ ra một con số. Nhờ vậy điểm giải thích được (thấy rõ mất điểm ở đâu), sửa được (đổi trọng số
-/// trong cấu hình), và thêm tiêu chí mới không phải đụng mã nguồn.
-/// </summary>
-/// <param name="Key">Mã máy, không dấu — model dùng để trả kết quả về đúng tiêu chí.</param>
-/// <param name="Label">Nhãn tiếng Việt hiện cho người dùng.</param>
-/// <param name="Weight">Trọng số, tổng các tiêu chí trong một bộ phải bằng 100.</param>
-/// <param name="Guide">Mô tả cho model biết điểm cao/thấp nghĩa là gì. Càng cụ thể càng ít lệch.</param>
-public sealed record AiScoreCriterion(string Key = "", string Label = "", int Weight = 0, string Guide = "");
-
-/// <summary>Một bậc trong thang xếp nhóm: điểm từ <paramref name="Min"/> trở lên thì mang nhãn này.</summary>
-/// <param name="Min">Điểm tối thiểu (0–100).</param>
-/// <param name="Label">Nhãn hiện cho người dùng, ví dụ "Nóng".</param>
-public sealed record AiScoreBand(int Min = 0, string Label = "");
 
 /// <summary>Hạn mức chống đốt tiền. 0 = không giới hạn.</summary>
 public sealed class AiLimitOptions
@@ -451,7 +273,7 @@ public sealed class AiLimitOptions
 /// <summary>Cấu hình đã tra xong cho một tính năng — nơi gọi không phải tự ghép Provider với Feature.</summary>
 /// <param name="Feature">Tên tính năng trong <see cref="AiFeatures.All"/>.</param>
 /// <param name="ProviderName">Khoá nhà cung cấp trong cấu hình.</param>
-/// <param name="Provider">Cấu hình nhà cung cấp.</param>
+/// <param name="Provider">Cách kết nối tới hãng.</param>
 /// <param name="Settings">Cấu hình riêng của tính năng.</param>
 public sealed record AiFeatureResolution(
     string Feature,
@@ -459,13 +281,9 @@ public sealed record AiFeatureResolution(
     AiProviderOptions Provider,
     AiFeatureOptions Settings)
 {
-    /// <summary>
-    /// Mã model THẬT để gửi cho hãng — đã đổi từ tên tự đặt ("fast") sang mã thật ("deepseek-chat").
-    /// Nơi gọi luôn dùng cái này, không dùng <c>Settings.Model</c>, nếu không sẽ gửi tên tự đặt lên
-    /// hãng và nhận về lỗi "model không tồn tại".
-    /// </summary>
-    public string Model => Provider.ResolveModel(Settings.Model) ?? Settings.Model;
+    /// <summary>Mã model gửi cho hãng.</summary>
+    public string Model => Settings.Model;
 
-    /// <summary>Hết giờ chờ thực tế: tính năng khai báo riêng thì theo tính năng, không thì theo nhà cung cấp.</summary>
+    /// <summary>Hết giờ chờ thực tế: tính năng khai riêng thì theo tính năng, không thì theo nhà cung cấp.</summary>
     public int TimeoutSeconds => Settings.TimeoutSeconds > 0 ? Settings.TimeoutSeconds : Provider.TimeoutSeconds;
 }
