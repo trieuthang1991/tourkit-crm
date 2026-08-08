@@ -50,6 +50,46 @@ Biến môi trường ghi đè theo quy ước .NET: `Section__Key` (2 gạch d�
 
 Cấu hình AI (trợ lý, soạn thảo, chấm điểm…): xem [`docs/ai-config.md`](docs/ai-config.md).
 
+### Đăng nhập bằng Google
+
+| Khoá | Ý nghĩa |
+|---|---|
+| `Authentication:Google:Enabled` | Bật/tắt. Mặc định `false`. |
+| `Authentication:Google:ClientId` | OAuth client ID lấy ở Google Cloud Console. |
+| `Authentication:Google:ClientSecret` | Client secret tương ứng. |
+
+Khoá thật đặt qua biến môi trường, đừng chép vào file theo git:
+
+```bash
+export Authentication__Google__Enabled=true
+export Authentication__Google__ClientId='...apps.googleusercontent.com'
+export Authentication__Google__ClientSecret='...'
+```
+
+Ở Google Cloud Console → *APIs & Services* → *Credentials* → *OAuth client ID* (loại **Web
+application**), khai **Authorized redirect URI** đúng bằng `https://<tên-miền>/signin-google`. Mỗi
+môi trường một dòng, kể cả `https://localhost:<cổng>/signin-google` khi chạy dev. Sai đường dẫn này
+thì Google trả lỗi `redirect_uri_mismatch` và người dùng không bao giờ quay về được.
+
+**Thiếu khoá thì sao?** Nút "Tiếp tục với Google" không hiện, đường dẫn `?handler=Google` trả 404,
+và đăng nhập bằng mật khẩu chạy bình thường. Ứng dụng KHÔNG chết lúc khởi động — máy dev không cần
+xin khoá Google vẫn làm việc được.
+
+**Vào lần đầu bằng Google.** Email đã có tài khoản → vào thẳng. Email chưa có → chuyển sang trang
+đăng ký để khai tên và mã doanh nghiệp, xong thì vào luôn. Tài khoản tạo theo đường này không có mật
+khẩu dùng được (hệ thống sinh chuỗi ngẫu nhiên rồi băm và vứt bỏ); muốn đăng nhập bằng mật khẩu thì
+dùng chức năng quên mật khẩu để đặt lần đầu.
+
+**Trước khi chạy migration trên CSDL đã có dữ liệu**: email nay là định danh toàn cục, mỗi email chỉ
+thuộc đúng một tài khoản trên toàn hệ thống. Dò trùng trước, vì chỉ mục duy nhất sẽ không tạo được
+nếu còn hai người chung email:
+
+```sql
+SELECT UPPER(TRIM("Email")) AS e, COUNT(*)
+FROM "Users" WHERE NOT "IsDeleted"
+GROUP BY 1 HAVING COUNT(*) > 1;
+```
+
 ### Database
 | Khoá | Ý nghĩa |
 |---|---|
