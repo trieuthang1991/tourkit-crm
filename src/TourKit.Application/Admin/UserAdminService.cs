@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using TourKit.Application.Auth;
 using TourKit.Application.Common;
 using TourKit.Shared.Entities;
 
@@ -15,7 +16,8 @@ public sealed class UserAdminService(
     IRepository<Position> positionRepo,
     IRepository<Role> roleRepo,
     IRepository<UserRole> userRoleRepo,
-    IRbacStore rbac) : IUserAdminService
+    IRbacStore rbac,
+    IUserIdentityStore identity) : IUserAdminService
 {
     public async Task<IReadOnlyList<UserListDto>> ListAsync()
     {
@@ -54,8 +56,7 @@ public sealed class UserAdminService(
         {
             throw new ValidationAppException("Mật khẩu không được trống.");
         }
-        // Email duy nhất TRONG tenant hiện tại (query filter đã lọc theo tenant).
-        if (await userRepo.AnyAsync(u => u.Email == email))
+        if (await identity.EmailExistsAsync(email))
         {
             throw new ConflictException("Email đã tồn tại trong hệ thống.");
         }

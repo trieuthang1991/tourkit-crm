@@ -25,7 +25,7 @@ public class SubscriptionTests : IClassFixture<AuthTestFactory>
         Assert.Equal(HttpStatusCode.Created, reg.StatusCode);
 
         var login = await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest(slug, $"admin@{slug}.com", "P@ssw0rd!"));
+            new LoginRequest($"admin@{slug}.com", "P@ssw0rd!"));
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var auth = await login.Content.ReadFromJsonAsync<AuthResponse>();
 

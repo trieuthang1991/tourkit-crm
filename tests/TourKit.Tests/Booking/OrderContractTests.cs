@@ -19,7 +19,7 @@ public class OrderContractTests : IClassFixture<AuthTestFactory>
         var (s, email, password) = await _factory.SeedTenantUserAsync(slug);
         var client = _factory.CreateClient();
         var auth = await (await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest(s, email, password))).Content.ReadFromJsonAsync<AuthResponse>();
+            new LoginRequest(email, password))).Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
         return client;
     }

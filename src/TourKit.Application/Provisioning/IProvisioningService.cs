@@ -1,6 +1,6 @@
 namespace TourKit.Application.Provisioning;
 
-public enum RegistrationError { None, SlugTaken, Invalid }
+public enum RegistrationError { None, SlugTaken, EmailTaken, Conflict, Invalid }
 
 public sealed record RegistrationOutcome(RegistrationError Error, RegistrationResponse? Response);
 

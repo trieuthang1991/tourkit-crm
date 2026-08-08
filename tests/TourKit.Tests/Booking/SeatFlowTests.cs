@@ -23,7 +23,7 @@ public class SeatFlowTests : IClassFixture<AuthTestFactory>
     private static async Task<AuthResponse> LoginAsync(HttpClient client, (string slug, string email, string password) seed)
     {
         var auth = await (await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest(seed.slug, seed.email, seed.password))).Content.ReadFromJsonAsync<AuthResponse>();
+            new LoginRequest(seed.email, seed.password))).Content.ReadFromJsonAsync<AuthResponse>();
         return auth!;
     }
 

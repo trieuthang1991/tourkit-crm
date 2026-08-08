@@ -12,25 +12,25 @@ public class CookieAuthServiceTests : IClassFixture<AuthTestFactory>
     [Fact]
     public async Task Valid_credentials_return_principal_with_claims()
     {
-        var (slug, email, password) = await _factory.SeedTenantUserAsync("cookie-ok");
+        var (_, email, password) = await _factory.SeedTenantUserAsync("cookie-ok");
         using var scope = _factory.Services.CreateScope();
         var svc = scope.ServiceProvider.GetRequiredService<ICookieAuthService>();
 
-        var principal = await svc.AuthenticateAsync(slug, email, password);
+        var principal = await svc.AuthenticateAsync($"  {email.ToUpperInvariant()}  ", password);
 
         Assert.NotNull(principal);
         Assert.False(string.IsNullOrEmpty(principal!.FindFirst("sub")?.Value));
-        Assert.False(string.IsNullOrEmpty(principal.FindFirst("tenant_id")?.Value));
+        Assert.False(string.IsNullOrWhiteSpace(principal.FindFirst("tenant_id")?.Value));
         Assert.Equal(email, principal.FindFirst("email")?.Value);
     }
 
     [Fact]
     public async Task Wrong_password_returns_null()
     {
-        var (slug, email, _) = await _factory.SeedTenantUserAsync("cookie-bad");
+        var (_, email, _) = await _factory.SeedTenantUserAsync("cookie-bad");
         using var scope = _factory.Services.CreateScope();
         var svc = scope.ServiceProvider.GetRequiredService<ICookieAuthService>();
 
-        Assert.Null(await svc.AuthenticateAsync(slug, email, "wrong-password"));
+        Assert.Null(await svc.AuthenticateAsync(email, "wrong-password"));
     }
 }

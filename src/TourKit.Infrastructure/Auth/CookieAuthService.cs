@@ -16,34 +16,47 @@ public sealed class CookieAuthService : ICookieAuthService
 {
     private readonly AppDbContext _db;
     private readonly AmbientTenantContext _tenant;
+    private readonly IUserIdentityStore _identities;
     private readonly IPasswordHasher _hasher;
 
-    public CookieAuthService(AppDbContext db, AmbientTenantContext tenant, IPasswordHasher hasher)
+    public CookieAuthService(
+        AppDbContext db,
+        AmbientTenantContext tenant,
+        IUserIdentityStore identities,
+        IPasswordHasher hasher)
     {
         _db = db;
         _tenant = tenant;
+        _identities = identities;
         _hasher = hasher;
     }
 
-    public async Task<ClaimsPrincipal?> AuthenticateAsync(string tenantSlug, string email, string password)
+    public async Task<ClaimsPrincipal?> AuthenticateAsync(string email, string password)
     {
-        // Tenant KHÔNG phải ITenantEntity → không bị query filter; tra thẳng theo slug.
-        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Slug == tenantSlug && !t.IsDeleted);
-        if (tenant is null)
+        var user = await _identities.FindByEmailAsync(email);
+        var passwordValid = PasswordLoginVerifier.Verify(_hasher, user, password);
+        if (user is null || !user.IsActive || !passwordValid)
         {
             return null;
         }
 
-        // Chưa có tenant context → IgnoreQueryFilters, lọc tay theo tenant + email (giống AuthService).
-        var user = await _db.Users.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Email == email && !u.IsDeleted);
-        if (user is null || !user.IsActive || !_hasher.Verify(user.PasswordHash, password))
+        if (!await _identities.TenantIsActiveAsync(user.TenantId))
         {
             return null;
         }
 
-        // Đã biết tenant → set ambient để LoadPermissions lọc RBAC đúng tenant.
-        _tenant.SetTenant(tenant.Id);
+        return await CreatePrincipalAsync(user.Id);
+    }
+
+    public async Task<ClaimsPrincipal?> CreatePrincipalAsync(Guid userId)
+    {
+        var user = await _identities.FindByIdAsync(userId);
+        if (user is null || !user.IsActive || !await _identities.TenantIsActiveAsync(user.TenantId))
+        {
+            return null;
+        }
+
+        _tenant.SetTenant(user.TenantId);
 
         var permissions = await _db.UserRoles.Where(ur => ur.UserId == user.Id)
             .Join(_db.RolePermissions, ur => ur.RoleId, rp => rp.RoleId, (ur, rp) => rp.PermissionId)

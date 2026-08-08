@@ -23,7 +23,7 @@ public class SubscriptionGuardTests : IClassFixture<AuthTestFactory>
     {
         var (s, email, pw) = await _factory.SeedTenantUserAsync(slug);
         var client = _factory.CreateClient();
-        var auth = await (await client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest(s, email, pw)))
+        var auth = await (await client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest(email, pw)))
             .Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
         return client;

@@ -28,7 +28,7 @@ public class RegistrationEndpointTests : IClassFixture<AuthTestFactory>
 
         // login bằng admin vừa tạo
         var login = await client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest("newco", "admin@newco.com", "P@ssw0rd!"));
+            new LoginRequest("admin@newco.com", "P@ssw0rd!"));
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var auth = await login.Content.ReadFromJsonAsync<AuthResponse>();
 
@@ -50,6 +50,18 @@ public class RegistrationEndpointTests : IClassFixture<AuthTestFactory>
 
         var again = await client.PostAsJsonAsync("/api/v1/registration", Sample("dupco"));
         Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+    }
+
+    [Fact]
+    public async Task Duplicate_email_in_different_company_returns_409()
+    {
+        var client = _factory.CreateClient();
+        (await client.PostAsJsonAsync("/api/v1/registration", Sample("company-a"))).EnsureSuccessStatusCode();
+
+        var duplicate = Sample("company-b") with { AdminEmail = " ADMIN@COMPANY-A.COM " };
+        var response = await client.PostAsJsonAsync("/api/v1/registration", duplicate);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]

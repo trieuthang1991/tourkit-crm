@@ -58,13 +58,8 @@
 
         <form id="formAuthentication" class="mb-3" method="post">
           <div class="mb-3">
-            <label asp-for="Input.TenantSlug" class="form-label">Mã doanh nghiệp</label>
-            <input asp-for="Input.TenantSlug" class="form-control" placeholder="Nhập mã doanh nghiệp" autofocus>
-            <span asp-validation-for="Input.TenantSlug" class="text-danger"></span>
-          </div>
-          <div class="mb-3">
             <label asp-for="Input.Email" class="form-label">Email</label>
-            <input asp-for="Input.Email" class="form-control" placeholder="Nhập email của bạn">
+            <input asp-for="Input.Email" class="form-control" placeholder="Nhập email của bạn" autofocus>
             <span asp-validation-for="Input.Email" class="text-danger"></span>
           </div>
           <div class="mb-3 form-password-toggle">

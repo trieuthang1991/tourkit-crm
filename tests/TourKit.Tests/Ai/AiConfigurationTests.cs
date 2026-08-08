@@ -47,13 +47,21 @@ public class AiConfigurationTests(AuthTestFactory factory) : IClassFixture<AuthT
         }
     }
 
+    /// <summary>
+    /// Trợ lý phải được khai ĐẦY ĐỦ, nhưng KHÔNG khẳng định là hãng nào: mỗi máy chọn nhà cung cấp
+    /// riêng (máy không có khoá thì trỏ vào "log"), và một bài kiểm thử ghi cứng tên hãng sẽ đỏ trên
+    /// máy người khác vì một lựa chọn hoàn toàn hợp lệ.
+    /// </summary>
     [Fact]
-    public void Tro_ly_dang_tro_vao_DeepSeek()
+    public void Tro_ly_duoc_khai_day_du()
     {
-        var settings = Options().Features[AiFeatures.Assistant];
+        var options = Options();
+        var settings = options.Features[AiFeatures.Assistant];
 
-        Assert.Equal("deepseek", settings.Provider);
+        Assert.False(string.IsNullOrWhiteSpace(settings.Provider));
         Assert.False(string.IsNullOrWhiteSpace(settings.Model));
+        Assert.True(options.Providers.ContainsKey(settings.Provider),
+            $"Assistant trỏ vào \"{settings.Provider}\" nhưng không có trong Ai:Providers.");
     }
 
     [Fact]

@@ -1,6 +1,8 @@
 using TourKit.Application.Admin;
+using TourKit.Application.Auth;
 using TourKit.Application.Common;
 using TourKit.Shared.Entities;
+using TourKit.Shared.Security;
 using TourKit.UnitTests.Catalog; // FakeRepository<T>
 
 namespace TourKit.UnitTests.Admin;
@@ -9,14 +11,37 @@ namespace TourKit.UnitTests.Admin;
 public class UserAdminServiceTests
 {
     private static UserAdminService NewService(
-        out FakeRepository<User> users, out FakeRepository<Department> departments, out FakeRepository<Position> positions)
+        out FakeRepository<User> users, out FakeRepository<Department> departments, out FakeRepository<Position> positions,
+        IUserIdentityStore? identity = null)
     {
         users = new FakeRepository<User>();
         departments = new FakeRepository<Department>();
         positions = new FakeRepository<Position>();
         return new UserAdminService(
             users, departments, positions,
-            new FakeRepository<Role>(), new FakeRepository<UserRole>(), new FakeRbacStore());
+            new FakeRepository<Role>(), new FakeRepository<UserRole>(), new FakeRbacStore(),
+            identity ?? new FakeUserIdentityStore());
+    }
+
+    private sealed class FakeUserIdentityStore(params string[] emails) : IUserIdentityStore
+    {
+        private readonly HashSet<string> _emails = emails.Select(UserEmail.Normalize).ToHashSet(StringComparer.Ordinal);
+
+        public Task<User?> FindByEmailAsync(string email, CancellationToken ct = default)
+            => Task.FromResult<User?>(null);
+        public Task<User?> FindByIdAsync(Guid userId, CancellationToken ct = default)
+            => Task.FromResult<User?>(null);
+        public Task<bool> EmailExistsAsync(string email, CancellationToken ct = default)
+            => Task.FromResult(_emails.Contains(UserEmail.Normalize(email)));
+        public Task<bool> TenantIsActiveAsync(Guid tenantId, CancellationToken ct = default)
+            => Task.FromResult(false);
+        public Task<UserExternalLogin?> FindExternalAsync(
+            string provider, string subject, CancellationToken ct = default)
+            => Task.FromResult<UserExternalLogin?>(null);
+        public Task<bool> HasExternalAsync(Guid userId, string provider, CancellationToken ct = default)
+            => Task.FromResult(false);
+        public Task AddExternalAsync(UserExternalLogin login, CancellationToken ct = default)
+            => Task.CompletedTask;
     }
 
     /// <summary>Fake <see cref="IRbacStore"/> áp thẳng thay-tập vào fake UserRole/RolePermission repo.</summary>
@@ -104,5 +129,19 @@ public class UserAdminServiceTests
 
         Assert.Single(list);
         Assert.Equal("Kế toán", list[0].DepartmentName);
+    }
+
+    [Fact]
+    public async Task CreateAsync_rejects_email_owned_by_another_tenant()
+    {
+        var identity = new FakeUserIdentityStore("member@other-company.test");
+        var service = NewService(out _, out _, out _, identity);
+
+        var error = await Assert.ThrowsAsync<ConflictException>(() => service.CreateAsync(
+            new CreateUserData(
+                " MEMBER@OTHER-COMPANY.TEST ", "New member", "already-hashed",
+                null, null, null, true)));
+
+        Assert.Contains("Email", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TourKit.Shared.Entities;
+using TourKit.Shared.Security;
 using TourKit.Shared.Tenancy;
 
 namespace TourKit.Infrastructure.Persistence;
@@ -19,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserExternalLogin> UserExternalLogins => Set<UserExternalLogin>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Tour> Tours => Set<Tour>();
     public DbSet<TourTemplate> TourTemplates => Set<TourTemplate>();
@@ -125,6 +127,13 @@ public class AppDbContext : DbContext
     private void ApplyTenantAndTimestamps()
     {
         var now = DateTimeOffset.UtcNow;
+
+        foreach (var entry in ChangeTracker.Entries<User>()
+                     .Where(e => e.State is EntityState.Added or EntityState.Modified))
+        {
+            entry.Entity.Email = entry.Entity.Email.Trim();
+            entry.Entity.NormalizedEmail = UserEmail.Normalize(entry.Entity.Email);
+        }
 
         foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
         {
