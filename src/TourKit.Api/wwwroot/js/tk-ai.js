@@ -210,3 +210,136 @@
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); }
   else { init(); }
 })();
+
+/* tk-ai-review.js (gộp trong tk-ai.js) — nút "AI đánh giá" gắn vào màn Cơ hội / Khách hàng.
+   Mount: <div data-ai-review data-entity="Lead" data-entity-id="..."></div>
+   Nhận định KHÔNG được lưu: mỗi lần bấm là một lần chấm trên dữ liệu mới nhất. Lưu lại thì hôm sau
+   người đọc thấy một điểm số cũ mà tưởng là hiện trạng. */
+(function () {
+  'use strict';
+
+  var API = '/danh-gia-ai';
+  var available = null;   // chưa hỏi máy chủ
+
+  function esc(s) { return window.tk ? tk.escape(s) : String(s == null ? '' : s); }
+
+  function bandClass(band) {
+    if (band === 'Nóng') { return 'bg-label-danger'; }
+    if (band === 'Ấm') { return 'bg-label-warning'; }
+    return 'bg-label-secondary';
+  }
+
+  function list(title, items, icon) {
+    if (!items || !items.length) { return ''; }
+    var html = '<div class="mt-3"><div class="fw-medium mb-1"><i class="ti ' + icon + ' me-1"></i>' + esc(title) + '</div><ul class="mb-0 ps-3">';
+    for (var i = 0; i < items.length; i++) { html += '<li>' + esc(items[i]) + '</li>'; }
+    return html + '</ul></div>';
+  }
+
+  // Bảng chi tiết từng tiêu chí: điểm tổng chỉ là con số, cái người dùng cần là MẤT ĐIỂM Ở ĐÂU.
+  // Không có bảng này thì nhận định của AI là một lời phán không cãi được, và cũng không sửa được.
+  function breakdown(items) {
+    if (!items || !items.length) { return ''; }
+
+    var html = '<div class="table-responsive mt-3"><table class="table table-sm table-borderless mb-0"><tbody>';
+    for (var i = 0; i < items.length; i++) {
+      var c = items[i];
+      var pct = Math.max(0, Math.min(100, Number(c.score) || 0));
+      html +=
+        '<tr>' +
+          '<td class="ps-0" style="width:38%">' + esc(c.label) +
+            '<span class="text-muted small"> · ' + esc(c.weight) + '%</span></td>' +
+          '<td style="width:22%">' +
+            '<div class="progress" style="height:.375rem"><div class="progress-bar" style="width:' + pct + '%"></div></div>' +
+          '</td>' +
+          '<td class="text-end pe-2 text-nowrap" style="width:8%">' + pct + '</td>' +
+          '<td class="text-muted small">' + esc(c.note) + '</td>' +
+        '</tr>';
+    }
+    return html + '</tbody></table></div>';
+  }
+
+  function render(box, d) {
+    box.innerHTML =
+      '<div class="d-flex align-items-center gap-3 mb-2">' +
+        '<div class="tk-ai-score">' + esc(d.score) + '</div>' +
+        '<div><span class="badge ' + bandClass(d.band) + '">' + esc(d.band) + '</span>' +
+        '<div class="text-muted small mt-1">điểm ưu tiên trên thang 100</div></div>' +
+      '</div>' +
+      '<div>' + esc(d.summary) + '</div>' +
+      breakdown(d.criteria) +
+      list('Rủi ro / còn thiếu', d.risks, 'ti-alert-triangle') +
+      list('Nên làm tiếp', d.nextActions, 'ti-arrow-right') +
+      '<div class="text-muted small mt-3">Điểm tổng tính theo trọng số các tiêu chí trong cấu hình, ' +
+      'không phải do AI tự phán. Nhận định không được lưu lại — bạn tự quyết định.</div>';
+  }
+
+  function mount(el) {
+    var entity = el.getAttribute('data-entity');
+    var id = el.getAttribute('data-entity-id');
+    if (!entity || !id) { return; }
+
+    el.innerHTML =
+      '<div class="card tk-ai-review-card">' +
+        '<div class="card-body">' +
+          '<div class="d-flex align-items-center justify-content-between">' +
+            '<h6 class="mb-0"><i class="ti ti-sparkles me-2 text-primary"></i>AI đánh giá</h6>' +
+            '<button type="button" class="btn btn-sm btn-label-primary" data-role="run">Chấm điểm</button>' +
+          '</div>' +
+          '<div data-role="out" class="mt-3 text-muted small">Bấm "Chấm điểm" để AI đọc hồ sơ và luồng trao đổi rồi đưa nhận định.</div>' +
+        '</div>' +
+      '</div>';
+
+    var btn = el.querySelector('[data-role="run"]');
+    var out = el.querySelector('[data-role="out"]');
+
+    btn.addEventListener('click', function () {
+      btn.disabled = true;
+      out.classList.remove('text-muted', 'small');
+      // Model suy luận mất khoảng 20 giây. Ba chấm im lặng suốt ngần ấy thời gian làm người dùng
+      // tưởng hỏng và bấm lại — nói rõ đang chờ gì và chờ bao lâu.
+      out.innerHTML =
+        '<div class="d-flex align-items-center gap-2">' +
+          '<span class="tk-ai-dots"><span></span><span></span><span></span></span>' +
+          '<span class="text-muted small">AI đang đọc hồ sơ và luồng trao đổi, thường mất khoảng 20 giây…</span>' +
+        '</div>';
+
+      var fd = new FormData();
+      fd.append('entity', entity);
+      fd.append('id', el.getAttribute('data-entity-id'));   // đọc lại: id có thể đổi khi mở bản ghi khác
+
+      tk.post(API + '?handler=Run', fd).then(function (res) {
+        btn.disabled = false;
+        if (!res || !res.isSuccess) {
+          out.innerHTML = '<span class="text-danger">' + esc((res && res.message) || 'Chưa đánh giá được.') + '</span>';
+          return;
+        }
+        render(out, res.data || {});
+      });
+    });
+  }
+
+  function init() {
+    var nodes = document.querySelectorAll('[data-ai-review]');
+    if (!nodes.length || !window.tk) { return; }
+
+    // Hỏi máy chủ MỘT lần: tính năng tắt thì không bày ra một cái nút bấm vào chỉ báo lỗi.
+    if (available === null) {
+      fetch(API + '?handler=Status')
+        .then(function (r) { return r.ok ? r.json() : { available: false }; })
+        .catch(function () { return { available: false }; })
+        .then(function (s) {
+          available = !!(s && s.available);
+          if (available) { nodes.forEach(mount); }
+        });
+    } else if (available) {
+      nodes.forEach(mount);
+    }
+  }
+
+  // Màn Cơ hội dựng offcanvas động nên mount lại được khi có nội dung mới.
+  window.tkAiReview = { mount: mount, init: init };
+
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); }
+  else { init(); }
+})();

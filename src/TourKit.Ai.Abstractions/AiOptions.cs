@@ -114,6 +114,48 @@ public sealed class AiOptions
         return missing;
     }
 
+    /// <summary>
+    /// Soát một bộ tiêu chí. Tổng trọng số PHẢI bằng 100 — lệch đi thì điểm tổng vẫn ra một con số
+    /// trông bình thường nhưng không còn nằm trên thang 100, và không ai phát hiện bằng mắt.
+    /// </summary>
+    private static void ValidateProfile(string path, AiScoringProfile profile, List<string> errors)
+    {
+        if (profile.Criteria.Count == 0)
+        {
+            errors.Add($"{path}:Criteria đang rỗng — phải có ít nhất một tiêu chí.");
+            return;
+        }
+
+        foreach (var c in profile.Criteria)
+        {
+            if (string.IsNullOrWhiteSpace(c.Key) || string.IsNullOrWhiteSpace(c.Label))
+            {
+                errors.Add($"{path}:Criteria có tiêu chí thiếu Key hoặc Label.");
+                return;
+            }
+
+            if (c.Weight is < 1 or > 100)
+            {
+                errors.Add($"{path}:Criteria \"{c.Key}\" có Weight = {c.Weight.ToString(CultureInfo.InvariantCulture)}, phải trong khoảng 1–100.");
+                return;
+            }
+        }
+
+        var duplicate = profile.Criteria.GroupBy(c => c.Key, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(g => g.Count() > 1);
+        if (duplicate is not null)
+        {
+            errors.Add($"{path}:Criteria có Key trùng nhau: \"{duplicate.Key}\".");
+            return;
+        }
+
+        var total = profile.Criteria.Sum(c => c.Weight);
+        if (total != 100)
+        {
+            errors.Add($"{path}:Criteria có tổng Weight = {total.ToString(CultureInfo.InvariantCulture)}, phải bằng đúng 100.");
+        }
+    }
+
     private static void ValidateProvider(string name, AiProviderOptions provider, List<string> errors)
     {
         var path = $"Ai:Providers:{name}";
@@ -214,6 +256,26 @@ public sealed class AiOptions
         {
             errors.Add($"{path}:MaxToolRounds phải trong khoảng 1–10, đang là {settings.MaxToolRounds.ToString(CultureInfo.InvariantCulture)}.");
         }
+
+        foreach (var band in settings.Bands)
+        {
+            if (band.Min is < 0 or > 100 || string.IsNullOrWhiteSpace(band.Label))
+            {
+                errors.Add($"{path}:Bands có bậc không hợp lệ (Min phải 0–100 và Label không được trống).");
+                break;
+            }
+        }
+
+        // Không có bậc nào phủ điểm 0 thì một bản ghi điểm thấp sẽ không có nhãn nào để hiện.
+        if (settings.Bands.Count > 0 && !settings.Bands.Any(b => b.Min <= 0))
+        {
+            errors.Add($"{path}:Bands phải có một bậc bắt đầu từ 0, nếu không điểm thấp sẽ không rơi vào nhóm nào.");
+        }
+
+        foreach (var (profileName, profile) in settings.Profiles)
+        {
+            ValidateProfile($"{path}:Profiles:{profileName}", profile, errors);
+        }
     }
 }
 
@@ -275,7 +337,54 @@ public sealed class AiFeatureOptions
 
     /// <summary>Riêng tính năng này chờ lâu hơn/ngắn hơn nhà cung cấp. 0 = theo nhà cung cấp.</summary>
     public int TimeoutSeconds { get; set; }
+
+    /// <summary>
+    /// Hướng dẫn NGHIỆP VỤ cho model, mỗi phần tử một dòng. Bỏ trống = dùng bản mặc định trong mã.
+    ///
+    /// Đây là phần người dùng được sửa: tiêu chí chấm điểm, giọng văn, điều cần chú ý. Phần khung —
+    /// vai trò và ĐỊNH DẠNG TRẢ VỀ — vẫn nằm trong mã và không sửa được từ cấu hình, vì sửa hỏng
+    /// định dạng thì hệ thống không đọc nổi câu trả lời và tính năng chết hẳn.
+    /// </summary>
+    public IList<string> Instructions { get; } = [];
+
+    /// <summary>
+    /// Ngưỡng xếp nhóm theo điểm. Bỏ trống = dùng thang mặc định. Chỉ có ý nghĩa với tính năng chấm điểm.
+    /// </summary>
+    public IList<AiScoreBand> Bands { get; } = [];
+
+    /// <summary>
+    /// Bộ tiêu chí chấm điểm theo LOẠI BẢN GHI ("Lead", "Customer"). Chỉ có ý nghĩa với tính năng
+    /// chấm điểm. Đánh giá khách hàng và đánh giá cơ hội nhìn vào những thứ khác nhau, nên mỗi loại
+    /// một bộ tiêu chí riêng.
+    /// </summary>
+    public IDictionary<string, AiScoringProfile> Profiles { get; } =
+        new Dictionary<string, AiScoringProfile>(StringComparer.OrdinalIgnoreCase);
 }
+
+/// <summary>Bộ tiêu chí chấm điểm cho một loại bản ghi.</summary>
+public sealed class AiScoringProfile
+{
+    /// <summary>Các tiêu chí. Tổng trọng số phải bằng 100.</summary>
+    public IList<AiScoreCriterion> Criteria { get; } = [];
+}
+
+/// <summary>
+/// Một tiêu chí chấm điểm.
+///
+/// Model chỉ chấm TỪNG tiêu chí 0–100; điểm tổng do hệ thống tính theo trọng số, không phải model tự
+/// nghĩ ra một con số. Nhờ vậy điểm giải thích được (thấy rõ mất điểm ở đâu), sửa được (đổi trọng số
+/// trong cấu hình), và thêm tiêu chí mới không phải đụng mã nguồn.
+/// </summary>
+/// <param name="Key">Mã máy, không dấu — model dùng để trả kết quả về đúng tiêu chí.</param>
+/// <param name="Label">Nhãn tiếng Việt hiện cho người dùng.</param>
+/// <param name="Weight">Trọng số, tổng các tiêu chí trong một bộ phải bằng 100.</param>
+/// <param name="Guide">Mô tả cho model biết điểm cao/thấp nghĩa là gì. Càng cụ thể càng ít lệch.</param>
+public sealed record AiScoreCriterion(string Key = "", string Label = "", int Weight = 0, string Guide = "");
+
+/// <summary>Một bậc trong thang xếp nhóm: điểm từ <paramref name="Min"/> trở lên thì mang nhãn này.</summary>
+/// <param name="Min">Điểm tối thiểu (0–100).</param>
+/// <param name="Label">Nhãn hiện cho người dùng, ví dụ "Nóng".</param>
+public sealed record AiScoreBand(int Min = 0, string Label = "");
 
 /// <summary>Hạn mức chống đốt tiền. 0 = không giới hạn.</summary>
 public sealed class AiLimitOptions

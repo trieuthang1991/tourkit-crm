@@ -51,6 +51,7 @@ public static class AiStartup
         Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions
             .TryAddSingleton(builder.Services, TimeProvider.System);
         builder.Services.AddScoped<AiAssistant>();
+        builder.Services.AddScoped<AiReviewer>();
     }
 
     private static void GuardApiKeys(WebApplicationBuilder builder, AiOptions options)
@@ -60,9 +61,8 @@ public static class AiStartup
         {
             throw new InvalidOperationException(
                 $"Ai:Enabled = true nhưng chưa có khoá cho: {string.Join(", ", missing)}." + Environment.NewLine +
-                "Đặt khoá ở NGOÀI appsettings.json (file này nằm trong git):" + Environment.NewLine +
-                $"  - máy cá nhân: dotnet user-secrets set \"Ai:Providers:{missing[0]}:ApiKey\" \"<khoá>\" --project src/TourKit.Api" + Environment.NewLine +
-                $"  - máy chạy thật: biến môi trường Ai__Providers__{missing[0]}__ApiKey" + Environment.NewLine +
+                $"Điền Ai:Providers:{missing[0]}:ApiKey trong src/TourKit.Api/appsettings.json" + Environment.NewLine +
+                $"(hoặc biến môi trường Ai__Providers__{missing[0]}__ApiKey)." + Environment.NewLine +
                 "Hoặc tạm đổi Provider của tính năng sang \"log\" để chạy không cần khoá.");
         }
 

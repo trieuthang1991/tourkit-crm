@@ -47,7 +47,7 @@ cấp nào — thà hỏng lúc deploy còn hơn âm thầm chạy với trợ l
 | `Draft` | Soạn sẵn nội dung để người dùng sửa rồi lưu | Chat | Chưa |
 | `Classify` | Phân loại / gán nhãn nhanh — nên trỏ model rẻ nhất | Chat | Chưa |
 | `Summarize` | Tóm tắt một bản ghi nghiệp vụ | Chat | Chưa |
-| `Scoring` | Chấm điểm khách hàng và cơ hội — nên dùng model suy luận | Chat | Chưa |
+| `Scoring` | Chấm điểm khách hàng và cơ hội | Chat | **Rồi** |
 | `Embedding` | Nhúng vector cho tra cứu tài liệu (giai đoạn 3) | Embedding | Chưa |
 | `DocumentRead` | Đọc giấy tờ khách gửi vào (OCR) | DocumentRead | Chưa |
 | `CustomerChat` | Chatbot khách hàng (giai đoạn 4) | Chat | Chưa |
@@ -61,6 +61,44 @@ Viết xong một tính năng thì thêm tên nó vào `AiFeatures.Implemented` 
 
 Thêm tính năng mới: thêm hằng số trong `AiFeatures` **và** một mục trong `appsettings.json`. Thiếu một
 trong hai thì hệ thống báo lỗi lúc khởi động chứ không im lặng bỏ qua.
+
+## Tiêu chí chấm điểm (tính năng `Scoring`)
+
+Đây là phần nghiệp vụ, nằm hết trong JSON để sửa được mà không đụng mã nguồn.
+
+```jsonc
+"Scoring": {
+  "Bands": [ {"Min": 80, "Label": "Nóng"}, {"Min": 50, "Label": "Ấm"}, {"Min": 0, "Label": "Nguội"} ],
+  "Profiles": {
+    "Customer": {
+      "Criteria": [
+        { "Key": "gia_tri", "Label": "Giá trị và tiềm năng chi tiêu", "Weight": 30, "Guide": "..." }
+      ]
+    }
+  }
+}
+```
+
+**Điểm tổng do HỆ THỐNG tính, không phải AI tự phán.** Model chỉ chấm từng tiêu chí 0–100; điểm tổng
+là trung bình có trọng số. Nhờ vậy điểm giải thích được (giao diện hiện rõ mất điểm ở tiêu chí nào),
+sửa được (đổi `Weight`), và thêm tiêu chí mới chỉ là thêm một mục vào `Criteria`.
+
+| Khoá | Ý nghĩa |
+|---|---|
+| `Bands` | Ngưỡng xếp nhóm. Phải có một bậc `Min: 0`, nếu không điểm thấp không rơi vào nhóm nào. |
+| `Profiles.<Loại>` | Bộ tiêu chí cho `Lead` (cơ hội) và `Customer` (khách hàng). Loại chưa khai thì không chấm. |
+| `Key` | Mã máy, không dấu. Model dùng để trả kết quả về đúng tiêu chí. |
+| `Weight` | **Tổng các tiêu chí trong một bộ phải bằng đúng 100** — sai là ứng dụng không khởi động. |
+| `Guide` | Mô tả cho model biết điểm cao/thấp nghĩa là gì. Càng cụ thể càng ít lệch giữa hai lần chạy. |
+
+Model bỏ sót một tiêu chí thì tiêu chí đó tính 0 và **vẫn nằm trong mẫu số** — bỏ nó ra sẽ làm điểm
+tổng tăng lên đúng vào lúc model trả lời thiếu.
+
+Phần KHUNG của prompt (vai trò, định dạng JSON trả về) cố ý **không** đưa ra cấu hình: sửa hỏng định
+dạng thì hệ thống không đọc nổi câu trả lời và tính năng chết hẳn.
+
+`deepseek-reasoner` cho nhận định sâu hơn nhưng mất ~20 giây một lần chấm. Cần nhanh thì đổi `Model`
+sang `deepseek-chat` (~4 giây) — bộ tiêu chí đã gánh phần lớn việc suy luận.
 
 ## Thông số mỗi tính năng
 

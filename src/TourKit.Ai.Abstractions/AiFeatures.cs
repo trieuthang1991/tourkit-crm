@@ -81,7 +81,7 @@ public static class AiFeatures
     /// nào thì thêm tên nó vào đây — đúng một dòng.
     /// </summary>
     public static IReadOnlySet<string> Implemented { get; } =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Assistant };
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Assistant, Scoring };
 
     /// <summary>Tính năng này đã có code chạy chưa.</summary>
     public static bool IsImplemented(string name) => Implemented.Contains(name);

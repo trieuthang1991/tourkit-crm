@@ -28,6 +28,8 @@ public static class RouteMap
         ("/Comments/Index", "binh-luan"),
         // Handler JSON của trợ lý AI (khung chat là panel trượt do tk-ai.js dựng trên mọi trang).
         ("/Ai/Chat", "tro-ly"),
+        // Handler JSON chấm điểm khách hàng / cơ hội — nút gọi nằm trong màn tương ứng.
+        ("/Ai/Review", "danh-gia-ai"),
 
         // --- Nhà cung cấp ---
         ("/Providers/Index", "nha-cung-cap"),

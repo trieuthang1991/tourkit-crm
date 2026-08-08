@@ -156,6 +156,7 @@
          An toàn khi ở trong <form> vì luồng bình luận không tự dựng <form> và nút Gửi là
          type="button" — nó không kích hoạt form cha. Textarea không có name nên cũng không bị
          gửi kèm khi lưu cơ hội. Id đổi theo từng cơ hội nên gắn lúc mở offcanvas (xem oc.open). *@
+      <div id="lead-review" class="tk-oc-comments d-none" data-ai-review data-entity="Lead"></div>
       <div id="lead-comments" class="tk-oc-comments d-none" data-comments data-entity="Lead"></div>
       </div>
       <div class="tk-oc-actions">
@@ -308,15 +309,21 @@
           ocForm.open(row);
           var box = document.getElementById('lead-comments');
           var id = row && row.id;
+          var review = document.getElementById('lead-review');
           box.classList.toggle('d-none', !id);
+          review.classList.toggle('d-none', !id);
           if (id) {
             box.dataset.entityId = id;
             tk.comments.mount(box);
+            review.dataset.entityId = id;
+            if (window.tkAiReview) { window.tkAiReview.init(); }
           } else {
             // Xoá hẳn id cũ, đừng chỉ ẩn đi: để sót thì lần gắn sau (hoặc vòng quét lúc tải trang)
             // sẽ hiện trao đổi của cơ hội TRƯỚC ĐÓ trên form đang tạo mới.
             delete box.dataset.entityId;
             box.innerHTML = '';
+            delete review.dataset.entityId;
+            review.innerHTML = '';
           }
         }
       };
