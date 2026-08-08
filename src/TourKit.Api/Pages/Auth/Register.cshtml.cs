@@ -58,6 +58,12 @@ public class RegisterModel : PageModel
             case RegistrationError.SlugTaken:
                 Error = "Mã doanh nghiệp đã được sử dụng, vui lòng chọn mã khác.";
                 return Page();
+            case RegistrationError.EmailTaken:
+                Error = "Email đã được sử dụng, vui lòng đăng nhập hoặc dùng email khác.";
+                return Page();
+            case RegistrationError.Conflict:
+                Error = "Thông tin đăng ký vừa được sử dụng. Vui lòng kiểm tra lại và thử lại.";
+                return Page();
             default:
                 Error = "Thiếu thông tin hoặc mật khẩu dưới 8 ký tự.";
                 return Page();

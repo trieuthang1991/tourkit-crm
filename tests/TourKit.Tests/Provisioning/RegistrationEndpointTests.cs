@@ -53,6 +53,18 @@ public class RegistrationEndpointTests : IClassFixture<AuthTestFactory>
     }
 
     [Fact]
+    public async Task Duplicate_email_in_different_company_returns_409()
+    {
+        var client = _factory.CreateClient();
+        (await client.PostAsJsonAsync("/api/v1/registration", Sample("company-a"))).EnsureSuccessStatusCode();
+
+        var duplicate = Sample("company-b") with { AdminEmail = " ADMIN@COMPANY-A.COM " };
+        var response = await client.PostAsJsonAsync("/api/v1/registration", duplicate);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Short_password_returns_400()
     {
         var client = _factory.CreateClient();

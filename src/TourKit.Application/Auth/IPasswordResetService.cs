@@ -7,8 +7,8 @@ namespace TourKit.Application.Auth;
 /// </summary>
 public interface IPasswordResetService
 {
-    /// <summary>Gửi link đặt lại. LUÔN trả về như nhau để không lộ email/tenant nào tồn tại.</summary>
-    Task SendResetLinkAsync(string tenantSlug, string email, Func<string, string> buildUrl, CancellationToken ct = default);
+    /// <summary>Gửi link đặt lại. LUÔN trả về như nhau để không lộ email nào tồn tại.</summary>
+    Task SendResetLinkAsync(string email, Func<string, string> buildUrl, CancellationToken ct = default);
 
     /// <summary>Đặt mật khẩu mới từ token. Trả về null nếu OK, ngược lại là thông báo lỗi.</summary>
     Task<string?> ResetAsync(string token, string newPassword, CancellationToken ct = default);

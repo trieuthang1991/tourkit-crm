@@ -8,6 +8,7 @@ using TourKit.Application.Auth;
 using TourKit.Application.Notifications;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Infrastructure.Tenancy;
+using TourKit.Shared.Security;
 
 namespace TourKit.Infrastructure.Auth;
 
@@ -41,17 +42,18 @@ public sealed class PasswordResetService : IPasswordResetService
     private static string Stamp(string passwordHash)
         => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(passwordHash)))[..16];
 
-    public async Task SendResetLinkAsync(string tenantSlug, string email, Func<string, string> buildUrl, CancellationToken ct = default)
+    public async Task SendResetLinkAsync(string email, Func<string, string> buildUrl, CancellationToken ct = default)
     {
-        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Slug == tenantSlug && !t.IsDeleted, ct);
-        if (tenant is null)
+        var normalizedEmail = UserEmail.Normalize(email);
+        var user = await _db.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail && !u.IsDeleted, ct);
+        if (user is null || !user.IsActive)
         {
             return;
         }
 
-        var user = await _db.Users.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Email == email && !u.IsDeleted, ct);
-        if (user is null || !user.IsActive)
+        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Id == user.TenantId && !t.IsDeleted, ct);
+        if (tenant is null)
         {
             return;
         }

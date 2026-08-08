@@ -17,8 +17,6 @@ public class ForgotPasswordModel : PageModel
 
     public sealed class InputModel
     {
-        [Required(ErrorMessage = "Bắt buộc nhập mã doanh nghiệp")] public string TenantSlug { get; set; } = "";
-
         [Required(ErrorMessage = "Bắt buộc nhập email")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ")]
         public string Email { get; set; } = "";
@@ -33,10 +31,10 @@ public class ForgotPasswordModel : PageModel
             return Page();
         }
 
-        await _svc.SendResetLinkAsync(Input.TenantSlug.Trim(), Input.Email.Trim(),
+        await _svc.SendResetLinkAsync(Input.Email,
             token => Url.Page("/Auth/ResetPassword", pageHandler: null, values: new { token }, protocol: Request.Scheme)!);
 
-        // Luôn báo cùng một thông điệp — không tiết lộ email/mã doanh nghiệp nào tồn tại.
+        // Luôn báo cùng một thông điệp — không tiết lộ email nào tồn tại.
         Sent = true;
         return Page();
     }

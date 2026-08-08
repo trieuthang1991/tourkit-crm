@@ -69,4 +69,17 @@ public class RazorPagesSmokeTests : IClassFixture<AuthTestFactory>
         Assert.Contains("M-Travel", html, StringComparison.Ordinal);
         Assert.Contains("/img/illustrations/auth-register.webp", html, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task Forgot_password_page_asks_for_email_only()
+    {
+        var client = _factory.CreateClient();
+        var res = await client.GetAsync("/quen-mat-khau");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        var html = await res.Content.ReadAsStringAsync();
+        Assert.Contains("Input.Email", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Input.TenantSlug", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Mã doanh nghiệp", html, StringComparison.OrdinalIgnoreCase);
+    }
 }
