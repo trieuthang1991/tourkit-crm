@@ -240,6 +240,17 @@ public sealed class AiOptions
                 $"{string.Join(", ", provider.Capabilities)}.");
         }
 
+        // Hãng đã khai danh mục thì model phải nằm trong đó — bắt lỗi gõ sai ngay lúc khởi động thay
+        // vì để người dùng bấm nút rồi nhận về một lỗi khó hiểu của hãng.
+        if (provider.Models.Count > 0
+            && !string.IsNullOrWhiteSpace(settings.Model)
+            && !provider.Models.Contains(settings.Model, StringComparer.OrdinalIgnoreCase))
+        {
+            errors.Add(
+                $"{path}:Model = \"{settings.Model}\" không có trong danh mục model của \"{settings.Provider}\". " +
+                $"Đang khai: {string.Join(", ", provider.Models)}.");
+        }
+
         // OCR gọi một dịch vụ REST cố định, không có "model" để chọn.
         if (required.Value != AiCapability.DocumentRead && string.IsNullOrWhiteSpace(settings.Model))
         {
@@ -306,6 +317,16 @@ public sealed class AiProviderOptions
 
     /// <summary>Năng lực hãng này phục vụ được: <c>Chat</c>, <c>Embedding</c>, <c>DocumentRead</c>.</summary>
     public IList<string> Capabilities { get; } = [];
+
+    /// <summary>
+    /// Các mã model của hãng này được phép dùng. Bỏ trống = không giới hạn, gõ mã nào cũng được
+    /// (dùng khi hãng vừa ra model mới mà chưa kịp khai).
+    ///
+    /// Khai ra để gõ sai mã bị bắt ngay lúc khởi động, thay vì lúc người dùng bấm nút rồi nhận về một
+    /// lỗi khó hiểu của hãng. Nên dùng model nào cho việc gì thì xem docs/ai-config.md — đó là tri
+    /// thức cho người đọc, không phải dữ liệu cho máy chạy.
+    /// </summary>
+    public IList<string> Models { get; } = [];
 
     /// <summary>Nhà cung cấp giả (chỉ ghi log) — không cần khoá, không cần địa chỉ.</summary>
     public bool IsFake => string.Equals(Kind, "Log", StringComparison.OrdinalIgnoreCase);

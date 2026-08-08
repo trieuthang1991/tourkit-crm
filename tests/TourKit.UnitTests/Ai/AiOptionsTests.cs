@@ -147,6 +147,40 @@ public class AiOptionsTests
         Assert.Contains(options.Validate(), e => e.Contains("BaseUrl", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Hãng đã khai danh mục thì mã model phải nằm trong đó. Không soát thì mã sai chỉ lộ ra lúc
+    /// người dùng bấm nút và nhận về một lỗi khó hiểu của hãng.
+    /// </summary>
+    [Fact]
+    public void Model_ngoai_danh_muc_cua_hang_bi_bat()
+    {
+        var options = WithDeepSeek(s => s.Model = "deepseek-chatt");
+        options.Providers["deepseek"].Models.Add("deepseek-chat");
+
+        var errors = options.Validate();
+
+        Assert.Contains(errors, e => e.Contains("deepseek-chatt", StringComparison.Ordinal)
+                                  && e.Contains("không có trong danh mục model", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Model_trong_danh_muc_thi_hop_le()
+    {
+        var options = WithDeepSeek();
+        options.Providers["deepseek"].Models.Add("deepseek-chat");
+
+        Assert.Empty(options.Validate());
+    }
+
+    /// <summary>Chưa khai danh mục = không giới hạn — để dùng được model mới mà chưa kịp cập nhật.</summary>
+    [Fact]
+    public void Hang_chua_khai_danh_muc_thi_go_ma_nao_cung_duoc()
+    {
+        var options = WithDeepSeek(s => s.Model = "model-vua-ra-mat");
+
+        Assert.Empty(options.Validate());
+    }
+
     [Fact]
     public void Nang_luc_go_sai_bi_bat()
     {

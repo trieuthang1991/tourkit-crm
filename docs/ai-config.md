@@ -100,6 +100,32 @@ dạng thì hệ thống không đọc nổi câu trả lời và tính năng ch
 `deepseek-reasoner` cho nhận định sâu hơn nhưng mất ~20 giây một lần chấm. Cần nhanh thì đổi `Model`
 sang `deepseek-chat` (~4 giây) — bộ tiêu chí đã gánh phần lớn việc suy luận.
 
+## Chọn model cho từng việc
+
+Mỗi hãng khai các mã model được phép dùng. Chọn model cho một tính năng là sửa
+`Ai:Features:<Tên>:Model` bằng một mã trong danh sách của hãng đó.
+
+```jsonc
+"deepseek": {
+  "Capabilities": [ "Chat" ],
+  "Models": [ "deepseek-chat", "deepseek-reasoner" ]
+}
+```
+
+**Gõ sai mã thì ứng dụng không khởi động**, kèm danh sách mã hợp lệ. Không có bước soát này thì mã sai
+chỉ lộ ra lúc người dùng bấm nút và nhận về một lỗi khó hiểu của hãng.
+
+Bỏ trống danh sách = không giới hạn — dùng khi hãng vừa ra model mới mà chưa kịp khai.
+
+Nên dùng model nào cho việc gì (tri thức cho người đọc, không phải dữ liệu cho máy):
+
+| Việc | Nên dùng | Vì sao |
+|---|---|---|
+| Trợ lý tra cứu | `deepseek-chat` | Cần gọi công cụ và trả lời nhanh; model suy luận làm người dùng chờ vô lý |
+| Soạn thảo, tóm tắt | `deepseek-chat` | Việc diễn đạt, không cần lập luận nhiều bước |
+| Phân loại, gán nhãn | model rẻ nhất của hãng | Việc đơn giản, chạy số lượng lớn |
+| Chấm điểm, phân tích | `deepseek-reasoner` | Cần lập luận; đổi lại chậm hơn ~5 lần (~20 giây một lượt) |
+
 ## Thông số mỗi tính năng
 
 | Khoá | Ghi chú |
