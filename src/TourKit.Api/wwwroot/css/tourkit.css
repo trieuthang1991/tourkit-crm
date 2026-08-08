@@ -526,3 +526,5 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
   font-size: 1.25rem; font-weight: 600;
   background: var(--bs-primary); color: #fff; flex: 0 0 auto;
 }
+/* Văn bản AI sinh ra (tóm tắt, tin nhắn nháp) — giữ khoảng thở giữa các dòng cho dễ đọc. */
+.tk-ai-text { line-height: 1.6; white-space: normal; }

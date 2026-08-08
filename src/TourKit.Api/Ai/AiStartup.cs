@@ -53,7 +53,9 @@ public static class AiStartup
         Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions
             .TryAddSingleton(builder.Services, TimeProvider.System);
         builder.Services.AddScoped<AiAssistant>();
+        builder.Services.AddScoped<AiRecordSheet>();
         builder.Services.AddScoped<AiReviewer>();
+        builder.Services.AddScoped<AiComposer>();
     }
 
     /// <summary>

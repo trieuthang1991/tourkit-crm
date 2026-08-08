@@ -211,7 +211,7 @@
   else { init(); }
 })();
 
-/* tk-ai-review.js (gộp trong tk-ai.js) — nút "AI đánh giá" gắn vào màn Cơ hội / Khách hàng.
+/* Thẻ trợ lý AI trên một bản ghi (gộp trong tk-ai.js) — chấm điểm, tóm tắt, soạn tin.
    Mount: <div data-ai-review data-entity="Lead" data-entity-id="..."></div>
    Nhận định KHÔNG được lưu: mỗi lần bấm là một lần chấm trên dữ liệu mới nhất. Lưu lại thì hôm sau
    người đọc thấy một điểm số cũ mà tưởng là hiện trạng. */
@@ -219,7 +219,7 @@
   'use strict';
 
   var API = '/danh-gia-ai';
-  var available = null;   // chưa hỏi máy chủ
+  var available = null;   // null = chưa hỏi máy chủ; sau đó là { review, summary, draft }
 
   function esc(s) { return window.tk ? tk.escape(s) : String(s == null ? '' : s); }
 
@@ -276,47 +276,85 @@
 
   function mount(el) {
     var entity = el.getAttribute('data-entity');
-    var id = el.getAttribute('data-entity-id');
-    if (!entity || !id) { return; }
+    if (!entity || !el.getAttribute('data-entity-id')) { return; }
+
+    // Ba việc AI làm được trên một bản ghi, gộp vào MỘT thẻ. Rải ba nút ở ba chỗ trên màn hình thì
+    // người dùng phải nhớ cái nào ở đâu; gộp lại thì chỉ cần nhớ "chỗ này là AI".
+    var actions = [
+      { key: 'Review',  label: 'Chấm điểm',   icon: 'ti-target',  wait: 'AI đang đọc hồ sơ và luồng trao đổi, thường mất khoảng 20 giây…' },
+      { key: 'Summary', label: 'Tóm tắt',     icon: 'ti-list',    wait: 'AI đang đọc diễn biến…' },
+      { key: 'Draft',   label: 'Soạn tin',    icon: 'ti-message', wait: 'AI đang soạn tin nhắn…' }
+    ].filter(function (a) { return available[a.key.toLowerCase()] !== false; });
+
+    if (!actions.length) { return; }
+
+    var buttons = actions.map(function (a) {
+      return '<button type="button" class="btn btn-sm btn-label-primary" data-act="' + a.key + '">' +
+             '<i class="ti ' + a.icon + ' me-1"></i>' + esc(a.label) + '</button>';
+    }).join('');
 
     el.innerHTML =
       '<div class="card tk-ai-review-card">' +
         '<div class="card-body">' +
-          '<div class="d-flex align-items-center justify-content-between">' +
-            '<h6 class="mb-0"><i class="ti ti-sparkles me-2 text-primary"></i>AI đánh giá</h6>' +
-            '<button type="button" class="btn btn-sm btn-label-primary" data-role="run">Chấm điểm</button>' +
+          '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2">' +
+            '<h6 class="mb-0"><i class="ti ti-sparkles me-2 text-primary"></i>Trợ lý AI</h6>' +
+            '<div class="d-flex gap-2">' + buttons + '</div>' +
           '</div>' +
-          '<div data-role="out" class="mt-3 text-muted small">Bấm "Chấm điểm" để AI đọc hồ sơ và luồng trao đổi rồi đưa nhận định.</div>' +
+          '<div data-role="out" class="mt-3 text-muted small">' +
+            'AI đọc hồ sơ và luồng trao đổi của bản ghi này. Kết quả không được lưu — bạn tự quyết định.' +
+          '</div>' +
         '</div>' +
       '</div>';
 
-    var btn = el.querySelector('[data-role="run"]');
     var out = el.querySelector('[data-role="out"]');
 
-    btn.addEventListener('click', function () {
-      btn.disabled = true;
-      out.classList.remove('text-muted', 'small');
-      // Model suy luận mất khoảng 20 giây. Ba chấm im lặng suốt ngần ấy thời gian làm người dùng
-      // tưởng hỏng và bấm lại — nói rõ đang chờ gì và chờ bao lâu.
-      out.innerHTML =
-        '<div class="d-flex align-items-center gap-2">' +
-          '<span class="tk-ai-dots"><span></span><span></span><span></span></span>' +
-          '<span class="text-muted small">AI đang đọc hồ sơ và luồng trao đổi, thường mất khoảng 20 giây…</span>' +
-        '</div>';
+    el.querySelectorAll('[data-act]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var act = actions.filter(function (a) { return a.key === btn.dataset.act; })[0];
 
-      var fd = new FormData();
-      fd.append('entity', entity);
-      fd.append('id', el.getAttribute('data-entity-id'));   // đọc lại: id có thể đổi khi mở bản ghi khác
+        el.querySelectorAll('[data-act]').forEach(function (b) { b.disabled = true; });
+        out.classList.remove('text-muted', 'small');
+        out.innerHTML =
+          '<div class="d-flex align-items-center gap-2">' +
+            '<span class="tk-ai-dots"><span></span><span></span><span></span></span>' +
+            '<span class="text-muted small">' + esc(act.wait) + '</span>' +
+          '</div>';
 
-      tk.post(API + '?handler=Run', fd).then(function (res) {
-        btn.disabled = false;
-        if (!res || !res.isSuccess) {
-          out.innerHTML = '<span class="text-danger">' + esc((res && res.message) || 'Chưa đánh giá được.') + '</span>';
-          return;
-        }
-        render(out, res.data || {});
+        var fd = new FormData();
+        fd.append('entity', entity);
+        fd.append('id', el.getAttribute('data-entity-id'));   // đọc lại: id đổi khi mở bản ghi khác
+
+        tk.post(API + '?handler=' + act.key, fd).then(function (res) {
+          el.querySelectorAll('[data-act]').forEach(function (b) { b.disabled = false; });
+          if (!res || !res.isSuccess) {
+            out.innerHTML = '<span class="text-danger">' + esc((res && res.message) || 'Chưa làm được.') + '</span>';
+            return;
+          }
+          if (act.key === 'Review') { render(out, res.data || {}); }
+          else { renderText(out, (res.data || {}).text, act.key === 'Draft'); }
+        });
       });
     });
+  }
+
+  // Văn bản do model sinh ra: escape hết, chỉ giữ xuống dòng. Bản nháp tin nhắn kèm nút chép để
+  // người dùng dán thẳng sang Zalo mà không phải bôi đen bằng tay.
+  function renderText(box, text, copyable) {
+    if (!text) { box.innerHTML = '<span class="text-danger">Không có nội dung.</span>'; return; }
+
+    box.innerHTML =
+      '<div class="tk-ai-text">' + esc(text).replace(/\n/g, '<br>') + '</div>' +
+      (copyable
+        ? '<button type="button" class="btn btn-sm btn-label-secondary mt-2" data-role="copy">' +
+          '<i class="ti ti-copy me-1"></i>Chép nội dung</button>'
+        : '');
+
+    var copy = box.querySelector('[data-role="copy"]');
+    if (copy) {
+      copy.addEventListener('click', function () {
+        navigator.clipboard.writeText(text).then(function () { tk.toast('Đã chép.'); });
+      });
+    }
   }
 
   function init() {
@@ -329,7 +367,7 @@
         .then(function (r) { return r.ok ? r.json() : { available: false }; })
         .catch(function () { return { available: false }; })
         .then(function (s) {
-          available = !!(s && s.available);
+          available = (s && s.available) ? s : false;
           if (available) { nodes.forEach(mount); }
         });
     } else if (available) {

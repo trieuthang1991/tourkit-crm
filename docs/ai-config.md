@@ -41,16 +41,16 @@ cấp nào — thà hỏng lúc deploy còn hơn âm thầm chạy với trợ l
 
 ## Danh mục tính năng
 
-| Tên | Việc | Năng lực cần | Đã chạy? |
-|---|---|---|---|
-| `Assistant` | Trợ lý tra cứu tiếng Việt (panel Ctrl+K) | Chat | **Rồi** |
-| `Draft` | Soạn sẵn nội dung để người dùng sửa rồi lưu | Chat | Chưa |
-| `Classify` | Phân loại / gán nhãn nhanh — nên trỏ model rẻ nhất | Chat | Chưa |
-| `Summarize` | Tóm tắt một bản ghi nghiệp vụ | Chat | Chưa |
-| `Scoring` | Chấm điểm khách hàng và cơ hội | Chat | **Rồi** |
-| `Embedding` | Nhúng vector cho tra cứu tài liệu (giai đoạn 3) | Embedding | Chưa |
-| `DocumentRead` | Đọc giấy tờ khách gửi vào (OCR) | DocumentRead | Chưa |
-| `CustomerChat` | Chatbot khách hàng (giai đoạn 4) | Chat | Chưa |
+| Tên | Việc | Đã chạy? |
+|---|---|---|
+| `Assistant` | Trợ lý tra cứu tiếng Việt (panel Ctrl+K) | **Rồi** |
+| `Draft` | Soạn tin nhắn gửi khách từ hồ sơ + trao đổi | **Rồi** |
+| `Classify` | Phân loại / gán nhãn nhanh | Chưa — chưa có chỗ dùng thật |
+| `Summarize` | Tóm tắt diễn biến một bản ghi | **Rồi** |
+| `Scoring` | Chấm điểm khách hàng và cơ hội | **Rồi** |
+| `Embedding` | Nhúng vector cho tra cứu tài liệu (giai đoạn 3) | Chưa |
+| `DocumentRead` | Đọc giấy tờ khách gửi vào (OCR) | Chưa |
+| `CustomerChat` | Chatbot khách hàng (giai đoạn 4) | Chưa |
 
 Cột "Đã chạy?" không phải ghi chú suông — nó là `AiFeatures.Implemented` trong mã nguồn. **Bật một
 tính năng chưa viết thì ứng dụng không khởi động**, kèm thông báo nói rõ lý do. Cần vậy vì bật nhầm
