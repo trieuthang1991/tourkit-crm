@@ -112,10 +112,10 @@ namespace TourKit.Infrastructure.Migrations
 
             if (isSqlite)
             {
+                migrationBuilder.Sql("PRAGMA foreign_keys = 0;", suppressTransaction: true);
+
                 migrationBuilder.Sql(
                     """
-                    PRAGMA foreign_keys = 0;
-
                     DROP TABLE IF EXISTS "ef_temp_Users";
 
                     CREATE TABLE "ef_temp_Users" (
@@ -145,10 +145,9 @@ namespace TourKit.Infrastructure.Migrations
 
                     DROP TABLE "Users";
                     ALTER TABLE "ef_temp_Users" RENAME TO "Users";
+                    """);
 
-                    PRAGMA foreign_keys = 1;
-                    """,
-                    suppressTransaction: true);
+                migrationBuilder.Sql("PRAGMA foreign_keys = 1;", suppressTransaction: true);
             }
 
             migrationBuilder.CreateIndex(
@@ -209,10 +208,10 @@ namespace TourKit.Infrastructure.Migrations
 
             if (isSqlite)
             {
+                migrationBuilder.Sql("PRAGMA foreign_keys = 0;", suppressTransaction: true);
+
                 migrationBuilder.Sql(
                     """
-                    PRAGMA foreign_keys = 0;
-
                     DROP TABLE IF EXISTS "ef_temp_Users";
 
                     CREATE TABLE "ef_temp_Users" (
@@ -241,10 +240,9 @@ namespace TourKit.Infrastructure.Migrations
 
                     DROP TABLE "Users";
                     ALTER TABLE "ef_temp_Users" RENAME TO "Users";
+                    """);
 
-                    PRAGMA foreign_keys = 1;
-                    """,
-                    suppressTransaction: true);
+                migrationBuilder.Sql("PRAGMA foreign_keys = 1;", suppressTransaction: true);
             }
             else
             {
