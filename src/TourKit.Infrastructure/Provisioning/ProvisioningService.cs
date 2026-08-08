@@ -111,17 +111,29 @@ public sealed class ProvisioningService : IProvisioningService
     }
 
     private static bool IsRegistrationIdentityConflict(DbUpdateException exception)
-        => exception.InnerException switch
+    {
+        for (var current = exception.InnerException; current is not null; current = current.InnerException)
         {
-            PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } postgres =>
-                IsRegistrationIdentity(postgres.ConstraintName),
-            SqlServerException { Number: 2601 or 2627 } sqlServer =>
-                ContainsRegistrationIdentity(sqlServer.Message),
-            SqliteException { SqliteExtendedErrorCode: 2067 } sqlite =>
-                sqlite.Message.Contains("Users.NormalizedEmail", StringComparison.OrdinalIgnoreCase)
-                || sqlite.Message.Contains("Tenants.Slug", StringComparison.OrdinalIgnoreCase),
-            _ => false,
-        };
+            var isConflict = current switch
+            {
+                PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } postgres =>
+                    IsRegistrationIdentity(postgres.ConstraintName),
+                SqlServerException { Number: 2601 or 2627 } sqlServer =>
+                    ContainsRegistrationIdentity(sqlServer.Message),
+                SqliteException { SqliteExtendedErrorCode: 2067 } sqlite =>
+                    sqlite.Message.Contains("Users.NormalizedEmail", StringComparison.OrdinalIgnoreCase)
+                    || sqlite.Message.Contains("Tenants.Slug", StringComparison.OrdinalIgnoreCase),
+                _ => false,
+            };
+
+            if (isConflict)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static bool IsRegistrationIdentity(string? constraintName)
         => string.Equals(constraintName, UserEmailIndex, StringComparison.Ordinal)

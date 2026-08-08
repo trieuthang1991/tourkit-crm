@@ -52,6 +52,31 @@ public sealed class ProvisioningServiceTests
         }
     }
 
+    private sealed class ThrowBeforeSaveInterceptor : SaveChangesInterceptor
+    {
+        private readonly DbUpdateException _exception;
+
+        public ThrowBeforeSaveInterceptor(DbUpdateException exception)
+        {
+            _exception = exception;
+        }
+
+        public bool Enabled { get; set; }
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (Enabled)
+            {
+                throw _exception;
+            }
+
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+    }
+
     private static DbContextOptions<AppDbContext> Options(
         SqliteConnection connection,
         params IInterceptor[] interceptors)
@@ -117,5 +142,54 @@ public sealed class ProvisioningServiceTests
 
         var sqlite = Assert.IsType<SqliteException>(error.InnerException);
         Assert.Equal(1299, sqlite.SqliteExtendedErrorCode);
+    }
+
+    [Fact]
+    public async Task Wrapped_relational_unique_email_failure_returns_conflict()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:;Foreign Keys=True");
+        await connection.OpenAsync();
+        var sqlite = new SqliteException(
+            "SQLite Error 19: 'UNIQUE constraint failed: Users.NormalizedEmail'.",
+            19,
+            2067);
+        var expected = new DbUpdateException(
+            "Registration write failed.",
+            new InvalidOperationException("Provider failure was wrapped.", sqlite));
+        var interceptor = new ThrowBeforeSaveInterceptor(expected);
+        var tenantContext = new AmbientTenantContext();
+        await using var db = new AppDbContext(Options(connection, interceptor), tenantContext);
+        await db.Database.EnsureCreatedAsync();
+        interceptor.Enabled = true;
+
+        var outcome = await Service(db, tenantContext).RegisterAsync(
+            Request("wrapped-conflict", "wrapped@company.test"));
+
+        Assert.Equal(RegistrationError.Conflict, outcome.Error);
+    }
+
+    [Fact]
+    public async Task Wrapped_relational_non_unique_failure_propagates()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:;Foreign Keys=True");
+        await connection.OpenAsync();
+        var sqlite = new SqliteException(
+            "SQLite Error 19: 'NOT NULL constraint failed: Users.PasswordHash'.",
+            19,
+            1299);
+        var expected = new DbUpdateException(
+            "Registration write failed.",
+            new InvalidOperationException("Provider failure was wrapped.", sqlite));
+        var interceptor = new ThrowBeforeSaveInterceptor(expected);
+        var tenantContext = new AmbientTenantContext();
+        await using var db = new AppDbContext(Options(connection, interceptor), tenantContext);
+        await db.Database.EnsureCreatedAsync();
+        interceptor.Enabled = true;
+
+        var actual = await Assert.ThrowsAsync<DbUpdateException>(() =>
+            Service(db, tenantContext).RegisterAsync(
+                Request("wrapped-unrelated", "unrelated@company.test")));
+
+        Assert.Same(expected, actual);
     }
 }
