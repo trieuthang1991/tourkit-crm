@@ -11,15 +11,32 @@ namespace TourKit.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            var isNpgsql = migrationBuilder.ActiveProvider.Contains("Npgsql", StringComparison.OrdinalIgnoreCase);
+            var isSqlServer = migrationBuilder.ActiveProvider.Contains("SqlServer", StringComparison.OrdinalIgnoreCase);
+            var isSqlite = migrationBuilder.ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase);
+
+            if (!isNpgsql && !isSqlServer && !isSqlite)
+            {
+                throw new NotSupportedException(
+                    $"Provider '{migrationBuilder.ActiveProvider}' is not supported by this migration.");
+            }
+
+            var guidType = isNpgsql ? "uuid" : isSqlServer ? "uniqueidentifier" : "TEXT";
+            var string64Type = isNpgsql ? "character varying(64)" : isSqlServer ? "nvarchar(64)" : "TEXT";
+            var string256Type = isNpgsql ? "character varying(256)" : isSqlServer ? "nvarchar(256)" : "TEXT";
+            var string512Type = isNpgsql ? "character varying(512)" : isSqlServer ? "nvarchar(512)" : "TEXT";
+            var dateTimeOffsetType = isNpgsql ? "timestamp with time zone" : isSqlServer ? "datetimeoffset" : "INTEGER";
+            var booleanType = isNpgsql ? "boolean" : isSqlServer ? "bit" : "INTEGER";
+
             migrationBuilder.AddColumn<string>(
                 name: "NormalizedEmail",
                 table: "Users",
-                type: "character varying(256)",
+                type: string256Type,
                 maxLength: 256,
                 nullable: false,
                 defaultValue: "");
 
-            if (migrationBuilder.ActiveProvider.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
+            if (isNpgsql)
             {
                 migrationBuilder.Sql(
                     """
@@ -39,7 +56,7 @@ namespace TourKit.Infrastructure.Migrations
                     SET "NormalizedEmail" = UPPER(TRIM("Email"));
                     """);
             }
-            else if (migrationBuilder.ActiveProvider.Contains("SqlServer", StringComparison.OrdinalIgnoreCase))
+            else if (isSqlServer)
             {
                 migrationBuilder.Sql(
                     """
@@ -55,7 +72,7 @@ namespace TourKit.Infrastructure.Migrations
                     SET [NormalizedEmail] = UPPER(LTRIM(RTRIM([Email])));
                     """);
             }
-            else if (migrationBuilder.ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
+            else
             {
                 migrationBuilder.Sql(
                     """
@@ -75,26 +92,64 @@ namespace TourKit.Infrastructure.Migrations
                     SET "NormalizedEmail" = UPPER(TRIM("Email"));
                     """);
             }
-            else
+            if (!isSqlite)
             {
-                throw new NotSupportedException(
-                    $"Provider '{migrationBuilder.ActiveProvider}' is not supported by this migration.");
+                migrationBuilder.AlterColumn<string>(
+                    name: "NormalizedEmail",
+                    table: "Users",
+                    type: string256Type,
+                    maxLength: 256,
+                    nullable: false,
+                    oldClrType: typeof(string),
+                    oldType: string256Type,
+                    oldMaxLength: 256,
+                    oldDefaultValue: "");
             }
-
-            migrationBuilder.AlterColumn<string>(
-                name: "NormalizedEmail",
-                table: "Users",
-                type: "character varying(256)",
-                maxLength: 256,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "character varying(256)",
-                oldMaxLength: 256,
-                oldDefaultValue: "");
 
             migrationBuilder.DropIndex(
                 name: "IX_Users_TenantId_Email",
                 table: "Users");
+
+            if (isSqlite)
+            {
+                migrationBuilder.Sql(
+                    """
+                    PRAGMA foreign_keys = 0;
+
+                    DROP TABLE IF EXISTS "ef_temp_Users";
+
+                    CREATE TABLE "ef_temp_Users" (
+                        "Id" TEXT NOT NULL CONSTRAINT "PK_Users" PRIMARY KEY,
+                        "CreatedAt" INTEGER NOT NULL,
+                        "DepartmentId" TEXT NULL,
+                        "Email" TEXT NOT NULL,
+                        "FullName" TEXT NOT NULL,
+                        "IsActive" INTEGER NOT NULL,
+                        "IsDeleted" INTEGER NOT NULL,
+                        "LastLoginAt" INTEGER NULL,
+                        "NormalizedEmail" TEXT NOT NULL,
+                        "PasswordHash" TEXT NOT NULL,
+                        "PositionId" TEXT NULL,
+                        "TenantId" TEXT NOT NULL,
+                        "UpdatedAt" INTEGER NULL
+                    );
+
+                    INSERT INTO "ef_temp_Users" (
+                        "Id", "CreatedAt", "DepartmentId", "Email", "FullName", "IsActive", "IsDeleted",
+                        "LastLoginAt", "NormalizedEmail", "PasswordHash", "PositionId", "TenantId", "UpdatedAt"
+                    )
+                    SELECT
+                        "Id", "CreatedAt", "DepartmentId", "Email", "FullName", "IsActive", "IsDeleted",
+                        "LastLoginAt", "NormalizedEmail", "PasswordHash", "PositionId", "TenantId", "UpdatedAt"
+                    FROM "Users";
+
+                    DROP TABLE "Users";
+                    ALTER TABLE "ef_temp_Users" RENAME TO "Users";
+
+                    PRAGMA foreign_keys = 1;
+                    """,
+                    suppressTransaction: true);
+            }
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_NormalizedEmail",
@@ -106,15 +161,15 @@ namespace TourKit.Infrastructure.Migrations
                 name: "UserExternalLogins",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Provider = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    ProviderSubject = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
-                    ProviderEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    Id = table.Column<Guid>(type: guidType, nullable: false),
+                    TenantId = table.Column<Guid>(type: guidType, nullable: false),
+                    UserId = table.Column<Guid>(type: guidType, nullable: false),
+                    Provider = table.Column<string>(type: string64Type, maxLength: 64, nullable: false),
+                    ProviderSubject = table.Column<string>(type: string512Type, maxLength: 512, nullable: false),
+                    ProviderEmail = table.Column<string>(type: string256Type, maxLength: 256, nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: dateTimeOffsetType, nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: dateTimeOffsetType, nullable: true),
+                    IsDeleted = table.Column<bool>(type: booleanType, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -143,6 +198,8 @@ namespace TourKit.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            var isSqlite = migrationBuilder.ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase);
+
             migrationBuilder.DropTable(
                 name: "UserExternalLogins");
 
@@ -150,9 +207,51 @@ namespace TourKit.Infrastructure.Migrations
                 name: "IX_Users_NormalizedEmail",
                 table: "Users");
 
-            migrationBuilder.DropColumn(
-                name: "NormalizedEmail",
-                table: "Users");
+            if (isSqlite)
+            {
+                migrationBuilder.Sql(
+                    """
+                    PRAGMA foreign_keys = 0;
+
+                    DROP TABLE IF EXISTS "ef_temp_Users";
+
+                    CREATE TABLE "ef_temp_Users" (
+                        "Id" TEXT NOT NULL CONSTRAINT "PK_Users" PRIMARY KEY,
+                        "CreatedAt" INTEGER NOT NULL,
+                        "DepartmentId" TEXT NULL,
+                        "Email" TEXT NOT NULL,
+                        "FullName" TEXT NOT NULL,
+                        "IsActive" INTEGER NOT NULL,
+                        "IsDeleted" INTEGER NOT NULL,
+                        "LastLoginAt" INTEGER NULL,
+                        "PasswordHash" TEXT NOT NULL,
+                        "PositionId" TEXT NULL,
+                        "TenantId" TEXT NOT NULL,
+                        "UpdatedAt" INTEGER NULL
+                    );
+
+                    INSERT INTO "ef_temp_Users" (
+                        "Id", "CreatedAt", "DepartmentId", "Email", "FullName", "IsActive", "IsDeleted",
+                        "LastLoginAt", "PasswordHash", "PositionId", "TenantId", "UpdatedAt"
+                    )
+                    SELECT
+                        "Id", "CreatedAt", "DepartmentId", "Email", "FullName", "IsActive", "IsDeleted",
+                        "LastLoginAt", "PasswordHash", "PositionId", "TenantId", "UpdatedAt"
+                    FROM "Users";
+
+                    DROP TABLE "Users";
+                    ALTER TABLE "ef_temp_Users" RENAME TO "Users";
+
+                    PRAGMA foreign_keys = 1;
+                    """,
+                    suppressTransaction: true);
+            }
+            else
+            {
+                migrationBuilder.DropColumn(
+                    name: "NormalizedEmail",
+                    table: "Users");
+            }
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_TenantId_Email",

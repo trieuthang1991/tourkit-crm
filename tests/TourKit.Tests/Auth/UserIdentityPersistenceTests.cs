@@ -1,5 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using TourKit.Infrastructure.Persistence;
 using TourKit.Infrastructure.Tenancy;
 using TourKit.Shared.Entities;
@@ -9,6 +11,46 @@ namespace TourKit.Tests.Auth;
 
 public class UserIdentityPersistenceTests
 {
+    [Theory]
+    [InlineData("Postgres", "uniqueidentifier|datetimeoffset|bit")]
+    [InlineData("SqlServer", "uuid|timestamp with time zone|boolean")]
+    [InlineData("Sqlite", "uuid|timestamp with time zone|boolean")]
+    public void Identity_migration_uses_only_provider_native_store_types(
+        string provider,
+        string forbiddenStoreTypes)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>();
+        switch (provider)
+        {
+            case "Postgres":
+                options.UseNpgsql("Host=localhost;Database=tourkit;Username=tourkit;Password=test");
+                break;
+            case "SqlServer":
+                options.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=TourKit;Trusted_Connection=True");
+                break;
+            case "Sqlite":
+                options.UseSqlite("Data Source=:memory:");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(provider), provider, null);
+        }
+
+        using var db = new AppDbContext(options.Options, new AmbientTenantContext());
+        var migrator = db.GetService<IMigrator>();
+        var upgradeScript = migrator.GenerateScript(
+            "20260807160904_AddCommentAttachments",
+            "20260808044700_AddGlobalUserIdentity");
+        var rollbackScript = migrator.GenerateScript(
+            "20260808044700_AddGlobalUserIdentity",
+            "20260807160904_AddCommentAttachments");
+        var script = upgradeScript + rollbackScript;
+
+        Assert.Contains("UserExternalLogins", script, StringComparison.Ordinal);
+        Assert.All(
+            forbiddenStoreTypes.Split('|'),
+            storeType => Assert.DoesNotContain(storeType, script, StringComparison.OrdinalIgnoreCase));
+    }
+
     [Theory]
     [InlineData(" Admin@Example.Com ", "ADMIN@EXAMPLE.COM")]
     [InlineData("sales@công-ty.vn", "SALES@CÔNG-TY.VN")]
