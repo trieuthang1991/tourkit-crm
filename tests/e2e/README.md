@@ -5,7 +5,7 @@ không biết gì về nó.
 
 ## Vì sao cần
 
-Bốn lỗi thật đã lọt qua toàn bộ 763 bài kiểm thử C# và chỉ lộ ra khi có người mở trình duyệt:
+Năm lỗi thật đã lọt qua toàn bộ 763 bài kiểm thử C# và chỉ lộ ra khi có người mở trình duyệt:
 
 | Lỗi | Vì sao C# không bắt được |
 |---|---|
@@ -13,6 +13,7 @@ Bốn lỗi thật đã lọt qua toàn bộ 763 bài kiểm thử C# và chỉ 
 | JS gọi `?handler=Review`, C# vẫn là `OnPostRunAsync` | Razor trả HTML kèm mã 200 cho handler không tồn tại — không có ngoại lệ nào |
 | Trang đăng nhập nạp script mẫu gọi thư viện chưa nạp | Lỗi nằm trong console trình duyệt |
 | Nút "Thêm báo giá" trỏ `/bao-gia/Edit` trong khi route thật là `/bao-gia/soan` → 404 | Đường dẫn ghi tay trong `.cshtml`, trình biên dịch không kiểm |
+| `tk.form` xoá trắng ô số khi Thêm mới → gửi lên `""` → **không tạo được bản ghi nào** trên 7 màn danh mục | Sửa bản ghi có sẵn vẫn chạy bình thường, nên chỉ luồng TẠO MỚI vỡ |
 
 Hai lỗi đầu nay đã có bài kiểm thử C# canh riêng (`UrlPageTargetTests`, `AiHandlerNameTests`). Hai
 lỗi còn lại chỉ e2e mới thấy — và **mọi bài ở đây tự động đỏ nếu trang có lỗi JavaScript**.
@@ -75,7 +76,15 @@ Thêm bừa vào đó là vô hiệu hoá đúng thứ mà bộ kiểm thử nà
 | `audit-lists` (lọc) | Gõ chuỗi vô nghĩa vào `#f-q` phải ra ít dòng hơn; xoá đi phải trở lại như cũ |
 | `audit-links` | Mọi `<a href>` nội bộ trên 28 màn không được dẫn tới 404 |
 | `customer-save` | Lưu từ màn chi tiết, kiểm tra bằng cách tải lại trang |
+| `audit-export` | Bấm "Xuất file" phải tải về file thật, có nội dung, đúng đuôi |
+| `audit-crud` | 8 màn danh mục: tạo → thấy sau khi tải lại → xoá (có hỏi lại) → biến mất |
 | `ai-*` | Trợ lý tra cứu và ba nút AI trên bản ghi |
+
+## Đang treo
+
+**Trùng mã ở màn danh mục trả về "Đã có lỗi xảy ra."** thay vì thông báo rõ. Service đã có sẵn câu
+đúng (`"Loại xe 1 chỗ đã tồn tại."`) và middleware có trả `ex.Message` cho lỗi nghiệp vụ (400) — nhưng
+người dùng nhận về nhánh 500, nghĩa là ngoại lệ thoát ra chưa được xử lý. Chưa truy xong nguyên nhân.
 
 ## Chưa phủ
 

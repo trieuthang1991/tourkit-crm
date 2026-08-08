@@ -463,6 +463,20 @@
       if (el._quill) { tk.rte.set(el, el.value); }
     }
 
+    /**
+     * Giá trị của một ô khi THÊM MỚI: lấy mặc định ghi trong markup, không phải chuỗi rỗng.
+     *
+     * Xoá trắng ô số làm form gửi lên "" và .NET không ghép được vào int — trả về "The value ''
+     * is invalid." và KHÔNG tạo được bản ghi nào. Lỗi này giết luồng thêm mới của 7 màn danh mục
+     * mà không ai biết, vì sửa bản ghi có sẵn thì vẫn chạy bình thường.
+     *
+     * Đây cũng chính là ngữ nghĩa của form.reset() trong HTML: quay về defaultValue.
+     */
+    function macDinh(el) {
+      if (el.type === 'checkbox') { return el.defaultChecked; }
+      return el.defaultValue || '';
+    }
+
     function open(data) {
       if ($.fn.validate) { $form.validate().resetForm(); }
       // Điền: mọi [name] có dạng "Input.X"/"Id" → data[camelCase]
@@ -470,7 +484,7 @@
         var name = this.getAttribute('name');
         var key = name.replace(/^Input\./, '');
         key = key.charAt(0).toLowerCase() + key.slice(1);
-        setField(name, data ? data[key] : (this.type === 'checkbox' ? false : ''));
+        setField(name, data ? data[key] : macDinh(this));
       });
       if (opts.fill) { opts.fill($form, data); }
       var lbl = ocEl.querySelector('.offcanvas-title');
