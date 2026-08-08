@@ -1,0 +1,17 @@
+{
+  "name": "tourkit-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Kiểm thử giao diện thật bằng trình duyệt. Xem README.md.",
+  "scripts": {
+    "test": "playwright test --grep-invert @ai",
+    "test:ai": "playwright test --grep @ai",
+    "test:all": "playwright test",
+    "xem": "playwright test --grep-invert @ai --headed",
+    "xem:ai": "playwright test --grep @ai --headed",
+    "bao-cao": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}

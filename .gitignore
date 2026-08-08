@@ -17,3 +17,9 @@ src/TourKit.Api/appsettings.json
 .superpowers/
 .playwright-cli/
 aspnet-core-vue.zip
+
+# Kiểm thử giao diện (tests/e2e)
+tests/e2e/node_modules/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+tests/e2e/package-lock.json

@@ -29,8 +29,15 @@ Khi khởi động, API tự **migrate DB** (`MigrateAsync`) và **seed** permis
 ## Kiểm thử
 
 ```bash
-dotnet test                       # 4 arch + 201 unit + 81 integration
+dotnet test                       # arch + unit + integration
 cd web && npm run lint && npx tsc --noEmit && npx vitest run   # 73 test
+
+# Kiểm thử GIAO DIỆN bằng trình duyệt thật — lớp duy nhất chạm tới JavaScript.
+# Máy chủ tự khởi động nếu chưa chạy. Chi tiết: tests/e2e/README.md
+cd tests/e2e && npm install
+npm test           # không gọi AI, không tốn tiền
+npm run test:ai    # gọi model thật, có tính phí
+npm run xem        # hiện cửa sổ Chrome để nhìn từng bước
 ```
 
 ## Cấu hình (`src/TourKit.Api/appsettings.json` hoặc biến môi trường)
