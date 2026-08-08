@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using TourKit.Application.Auth;
 using TourKit.Application.Billing;
 using TourKit.Application.Provisioning;
@@ -7,6 +8,8 @@ using TourKit.Infrastructure.Persistence;
 using TourKit.Infrastructure.Tenancy;
 
 using TourKit.Shared.Enums;
+using SqliteException = Microsoft.Data.Sqlite.SqliteException;
+using SqlServerException = Microsoft.Data.SqlClient.SqlException;
 
 namespace TourKit.Infrastructure.Provisioning;
 
@@ -16,6 +19,9 @@ namespace TourKit.Infrastructure.Provisioning;
 /// </summary>
 public sealed class ProvisioningService : IProvisioningService
 {
+    private const string UserEmailIndex = "IX_Users_NormalizedEmail";
+    private const string TenantSlugIndex = "IX_Tenants_Slug";
+
     private readonly AppDbContext _db;
     private readonly AmbientTenantContext _tenant;
     private readonly IPasswordHasher _hasher;
@@ -95,7 +101,7 @@ public sealed class ProvisioningService : IProvisioningService
         {
             await _db.SaveChangesAsync();
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (IsRegistrationIdentityConflict(ex))
         {
             return new RegistrationOutcome(RegistrationError.Conflict, null);
         }
@@ -103,4 +109,25 @@ public sealed class ProvisioningService : IProvisioningService
         return new RegistrationOutcome(RegistrationError.None,
             new RegistrationResponse(tenant.Id, tenant.Slug, user.Id));
     }
+
+    private static bool IsRegistrationIdentityConflict(DbUpdateException exception)
+        => exception.InnerException switch
+        {
+            PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } postgres =>
+                IsRegistrationIdentity(postgres.ConstraintName),
+            SqlServerException { Number: 2601 or 2627 } sqlServer =>
+                ContainsRegistrationIdentity(sqlServer.Message),
+            SqliteException { SqliteExtendedErrorCode: 2067 } sqlite =>
+                sqlite.Message.Contains("Users.NormalizedEmail", StringComparison.OrdinalIgnoreCase)
+                || sqlite.Message.Contains("Tenants.Slug", StringComparison.OrdinalIgnoreCase),
+            _ => false,
+        };
+
+    private static bool IsRegistrationIdentity(string? constraintName)
+        => string.Equals(constraintName, UserEmailIndex, StringComparison.Ordinal)
+           || string.Equals(constraintName, TenantSlugIndex, StringComparison.Ordinal);
+
+    private static bool ContainsRegistrationIdentity(string message)
+        => message.Contains(UserEmailIndex, StringComparison.OrdinalIgnoreCase)
+           || message.Contains(TenantSlugIndex, StringComparison.OrdinalIgnoreCase);
 }
