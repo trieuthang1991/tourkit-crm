@@ -13,6 +13,10 @@ CRM/điều hành tour đa tenant (SaaS) — .NET 9 + EF Core 9 (backend, kiến
 ## Chạy nhanh (dev)
 
 ```bash
+# LẦN ĐẦU: tạo file cấu hình của máy mình rồi điền khoá vào.
+# appsettings.json KHÔNG nằm trong git vì nó chứa khoá API, chuỗi kết nối và khoá ký JWT.
+cp src/TourKit.Api/appsettings.example.json src/TourKit.Api/appsettings.json
+
 # Backend API (http://localhost:5xxx — xem launchSettings)
 dotnet run --project src/TourKit.Api
 
@@ -31,7 +35,13 @@ cd web && npm run lint && npx tsc --noEmit && npx vitest run   # 73 test
 
 ## Cấu hình (`src/TourKit.Api/appsettings.json` hoặc biến môi trường)
 
+**`appsettings.json` không nằm trong git** — nó chứa khoá thật, mỗi máy giữ bản của riêng mình. Bản
+mẫu đầy đủ mọi khoá là `appsettings.example.json` (có trong git). Thêm khoá cấu hình mới thì thêm vào
+**cả hai file**; có bài kiểm tra đối chiếu, thiếu là test đỏ.
+
 Biến môi trường ghi đè theo quy ước .NET: `Section__Key` (2 gạch dưới), ví dụ `Email__Provider=Smtp`.
+
+Cấu hình AI (trợ lý, soạn thảo, chấm điểm…): xem [`docs/ai-config.md`](docs/ai-config.md).
 
 ### Database
 | Khoá | Ý nghĩa |

@@ -6,16 +6,28 @@ là sửa một dòng, không ảnh hưởng trợ lý tra cứu.
 
 ## Đặt khoá API
 
-**Không dán khoá vào `appsettings.json`** — file đó nằm trong git, commit là khoá lên remote. Có một
-bài kiểm tra tự động canh đúng việc này (`AiConfigurationTests`), dán khoá vào là test đỏ.
+Khoá đặt thẳng vào `Ai:Providers:<tên>:ApiKey` trong `appsettings.json`. **`appsettings.json` KHÔNG
+nằm trong git** (`.gitignore`) chính vì lý do đó — mỗi máy giữ file cấu hình của riêng mình.
+
+```jsonc
+"Ai": {
+  "Providers": {
+    "deepseek": { "ApiKey": "sk-..." }
+  }
+}
+```
+
+**Máy mới** chưa có file thì sao chép từ mẫu rồi điền:
 
 ```bash
-# Máy cá nhân
-dotnet user-secrets set "Ai:Providers:deepseek:ApiKey" "sk-..." --project src/TourKit.Api
-
-# Máy chạy thật
-export Ai__Providers__deepseek__ApiKey="sk-..."
+cp src/TourKit.Api/appsettings.example.json src/TourKit.Api/appsettings.json
 ```
+
+`appsettings.example.json` **có** trong git và là bản mô tả đầy đủ mọi khoá cấu hình. Thêm khoá mới
+thì thêm vào **cả hai file** — có bài kiểm tra đối chiếu hai file, thiếu là test đỏ ngay
+(`AiConfigurationTests.File_mau_khong_duoc_thieu_khoa_nao_so_voi_file_that`).
+
+Biến môi trường vẫn ghi đè được nếu cần (`Ai__Providers__deepseek__ApiKey`), nhưng không bắt buộc.
 
 ## Bật / tắt
 
@@ -24,9 +36,8 @@ export Ai__Providers__deepseek__ApiKey="sk-..."
 | `Ai:Enabled` | Công tắc tổng. Tắt thì mọi tính năng AI im lặng ngừng, hệ thống chạy bình thường. |
 | `Ai:Features:<Tên>:Enabled` | Bật/tắt riêng từng tính năng (vẫn phải bật công tắc tổng). |
 
-`appsettings.json` để `Enabled: false`; `appsettings.Development.json` bật lên cho máy lập trình. Máy
-chạy thật muốn bật thì đặt biến môi trường `Ai__Enabled=true` — và phải có khoá, nếu không hệ thống
-**không khởi động được** kèm thông báo chỉ rõ thiếu khoá của nhà cung cấp nào.
+Bật mà thiếu khoá thì hệ thống **không khởi động được**, kèm thông báo chỉ rõ thiếu khoá của nhà cung
+cấp nào — thà hỏng lúc deploy còn hơn âm thầm chạy với trợ lý chết.
 
 ## Danh mục tính năng
 

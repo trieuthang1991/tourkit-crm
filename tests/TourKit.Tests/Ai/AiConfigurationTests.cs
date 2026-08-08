@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using TourKit.Ai.Abstractions;
@@ -62,25 +63,93 @@ public class AiConfigurationTests(AuthTestFactory factory) : IClassFixture<AuthT
     }
 
     /// <summary>
-    /// Khoá thật không được nằm trong appsettings.json — file đó nằm trong git. Bài này canh đúng
-    /// một điều: có ai dán khoá vào file rồi commit hay không.
+    /// <c>appsettings.json</c> chứa khoá thật nên PHẢI nằm ngoài git. Bỏ dòng ignore đi là lần commit
+    /// kế tiếp đẩy khoá lên remote, và không có gì khác trong quy trình bắt được việc đó.
     /// </summary>
     [Fact]
-    public void Khong_co_khoa_that_nao_nam_trong_file_cau_hinh_trong_git()
+    public void Appsettings_that_phai_duoc_gitignore()
     {
-        var appsettings = Path.Combine(
-            Directory.GetCurrentDirectory(), "appsettings.json");
-        if (!File.Exists(appsettings))
+        var ignore = File.ReadAllText(Path.Combine(RepoRoot(), ".gitignore"));
+
+        Assert.Contains("src/TourKit.Api/appsettings.json", ignore, StringComparison.Ordinal);
+    }
+
+    /// <summary>File mẫu nằm TRONG git nên tuyệt đối không được có khoá thật.</summary>
+    [Fact]
+    public void File_mau_khong_duoc_chua_khoa_that()
+    {
+        var text = File.ReadAllText(ExamplePath());
+
+        Assert.DoesNotContain("\"ApiKey\": \"sk-", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"ApiKey\": \"ENC:", text, StringComparison.Ordinal);
+        Assert.Contains("\"Secret\": \"\"", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// File mẫu phải có đủ mọi khoá của file thật.
+    ///
+    /// Đây là cái giá của việc đưa appsettings.json ra khỏi git: thêm một khoá cấu hình mà quên cập
+    /// nhật file mẫu thì máy của người khác thiếu khoá đó, và triệu chứng là một tính năng không chạy
+    /// chứ không phải một thông báo lỗi. Bài này bắt ngay lúc chạy test.
+    /// </summary>
+    [Fact]
+    public void File_mau_khong_duoc_thieu_khoa_nao_so_voi_file_that()
+    {
+        var real = LeafKeys(RealPath());
+        var example = LeafKeys(ExamplePath());
+
+        var missing = real.Except(example, StringComparer.Ordinal).Order().ToList();
+
+        Assert.True(missing.Count == 0,
+            "appsettings.example.json thiếu: " + string.Join(", ", missing));
+    }
+
+    private static string RealPath() => Path.Combine(RepoRoot(), "src", "TourKit.Api", "appsettings.json");
+
+    private static string ExamplePath() => Path.Combine(RepoRoot(), "src", "TourKit.Api", "appsettings.example.json");
+
+    /// <summary>Đi ngược lên tới thư mục chứa TourKit.sln — không phụ thuộc chỗ chạy test.</summary>
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "TourKit.sln")))
         {
-            return;   // chạy ngoài thư mục nội dung của Api — không có gì để soát
+            dir = dir.Parent;
         }
 
-        var text = File.ReadAllText(appsettings);
-        var start = text.IndexOf("\"Ai\"", StringComparison.Ordinal);
-        Assert.True(start >= 0, "appsettings.json không còn section Ai");
+        Assert.NotNull(dir);
+        return dir.FullName;
+    }
 
-        var aiSection = text[start..];
-        Assert.DoesNotContain("\"ApiKey\": \"sk-", aiSection, StringComparison.Ordinal);
-        Assert.DoesNotContain("\"ApiKey\": \"ENC:", aiSection, StringComparison.Ordinal);
+    /// <summary>Đường dẫn mọi khoá lá trong file JSON, dạng "Ai:Providers:deepseek:Kind".</summary>
+    private static HashSet<string> LeafKeys(string path)
+    {
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        using var doc = JsonDocument.Parse(
+            File.ReadAllText(path),
+            new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+
+        Walk(doc.RootElement, "", keys);
+        return keys;
+    }
+
+    private static void Walk(JsonElement element, string prefix, HashSet<string> keys)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            keys.Add(prefix);
+            return;
+        }
+
+        foreach (var property in element.EnumerateObject())
+        {
+            // Khoá bắt đầu bằng "//" là ghi chú trong file mẫu, không phải cấu hình.
+            if (property.Name.StartsWith("//", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            Walk(property.Value, prefix.Length == 0 ? property.Name : $"{prefix}:{property.Name}", keys);
+        }
     }
 }

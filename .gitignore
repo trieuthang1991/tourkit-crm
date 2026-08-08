@@ -5,6 +5,10 @@ node_modules/
 .vs/
 appsettings.*.local.json
 
+# Cấu hình thật của từng máy — chứa khoá API, chuỗi kết nối, khoá ký JWT.
+# Mẫu để sao chép: src/TourKit.Api/appsettings.example.json (file này CÓ trong git).
+src/TourKit.Api/appsettings.json
+
 # SQLite dev database (tạo lại bằng `dotnet ef database update`)
 *.db
 *.db-shm
