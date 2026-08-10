@@ -238,7 +238,8 @@
         ajax: { url: '?handler=CustomerSearch', dataType: 'json', delay: 250, data: function (p) { return { q: p.term }; }, processResults: function (d) { return d; } }, minimumInputLength: 2 });
 
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'lịch chăm sóc',
-        rules: { 'Input.Title': { required: true } }, messages: { 'Input.Title': { required: 'Bắt buộc nhập tiêu đề' } },
+        rules: { 'Input.Title': { required: true }, 'Input.CustomerId': { required: true } },
+        messages: { 'Input.Title': { required: 'Bắt buộc nhập tiêu đề' }, 'Input.CustomerId': { required: 'Bắt buộc chọn khách hàng' } },
         afterOpen: function (data) {
           if (data) { // sửa: khoá chọn khách, hiện tên
             $('#row-customer').addClass('d-none'); $('#row-customer-name').removeClass('d-none');

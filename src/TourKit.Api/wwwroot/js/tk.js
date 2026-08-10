@@ -426,7 +426,12 @@
     // jQuery Validate
     if ($.fn.validate) {
       $form.validate({
-        ignore: ':hidden', errorElement: 'span', errorClass: 'text-danger d-block small mt-1',
+        // ':hidden' để bỏ qua ô trong khối đang ẩn. Nhưng CHÍNH hai thứ ở trên vừa giấu ô gốc đi:
+        // flatpickr altInput chuyển input gốc thành hidden, tk.rte giấu textarea sau ô soạn thảo.
+        // Không trừ chúng ra thì luật `required` khai cho ô ngày và ô nội dung được nạp đầy đủ mà
+        // không bao giờ chạy — form trông có kiểm tra, thực tế lưu được bản ghi rỗng.
+        ignore: ':hidden:not(.tk-date):not(.tk-rte-field)',
+        errorElement: 'span', errorClass: 'text-danger d-block small mt-1',
         rules: opts.rules || {}, messages: opts.messages || {},
         highlight: function (el) { $(el).addClass('is-invalid'); }, unhighlight: function (el) { $(el).removeClass('is-invalid'); }
       });

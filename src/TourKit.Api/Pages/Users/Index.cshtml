@@ -83,8 +83,16 @@
     $(function () {
       tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [5] }] });
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'người dùng',
-        rules: { 'Input.Email': { required: true }, 'Input.FullName': { required: true } },
-        messages: { 'Input.Email': { required: 'Bắt buộc nhập email' }, 'Input.FullName': { required: 'Bắt buộc nhập họ tên' } },
+        // Mật khẩu chỉ bắt buộc khi TẠO MỚI. Lúc sửa, ô này được giấu đi (afterOpen) và để trống
+        // nghĩa là giữ nguyên mật khẩu cũ — bắt buộc cứng ở đây sẽ chặn mọi lần sửa người dùng.
+        rules: {
+          'Input.Email': { required: true }, 'Input.FullName': { required: true },
+          'Input.Password': { required: function () { return $('#row-pass').is(':visible'); } }
+        },
+        messages: {
+          'Input.Email': { required: 'Bắt buộc nhập email' }, 'Input.FullName': { required: 'Bắt buộc nhập họ tên' },
+          'Input.Password': { required: 'Bắt buộc nhập mật khẩu khi tạo tài khoản mới' }
+        },
         afterOpen: function (data) { $('#row-pass').toggle(!data); }
       });
       $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
