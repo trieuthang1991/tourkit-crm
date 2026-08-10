@@ -45,7 +45,9 @@
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Mã <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Ví dụ: USD" /></div>
       <div class="mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên tiền tệ" /></div>
-      <div class="mb-3"><label class="form-label">Tỷ giá (VND)</label><input type="number" step="any" name="Input.RateToVnd" class="form-control" value="0" placeholder="Nhập tỷ giá" /></div>
+      @* Bắt buộc trên thực tế: luật nghiệp vụ đòi tỷ giá > 0. Trước đây ô này không có dấu sao và
+         mặc định sẵn 0, nên người dùng điền hết những chỗ đánh dấu rồi bấm Lưu là bị từ chối. *@
+      <div class="mb-3"><label class="form-label">Tỷ giá (VND) <span class="text-danger">*</span></label><input type="number" step="any" min="0" name="Input.RateToVnd" class="form-control" placeholder="Ví dụ: 25000" /></div>
       <div class="mb-3"><label class="form-label">Thứ tự</label><input type="number" name="Input.SortOrder" class="form-control" value="0" placeholder="0 — càng nhỏ càng lên trên" /></div>
       </div>
       <div class="tk-oc-actions">
@@ -68,7 +70,16 @@
     $(function () {
       tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [4] }] });
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'tiền tệ',
-        rules: { 'Input.Code': { required: true }, 'Input.Name': { required: true } }, messages: { 'Input.Code': { required: 'Bắt buộc nhập mã' }, 'Input.Name': { required: 'Bắt buộc nhập tên' } } });
+        // 'min' khớp với luật server (GreaterThan(0)): 0 không phải tỷ giá hợp lệ. Dùng số dương
+        // nhỏ nhất thay vì min:0 vì jQuery Validate coi min:0 là chấp nhận đúng số 0.
+        rules: {
+          'Input.Code': { required: true }, 'Input.Name': { required: true },
+          'Input.RateToVnd': { required: true, min: 0.000001 }
+        },
+        messages: {
+          'Input.Code': { required: 'Bắt buộc nhập mã' }, 'Input.Name': { required: 'Bắt buộc nhập tên' },
+          'Input.RateToVnd': { required: 'Bắt buộc nhập tỷ giá', min: 'Tỷ giá phải > 0.' }
+        } });
       $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
       $('#tbl tbody').on('click', '.js-del', function () {
         var id = this.getAttribute('data-id');
