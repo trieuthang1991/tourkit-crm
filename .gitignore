@@ -13,7 +13,6 @@ src/TourKit.Api/appsettings.json
 *.db
 *.db-shm
 *.db-wal
-.gitnexus
 .superpowers/
 .playwright-cli/
 aspnet-core-vue.zip

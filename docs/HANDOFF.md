@@ -21,13 +21,6 @@ Các rule CỐT LÕI (chi tiết trong memory):
 5. **Mỗi màn danh sách phải có: hàng THẺ THỐNG KÊ + thanh SEARCH/LỌC + cột giàu** (bám staging), không chỉ bảng. → `screen-needs-search-and-stats.md`
 6. **UI bám staging**: brand đỏ `#EB5324`, sidebar `#333`, font Roboto; menu gom nhóm đúng thứ tự KojiCRM; trang chủ = "Bàn làm việc". → `legacy-ui-reference.md`
 
-### b) GitNexus (code intelligence) — `.gitnexus/` (KHÔNG commit; trong `.gitignore`)
-Graph index (~7300 symbols) KHÔNG còn trong git (đã gỡ vì file nhị phân ~95MB). **AI mới chạy `npx gitnexus analyze` MỘT LẦN** để tạo lại `.gitnexus/` local. Dùng để hiểu code / đánh giá blast-radius TRƯỚC khi sửa.
-- Refresh sau khi commit: `npx gitnexus analyze` (hook PostToolUse tự chạy sau `git commit`/`git merge`).
-- MCP tools: `gitnexus_query({query})`, `gitnexus_context({name})`, `gitnexus_impact({target,direction:"upstream"})`, `gitnexus_detect_changes()`.
-- Hướng dẫn đầy đủ: `CLAUDE.md` (mục GitNexus) + `.claude/skills/gitnexus/*`.
-- **Bắt buộc**: chạy `gitnexus_impact` trước khi sửa symbol; cảnh báo nếu HIGH/CRITICAL.
-
 ---
 
 ## 1. Chạy dự án (Quick start)
