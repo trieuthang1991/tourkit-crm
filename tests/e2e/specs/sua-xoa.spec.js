@@ -108,13 +108,27 @@ test.describe('Sửa bản ghi có sẵn', () => {
  * thật của người dùng — một bài kiểm thử không được phép làm thế để chứng minh điều gì.
  */
 test('/loai-xe — tạo rồi sửa rồi xoá được chính bản ghi vừa tạo', async ({ trang: page }) => {
-  const ma = 'e2e-' + LAN;
+  // Hậu tố RIÊNG, không dùng chung LAN với bài "lưu tối thiểu".
+  //
+  // Bài kia cũng tạo một loại xe mang mã 'e2e-<LAN>', mà LAN tính một lần lúc nạp _form.js nên hai
+  // bài dùng chung đúng một giá trị. Chạy cả bộ thì bài này tạo trùng mã, server trả 400, và triệu
+  // chứng lộ ra ở chỗ chẳng liên quan: fixture bắt được lỗi JavaScript "Failed to load resource".
+  // Chạy riêng một file thì không có bản ghi kia nên không bao giờ tái hiện.
+  // Phải là CHUỖI SỐ: có ô mã là type="number" (loại xe chẳng hạn), và dienO tính giá trị cho ô số
+  // bằng Number(l) — thêm chữ vào là ra NaN, trình duyệt từ chối, ô thành rỗng.
+  const rieng = String(Number(LAN) + 7);
 
   // --- Tạo ---
   await moThemMoi(page, '/loai-xe');
   for (const o of DANH_SACH.find((x) => x.route === '/loai-xe').fields) {
-    expect(await dienO(page, o.ten, LAN), `không điền được ${o.ten}`).toBe('ok');
+    expect(await dienO(page, o.ten, rieng), `không điền được ${o.ten}`).toBe('ok');
   }
+
+  // ĐỌC LẠI mã thật sự nằm trong ô, không tự dựng lại chuỗi: dienO còn cắt theo maxlength của ô,
+  // nên đoán giá trị là mở đường cho một lỗi khác đúng kiểu vừa gặp.
+  const ma = await giaTri(page, 'Input.Code');
+  expect(ma, 'không đọc được mã vừa điền').toBeTruthy();
+
   await page.locator('#frm button[type="submit"]').click();
   expect(await choKetQuaLuu(page), 'tạo loại xe thất bại').toBeNull();
 
@@ -128,7 +142,7 @@ test('/loai-xe — tạo rồi sửa rồi xoá được chính bản ghi vừa 
   await expect(page.locator('#oc')).toHaveClass(/show/, { timeout: 15_000 });
   expect(await giaTri(page, 'Id'), 'mở sửa mà Id trống').toBeTruthy();
 
-  const tenMoi = 'e2e-da-sua-' + LAN;
+  const tenMoi = 'e2e-da-sua-' + rieng;
   await page.locator('#frm [name="Input.Name"]').fill(tenMoi);
   await page.locator('#frm button[type="submit"]').click();
   expect(await choKetQuaLuu(page), 'sửa loại xe thất bại').toBeNull();

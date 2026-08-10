@@ -113,7 +113,11 @@ export function dienO(page, ten, lan = LAN) {
       // vụ chặn — một câu trả lời đúng của hệ thống, nhưng không nói gì về điều đang cần chứng minh.
       const min = el.min === '' ? null : Number(el.min);
       const max = el.max === '' ? null : Number(el.max);
-      let so = 90000 + (Number(l) % 9000);
+      // Chỉ giữ chữ số của hậu tố: người gọi có thể truyền hậu tố lẫn chữ để tách bạch dữ liệu của
+      // mình, mà Number('123vd') là NaN — gán "NaN" vào ô số thì trình duyệt bỏ qua và ô thành RỖNG,
+      // rồi bài test đỏ ở một chỗ chẳng liên quan.
+      const chiSo = Number(String(l).replace(/\D/g, '')) || 0;
+      let so = 90000 + (chiSo % 9000);
       if (max !== null && so > max) so = max;
       if (min !== null && so < min) so = min;
       if (max !== null && min !== null && max > min) so = Math.min(max, Math.max(min + 1, so));
