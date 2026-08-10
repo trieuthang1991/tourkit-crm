@@ -42,7 +42,10 @@ public sealed record OrderListFilter(
     Guid? DepartureId = null,
     int? VisaStatus = null,
     // Lọc theo thuộc tính KHÁCH HÀNG của đơn (bám staging: Nguồn KH · Loại KH) — join qua Customer.
-    int? CustomerType = null, string? CustomerSource = null);
+    int? CustomerType = null, string? CustomerSource = null,
+    // Lọc theo ĐÚNG MỘT khách — cho tab "Đơn hàng" ở màn chi tiết khách hàng. Cùng lý do như
+    // DepartureId: đẩy xuống DB thay vì tải cả bảng đơn về rồi lọc trong bộ nhớ.
+    Guid? CustomerId = null);
 
 /// <summary>NCC xuất hiện trong đơn (dùng cho Select lọc theo nhà cung cấp).</summary>
 public sealed record OrderFilterProviderDto(Guid Id, string Name);

@@ -11,11 +11,13 @@
 }
 
 @section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
 }
 @section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
   <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
@@ -93,11 +95,17 @@
 
   <!-- Nội dung (phải) -->
   <div class="col-xl-8 col-lg-7 col-md-7 order-0 order-md-1">
-    <ul class="nav nav-pills flex-column flex-md-row mb-4">
-      <li class="nav-item"><a class="nav-link active" href="javascript:void(0);"><i class="ti ti-user-check ti-xs me-1"></i>Tổng quan</a></li>
-      <li class="nav-item"><a class="nav-link" href="javascript:void(0);"><i class="ti ti-shopping-cart ti-xs me-1"></i>Đơn hàng</a></li>
-      <li class="nav-item"><a class="nav-link" href="javascript:void(0);"><i class="ti ti-headset ti-xs me-1"></i>Chăm sóc</a></li>
+    @* Ba nhãn này trước đây là markup chết copy từ theme: href="javascript:void(0)", không có
+       tab-pane nào phía sau, không JavaScript nào bắt sự kiện. Bấm vào không xảy ra gì cả, nên
+       người dùng không phân biệt được "chưa có dữ liệu" với "tính năng chưa làm". *@
+    <ul class="nav nav-pills flex-column flex-md-row mb-4" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pane-tong-quan" type="button" role="tab"><i class="ti ti-user-check ti-xs me-1"></i>Tổng quan</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pane-don-hang" type="button" role="tab"><i class="ti ti-shopping-cart ti-xs me-1"></i>Đơn hàng</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pane-cham-soc" type="button" role="tab"><i class="ti ti-headset ti-xs me-1"></i>Chăm sóc</button></li>
     </ul>
+
+    <div class="tab-content p-0">
+    <div class="tab-pane fade show active" id="pane-tong-quan" role="tabpanel">
 
     @if (!string.IsNullOrWhiteSpace(c.UnitName) || !string.IsNullOrWhiteSpace(c.TaxCode))
     {
@@ -169,6 +177,41 @@
         </ul>
       </div>
     </div>
+    </div>@* /pane-tong-quan *@
+
+    <div class="tab-pane fade" id="pane-don-hang" role="tabpanel">
+      <div class="card">
+        <h5 class="card-header d-flex align-items-center"><i class="ti ti-shopping-cart me-2"></i>Đơn hàng của khách</h5>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="tbl-don" class="table table-hover">
+              <thead><tr>
+                <th style="width:44px">#</th><th>Mã đơn</th><th>Tour / Ngày đi</th><th>Số chỗ</th>
+                <th class="text-end">Doanh thu</th><th class="text-end">Đã thu / Còn nợ</th><th>Trạng thái</th><th></th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="pane-cham-soc" role="tabpanel">
+      <div class="card">
+        <h5 class="card-header d-flex align-items-center"><i class="ti ti-headset me-2"></i>Lịch chăm sóc</h5>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="tbl-cham" class="table table-hover">
+              <thead><tr>
+                <th style="width:44px">#</th><th>Nội dung</th><th>Ngày hẹn</th><th>Phụ trách</th><th>Phản hồi</th><th>Trạng thái</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>@* /tab-content *@
   </div>
 </div>
 
@@ -198,5 +241,57 @@
       passportExpiry = c.PassportExpiry != null ? c.PassportExpiry.Value.ToString("yyyy-MM-dd") : null,
       note = c.Note
     });
+
+    // Hai bảng chỉ nạp khi người dùng MỞ tab tương ứng, và chỉ nạp một lần. Dựng sẵn cả ba lúc vào
+    // trang là bắt mọi người trả giá cho hai truy vấn mà phần lớn lần xem không hề dùng tới.
+    (function () {
+      var daDung = {};
+      function dungBang(id, capHinh) {
+        if (daDung[id]) { return; }
+        daDung[id] = true;
+        tk.table(id, capHinh);
+      }
+
+      var STT = { data: null, className: 'text-center text-muted', render: function (r, t, row, meta) {
+        return meta.settings._iDisplayStart + meta.row + 1; } };
+
+      document.querySelector('[data-bs-target="#pane-don-hang"]').addEventListener('shown.bs.tab', function () {
+        dungBang('#tbl-don', {
+          url: '?handler=Orders&id=' + CUSTOMER.id,
+          columns: [
+            STT,
+            { data: null, render: function (r) { return '<a href="/don-hang/' + r.id + '" class="fw-medium">' + tk.escape(r.code) + '</a>'; } },
+            { data: null, render: function (r) {
+                var s = '<div>' + tk.escape(tk.trunc(r.tourTitle || '—', 120)) + '</div>';
+                if (r.departureDate) { s += '<div class="small text-muted">đi ' + r.departureDate + '</div>'; }
+                return s; } },
+            { data: null, render: function (r) { return '<span class="badge bg-label-primary">' + r.seatTotal + ' chỗ</span>'; } },
+            { data: null, className: 'text-end', render: function (r) { return tk.money(r.totalRevenue); } },
+            { data: null, className: 'text-end', render: function (r) {
+                return '<div class="text-success">' + tk.money(r.amountPaid) + '</div>' +
+                       '<div class="small text-danger">' + tk.money(r.outstanding) + '</div>'; } },
+            { data: null, render: function (r) { return '<span class="badge bg-label-' + (r.statusColor || 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>'; } },
+            { data: null, className: 'text-end', render: function (r) { return '<a href="/don-hang/' + r.id + '" class="btn btn-icon btn-sm" title="Xem đơn"><i class="ti ti-external-link"></i></a>'; } }
+          ]
+        });
+      });
+
+      document.querySelector('[data-bs-target="#pane-cham-soc"]').addEventListener('shown.bs.tab', function () {
+        dungBang('#tbl-cham', {
+          url: '?handler=Cares&id=' + CUSTOMER.id,
+          columns: [
+            STT,
+            { data: null, render: function (r) {
+                var s = '<div class="fw-medium">' + tk.escape(r.title) + '</div>';
+                if (r.detail) { s += '<div class="small text-muted">' + tk.escape(tk.trunc(r.detail, 120)) + '</div>'; }
+                return s; } },
+            { data: null, render: function (r) { return r.remindAt || '—'; } },
+            { data: null, render: function (r) { return tk.escape(r.assigneeName || '—'); } },
+            { data: null, render: function (r) { return r.feedback ? tk.escape(tk.trunc(r.feedback, 120)) : '—'; } },
+            { data: null, render: function (r) { return '<span class="badge bg-label-' + (r.statusColor || 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>'; } }
+          ]
+        });
+      });
+    })();
   </script>
 }
