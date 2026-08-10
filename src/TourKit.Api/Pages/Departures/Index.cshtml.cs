@@ -114,6 +114,14 @@ public class IndexModel : TkListPageModel
             tourType = d.TourType ?? "—",
             departureDateText = d.DepartureDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "—",
             endDateText = d.EndDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+
+            // Giá trị THÔ cho form sửa. Thiếu hai dòng này thì tk.form.open(data) đi tìm khoá
+            // 'departureDate'/'endDate' không thấy, ô ngày mở ra TRỐNG, và bấm Lưu là ghi null đè lên
+            // ngày cũ — mở sửa rồi lưu mà không đổi gì cũng xoá trắng ngày khởi hành và ngày về.
+            // Bản *Text ở trên chỉ để hiển thị trên lưới, không nạp ngược vào form được.
+            // Định dạng yyyy-MM-dd đúng dateFormat của flatpickr (xem quy ước ngày tháng ở CLAUDE.md).
+            departureDate = d.DepartureDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            endDate = d.EndDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             totalSlots = d.TotalSlots,
             price = d.Price,
             seatHeld = d.SeatHeld,
