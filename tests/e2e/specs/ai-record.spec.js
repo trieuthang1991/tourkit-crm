@@ -121,4 +121,49 @@ test.describe('@ai Trợ lý AI trên bản ghi', () => {
     await expect(the.locator('[data-act="Review"]')).toBeVisible({ timeout: 20_000 });
     await expect(the.locator('[data-act]')).toHaveCount(3);
   });
+
+  /**
+   * Chấm xong, tải lại trang thì điểm phải CÒN ĐÓ mà không phải bấm lại.
+   *
+   * Đây là toàn bộ lý do lưu kết quả. Bản trước không lưu gì: mở lại hồ sơ hôm sau là thẻ trống
+   * trơn, muốn xem lại phải chạy lại — mất 15-20 giây và thêm một lượt gọi model có tính phí cho
+   * một câu trả lời đã từng có.
+   */
+  test('Chấm điểm xong, tải lại trang vẫn thấy kết quả', async ({ trang }) => {
+    const id = await moKhachCoTraoDoi(trang);
+    await bam(trang, 'Review');
+
+    const diemTruoc = (await trang.locator('[data-ai-review] .tk-ai-score').innerText()).trim();
+    expect(diemTruoc.length, 'không đọc được điểm vừa chấm').toBeGreaterThan(0);
+
+    await trang.goto(`/khach-hang/${id}`);
+
+    // KHÔNG bấm gì cả — điểm phải tự hiện từ dữ liệu đã lưu.
+    const diemSau = trang.locator('[data-ai-review] .tk-ai-score');
+    await expect(diemSau).toBeVisible({ timeout: 30_000 });
+    expect((await diemSau.innerText()).trim()).toBe(diemTruoc);
+
+    // Và phải nói rõ chấm lúc nào. Thiếu dòng này thì điểm chấm từ tháng trước trông y hệt điểm
+    // vừa chấm xong, người đọc ra quyết định trên hiện trạng đã cũ mà không hề biết.
+    await expect(trang.locator('[data-ai-review]')).toContainText('Đã chấm lúc');
+
+    await expect(trang.locator('[data-ai-review] [data-role="mo-lich-su"]')).toBeVisible();
+  });
+
+  /** Bấm "các lần trước" phải liệt kê được lịch sử, không phải một nút chết. */
+  test('Xem được các lần chấm trước', async ({ trang }) => {
+    const id = await moKhachCoTraoDoi(trang);
+
+    // Chấm hai lần để chắc chắn có ít nhất một dòng lịch sử ngoài dòng đang hiện.
+    await bam(trang, 'Review');
+    await trang.goto(`/khach-hang/${id}`);
+    await trang.locator('[data-ai-review] [data-act="Review"]').waitFor({ timeout: 30_000 });
+    await bam(trang, 'Review');
+
+    await trang.locator('[data-ai-review] [data-role="mo-lich-su"]').click();
+
+    const ds = trang.locator('[data-ai-review] [data-role="history"]');
+    await expect(ds).toContainText('Các lần trước', { timeout: 20_000 });
+    await expect(ds.locator('li')).not.toHaveCount(0);
+  });
 });
