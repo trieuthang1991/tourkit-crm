@@ -22,14 +22,26 @@ public sealed class AuthTestFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // UseSetting chứ không phải ConfigureAppConfiguration: việc đăng ký scheme Google xảy ra
+        // lúc DỰNG ứng dụng, còn nguồn cấu hình thêm bằng ConfigureAppConfiguration chỉ có hiệu
+        // lực sau khi Build() — tới lúc đó thì Program.cs đã quyết định xong là không có Google.
+        //
+        // Đặt cả nhánh TẮT, không chỉ nhánh bật. appsettings.json của máy chạy test vẫn được nạp,
+        // nên nếu ai đó điền khoá Google thật vào đó thì bài "chưa cấu hình thì không có nút" sẽ
+        // thấy nút và đỏ — kết quả test phụ thuộc vào cấu hình riêng của từng máy. Ghi đè tường
+        // minh ở đây làm mỗi bài test tự quyết định trạng thái mà nó muốn kiểm.
         if (GoogleConfigured)
         {
-            // UseSetting chứ không phải ConfigureAppConfiguration: việc đăng ký scheme Google xảy ra
-            // lúc DỰNG ứng dụng, còn nguồn cấu hình thêm bằng ConfigureAppConfiguration chỉ có hiệu
-            // lực sau khi Build() — tới lúc đó thì Program.cs đã quyết định xong là không có Google.
+            // Khoá GIẢ, chỉ để scheme đăng ký được. Không bài nào gọi ra máy chủ Google.
             builder.UseSetting("Authentication:Google:Enabled", "true");
             builder.UseSetting("Authentication:Google:ClientId", "test-client-id.apps.googleusercontent.com");
             builder.UseSetting("Authentication:Google:ClientSecret", "test-client-secret-khong-that");
+        }
+        else
+        {
+            builder.UseSetting("Authentication:Google:Enabled", "false");
+            builder.UseSetting("Authentication:Google:ClientId", "");
+            builder.UseSetting("Authentication:Google:ClientSecret", "");
         }
 
         builder.ConfigureServices(services =>
