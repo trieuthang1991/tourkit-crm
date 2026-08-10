@@ -1,3 +1,457 @@
 @page
 @model TourKit.Api.Pages.IndexModel
-@{ Layout = null; }
+@{
+  Layout = null;
+  var pricingPlans = new[]
+  {
+    new { Name = "Miễn phí", Badge = "", For = "Miễn phí đến 20 nhân viên.", Price = "0đ", Unit = "/tháng", Note = "Đầy đủ để cả đội bắt đầu vận hành trên một hệ thống.", Cta = "Bắt đầu miễn phí", Features = new[] { "CRM khách hàng & cơ hội", "Báo giá và đơn hàng", "Điều hành tour cơ bản", "Thu chi & công nợ", "Báo cáo chuẩn" } },
+    new { Name = "Theo quy mô", Badge = "Phổ biến nhất", For = "Linh hoạt khi đội ngũ của bạn phát triển.", Price = "60.000đ", Unit = "/người/tháng", Note = "chỉ tính từ nhân viên thứ 21. Ví dụ: 30 nhân viên = 600.000đ/tháng.", Cta = "Bắt đầu với gói này", Features = new[] { "Toàn bộ gói Miễn phí", "Đặt dịch vụ & nhà cung cấp", "Quyết toán tour, hoa hồng", "KPI và phân quyền theo vai trò", "Kết nối phần mềm kế toán", "Hỗ trợ ưu tiên trong giờ hành chính" } },
+    new { Name = "Theo yêu cầu", Badge = "", For = "Nhiều chi nhánh, nhiều pháp nhân hoặc quy trình riêng.", Price = "Theo yêu cầu", Unit = "", Note = "Báo giá theo phạm vi triển khai và nhu cầu tích hợp.", Cta = "Liên hệ tư vấn", Features = new[] { "Toàn bộ gói Theo quy mô", "Đa chi nhánh & hợp nhất số liệu", "Nhật ký truy vết đầy đủ", "SSO và chính sách bảo mật riêng", "Quản lý triển khai chuyên trách" } }
+  };
+  var pricingCompare = new[]
+  {
+    new { Label = "Số người dùng", A = "Tối đa 20", B = "Từ nhân viên thứ 21", C = "Theo nhu cầu" },
+    new { Label = "CRM & lịch sử khách hàng", A = "✓", B = "✓", C = "✓" },
+    new { Label = "Báo giá có phiên bản & duyệt", A = "Cơ bản", B = "✓", C = "✓" },
+    new { Label = "Đặt dịch vụ, nhà cung cấp", A = "—", B = "✓", C = "✓" },
+    new { Label = "Quyết toán tour & hoa hồng", A = "—", B = "✓", C = "✓" },
+    new { Label = "Đa chi nhánh, hợp nhất số liệu", A = "—", B = "—", C = "✓" },
+    new { Label = "Nhật ký truy vết đầy đủ", A = "—", B = "Cơ bản", C = "✓" },
+    new { Label = "Chuyển dữ liệu cũ", A = "✓", B = "✓", C = "✓" },
+    new { Label = "Hỗ trợ", A = "Giờ hành chính", B = "Ưu tiên", C = "Quản lý riêng" }
+  };
+  var pricingJson = System.Text.Json.JsonSerializer.Serialize(
+    new { plans = pricingPlans, compare = pricingCompare },
+    new System.Text.Json.JsonSerializerOptions
+    {
+      PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+      Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    });
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M-Travel — Nền tảng quản lý vận hành doanh nghiệp lữ hành</title>
+<meta name="description" content="M-Travel gom khách hàng, báo giá, điều hành tour, dòng tiền và báo cáo về một hệ thống duy nhất.">
+<meta name="theme-color" content="#ffffff">
+<link rel="canonical" href="@($"{Request.Scheme}://{Request.Host}{Request.PathBase}/")">
+<link rel="icon" type="image/svg+xml" href="~/img/branding/m-travel-mark.svg">
+<link rel="alternate icon" type="image/x-icon" href="~/img/branding/m-travel-mark.ico">
+<link rel="apple-touch-icon" href="~/img/branding/m-travel-mark-180.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="~/css/landing.css" asp-append-version="true">
+</head>
+<body class="bg-white text-ink font-sans antialiased overflow-x-clip">
+<a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-white">Chuyển đến nội dung</a>
+
+<!-- HEADER -->
+<header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-line">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8 h-[76px] flex items-center justify-between gap-8">
+    <a href="/" class="flex items-center gap-3 text-ink" aria-label="M-Travel - Trang chủ">
+      <span class="w-8 h-8 rounded-[9px] bg-brand-500 text-white grid place-items-center text-[19px] font-bold">M</span>
+      <span class="text-[18px] font-semibold tracking-tight">M-Travel</span>
+    </a>
+    <nav class="hidden lg:flex items-center gap-7 text-[14.5px] text-muted">
+      <a href="#van-hanh" class="hover:text-ink">Vì sao đổi</a>
+      <a href="#san-pham" class="hover:text-ink">Sản phẩm</a>
+      <a href="#ai" class="hover:text-ink">M-Travel AI</a>
+      <a href="#khach-hang" class="hover:text-ink">Khách hàng</a>
+      <a href="#bang-gia" class="hover:text-ink">Bảng giá</a>
+      <a href="#faq" class="hover:text-ink">Hỏi đáp</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      <a href="/dang-nhap" class="hidden sm:inline text-[14.5px] font-medium text-ink hover:text-ink">Đăng nhập</a>
+      <a href="/dang-ky" class="inline-flex items-center bg-brand-600 hover:bg-brand-700 text-white text-[14.5px] font-semibold px-5 py-[11px] rounded-full">Dùng thử miễn phí</a>
+      <button id="nav-toggle" type="button" class="lg:hidden w-10 h-10 grid place-items-center rounded-full border border-line-hard" aria-label="Mở menu">
+        <span class="block w-4 h-[1.5px] bg-ink relative before:absolute before:inset-x-0 before:-top-[5px] before:h-[1.5px] before:bg-ink after:absolute after:inset-x-0 after:top-[5px] after:h-[1.5px] after:bg-ink"></span>
+      </button>
+    </div>
+  </div>
+  <nav id="nav-mobile" class="hidden lg:hidden border-t border-line bg-white px-6 py-4 flex-col gap-1 text-[15px]">
+    <a href="#van-hanh" class="py-2.5 text-muted">Vì sao đổi</a>
+    <a href="#san-pham" class="py-2.5 text-muted">Sản phẩm</a>
+    <a href="#ai" class="py-2.5 text-muted">M-Travel AI</a>
+    <a href="#khach-hang" class="py-2.5 text-muted">Khách hàng</a>
+    <a href="#bang-gia" class="py-2.5 text-muted">Bảng giá</a>
+    <a href="#faq" class="py-2.5 text-muted">Hỏi đáp</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<main id="main-content">
+<section class="relative overflow-hidden border-b border-line">
+  <div class="pointer-events-none absolute -right-36 -top-32 w-[760px] h-[620px] bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.16),rgba(255,255,255,0)_68%)]"></div>
+  <div class="relative mx-auto max-w-[1200px] pl-6 pr-6 lg:pr-0 lg:pl-8 grid lg:grid-cols-[0.92fr_1.08fr] gap-10 lg:gap-14 items-center lg:min-h-[640px]">
+    <div class="pt-14 pb-4 lg:py-[76px]">
+      <div class="reveal-in inline-flex items-center gap-2 border border-brand-100 bg-brand-50 rounded-full px-3.5 py-1.5 text-[13px] font-medium text-brand-700">Sắp có trợ lý AI trong toàn hệ thống</div>
+      <h1 class="reveal-in mt-5 text-[34px] sm:text-[42px] lg:text-[60px] leading-[1.06] font-bold tracking-[-0.032em] max-w-[15ch] text-balance">Cả công ty lữ hành trong một hệ thống.</h1>
+      <p class="reveal-in mt-5 text-[17px] lg:text-[18px] leading-relaxed text-muted max-w-[44ch] text-pretty">Khách hàng, báo giá, điều hành tour, dòng tiền và báo cáo chạy trên cùng một nguồn dữ liệu — để không ai phải hỏi “con số này lấy ở đâu ra?”</p>
+      <div class="reveal-in mt-8 flex flex-wrap gap-3">
+        <a href="/dang-ky" class="inline-flex items-center bg-ink hover:bg-black text-white text-[15.5px] font-semibold px-7 py-[15px] rounded-full">Dùng thử 14 ngày</a>
+        <a href="#san-pham" class="inline-flex items-center border border-line-hard hover:border-brand-500 bg-white text-ink text-[15.5px] font-medium px-6 py-[15px] rounded-full">Đặt lịch demo</a>
+      </div>
+      <div class="mt-9 pt-6 border-t border-line-soft flex flex-wrap items-center gap-3.5 text-[14px] text-muted">
+        <span class="text-muted-3">Đang chạy tại</span>
+        <span class="font-semibold">Sao Mai Travel</span><span class="text-[#D5D5DC]">·</span>
+        <span class="font-semibold">Đông Dương</span><span class="text-[#D5D5DC]">·</span>
+        <span class="font-semibold">Hải Đăng DMC</span>
+      </div>
+    </div>
+
+    <div class="relative pb-14 lg:py-14">
+      <div class="rounded-2xl lg:rounded-l-[18px] lg:rounded-r-none border border-line-hard bg-white overflow-hidden shadow-[0_30px_80px_-40px_rgba(15,15,20,0.35)] lg:shadow-[-24px_30px_80px_-40px_rgba(15,15,20,0.35)]">
+        <div class="h-[42px] bg-[#F6F6F8] border-b border-line-soft flex items-center gap-2 px-4">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#FF5F57]"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-[#28C840]"></span>
+          <span class="ml-3 text-[12px] text-muted-3">M-Travel · Tổng quan điều hành</span>
+        </div>
+        <div class="p-5 sm:p-6">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="border border-line-soft rounded-[13px] p-3.5 bg-[#FAFAFB]"><div class="text-[12px] text-muted-3">Doanh thu</div><div class="mt-1 text-[24px] font-bold tracking-tight">94,3 tỷ</div><div class="mt-1 text-[11.5px] text-[#16A34A]">▲ 12,4%</div></div>
+            <div class="border border-line-soft rounded-[13px] p-3.5 bg-[#FAFAFB]"><div class="text-[12px] text-muted-3">Đã thu</div><div class="mt-1 text-[24px] font-bold tracking-tight">18,7 tỷ</div><div class="mt-1 text-[11.5px] text-muted-3">19,8%</div></div>
+            <div class="border border-line-soft rounded-[13px] p-3.5 bg-[#FFF8ED]"><div class="text-[12px] text-muted-3">Còn phải thu</div><div class="mt-1 text-[24px] font-bold tracking-tight">75,7 tỷ</div><div class="mt-1 text-[11.5px] text-[#B45309]">14 quá hạn</div></div>
+            <div class="border border-line-soft rounded-[13px] p-3.5 bg-[#FAFAFB]"><div class="text-[12px] text-muted-3">Lợi nhuận</div><div class="mt-1 text-[24px] font-bold tracking-tight">6,4 tỷ</div><div class="mt-1 text-[11.5px] text-muted-3">biên 6,8%</div></div>
+          </div>
+          <div class="mt-3 grid lg:grid-cols-[1.5fr_1fr] gap-3">
+            <div class="border border-line-soft rounded-[13px] p-4">
+              <div class="text-[13px] font-semibold">Doanh thu theo phòng ban</div>
+              <div class="mt-4 flex items-end gap-4 h-[150px]">
+                <div class="flex-1 flex items-end gap-1 h-full"><div class="flex-1 h-[46%] bg-brand-500 rounded-t"></div><div class="flex-1 h-[32%] bg-brand-200 rounded-t"></div></div>
+                <div class="flex-1 flex items-end gap-1 h-full"><div class="flex-1 h-[62%] bg-brand-500 rounded-t"></div><div class="flex-1 h-[41%] bg-brand-200 rounded-t"></div></div>
+                <div class="flex-1 flex items-end gap-1 h-full"><div class="flex-1 h-[54%] bg-brand-500 rounded-t"></div><div class="flex-1 h-[47%] bg-brand-200 rounded-t"></div></div>
+                <div class="flex-1 flex items-end gap-1 h-full"><div class="flex-1 h-[78%] bg-brand-500 rounded-t"></div><div class="flex-1 h-[52%] bg-brand-200 rounded-t"></div></div>
+                <div class="flex-1 flex items-end gap-1 h-full"><div class="flex-1 h-[92%] bg-brand-500 rounded-t"></div><div class="flex-1 h-[64%] bg-brand-200 rounded-t"></div></div>
+              </div>
+            </div>
+            <div class="border border-line-soft rounded-[13px] p-4">
+              <div class="text-[13px] font-semibold">Cần bạn quyết</div>
+              <div class="mt-3 border-l-[3px] border-brand-500 pl-3"><div class="text-[12.5px] font-medium">Duyệt báo giá đoàn Hàn 42 khách</div><div class="text-[11.5px] text-muted-3">Biên 7,2%</div></div>
+              <div class="mt-3 border-l-[3px] border-[#F59E0B] pl-3"><div class="text-[12.5px] font-medium">Công nợ quá hạn 12 ngày</div><div class="text-[11.5px] text-muted-3">1,8 tỷ</div></div>
+              <div class="mt-3 border-l-[3px] border-[#16A34A] pl-3"><div class="text-[12.5px] font-medium">Chốt xe & HDV Đà Nẵng</div><div class="text-[11.5px] text-muted-3">12/09</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 lg:mt-0 lg:absolute lg:-left-12 lg:bottom-24 bg-white border border-line-hard rounded-2xl px-4.5 py-3.5 p-4 shadow-[0_18px_44px_-20px_rgba(15,15,20,0.32)] lg:w-[250px]">
+        <div class="text-[12px] text-muted-3">Nhịp vận hành hôm nay</div>
+        <div class="h-[26px] overflow-hidden mt-1">
+          <div class="animate-ticker">
+            <div class="h-[26px] text-[15px] font-semibold flex items-center">9 đoàn khởi hành</div>
+            <div class="h-[26px] text-[15px] font-semibold flex items-center">112 báo giá đã gửi</div>
+            <div class="h-[26px] text-[15px] font-semibold flex items-center">2,4 tỷ vừa thu về</div>
+            <div class="h-[26px] text-[15px] font-semibold flex items-center">9 đoàn khởi hành</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGOS -->
+<section class="pt-16 pb-2">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8">
+    <p class="text-center text-[13px] tracking-[0.12em] text-muted-4 font-semibold">ĐANG VẬN HÀNH BỞI CÁC CÔNG TY LỮ HÀNH TRÊN TOÀN QUỐC</p>
+    <div class="relative mt-6 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
+      <div class="flex w-max gap-16 px-8 py-1.5 opacity-60 animate-marquee">
+        <span class="text-[22px] font-bold tracking-tight whitespace-nowrap">Sao Mai Travel</span>
+        <span class="text-[20px] font-bold whitespace-nowrap">ANNAM TOUR</span>
+        <span class="text-[22px] font-semibold italic whitespace-nowrap">Đông Dương</span>
+        <span class="text-[20px] font-semibold tracking-[0.08em] whitespace-nowrap">VIETSKY</span>
+        <span class="text-[22px] font-bold tracking-tight whitespace-nowrap">Hải Đăng DMC</span>
+        <span class="text-[20px] font-semibold tracking-[0.06em] whitespace-nowrap">PHƯƠNG NAM DMC</span>
+        <span class="text-[22px] font-bold tracking-tight whitespace-nowrap">Sao Mai Travel</span>
+        <span class="text-[20px] font-bold whitespace-nowrap">ANNAM TOUR</span>
+        <span class="text-[22px] font-semibold italic whitespace-nowrap">Đông Dương</span>
+        <span class="text-[20px] font-semibold tracking-[0.08em] whitespace-nowrap">VIETSKY</span>
+        <span class="text-[22px] font-bold tracking-tight whitespace-nowrap">Hải Đăng DMC</span>
+        <span class="text-[20px] font-semibold tracking-[0.06em] whitespace-nowrap">PHƯƠNG NAM DMC</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VÌ SAO ĐỔI -->
+<section id="van-hanh" class="py-16 lg:py-24">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8">
+    <div class="reveal max-w-[56ch]">
+      <p class="text-[13px] tracking-[0.12em] text-brand-600 font-semibold">VÌ SAO NÊN ĐỔI</p>
+      <h2 class="mt-4 text-[26px] sm:text-[30px] lg:text-[44px] leading-tight font-bold tracking-[-0.025em]">Vấn đề không nằm ở đội ngũ. Nó nằm ở chỗ số liệu bị chia nhỏ.</h2>
+      <p class="mt-4 text-[17px] leading-relaxed text-muted">Ai cũng làm đúng phần của mình — chỉ là mỗi phần nằm một nơi. Đây là điều thay đổi khi tất cả về chung một hệ.</p>
+    </div>
+    <div class="mt-11 grid lg:grid-cols-2 gap-5">
+      <div class="reveal border border-line rounded-[18px] p-6 lg:p-[30px] bg-[#F6F6F8]">
+        <div class="text-[13px] font-semibold text-muted-3 tracking-[0.06em]">HÔM NAY · EXCEL &amp; ZALO</div>
+        <div class="mt-4 flex flex-col">
+          <div class="py-4 border-t border-line text-[15.5px] text-muted leading-normal">File báo giá gửi qua Zalo, mỗi người giữ một bản khác nhau</div>
+          <div class="py-4 border-t border-line text-[15.5px] text-muted leading-normal">Cuối tháng mới biết tour nào thật sự có lãi</div>
+          <div class="py-4 border-t border-line text-[15.5px] text-muted leading-normal">Công nợ nằm trong sổ kế toán, sales không thấy</div>
+          <div class="py-4 border-t border-line text-[15.5px] text-muted leading-normal">Nhân sự nghỉ việc, lịch sử khách đi theo</div>
+          <div class="py-4 border-t border-line text-[15.5px] text-muted leading-normal">Báo cáo cho sếp mất 2 ngày ghép tay</div>
+        </div>
+      </div>
+      <div class="reveal border border-ink rounded-[18px] p-6 lg:p-[30px] bg-ink text-white">
+        <div class="text-[13px] font-semibold text-[#A5A2FF] tracking-[0.06em]">VỚI M-TRAVEL</div>
+        <div class="mt-4 flex flex-col">
+          <div class="py-4 border-t border-night-line text-[15.5px] leading-normal">Một bản báo giá duy nhất, có phiên bản và người duyệt</div>
+          <div class="py-4 border-t border-night-line text-[15.5px] leading-normal">Lãi/lỗ hiện ngay khi vừa dựng chương trình tour</div>
+          <div class="py-4 border-t border-night-line text-[15.5px] leading-normal">Công nợ gắn thẳng vào đơn hàng và người phụ trách</div>
+          <div class="py-4 border-t border-night-line text-[15.5px] leading-normal">Lịch sử khách thuộc về công ty, không thuộc về ai</div>
+          <div class="py-4 border-t border-night-line text-[15.5px] leading-normal">Báo cáo có sẵn, mở ra là xem</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SẢN PHẨM / VAI TRÒ -->
+<section id="san-pham" class="py-16 lg:py-24 bg-[#F6F6F8] border-y border-line">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8">
+    <div class="reveal flex flex-wrap items-end justify-between gap-8">
+      <div class="max-w-[52ch]">
+        <p class="text-[13px] tracking-[0.12em] text-brand-600 font-semibold">MỖI VAI TRÒ MỘT MÀN HÌNH</p>
+        <h2 class="mt-4 text-[26px] sm:text-[30px] lg:text-[44px] leading-tight font-bold tracking-tight">Không ai phải học cả hệ thống để làm việc của mình.</h2>
+      </div>
+      <p class="max-w-[38ch] text-[16px] leading-relaxed text-muted">Chọn vai trò để xem M-Travel thay đổi ngày làm việc của họ như thế nào.</p>
+    </div>
+    <div id="role-tabs" class="mt-9 flex flex-wrap gap-2.5"></div>
+    <div id="role-panel" class="mt-6 grid lg:grid-cols-[1fr_1.12fr] gap-7 items-stretch"></div>
+  </div>
+</section>
+
+<!-- AI -->
+<section id="ai" class="relative py-16 lg:py-24 overflow-hidden">
+  <div class="pointer-events-none absolute top-10 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.16),rgba(255,255,255,0)_66%)]"></div>
+  <div class="relative mx-auto max-w-[1200px] px-6 lg:px-8">
+    <div class="reveal text-center max-w-[62ch] mx-auto">
+      <div class="inline-flex items-center gap-2.5 border border-brand-100 bg-brand-50 rounded-full pl-2 pr-4 py-1.5 text-[13.5px] text-brand-700">
+        <span class="relative w-2.5 h-2.5 grid place-items-center">
+          <span class="absolute inset-0 rounded-full bg-brand-500 animate-ping-slow"></span>
+          <span class="relative w-2.5 h-2.5 rounded-full bg-brand-500"></span>
+        </span>
+        M-TRAVEL AI · ĐANG PHÁT TRIỂN
+      </div>
+      <h2 class="mt-4 text-[26px] sm:text-[30px] lg:text-[44px] leading-tight font-bold tracking-tight">Sắp tới, hệ thống không chỉ giữ số liệu — nó trả lời bạn.</h2>
+      <p class="mt-4 text-[17px] leading-relaxed text-muted">Khi toàn bộ vận hành đã nằm chung một nơi, AI mới thật sự hiểu công ty bạn. Đó là lý do chúng tôi làm nền tảng trước, rồi mới đưa trợ lý AI vào từng nghiệp vụ.</p>
+    </div>
+
+    <div class="mt-12 grid lg:grid-cols-[1.05fr_1fr] gap-7 items-stretch">
+      <div class="relative rounded-[20px] bg-ink text-white p-5 sm:p-6 overflow-hidden shadow-[0_30px_70px_-34px_rgba(15,15,20,0.6)]">
+        <div class="flex items-center gap-2.5 pb-4 border-b border-night-line">
+          <div class="w-7 h-7 rounded-[9px] bg-brand-500 grid place-items-center text-[14px] font-bold">AI</div>
+          <div class="text-[14px] font-semibold">Trợ lý M-Travel</div>
+          <div class="ml-auto text-[12px] text-muted-3">đọc dữ liệu thật của công ty bạn</div>
+        </div>
+        <div class="mt-4 flex flex-col gap-3.5 min-h-[330px]">
+          <div class="self-end max-w-[78%] bg-night-3 rounded-[14px_14px_4px_14px] px-4 py-3 text-[14.5px] leading-normal animate-ai-msg">Tháng 8 tour nào biên lợi nhuận dưới 5%?</div>
+          <div class="self-start flex gap-1.5 px-4 py-3 bg-night-2 rounded-[14px_14px_14px_4px] w-max animate-ai-msg [animation-delay:1s]">
+            <span class="w-[7px] h-[7px] rounded-full bg-[#A5A2FF] animate-dot"></span>
+            <span class="w-[7px] h-[7px] rounded-full bg-[#A5A2FF] animate-dot [animation-delay:.15s]"></span>
+            <span class="w-[7px] h-[7px] rounded-full bg-[#A5A2FF] animate-dot [animation-delay:.3s]"></span>
+          </div>
+          <div class="self-start max-w-[92%] bg-night-2 border border-night-line rounded-[14px_14px_14px_4px] p-4 animate-ai-msg [animation-delay:2.2s]">
+            <div class="text-[14.5px] leading-normal">Có 3 tour dưới 5%. Nguyên nhân chính là chi phí xe phát sinh sau khi chốt giá.</div>
+            <div class="mt-3 border-t border-night-line">
+              <div class="flex justify-between gap-4 py-2 border-b border-night-line text-[13.5px]"><span>Côn Đảo tri ân · 60 khách</span><span class="text-[#F59E0B]">4,1%</span></div>
+              <div class="flex justify-between gap-4 py-2 border-b border-night-line text-[13.5px]"><span>Nha Trang MICE · 85 khách</span><span class="text-[#F59E0B]">3,8%</span></div>
+              <div class="flex justify-between gap-4 py-2 text-[13.5px]"><span>Sapa 3N2Đ · 22 khách</span><span class="text-[#F59E0B]">2,4%</span></div>
+            </div>
+          </div>
+          <div class="self-end max-w-[78%] bg-night-3 rounded-[14px_14px_4px_14px] px-4 py-3 text-[14.5px] leading-normal animate-ai-msg [animation-delay:4.2s]">Nhắc điều hành phụ trách giúp tôi.</div>
+          <div class="self-start max-w-[88%] bg-night-2 border border-night-line rounded-[14px_14px_14px_4px] px-4 py-3 text-[14.5px] leading-normal animate-ai-msg [animation-delay:5.4s]">Đã gửi cho Ngọc Anh và Minh Hà kèm bảng chi phí phát sinh. Tôi sẽ theo dõi tới khi biên về trên 5%.</div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-night-line flex flex-wrap gap-2">
+          <span class="text-[12.5px] px-3 py-1.5 rounded-full border border-[#3A3A46] text-[#B6B6C2]">Dự báo dòng tiền tháng tới</span>
+          <span class="text-[12.5px] px-3 py-1.5 rounded-full border border-[#3A3A46] text-[#B6B6C2]">Soạn báo giá đoàn 40 khách</span>
+          <span class="text-[12.5px] px-3 py-1.5 rounded-full border border-[#3A3A46] text-[#B6B6C2]">Tóm tắt khách trước cuộc gọi</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3.5">
+        <div class="border border-line-hard rounded-2xl p-5 bg-white transition hover:-translate-y-1 hover:border-brand-200">
+          <div class="text-[16.5px] font-semibold">Hỏi bằng tiếng Việt, trả lời bằng số liệu của bạn</div>
+          <div class="mt-1.5 text-[14.5px] leading-relaxed text-muted">Không cần biết báo cáo nằm ở đâu. Hỏi như hỏi một người trong công ty, và bấm được vào tận chứng từ gốc.</div>
+        </div>
+        <div class="border border-line-hard rounded-2xl p-5 bg-white transition hover:-translate-y-1 hover:border-brand-200">
+          <div class="text-[16.5px] font-semibold">Dựng bản nháp báo giá trong 30 giây</div>
+          <div class="mt-1.5 text-[14.5px] leading-relaxed text-muted">Từ yêu cầu của khách, AI đề xuất chương trình, giá dịch vụ theo lịch sử và cảnh báo nếu biên lợi nhuận quá mỏng. Người quyết vẫn là sales.</div>
+        </div>
+        <div class="border border-line-hard rounded-2xl p-5 bg-white transition hover:-translate-y-1 hover:border-brand-200">
+          <div class="text-[16.5px] font-semibold">Cảnh báo trước, không phải giải trình sau</div>
+          <div class="mt-1.5 text-[14.5px] leading-relaxed text-muted">Tour sắp âm biên, công nợ sắp quá hạn, đoàn thiếu dịch vụ — AI phát hiện sớm và nhắc đúng người phụ trách.</div>
+        </div>
+        <div class="border border-line-hard rounded-2xl p-5 bg-[#F6F6F8]">
+          <div class="text-[13px] tracking-[0.1em] text-muted-3 font-semibold">LỘ TRÌNH</div>
+          <div class="mt-3.5 flex flex-col gap-3">
+            <div class="flex gap-3 items-baseline"><span class="shrink-0 w-[66px] text-[13px] font-semibold text-brand-600">Q4/2026</span><span class="text-[14.5px] leading-normal">Trợ lý hỏi đáp số liệu trong dashboard</span></div>
+            <div class="flex gap-3 items-baseline"><span class="shrink-0 w-[66px] text-[13px] font-semibold text-brand-600">Q1/2027</span><span class="text-[14.5px] leading-normal">Soạn báo giá, email và tóm tắt hồ sơ khách</span></div>
+            <div class="flex gap-3 items-baseline"><span class="shrink-0 w-[66px] text-[13px] font-semibold text-brand-600">Q2/2027</span><span class="text-[14.5px] leading-normal">Dự báo dòng tiền và nhu cầu tour theo mùa</span></div>
+          </div>
+          <div class="mt-4 pt-3.5 border-t border-line text-[13.5px] leading-relaxed text-muted-2">Dữ liệu của bạn không dùng để huấn luyện mô hình chung. Mọi câu trả lời đều tôn trọng phân quyền sẵn có.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VIDEO -->
+<section class="py-16 lg:py-24">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8">
+    <div class="grid lg:grid-cols-[1fr_1.5fr] gap-11 items-center">
+      <div>
+        <p class="text-[13px] tracking-[0.12em] text-brand-600 font-semibold">XEM TRƯỚC KHI TIN</p>
+        <h2 class="mt-4 text-[26px] sm:text-[30px] lg:text-[40px] leading-tight font-bold tracking-tight">3 phút đi hết một đơn hàng, từ hỏi giá tới quyết toán.</h2>
+        <p class="mt-4 text-[16.5px] leading-relaxed text-muted">Không slide, không kịch bản. Một tour thật chạy qua từng bộ phận: sales chốt, điều hành đặt dịch vụ, kế toán ghi thu chi, giám đốc xem lãi.</p>
+        <a href="#cta" class="inline-flex items-center gap-2.5 mt-6 text-[15.5px] font-semibold text-brand-600 hover:text-brand-700">Đặt lịch demo riêng cho công ty bạn →</a>
+      </div>
+      <div class="relative rounded-[20px] overflow-hidden border border-line-hard shadow-[0_24px_60px_-30px_rgba(15,15,20,0.35)]">
+        <img src="~/img/landing/m-travel-product-walkthrough.webp" width="1440" height="810" class="h-[240px] w-full object-cover sm:h-[320px] lg:h-[420px]" alt="Đội vận hành theo dõi dashboard quản lý doanh nghiệp trên M-Travel" loading="lazy" />
+        <div class="absolute inset-0 grid place-items-center pointer-events-none">
+          <div class="w-[74px] h-[74px] rounded-full bg-white/95 grid place-items-center shadow-[0_10px_30px_rgba(15,15,20,0.25)]">
+            <div class="ml-1 w-0 h-0 border-l-[20px] border-l-ink border-y-[12px] border-y-transparent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KHÁCH HÀNG -->
+<section id="khach-hang" class="py-16 lg:py-24 bg-ink text-white">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8">
+    <div class="grid lg:grid-cols-[1.25fr_1fr] gap-10 lg:gap-14 items-center">
+      <div>
+        <p class="text-[13px] tracking-[0.12em] text-[#A5A2FF] font-semibold">CÂU CHUYỆN KHÁCH HÀNG</p>
+        <blockquote class="mt-5 text-[24px] lg:text-[34px] leading-snug font-semibold tracking-tight text-pretty">“Trước đây tôi hỏi doanh số thì hai ngày sau mới có bảng. Bây giờ tôi mở điện thoại lúc 7 giờ sáng và biết hôm qua công ty lãi bao nhiêu.”</blockquote>
+        <div class="mt-6 flex items-center gap-3.5">
+          <img src="~/img/landing/m-travel-customer-avatar.webp" width="320" height="320" class="h-[52px] w-[52px] shrink-0 rounded-full object-cover" alt="Chân dung khách hàng Nguyễn Thanh Sơn" loading="lazy" />
+          <div>
+            <div class="text-[15px] font-semibold">Nguyễn Thanh Sơn</div>
+            <div class="text-[14px] text-[#A4A4B0]">Giám đốc, Sao Mai Travel · 68 nhân sự</div>
+          </div>
+        </div>
+        <div class="mt-10 pt-7 border-t border-night-line grid grid-cols-2 sm:grid-cols-3 gap-5">
+          <div><div class="text-[30px] lg:text-[38px] font-bold tracking-tight">-73%</div><div class="mt-1 text-[14px] text-[#A4A4B0] leading-snug">thời gian làm báo cáo tháng</div></div>
+          <div><div class="text-[30px] lg:text-[38px] font-bold tracking-tight">11 ngày</div><div class="mt-1 text-[14px] text-[#A4A4B0] leading-snug">rút ngắn vòng thu công nợ</div></div>
+          <div><div class="text-[30px] lg:text-[38px] font-bold tracking-tight">2 tuần</div><div class="mt-1 text-[14px] text-[#A4A4B0] leading-snug">chuyển toàn bộ dữ liệu cũ</div></div>
+        </div>
+      </div>
+      <div class="rounded-[20px] overflow-hidden border border-night-line">
+        <img src="~/img/landing/m-travel-customer-story.webp" width="960" height="1200" class="h-[320px] w-full object-cover lg:h-[480px]" alt="Đội ngũ vận hành doanh nghiệp cùng theo dõi dữ liệu trên dashboard" loading="lazy" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BẢNG GIÁ -->
+<section id="bang-gia" class="py-16 lg:py-24">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8">
+    <div class="reveal text-center max-w-[60ch] mx-auto">
+      <p class="text-[13px] tracking-[0.12em] text-brand-600 font-semibold">BẢNG GIÁ</p>
+      <h2 class="mt-4 text-[26px] sm:text-[30px] lg:text-[44px] leading-tight font-bold tracking-tight">Tính theo quy mô đội ngũ, không tính theo số lần bạn hỏi.</h2>
+      <p class="mt-4 text-[16.5px] leading-relaxed text-muted">Mọi gói đều gồm chuyển dữ liệu, đào tạo và hỗ trợ tiếng Việt.</p>
+    </div>
+
+    <script id="pricing-data" type="application/json">@Html.Raw(pricingJson)</script>
+    <div id="plans" class="mt-9 grid md:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
+      <noscript>
+        @for (var index = 0; index < pricingPlans.Length; index++)
+        {
+          var plan = pricingPlans[index];
+          var highlighted = index == 1;
+          <div class="rounded-[18px] p-6 lg:p-[30px] transition hover:-translate-y-1.5 @(highlighted ? "bg-ink text-white border border-ink shadow-[0_24px_50px_-28px_rgba(15,15,20,0.5)]" : "bg-white text-ink border border-line")">
+            <div class="flex items-center justify-between gap-3"><div class="text-[16px] font-semibold">@plan.Name</div>@if (!string.IsNullOrEmpty(plan.Badge)) { <span class="text-[11.5px] font-semibold tracking-wide px-2.5 py-1 rounded-full bg-brand-500 text-white">@plan.Badge</span> }</div>
+            <div class="mt-2 min-h-[44px] text-[14.5px] leading-normal @(highlighted ? "text-[#A4A4B0]" : "text-muted-2")">@plan.For</div>
+            <div class="mt-4 flex items-baseline gap-2"><span class="text-[34px] lg:text-[42px] font-bold tracking-tight">@plan.Price</span><span class="text-[14px] @(highlighted ? "text-[#A4A4B0]" : "text-muted-2")">@plan.Unit</span></div>
+            <div class="mt-1 text-[13px] @(highlighted ? "text-[#A4A4B0]" : "text-muted-2")">@plan.Note</div>
+            <a href="#cta" class="flex justify-center mt-5 text-[15px] font-semibold px-5 py-3.5 rounded-full @(highlighted ? "bg-brand-600 hover:bg-[#6E6EE8] text-white" : "bg-[#F6F6F8] hover:bg-line text-ink border border-line-hard")">@plan.Cta</a>
+            <div class="mt-5 pt-5 border-t @(highlighted ? "border-night-line" : "border-line-soft") flex flex-col gap-2.5">
+              @foreach (var feature in plan.Features)
+              {
+                <div class="flex gap-2.5 text-[14.5px] leading-normal"><span class="shrink-0 text-brand-600">✓</span><span>@feature</span></div>
+              }
+            </div>
+          </div>
+        }
+      </noscript>
+    </div>
+
+    <div class="reveal mt-14 border border-line rounded-[18px] overflow-hidden bg-white">
+      <div id="compare">
+        <noscript>
+          <div class="grid grid-cols-[1.4fr_.8fr_.8fr_.8fr] lg:grid-cols-[1.6fr_1fr_1fr_1fr] bg-[#F6F6F8] border-b border-line text-[13px] lg:text-[14px] font-semibold">
+            <div class="px-3 py-4 lg:px-5">So sánh chi tiết</div>
+            @foreach (var plan in pricingPlans)
+            {
+              <div class="px-3 py-4 lg:px-5 text-center">@plan.Name</div>
+            }
+          </div>
+          @foreach (var row in pricingCompare)
+          {
+            <div class="grid grid-cols-[1.4fr_.8fr_.8fr_.8fr] lg:grid-cols-[1.6fr_1fr_1fr_1fr] border-b border-line-soft text-[13px] lg:text-[14.5px]">
+              <div class="px-3 py-3.5 lg:px-5 lg:py-4 text-[#3A3A44]">@row.Label</div>
+              <div class="px-3 py-3.5 lg:px-5 lg:py-4 text-center text-muted-2">@row.A</div>
+              <div class="px-3 py-3.5 lg:px-5 lg:py-4 text-center text-muted-2">@row.B</div>
+              <div class="px-3 py-3.5 lg:px-5 lg:py-4 text-center text-muted-2">@row.C</div>
+            </div>
+          }
+        </noscript>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="py-16 lg:py-24 bg-[#F6F6F8] border-t border-line">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8">
+    <div class="grid lg:grid-cols-[0.85fr_1.4fr] gap-10 lg:gap-14 items-start">
+      <div>
+        <p class="text-[13px] tracking-[0.12em] text-brand-600 font-semibold">HỎI ĐÁP</p>
+        <h2 class="mt-4 text-[26px] sm:text-[30px] lg:text-[40px] leading-tight font-bold tracking-tight">Những câu các anh chị hay hỏi nhất.</h2>
+        <p class="mt-4 text-[16px] leading-relaxed text-muted">Còn điều gì chưa rõ, gọi thẳng cho đội triển khai: <a href="tel:19006868" class="text-brand-600 hover:text-brand-700">1900 6868</a></p>
+      </div>
+      <div id="faqs"></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta" class="py-16 lg:py-24">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8">
+    <div class="reveal relative overflow-hidden rounded-3xl bg-ink text-white px-6 py-11 lg:px-[60px] lg:py-[72px] flex flex-wrap items-center justify-between gap-10">
+      <div class="pointer-events-none absolute -right-32 -top-32 w-[460px] h-[460px] rounded-full bg-[radial-gradient(circle,rgba(99,102,241,0.30),rgba(15,15,20,0)_66%)]"></div>
+      <div class="relative max-w-[34ch]">
+        <h2 class="text-[26px] sm:text-[32px] lg:text-[44px] leading-tight font-bold tracking-tight">Đổi hệ thống là việc lớn. Bạn không phải làm một mình.</h2>
+        <p class="mt-4 text-[16.5px] leading-relaxed text-[#B6B6C2]">Đội triển khai sẽ ngồi cùng bạn: rà quy trình hiện tại, chuyển dữ liệu cũ, đào tạo từng phòng ban.</p>
+      </div>
+      <div class="relative flex flex-col gap-3 w-full sm:w-auto sm:min-w-[280px]">
+        <a href="/dang-ky" class="inline-flex justify-center bg-brand-600 hover:bg-[#6E6EE8] text-white text-[16px] font-semibold px-7 py-4 rounded-full">Dùng thử miễn phí</a>
+        <a href="#cta" class="inline-flex justify-center border border-[#3A3A46] hover:border-white text-white text-[16px] font-medium px-7 py-4 rounded-full">Đặt lịch demo 30 phút</a>
+        <span class="text-[13px] text-muted-3 text-center mt-1">Phản hồi trong vòng 1 ngày làm việc</span>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="border-t border-line py-11">
+  <div class="mx-auto max-w-[1200px] px-6 lg:px-8 flex flex-wrap items-center justify-between gap-8">
+    <div class="flex items-center gap-3">
+      <span class="w-7 h-7 rounded-lg bg-brand-500 text-white grid place-items-center text-[16px] font-bold">M</span>
+      <span class="text-[15px] font-semibold">M-Travel</span>
+    </div>
+    <span class="text-[13.5px] text-muted-3">© 2026 M-Travel · Nền tảng quản lý vận hành doanh nghiệp lữ hành</span>
+    <div class="flex gap-6 text-[13.5px]">
+      <a href="#bang-gia" class="text-muted hover:text-ink">Bảng giá</a>
+      <a href="#faq" class="text-muted hover:text-ink">Hỏi đáp</a>
+      <a href="#cta" class="text-muted hover:text-ink">Liên hệ</a>
+    </div>
+  </div>
+</footer>
+
+<script src="~/js/landing.js" asp-append-version="true" defer></script>
+</body>
+</html>
