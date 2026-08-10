@@ -119,6 +119,16 @@
     $(function () {
       $('#f-providerId').select2({ width: '100%', allowClear: true, placeholder: 'Lọc theo nhà cung cấp', ajax: providerAjax() });
 
+      @* Nạp sẵn NCC đến từ đường dẫn sâu /bang-gia-ncc?providerId=… PHẢI đặt TRƯỚC tk.grid(): lưới
+         đọc giá trị ô lọc ngay ở lượt gọi đầu tiên, nạp sau thì lượt đầu vẫn tải toàn bộ NCC rồi mới
+         lọc lại — người dùng thấy danh sách nhảy một nhịp, và tốn một lượt truy vấn thừa. *@
+      @if (Model.LocNccId is Guid nccDaChon)
+      {
+        <text>
+        $('#f-providerId').append(new Option(@Html.Raw(Json.Serialize(Model.LocNccNhan)), '@nccDaChon', true, true));
+        </text>
+      }
+
       var g = tk.g, esc = g.esc, money = g.money;
 
       function delRow(r) {

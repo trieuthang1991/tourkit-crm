@@ -7,12 +7,23 @@
 }
 
 @{
+    // Chú thích dưới thẻ tổng phải nói đúng phạm vi đang xem: để "toàn bộ NCC" trong khi đang lọc
+    // một NCC là con số đúng kèm lời giải thích sai — người đọc tin vào lời giải thích.
+    var phamVi = Model.LocNccTen is null ? "toàn bộ NCC" : Model.LocNccTen;
     (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
     {
-        ("Tổng chi phí", Model.TotalCost.ToString("#,##0"), "ti ti-file-invoice", "primary", "toàn bộ NCC"),
+        ("Tổng chi phí", Model.TotalCost.ToString("#,##0"), "ti ti-file-invoice", "primary", phamVi),
         ("Đã chi", Model.TotalPaid.ToString("#,##0"), "ti ti-cash", "success", "phiếu đã duyệt"),
         ("Còn phải trả", Model.TotalOutstanding.ToString("#,##0"), "ti ti-alert-triangle", "danger", "chưa trả"),
     };
+}
+
+@if (Model.LocNccTen is { } tenNcc)
+{
+  <div class="alert alert-primary d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4" role="alert">
+    <span><i class="ti ti-filter me-2"></i>Đang xem công nợ của <strong>@tenNcc</strong></span>
+    <a href="/cong-no-ncc" class="btn btn-sm btn-label-primary"><i class="ti ti-x me-1"></i>Xem tất cả NCC</a>
+  </div>
 }
 <div class="row g-4 mb-4">
   @foreach (var s in statCards)

@@ -54,10 +54,42 @@ public class IndexModel : TkListPageModel
 
     private const int LookupSize = 200;
 
+    /// <summary>
+    /// NCC được chỉ định sẵn qua đường dẫn sâu <c>/bang-gia-ncc?providerId=…</c> — nút "Bảng giá dịch
+    /// vụ" trên màn Nhà cung cấp đi bằng đường này.
+    ///
+    /// Handler dữ liệu ĐÃ đọc providerId từ query, nhưng lưới gọi nó bằng URL tương đối
+    /// <c>'?handler=Data'</c> — mà một URL bắt đầu bằng '?' THAY THẾ toàn bộ chuỗi truy vấn, nên
+    /// providerId của trang không bao giờ đi kèm. Vì vậy phải nạp sẵn giá trị vào ô lọc ở đây để
+    /// lượt gọi đầu tiên của lưới mang theo nó.
+    /// </summary>
+    public Guid? LocNccId { get; private set; }
+
+    /// <summary>Nhãn hiện trong ô lọc. Select2 cần sẵn text, nếu không ô chỉ hiện một id trần.</summary>
+    public string? LocNccNhan { get; private set; }
+
     public async Task OnGetAsync()
     {
         ServiceItems = (await _items.ListAsync(1, LookupSize)).Items;
         Currencies = await _currencies.ListAsync();
+
+        if (!Guid.TryParse(Request.Query["providerId"], out var nccId) || nccId == Guid.Empty)
+        {
+            return;
+        }
+
+        // NCC có thể đã bị xoá hoặc thuộc tenant khác: không tìm thấy thì bỏ qua bộ lọc thay vì để
+        // trang chết — người dùng vẫn xem được toàn bộ bảng giá.
+        try
+        {
+            var ncc = await _providers.GetAsync(nccId);
+            LocNccId = ncc.Id;
+            LocNccNhan = $"{ncc.Name} ({ncc.Code})";
+        }
+        catch (TourKit.Application.Common.NotFoundException)
+        {
+            LocNccId = null;
+        }
     }
 
     /// <summary>Nguồn Select2 ajax cho NCC (danh sách lớn): lọc keyword ở SERVER.</summary>
