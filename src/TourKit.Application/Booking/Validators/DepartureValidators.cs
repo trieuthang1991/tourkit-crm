@@ -11,3 +11,12 @@ public sealed class CreateDepartureValidator : AbstractValidator<CreateDeparture
         RuleFor(x => x.Title).NotEmpty();
     }
 }
+
+public sealed class UpdateDepartureValidator : AbstractValidator<UpdateDepartureDto>
+{
+    public UpdateDepartureValidator()
+    {
+        RuleFor(x => x.Code).NotEmpty();
+        RuleFor(x => x.Title).NotEmpty();
+    }
+}

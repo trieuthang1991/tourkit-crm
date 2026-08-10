@@ -105,8 +105,12 @@
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
       <div class="tk-oc-fields">
+      @* Có ô này thì tk.form mới điền được data.id lúc mở sửa; thiếu nó, handler không biết sửa
+         chuyến nào và lần Lưu kế tiếp tạo ra một chuyến trùng mã. *@
+      <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Mẫu tour</label>
         <select name="Input.TemplateId" class="form-select tk-s2" data-placeholder="Chọn mẫu (tuỳ chọn)"><option value="">— Không dùng mẫu —</option>@foreach (var t in Model.Templates) { <option value="@t.Id">@t.Label</option> }</select>
+        <div class="form-text" data-role="ghi-chu-mau">Chỉ chọn được khi tạo mới — lịch trình đã chép từ mẫu nên không đổi mẫu khi sửa.</div>
       </div>
       <div class="row">
         <div class="col-5 mb-3"><label class="form-label">Mã chuyến <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="VD: DN-2607" /></div>
@@ -145,7 +149,16 @@
 
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'chuyến đi',
         rules: { 'Input.Code': { required: true }, 'Input.Title': { required: true } },
-        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã chuyến' }, 'Input.Title': { required: 'Bắt buộc nhập tên chuyến' } }
+        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã chuyến' }, 'Input.Title': { required: 'Bắt buộc nhập tên chuyến' } },
+
+        // Khi SỬA: khoá ô "Mẫu tour" cho khớp với server — UpdateDepartureDto không nhận TemplateId,
+        // vì lịch trình đã được chép sang chuyến lúc tạo. Để ô đó bấm được mà lưu xong không đổi gì
+        // là nói dối người dùng.
+        afterOpen: function (data) {
+          var sua = !!data;
+          $('#frm [name="Input.TemplateId"]').prop('disabled', sua).trigger('change.select2');
+          $('#frm [data-role="ghi-chu-mau"]').toggle(sua);
+        }
       });
 
       function closeRow(r) {
@@ -163,9 +176,15 @@
       // Chỉ chuyến CHƯA đóng mới có mục "Đóng chuyến" — giữ đúng luật hệ cũ.
       function actionsFor(r) {
         var items = [
-          { label: '<i class="ti ti-eye me-2"></i>Chi tiết chuyến', action: function () { window.location = '/chuyen-di/' + r.id; } },
-          { label: '<i class="ti ti-edit me-2"></i>Sửa chuyến', action: function () { oc.open(r); } }
+          { label: '<i class="ti ti-eye me-2"></i>Chi tiết chuyến', action: function () { window.location = '/chuyen-di/' + r.id; } }
         ];
+
+        // Chuyến ĐÃ ĐÓNG thì không mời sửa: đóng chuyến là khoá đặt chỗ, và hoa hồng/đối soát sau đó
+        // đều dựa trên số liệu tại thời điểm đóng. Server cũng từ chối, nhưng bày ra một mục bấm vào
+        // chỉ để nhận thông báo lỗi là bắt người dùng tự dò xem cái gì làm được cái gì không.
+        if (!r.isClosed) {
+          items.push({ label: '<i class="ti ti-edit me-2"></i>Sửa chuyến', action: function () { oc.open(r); } });
+        }
         if (!r.isClosed) {
           items.push({ separator: true });
           items.push({ label: '<i class="ti ti-lock me-2"></i>Đóng chuyến', action: function () { closeRow(r); } });

@@ -30,6 +30,17 @@ public sealed record CreateDepartureDto(
     Guid? TemplateId, string Code, string Title,
     DateTimeOffset? DepartureDate, DateTimeOffset? EndDate, int TotalSlots);
 
+/// <summary>
+/// Sửa một chuyến đã mở.
+///
+/// KHÔNG có TemplateId: mẫu tour chỉ dùng lúc tạo, và lúc đó lịch trình đã được CHÉP sang chuyến.
+/// Cho đổi mẫu khi sửa thì chuyến mang lịch trình của mẫu cũ mà lại khai là thuộc mẫu mới — muốn
+/// đúng thì phải chép lại lịch trình, mà chép đè lên lịch trình có thể đã được sửa tay là mất dữ liệu.
+/// </summary>
+public sealed record UpdateDepartureDto(
+    string Code, string Title,
+    DateTimeOffset? DepartureDate, DateTimeOffset? EndDate, int TotalSlots);
+
 /// <summary>Một ngày khởi hành trong lô mở hàng loạt.</summary>
 public sealed record BatchDepartureItemDto(DateTimeOffset DepartureDate, DateTimeOffset? EndDate);
 

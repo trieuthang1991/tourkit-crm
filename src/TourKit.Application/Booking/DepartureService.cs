@@ -14,7 +14,8 @@ public sealed class DepartureService(
     IRepository<TourItinerary> itineraryRepo,
     IRepository<Order> orderRepo,
     IRepository<TourCustomer> seatRepo,
-    IValidator<CreateDepartureDto> createValidator) : IDepartureService
+    IValidator<CreateDepartureDto> createValidator,
+    IValidator<UpdateDepartureDto> updateValidator) : IDepartureService
 {
     public async Task<PagedResult<DepartureDto>> ListAsync(int page, int size, DepartureListFilter? filter = null)
     {
@@ -259,6 +260,32 @@ public sealed class DepartureService(
 
         departure.CommissionClosed = false;
         departure.CommissionClosedAt = null;
+        departureRepo.Update(departure);
+        await departureRepo.SaveChangesAsync();
+
+        return Map(departure);
+    }
+
+    /// <summary>Sửa chuyến đang mở. Xem <see cref="IDepartureService.UpdateAsync"/> về luật chuyến đã đóng.</summary>
+    public async Task<DepartureDto> UpdateAsync(Guid id, UpdateDepartureDto dto)
+    {
+        var departure = await departureRepo.GetByIdAsync(id) ?? throw new NotFoundException();
+
+        if (departure.IsClosed)
+        {
+            throw new ConflictException("Chuyến đã đóng, không sửa được nữa.");
+        }
+
+        await Validate(updateValidator, dto);
+
+        departure.Code = dto.Code.Trim();
+        departure.Title = dto.Title.Trim();
+        departure.DepartureDate = dto.DepartureDate;
+        departure.EndDate = dto.EndDate;
+        departure.TotalSlots = dto.TotalSlots;
+
+        // KHÔNG đụng tới ParentTourId: mẫu tour đã chép lịch trình sang chuyến lúc tạo. Xem
+        // UpdateDepartureDto về lý do không cho đổi mẫu khi sửa.
         departureRepo.Update(departure);
         await departureRepo.SaveChangesAsync();
 

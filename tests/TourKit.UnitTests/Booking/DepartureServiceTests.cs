@@ -18,7 +18,8 @@ public sealed class DepartureServiceTests
             itineraryRepo ?? new FakeRepository<TourItinerary>(),
             new FakeRepository<Order>(),
             new FakeRepository<TourCustomer>(),
-            new CreateDepartureValidator());
+            new CreateDepartureValidator(),
+            new UpdateDepartureValidator());
 
     [Fact]
     public async Task CreateAsync_rejects_empty_code_or_title()
@@ -245,5 +246,78 @@ public sealed class DepartureServiceTests
         var opts = await service.GetFilterOptionsAsync();
 
         Assert.Equal(new[] { "inbound", "outbound" }, opts.TourTypes);
+    }
+
+    /// <summary>
+    /// Sửa phải CẬP NHẬT chuyến cũ, không tạo thêm.
+    ///
+    /// Trước đây handler luôn gọi CreateAsync nên mỗi lần "sửa" là sinh một chuyến thứ hai trùng mã
+    /// — cột Code không có ràng buộc duy nhất nên nó lưu êm, chuyến gốc giữ nguyên, và người dùng
+    /// tưởng lưu hỏng nên bấm sửa lại, mỗi lần thêm một bản sao.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_sua_dung_ban_ghi_cu_khong_tao_them()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var d = new TourDeparture { Code = "DN-01", Title = "Đà Nẵng", TotalSlots = 30 };
+        await repo.AddAsync(d);
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        var kq = await service.UpdateAsync(d.Id, new UpdateDepartureDto("DN-01", "Đà Nẵng 4N3Đ", null, null, 35));
+
+        Assert.Equal(d.Id, kq.Id);
+        Assert.Equal("Đà Nẵng 4N3Đ", kq.Title);
+        Assert.Equal(35, kq.TotalSlots);
+
+        // Bằng chứng không sinh bản sao — đây mới là điều bài này tồn tại để chốt.
+        var tatCa = await repo.ListAsync(_ => true);
+        Assert.Single(tatCa);
+    }
+
+    /// <summary>
+    /// Chuyến ĐÃ ĐÓNG thì dừng, không thay đổi gì nữa: đóng chuyến là khoá đặt chỗ, và hoa hồng/đối
+    /// soát sau đó đều dựa trên số liệu tại thời điểm đóng.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_tu_choi_chuyen_da_dong()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var d = new TourDeparture { Code = "HN-09", Title = "Hà Nội", TotalSlots = 20, IsClosed = true };
+        await repo.AddAsync(d);
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            service.UpdateAsync(d.Id, new UpdateDepartureDto("HN-09", "Tên mới", null, null, 99)));
+
+        // Và phải không đụng gì tới bản ghi — từ chối nửa vời còn tệ hơn không từ chối.
+        var sau = await repo.GetByIdAsync(d.Id);
+        Assert.Equal("Hà Nội", sau!.Title);
+        Assert.Equal(20, sau.TotalSlots);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_bao_khong_tim_thay_khi_id_khong_ton_tai()
+    {
+        var service = NewService();
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            service.UpdateAsync(Guid.NewGuid(), new UpdateDepartureDto("X", "Y", null, null, 1)));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_tu_choi_ma_hoac_ten_rong()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var d = new TourDeparture { Code = "A", Title = "A", TotalSlots = 5 };
+        await repo.AddAsync(d);
+        await repo.SaveChangesAsync();
+        var service = NewService(departureRepo: repo);
+
+        await Assert.ThrowsAsync<ValidationAppException>(() =>
+            service.UpdateAsync(d.Id, new UpdateDepartureDto("", "Tên", null, null, 5)));
+        await Assert.ThrowsAsync<ValidationAppException>(() =>
+            service.UpdateAsync(d.Id, new UpdateDepartureDto("A", "", null, null, 5)));
     }
 }

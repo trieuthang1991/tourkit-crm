@@ -34,6 +34,9 @@ public class IndexModel : TkListPageModel
     public IReadOnlyList<(Guid Id, string Name)> Users { get; private set; } = [];
     public IReadOnlyList<string> TourTypes { get; private set; } = [];
 
+    /// <summary>Có giá trị ⇒ đang SỬA chuyến đó; rỗng ⇒ tạo mới. Do ô ẩn "Id" trong form gửi lên.</summary>
+    [BindProperty] public Guid? Id { get; set; }
+
     [BindProperty] public InputModel Input { get; set; } = new();
 
     public sealed class InputModel
@@ -135,6 +138,18 @@ public class IndexModel : TkListPageModel
 
         try
         {
+            // Phân nhánh theo Id. Trước đây nhánh này KHÔNG tồn tại: menu vẫn mời "Sửa chuyến",
+            // form vẫn nạp đủ dữ liệu cũ, nhưng bấm Lưu là tạo một chuyến thứ hai trùng mã còn
+            // chuyến gốc không đổi — không cảnh báo gì, chỉ có toast "Đã tạo chuyến đi.".
+            if (Id is Guid id && id != Guid.Empty)
+            {
+                await _svc.UpdateAsync(id, new UpdateDepartureDto(
+                    Input.Code, Input.Title,
+                    TkDate.Day(Input.DepartureDate), TkDate.Day(Input.EndDate), Input.TotalSlots));
+
+                return new JsonResult(Result.Success("Đã cập nhật chuyến đi."));
+            }
+
             await _svc.CreateAsync(new CreateDepartureDto(
                 Input.TemplateId, Input.Code, Input.Title,
                 TkDate.Day(Input.DepartureDate), TkDate.Day(Input.EndDate), Input.TotalSlots));

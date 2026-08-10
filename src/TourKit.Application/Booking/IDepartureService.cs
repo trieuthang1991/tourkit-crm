@@ -10,6 +10,14 @@ public interface IDepartureService
     Task<DepartureFilterOptionsDto> GetFilterOptionsAsync();
     Task<DepartureDto> GetAsync(Guid id);
     Task<DepartureDto> CreateAsync(CreateDepartureDto dto);
+
+    /// <summary>
+    /// Sửa một chuyến đang mở.
+    ///
+    /// Chuyến ĐÃ ĐÓNG thì từ chối: đóng chuyến là khoá đặt chỗ, và mọi thứ sau đó (chốt hoa hồng,
+    /// đối soát) đều dựa trên số liệu tại thời điểm đóng. Sửa ngược lại là làm sai những gì đã chốt.
+    /// </summary>
+    Task<DepartureDto> UpdateAsync(Guid id, UpdateDepartureDto dto);
     Task<BatchCreateResultDto> BatchCreateAsync(BatchCreateDeparturesDto dto);
     Task<DepartureDto> CloseAsync(Guid id);
     Task<DepartureDto> CloseCommissionAsync(Guid id);
