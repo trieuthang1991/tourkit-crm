@@ -138,8 +138,24 @@
     }
 
     var actionsFor = opts.actions || function () { return []; };
-    function rowActionMenu(e, row) { return actionsFor(row.getData()); }
-    function cellActionMenu(e, cell) { return actionsFor(cell.getRow().getData()); }
+
+    /**
+     * Dòng TỔNG không phải một bản ghi, nên không được mang menu hành động.
+     *
+     * Tabulator dựng dòng tổng bằng cùng loại phần tử với dòng dữ liệu, nên nếu không loại nó ra thì
+     * bấm vào ô hành động của dòng tổng vẫn mở ra "Sửa …" — với dữ liệu là các con số CỘNG DỒN và
+     * không có id. Bấm Lưu ở đó tạo ra một bản ghi rác mang giá trị bằng tổng cả trang, còn bấm Xoá
+     * thì gọi xoá với id rỗng.
+     */
+    function laDongTong(row) {
+      try { return row.getElement().classList.contains('tabulator-calcs'); } catch (e) { return true; }
+    }
+
+    function rowActionMenu(e, row) { return laDongTong(row) ? [] : actionsFor(row.getData()); }
+    function cellActionMenu(e, cell) {
+      var row = cell.getRow();
+      return laDongTong(row) ? [] : actionsFor(row.getData());
+    }
 
     var columns = [];
     if (selectable) {
