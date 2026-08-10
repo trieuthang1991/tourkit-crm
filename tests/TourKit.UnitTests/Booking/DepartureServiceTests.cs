@@ -11,15 +11,20 @@ public sealed class DepartureServiceTests
     private static DepartureService NewService(
         FakeRepository<TourDeparture>? departureRepo = null,
         FakeRepository<TourTemplate>? templateRepo = null,
-        FakeRepository<TourItinerary>? itineraryRepo = null)
+        FakeRepository<TourItinerary>? itineraryRepo = null,
+        FakeRepository<TourCustomer>? seatRepo = null)
         => new(
             departureRepo ?? new FakeRepository<TourDeparture>(),
             templateRepo ?? new FakeRepository<TourTemplate>(),
             itineraryRepo ?? new FakeRepository<TourItinerary>(),
             new FakeRepository<Order>(),
-            new FakeRepository<TourCustomer>(),
+            seatRepo ?? new FakeRepository<TourCustomer>(),
             new CreateDepartureValidator(),
             new UpdateDepartureValidator());
+
+    /// <summary>Một dòng chỗ ĐANG hoạt động (Status 0) trên chuyến — đúng thứ luật sức chứa đếm.</summary>
+    private static TourCustomer Cho(Guid departureId, int soKhach) =>
+        new() { TourDepartureId = departureId, Status = 0, Quantity = soKhach };
 
     [Fact]
     public async Task CreateAsync_rejects_empty_code_or_title()
@@ -295,6 +300,103 @@ public sealed class DepartureServiceTests
         var sau = await repo.GetByIdAsync(d.Id);
         Assert.Equal("Hà Nội", sau!.Title);
         Assert.Equal(20, sau.TotalSlots);
+    }
+
+    /// <summary>
+    /// Không hạ sức chứa xuống dưới số chỗ đang dùng.
+    ///
+    /// Không chặn thì đơn cũ vẫn nguyên nhưng lần đặt tiếp theo nhận câu "Vượt sức chứa: còn -7/5
+    /// chỗ" — số âm — trong khi lưới hiện "còn 0 chỗ" vì SeatRemaining kẹp Math.Max(0, …). Sai một
+    /// chỗ, che ở chỗ kia.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_khong_cho_ha_suc_chua_duoi_so_cho_da_dung()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var d = new TourDeparture { Code = "DL-01", Title = "Đà Lạt", TotalSlots = 20 };
+        await repo.AddAsync(d);
+        await repo.SaveChangesAsync();
+
+        var seats = new FakeRepository<TourCustomer>();
+        await seats.AddAsync(Cho(d.Id, 7));
+        await seats.AddAsync(Cho(d.Id, 5));   // tổng 12 chỗ đang dùng
+        await seats.SaveChangesAsync();
+
+        var service = NewService(departureRepo: repo, seatRepo: seats);
+
+        var ex = await Assert.ThrowsAsync<ConflictException>(() =>
+            service.UpdateAsync(d.Id, new UpdateDepartureDto("DL-01", "Đà Lạt", null, null, 5)));
+
+        // Câu lỗi phải nói ra CẢ HAI con số, nếu không người dùng không biết phải hạ tới đâu mới được.
+        Assert.Contains("12", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("5", ex.Message, StringComparison.Ordinal);
+
+        var sau = await repo.GetByIdAsync(d.Id);
+        Assert.Equal(20, sau!.TotalSlots);
+    }
+
+    /// <summary>Hạ tới ĐÚNG số đang dùng thì được — 12 chỗ đã bán, đặt sức chứa 12 là hợp lệ.</summary>
+    [Fact]
+    public async Task UpdateAsync_cho_ha_suc_chua_bang_dung_so_cho_da_dung()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var d = new TourDeparture { Code = "DL-02", Title = "Đà Lạt", TotalSlots = 20 };
+        await repo.AddAsync(d);
+        await repo.SaveChangesAsync();
+
+        var seats = new FakeRepository<TourCustomer>();
+        await seats.AddAsync(Cho(d.Id, 12));
+        await seats.SaveChangesAsync();
+
+        var service = NewService(departureRepo: repo, seatRepo: seats);
+
+        var kq = await service.UpdateAsync(d.Id, new UpdateDepartureDto("DL-02", "Đà Lạt", null, null, 12));
+
+        Assert.Equal(12, kq.TotalSlots);
+    }
+
+    /// <summary>
+    /// TotalSlots = 0 nghĩa là KHÔNG giới hạn — đúng như BookingService diễn giải
+    /// (<c>TotalSlots &gt; 0 &amp;&amp; …</c>). Chặn nó là bịa ra một luật thứ hai trái với luật đặt chỗ.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_cho_dat_suc_chua_0_nghia_la_khong_gioi_han()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var d = new TourDeparture { Code = "DL-03", Title = "Đà Lạt", TotalSlots = 20 };
+        await repo.AddAsync(d);
+        await repo.SaveChangesAsync();
+
+        var seats = new FakeRepository<TourCustomer>();
+        await seats.AddAsync(Cho(d.Id, 12));
+        await seats.SaveChangesAsync();
+
+        var service = NewService(departureRepo: repo, seatRepo: seats);
+
+        var kq = await service.UpdateAsync(d.Id, new UpdateDepartureDto("DL-03", "Đà Lạt", null, null, 0));
+
+        Assert.Equal(0, kq.TotalSlots);
+    }
+
+    /// <summary>Chỗ đã huỷ (Status khác 0) không được tính — huỷ rồi mà vẫn chiếm sức chứa là sai.</summary>
+    [Fact]
+    public async Task UpdateAsync_khong_tinh_cho_da_huy()
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var d = new TourDeparture { Code = "DL-04", Title = "Đà Lạt", TotalSlots = 20 };
+        await repo.AddAsync(d);
+        await repo.SaveChangesAsync();
+
+        var seats = new FakeRepository<TourCustomer>();
+        await seats.AddAsync(Cho(d.Id, 3));
+        await seats.AddAsync(new TourCustomer { TourDepartureId = d.Id, Status = 1, Quantity = 9 });   // đã huỷ
+        await seats.SaveChangesAsync();
+
+        var service = NewService(departureRepo: repo, seatRepo: seats);
+
+        var kq = await service.UpdateAsync(d.Id, new UpdateDepartureDto("DL-04", "Đà Lạt", null, null, 3));
+
+        Assert.Equal(3, kq.TotalSlots);
     }
 
     [Fact]

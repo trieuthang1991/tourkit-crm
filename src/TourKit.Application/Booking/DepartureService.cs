@@ -278,6 +278,27 @@ public sealed class DepartureService(
 
         await Validate(updateValidator, dto);
 
+        // Không hạ sức chứa xuống dưới số chỗ ĐANG DÙNG. Cùng công thức với đặt chỗ mới và chuyển
+        // chuyến (BookingService, TourTransferService) — ba đường ghi phải cùng một luật, lệch nhau
+        // là mở ra trạng thái mà hai đường kia không bao giờ tạo được.
+        //
+        // Không chặn thì đơn cũ vẫn nguyên (không kiểm tra hồi tố), nhưng lần đặt tiếp theo nhận
+        // đúng câu "Vượt sức chứa: còn -7/5 chỗ" — số âm — trong khi lưới hiện "còn 0 chỗ" vì
+        // SeatRemaining kẹp Math.Max(0, …). Sai ở một chỗ, che ở chỗ kia, không ai thấy cho tới lúc
+        // có người thử đặt.
+        //
+        // TotalSlots = 0 nghĩa là KHÔNG giới hạn (đúng như BookingService diễn giải), nên bỏ qua.
+        // Cộng ở SQL, không tải dòng về rồi cộng trong bộ nhớ: chuyến đông khách có hàng trăm dòng
+        // chỗ, mà thứ cần lấy chỉ là MỘT con số.
+        var dangDung = await seatRepo.SumIntAsync(
+            BookingMath.SeatCountSelector,
+            s => s.TourDepartureId == id && s.Status == 0);
+        if (dto.TotalSlots > 0 && dto.TotalSlots < dangDung)
+        {
+            throw new ConflictException(
+                $"Đã bán/giữ {dangDung} chỗ, không hạ sức chứa xuống {dto.TotalSlots} được.");
+        }
+
         departure.Code = dto.Code.Trim();
         departure.Title = dto.Title.Trim();
         departure.DepartureDate = dto.DepartureDate;

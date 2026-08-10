@@ -35,6 +35,18 @@ public static class BookingMath
         => s.Quantity + s.AmountChildren + s.AmountChildrenSmall + s.QuantityBaby;
 
     /// <summary>
+    /// Cùng công thức với <see cref="SeatCount"/>, dạng Expression để ĐẨY XUỐNG SQL.
+    ///
+    /// Cần bản này vì <c>ListAsync(predicate)</c> materialize ngay: cộng sau đó là cộng trong bộ nhớ
+    /// sau khi đã tải cả tập dòng về. Với <c>SumIntAsync</c> thì phép cộng chạy ở CSDL và chỉ một số
+    /// duy nhất đi qua dây.
+    ///
+    /// Hai bản PHẢI khớp nhau — có bài kiểm thử đối chiếu, sửa một bản mà quên bản kia là test đỏ.
+    /// </summary>
+    public static readonly System.Linq.Expressions.Expression<Func<TourCustomer, int>> SeatCountSelector =
+        s => s.Quantity + s.AmountChildren + s.AmountChildrenSmall + s.QuantityBaby;
+
+    /// <summary>
     /// Suy TRẠNG THÁI chỗ từ tiền cọc vs giá dòng + cờ giữ chỗ (bảng flow "Giữ chỗ" hệ cũ).
     /// Quy tắc suy trạng thái nằm MỘT CHỖ ở đây — đừng suy lại nơi khác.
     /// </summary>
