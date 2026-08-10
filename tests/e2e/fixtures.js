@@ -43,15 +43,30 @@ export const test = base.extend({
 
 export { expect };
 
-/** Đăng nhập qua đúng giao diện thật, không đi tắt bằng cookie dựng sẵn. */
+/**
+ * Đăng nhập qua đúng giao diện thật, không đi tắt bằng cookie dựng sẵn.
+ *
+ * Bám vào TÊN ô chứ không phải thứ tự. Bản trước đếm theo vị trí (ô số 0, ô số 1), nên khi bỏ ô
+ * "mã doanh nghiệp" — email nay là định danh toàn hệ thống — nó lặng lẽ điền mã vào ô email và cả
+ * bộ e2e chết ở bước đăng nhập, mọi bài đều báo "hết giờ chờ chuyển trang" thay vì nói ra nguyên do.
+ */
 export async function dangNhap(page, tk = TAI_KHOAN) {
   await page.goto('/dang-nhap');
-  const o = page.locator('#formAuthentication input:not([type=checkbox])');
-  await o.nth(0).fill(tk.slug);
-  await o.nth(1).fill(tk.email);
-  await page.locator('#formAuthentication input[type="password"]').fill(tk.matKhau);
+  await page.locator('#formAuthentication [name="Input.Email"]').fill(tk.email);
+  await page.locator('#formAuthentication [name="Input.Password"]').fill(tk.matKhau);
   await page.locator('#formAuthentication button[type="submit"]').click();
-  await page.waitForURL(/tong-quan|ban-lam-viec/, { timeout: 30_000 });
+
+  // Chờ CẢ thành công lẫn báo lỗi. Chỉ chờ chuyển trang thì khi sai mật khẩu, bài test treo tới hết
+  // giờ rồi báo "timeout" — che mất thông báo lỗi đang hiện ngay trên màn hình.
+  const loi = page.locator('#formAuthentication .text-danger, .alert-danger');
+  await Promise.race([
+    page.waitForURL(/tong-quan|ban-lam-viec/, { timeout: 30_000 }),
+    loi.first().waitFor({ state: 'visible', timeout: 30_000 }),
+  ]);
+
+  if (!/tong-quan|ban-lam-viec/.test(page.url())) {
+    throw new Error(`Đăng nhập thất bại với ${tk.email}: ${(await loi.first().innerText().catch(() => '')) || 'không rõ lý do'}`);
+  }
 }
 
 /**

@@ -50,10 +50,10 @@ test('Trang đăng nhập không có lỗi JavaScript', async ({ page }) => {
  */
 test('Sai mật khẩu thì báo lỗi, không cho vào', async ({ page }) => {
   await page.goto('/dang-nhap');
-  const o = page.locator('#formAuthentication input:not([type=checkbox])');
-  await o.nth(0).fill('demo-tour');
-  await o.nth(1).fill('admin@demo.vn');
-  await page.locator('#formAuthentication input[type="password"]').fill('sai-mat-khau-hoan-toan');
+  // Bám tên ô, không bám thứ tự: form đã bỏ ô "mã doanh nghiệp" (email nay là định danh toàn hệ
+  // thống) và cách đếm theo vị trí làm bài này chết câm suốt từ đó.
+  await page.locator('#formAuthentication [name="Input.Email"]').fill('admin@demo.vn');
+  await page.locator('#formAuthentication [name="Input.Password"]').fill('sai-mat-khau-hoan-toan');
   await page.locator('#formAuthentication button[type="submit"]').click();
 
   await expect(page.locator('.alert-danger')).toBeVisible({ timeout: 20_000 });
