@@ -158,6 +158,63 @@ public static class DemoDataSeeder
         var p5 = await ProvOf("NCC_HK01", "Vietnam Airlines", ProviderType.Airline, "Hà Nội", brHn.Id, mtOutbound.Id, 5);
         await db.SaveChangesAsync();
 
+        // 6b) Danh mục dịch vụ + BẢNG GIÁ của từng NCC ----
+        //
+        // Trước đây không seeder nào tạo ProviderService, nên CSDL dev có 209 NCC mà 0 dòng giá —
+        // màn "Bảng giá NCC" trống trơn, và 3 bài e2e phải bỏ qua vì không có gì để mở sửa. Tệ hơn:
+        // ai nhìn vào số liệu đó để quyết định thiết kế sẽ kết luận sai về hình dạng dữ liệu thật.
+        //
+        // Mỗi NCC 2–4 dòng giá, đúng như thực tế: một nhà cung cấp chỉ cung vài dịch vụ.
+        async Task<ServiceItem> SvcOf(string code, string name, int category)
+        {
+            var e = await db.Set<ServiceItem>().FirstOrDefaultAsync(x => x.Code == code);
+            if (e is null) { e = new ServiceItem { Code = code, Name = name, Category = category, Status = 1 }; db.Add(e); }
+            return e;
+        }
+        var svPhong = await SvcOf("DV_PHONG", "Thuê phòng", 1);
+        var svXe = await SvcOf("DV_XE", "Thuê xe", 2);
+        var svAn = await SvcOf("DV_AN", "Suất ăn", 3);
+        var svHdv = await SvcOf("DV_HDV", "Hướng dẫn viên", 4);
+        var svVe = await SvcOf("DV_VE", "Vé máy bay", 5);
+        await db.SaveChangesAsync();
+
+        async Task GiaOf(Provider ncc, ServiceItem dv, string tenGoi, decimal giaVon, decimal giaBan, int soKhach)
+        {
+            var da = await db.Set<ProviderService>()
+                .AnyAsync(x => x.ProviderId == ncc.Id && x.PriceName == tenGoi);
+            if (da) { return; }
+
+            db.Add(new ProviderService
+            {
+                ProviderId = ncc.Id,
+                ServiceItemId = dv.Id,
+                PriceName = tenGoi,
+                ContractPrice = giaVon,
+                PublicPrice = giaBan,
+                CurrencyCode = "VND",
+                AmountOfPeople = soKhach,
+                Status = 1,
+            });
+        }
+
+        await GiaOf(p1, svPhong, "Phòng Deluxe 2 khách", 900_000m, 1_200_000m, 2);
+        await GiaOf(p1, svPhong, "Phòng Superior 2 khách", 700_000m, 950_000m, 2);
+        await GiaOf(p1, svAn, "Buffet sáng", 120_000m, 180_000m, 1);
+
+        await GiaOf(p2, svXe, "Xe 16 chỗ / ngày", 1_800_000m, 2_400_000m, 16);
+        await GiaOf(p2, svXe, "Xe 29 chỗ / ngày", 2_600_000m, 3_400_000m, 29);
+        await GiaOf(p2, svXe, "Xe 45 chỗ / ngày", 3_500_000m, 4_500_000m, 45);
+
+        await GiaOf(p3, svAn, "Set menu 6 món", 250_000m, 350_000m, 1);
+        await GiaOf(p3, svAn, "Set menu 8 món", 350_000m, 480_000m, 1);
+
+        await GiaOf(p4, svHdv, "HDV tiếng Việt / ngày", 800_000m, 1_100_000m, 1);
+        await GiaOf(p4, svHdv, "HDV tiếng Anh / ngày", 1_200_000m, 1_600_000m, 1);
+
+        await GiaOf(p5, svVe, "Chặng nội địa khứ hồi", 1_900_000m, 2_400_000m, 1);
+        await GiaOf(p5, svVe, "Chặng quốc tế khứ hồi", 6_500_000m, 8_200_000m, 1);
+        await db.SaveChangesAsync();
+
         // 7) Mẫu tour + chuyến khởi hành (loại tour inbound/outbound/domestic) ----
         async Task<TourTemplate> TplOf(string code, string title, string type, decimal adult, decimal child)
         {
