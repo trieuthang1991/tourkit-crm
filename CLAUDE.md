@@ -1,3 +1,42 @@
+# CodeGraph — tra cứu mã nguồn
+
+Chỉ mục nằm ở `.codegraph/` (gitignore, ~102 MB). Làm tươi bằng `codegraph sync` — mất ~4 giây,
+nên chạy thoải mái sau khi sửa nhiều file. Chỉ mục phủ **cả `web/`**, không riêng `src/`.
+
+## Dùng khi nào
+
+Khi cần **hiểu vùng mã lạ** hoặc **ước lượng phạm vi ảnh hưởng trước khi sửa** — không phải để tìm lỗi.
+
+| Lệnh | Dùng cho |
+|---|---|
+| `codegraph explore "<câu hỏi>"` | **Lệnh tốt nhất.** Trả về symbol liên quan + quan hệ + **bài kiểm thử bao phủ**, và cảnh báo symbol nào chưa có test |
+| `codegraph query <tên>` | Tra nhanh một symbol nằm ở đâu |
+| `codegraph node <tên>` | Mã nguồn của một symbol kèm đường gọi vào/ra |
+
+## Đã đo trên chính repo này — đừng tin quá mức
+
+Ba lệnh sau **không đáng tin với C#**, đã kiểm tận tay:
+
+- **`callers`** bỏ sót khi hàm được truyền như **nhóm phương thức**. Hỏi ai gọi `BookingMath.SeatCount`
+  thì nó chỉ ra 2 bài test, bỏ sạch 3 chỗ dùng thật trong `BookingService` và `TourTransferService`
+  (`Sum(BookingMath.SeatCount)`). `explore` thì bắt được ở mức LỚP và chỉ đúng ba file đó.
+- **`impact`** gom theo TÊN, không theo symbol cụ thể. `impact UpdateAsync` trả 160 kết quả vì repo có
+  98 phương thức trùng tên. Vô dụng với tên phổ biến.
+- **`affected`** trả 64 file test cho một thay đổi ở service C#, phần lớn là test TypeScript của app
+  React chẳng liên quan.
+
+Nhà phát triển tự khai độ phủ ASP.NET **83,9%** — framework nặng quy ước, phân tích tĩnh không thấy
+được liên kết sinh ra lúc chạy (DI, reflection, mã Razor sinh khi build).
+
+## Điều quan trọng nhất
+
+**Code graph KHÔNG tìm được lỗi.** Trong phiên tìm ra 5 lỗi thật của dự án này: 4 lỗi do **bộ E2E**
+bắt (chạy ứng dụng thật), 1 lỗi do **ArchTest** bắt, **0 lỗi** do code graph. Bốn lỗi kia — tham số
+URL bị `?handler=Data` nuốt, form sửa ghi null đè lên ngày, menu trên dòng tổng của lưới, trùng mã
+sau xoá mềm — đều là hành vi lúc chạy, không phải quan hệ giữa các symbol.
+
+Dùng nó để biết **nên đọc file nào**, rồi vẫn phải đọc mã và **chạy kiểm thử**.
+
 # EF Core / truy vấn dữ liệu
 
 Trước khi viết hay sửa BẤT KỲ truy vấn nào, đọc `.claude/skills/ef-core/SKILL.md`.
