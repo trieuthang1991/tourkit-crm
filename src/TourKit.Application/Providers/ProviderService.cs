@@ -8,6 +8,7 @@ namespace TourKit.Application.Providers;
 
 public sealed class ProviderService(
     IRepository<Provider> repo,
+    IRepository<Shared.Entities.ProviderService> providerServiceRepo,
     IRepository<OrderCost> orderCostRepo,
     IRepository<PaymentVoucher> paymentRepo,
     IValidator<CreateProviderDto> createValidator,
@@ -104,6 +105,62 @@ public sealed class ProviderService(
         return Map(entity);
     }
 
+    /// <summary>Sửa NCC cùng bảng dịch vụ — xem <see cref="IProviderService.UpdateWithServicesAsync"/>.</summary>
+    public async Task UpdateWithServicesAsync(Guid id, UpdateProviderDto dto, IReadOnlyList<ProviderServiceLineDto> services)
+    {
+        await Validate(updateValidator, dto);
+
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+        GanTruong(entity, dto);
+        repo.Update(entity);
+
+        var hienCo = await providerServiceRepo.ListAsync(s => s.ProviderId == id);
+        var giuLai = services.Where(x => x.Id is not null).Select(x => x.Id!.Value).ToHashSet();
+
+        // Dòng cũ không còn trong danh sách gửi lên = người dùng đã bỏ nó khỏi form.
+        foreach (var cu in hienCo.Where(s => !giuLai.Contains(s.Id)))
+        {
+            providerServiceRepo.Remove(cu);
+        }
+
+        foreach (var dong in services)
+        {
+            if (dong.Id is Guid dongId && hienCo.FirstOrDefault(s => s.Id == dongId) is { } sua)
+            {
+                GanDongDichVu(sua, dong);
+                providerServiceRepo.Update(sua);
+                continue;
+            }
+
+            var moi = new Shared.Entities.ProviderService { ProviderId = id };
+            GanDongDichVu(moi, dong);
+            await providerServiceRepo.AddAsync(moi);
+        }
+
+        // Tính nguyên tử đến từ việc hai repository dùng chung một DbContext: lần gọi ĐẦU đã ghi
+        // toàn bộ thay đổi của cả hai loại thực thể trong một transaction — hỏng bất kỳ dòng nào là
+        // không có gì được ghi, đúng như ROLLBACK của uspInsertHotel bên hệ cũ.
+        //
+        // Lần gọi thứ hai là no-op ở môi trường thật (không còn thay đổi nào đang chờ). Nó tồn tại
+        // vì lớp IRepository KHÔNG bộc lộ đơn vị công việc: nhìn vào chữ ký hàm thì không thể biết
+        // hai repo có chung ngữ cảnh hay không. Bỏ nó đi thì mã vẫn chạy đúng nhờ một chi tiết ngầm,
+        // và bài kiểm thử dùng repository giả sẽ đỏ mà không chỉ ra được vì sao.
+        await repo.SaveChangesAsync();
+        await providerServiceRepo.SaveChangesAsync();
+    }
+
+    private static void GanDongDichVu(Shared.Entities.ProviderService e, ProviderServiceLineDto d)
+    {
+        e.ServiceItemId = d.ServiceItemId;
+        e.PriceName = d.PriceName?.Trim();
+        e.ContractPrice = d.ContractPrice;
+        e.PublicPrice = d.PublicPrice;
+        e.CurrencyCode = d.CurrencyCode;
+        e.AmountOfPeople = d.AmountOfPeople;
+        e.Note = d.Note?.Trim();
+        e.Status = d.Status;
+    }
+
     public async Task UpdateAsync(Guid id, UpdateProviderDto dto)
     {
         await Validate(updateValidator, dto);
@@ -114,6 +171,14 @@ public sealed class ProviderService(
             throw new NotFoundException();
         }
 
+        GanTruong(entity, dto);
+        repo.Update(entity);
+        await repo.SaveChangesAsync();
+    }
+
+    /// <summary>Gán trường của NCC — dùng chung cho cả hai đường sửa để chúng không lệch nhau.</summary>
+    private static void GanTruong(Provider entity, UpdateProviderDto dto)
+    {
         entity.Name = dto.Name.Trim();
         entity.Type = dto.Type;
         entity.Phone = dto.Phone;
@@ -129,8 +194,6 @@ public sealed class ProviderService(
         entity.MarketTypeId = dto.MarketTypeId;
         entity.Rate = dto.Rate;
         entity.Status = dto.Status;
-        repo.Update(entity);
-        await repo.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(Guid id)

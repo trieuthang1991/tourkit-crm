@@ -19,6 +19,20 @@ public sealed record UpdateProviderDto(
     string? TaxCode, string? ContactPerson, string? BankAccount, string? BankName, Guid? PaymentTermId, int Rate, int Status,
     string? Province = null, Guid? BranchId = null, Guid? MarketTypeId = null);
 
+/// <summary>
+/// Một dòng sản phẩm/dịch vụ nằm TRONG form sửa nhà cung cấp.
+///
+/// Bám hệ cũ: <c>EditHotel.aspx</c> có panel "SẢN PHẨM/DỊCH VỤ" với các dòng thêm động, và
+/// <c>uspInsertHotel</c> nhận cả danh sách đó rồi ghi chung một transaction — hỏng giữa chừng thì
+/// ROLLBACK sạch. Tách ra lưu từng dòng là bỏ mất ràng buộc nguyên tử mà hệ cũ cố ý có.
+///
+/// <paramref name="Id"/> rỗng = dòng mới. Dòng có sẵn mà KHÔNG nằm trong danh sách gửi lên = đã xoá.
+/// </summary>
+public sealed record ProviderServiceLineDto(
+    Guid? Id, Guid? ServiceItemId, string? PriceName,
+    decimal ContractPrice, decimal PublicPrice, string? CurrencyCode,
+    int AmountOfPeople, string? Note, int Status);
+
 /// <summary>Bộ lọc danh sách NCC (bám hệ cũ). Tất cả optional.</summary>
 public sealed record ProviderListFilter(
     string? Q = null, int? Type = null, int? Status = null,

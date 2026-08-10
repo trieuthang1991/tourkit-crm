@@ -12,7 +12,7 @@ public class ProviderCrudServiceTests
     private static ProviderCrudService NewService(out FakeRepository<Provider> repo)
     {
         repo = new FakeRepository<Provider>();
-        return new ProviderCrudService(repo, new FakeRepository<OrderCost>(), new FakeRepository<PaymentVoucher>(),
+        return new ProviderCrudService(repo, new FakeRepository<TourKit.Shared.Entities.ProviderService>(), new FakeRepository<OrderCost>(), new FakeRepository<PaymentVoucher>(),
             new CreateProviderValidator(), new UpdateProviderValidator());
     }
 
@@ -22,7 +22,7 @@ public class ProviderCrudServiceTests
         repo = new FakeRepository<Provider>();
         costRepo = new FakeRepository<OrderCost>();
         payRepo = new FakeRepository<PaymentVoucher>();
-        return new ProviderCrudService(repo, costRepo, payRepo, new CreateProviderValidator(), new UpdateProviderValidator());
+        return new ProviderCrudService(repo, new FakeRepository<TourKit.Shared.Entities.ProviderService>(), costRepo, payRepo, new CreateProviderValidator(), new UpdateProviderValidator());
     }
 
     private static Provider P(string code, string name, ProviderType type, int status = 1, string? phone = null, string? contact = null)

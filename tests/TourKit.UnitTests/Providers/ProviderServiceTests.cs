@@ -18,7 +18,7 @@ public class ProviderServiceTests
     private static ProviderCrudService NewService(out FakeRepository<Provider> repo)
     {
         repo = new FakeRepository<Provider>();
-        return new ProviderCrudService(repo, new FakeRepository<OrderCost>(), new FakeRepository<PaymentVoucher>(),
+        return new ProviderCrudService(repo, new FakeRepository<TourKit.Shared.Entities.ProviderService>(), new FakeRepository<OrderCost>(), new FakeRepository<PaymentVoucher>(),
             new CreateProviderValidator(), new UpdateProviderValidator());
     }
 
