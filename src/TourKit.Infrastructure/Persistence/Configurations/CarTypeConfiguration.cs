@@ -11,6 +11,6 @@ public sealed class CarTypeConfiguration : IEntityTypeConfiguration<CarType>
         builder.Property(x => x.Name).IsRequired().HasMaxLength(100);
 
         // Index bắt đầu bằng TenantId (conventions §5); Code (số ghế) duy nhất theo tenant.
-        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }

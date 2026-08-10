@@ -11,6 +11,6 @@ public sealed class CustomerTypeConfiguration : IEntityTypeConfiguration<Custome
         builder.Property(x => x.Name).IsRequired().HasMaxLength(150);
 
         // Index bắt đầu bằng TenantId (conventions §5); Code duy nhất theo tenant để tra Customer.CustomerType.
-        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }

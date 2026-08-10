@@ -12,6 +12,6 @@ public sealed class CurrencyConfiguration : IEntityTypeConfiguration<Currency>
         builder.Property(x => x.Name).IsRequired().HasMaxLength(100);
         builder.Property(x => x.RateToVnd).HasPrecision(18, 4);   // tỷ giá cho phép phần thập phân
 
-        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }

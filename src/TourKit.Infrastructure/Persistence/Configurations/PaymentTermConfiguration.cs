@@ -11,6 +11,6 @@ public sealed class PaymentTermConfiguration : IEntityTypeConfiguration<PaymentT
         builder.Property(x => x.Name).IsRequired().HasMaxLength(150);
         builder.Property(x => x.Description).HasMaxLength(500);
 
-        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }

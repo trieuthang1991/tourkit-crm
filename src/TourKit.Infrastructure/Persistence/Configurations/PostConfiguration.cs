@@ -11,7 +11,7 @@ public sealed class PostCategoryConfiguration : IEntityTypeConfiguration<PostCat
         builder.Property(x => x.Name).IsRequired().HasMaxLength(200);
         builder.Property(x => x.Slug).IsRequired().HasMaxLength(200);
 
-        builder.HasIndex(x => new { x.TenantId, x.Slug }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Slug }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }
 

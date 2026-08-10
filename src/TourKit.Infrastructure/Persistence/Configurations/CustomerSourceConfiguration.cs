@@ -11,6 +11,6 @@ public sealed class CustomerSourceConfiguration : IEntityTypeConfiguration<Custo
         builder.Property(x => x.Name).IsRequired().HasMaxLength(150);
 
         // Index bắt đầu bằng TenantId (conventions §5); Name duy nhất theo tenant (Customer.Source tham chiếu).
-        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }

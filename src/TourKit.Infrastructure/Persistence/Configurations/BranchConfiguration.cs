@@ -12,6 +12,6 @@ public sealed class BranchConfiguration : IEntityTypeConfiguration<Branch>
         builder.Property(x => x.Code).HasMaxLength(50);
 
         // Index bắt đầu bằng TenantId (conventions §5); Name duy nhất theo tenant.
-        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }

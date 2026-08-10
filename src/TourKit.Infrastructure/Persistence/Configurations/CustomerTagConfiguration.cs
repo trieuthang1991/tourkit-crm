@@ -12,6 +12,6 @@ public sealed class CustomerTagConfiguration : IEntityTypeConfiguration<Customer
         builder.Property(x => x.Color).HasMaxLength(50);
 
         // Index bắt đầu bằng TenantId (conventions §5); Name duy nhất theo tenant (Customer.Tag tham chiếu).
-        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }

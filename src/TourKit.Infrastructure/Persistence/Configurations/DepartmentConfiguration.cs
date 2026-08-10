@@ -12,7 +12,7 @@ public sealed class DepartmentConfiguration : IEntityTypeConfiguration<Departmen
         builder.Property(x => x.Code).HasMaxLength(50);
 
         // Index bắt đầu bằng TenantId (conventions §5); Name duy nhất theo tenant.
-        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }
 
@@ -22,6 +22,6 @@ public sealed class PositionConfiguration : IEntityTypeConfiguration<Position>
     {
         builder.Property(x => x.Name).IsRequired().HasMaxLength(150);
 
-        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã/tên phải được.
     }
 }
