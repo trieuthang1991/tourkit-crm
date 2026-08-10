@@ -47,7 +47,48 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
         entity.IsDeleted = true;
         Set.Update(entity);
     }
-    public Task<int> SaveChangesAsync() => db.SaveChangesAsync();
+    /// <summary>
+    /// Lưu, và DỊCH lỗi trùng khoá duy nhất của CSDL thành lỗi nghiệp vụ.
+    ///
+    /// Vì sao cần: 34 chỉ mục duy nhất trong CSDL không kèm điều kiện lọc IsDeleted, nên bản ghi đã
+    /// xoá mềm vẫn chiếm chỗ mã. Hàm chặn trùng ở tầng service truy vấn qua bộ lọc toàn cục nên
+    /// không nhìn thấy chúng — nó bảo "mã chưa dùng", CSDL bảo "trùng". Không dịch thì người dùng
+    /// nhận 500 "Đã có lỗi xảy ra." sau khi xoá một danh mục rồi tạo lại đúng mã đó.
+    ///
+    /// Dịch Ở ĐÂY chứ không ở middleware: EF Core chỉ được phép sống trong tầng Infrastructure
+    /// (có bài kiểm thử kiến trúc chốt điều đó). Middleware đã biết đổi ConflictException thành 409.
+    /// </summary>
+    public async Task<int> SaveChangesAsync()
+    {
+        try
+        {
+            return await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (LaTrungKhoaDuyNhat(ex))
+        {
+            throw new ConflictException(
+                "Giá trị này đã tồn tại. Có thể một bản ghi đã xoá vẫn đang giữ mã/tên đó — hãy dùng giá trị khác.");
+        }
+    }
+
+    /// <summary>
+    /// Nhận diện vi phạm ràng buộc duy nhất, không phụ thuộc nhà cung cấp CSDL: Postgres trả mã
+    /// 23505, SQLite trả "UNIQUE constraint failed".
+    /// </summary>
+    private static bool LaTrungKhoaDuyNhat(Exception ex)
+    {
+        for (var e = ex.InnerException; e is not null; e = e.InnerException)
+        {
+            if (e.Message.Contains("23505", StringComparison.Ordinal)
+                || e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase)
+                || e.Message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
     public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate) => Set.AnyAsync(predicate);
     public Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
         => (predicate is null ? Set : Set.Where(predicate)).CountAsync();

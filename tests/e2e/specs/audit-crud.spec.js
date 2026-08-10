@@ -48,10 +48,19 @@ test.describe('Danh mục: tạo rồi xoá', () => {
       // để trống hoặc điền chữ là bị chặn đúng — và bài test đỏ vì lý do không liên quan.
       const oSo = panel.locator('input[type="number"]:visible');
       for (let i = 0; i < await oSo.count(); i++) {
-        // Số phải DUY NHẤT, không phải cứ 1: vài danh mục có ràng buộc mã không trùng, và lần chạy
-        // trước để lại bản ghi mang đúng số đó thì lần sau đỏ vì lý do chẳng liên quan gì tới bài test.
+        // Số phải DUY NHẤT, và không gian phải ĐỦ RỘNG.
+        //
+        // Bản cũ dùng 900 + (Date.now() % 90) — chỉ 90 giá trị. Mỗi lượt chạy tạo một bản ghi rồi
+        // xoá, nhưng xoá là xoá MỀM và chỉ mục duy nhất trong CSDL không lọc theo IsDeleted, nên
+        // dòng đã xoá vẫn giữ chỗ mã vĩnh viễn. Chạy đủ nhiều lần là cả 90 ô bị chiếm và bài test đỏ
+        // mãi mãi với lý do "giá trị đã tồn tại" — chẳng liên quan gì tới điều nó muốn kiểm.
         const v = await oSo.nth(i).inputValue();
-        if (!v || Number(v) <= 0) { await oSo.nth(i).fill(String(900 + (Date.now() % 90))); }
+        if (!v || Number(v) <= 0) {
+          const tran = Number(await oSo.nth(i).getAttribute('max')) || 0;
+          let so = 1000 + (Date.now() % 900_000);
+          if (tran > 0 && so > tran) { so = Math.max(1, tran - (Date.now() % tran)); }
+          await oSo.nth(i).fill(String(so));
+        }
       }
 
       await panel.locator('button[type="submit"], button:has-text("Lưu")').last().click();
@@ -69,6 +78,15 @@ test.describe('Danh mục: tạo rồi xoá', () => {
       // Bằng chứng thật: tải lại trang rồi tìm. Lưới tự làm tươi không chứng minh đã ghi xuống CSDL.
       await trang.goto(man.duong, { waitUntil: 'domcontentloaded' });
       await trang.waitForTimeout(2000);
+
+      // LỌC trước khi khẳng định. Bảng danh mục phân trang phía client (20 dòng/trang), nên khi danh
+      // mục đã nhiều bản ghi thì dòng vừa tạo nằm ở trang sau và KHÔNG có trong DOM — bài test đỏ
+      // với lý do "không thấy trong danh sách" trong khi bản ghi đã ghi xuống CSDL đàng hoàng.
+      const oTim = trang.locator('#tbl_filter input, .dataTables_filter input, #f-q').first();
+      if (await oTim.count()) {
+        await oTim.fill(ten);
+        await trang.waitForTimeout(800);
+      }
       await expect(trang.locator('body'), `${man.ten}: tạo xong nhưng không thấy trong danh sách`)
         .toContainText(ten, { timeout: 15_000 });
 
