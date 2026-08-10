@@ -94,6 +94,8 @@ public class AppDbContext : DbContext
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     // Bình luận của người trên bản ghi nghiệp vụ — cặp đôi với ActivityLog, cùng khoá (EntityName, EntityId).
     public DbSet<EntityComment> EntityComments => Set<EntityComment>();
+    // Kết quả AI đã chấm/tóm tắt/soạn — cùng khoá (EntityName, EntityId), giữ lịch sử từng lần.
+    public DbSet<AiInsight> AiInsights => Set<AiInsight>();
     public DbSet<PaymentApproval> PaymentApprovals => Set<PaymentApproval>();
     public DbSet<PaymentApprovalStepUser> PaymentApprovalStepUsers => Set<PaymentApprovalStepUser>();
     public DbSet<FileUpload> FileUploads => Set<FileUpload>();

@@ -15,8 +15,43 @@ namespace TourKit.Api.Pages.Ai;
 /// điểm được nó", mà nhận định thì kể lại chính nội dung bản ghi.
 /// </summary>
 [Authorize]
-public class ReviewModel(AiReviewer reviewer, AiComposer composer, ILogger<ReviewModel> logger) : PageModel
+public class ReviewModel(
+    AiReviewer reviewer,
+    AiComposer composer,
+    TourKit.Application.Ai.IAiInsightStore store,
+    ILogger<ReviewModel> logger) : PageModel
 {
+    /// <summary>Kết quả gần nhất của cả ba việc — màn hình gọi khi mở hồ sơ, để không phải chấm lại.</summary>
+    public async Task<IActionResult> OnGetLatestAsync(string? entity, string? id, CancellationToken ct)
+    {
+        var guard = AiRecordAccess.Check(User, entity, id);
+        if (guard.Error is not null)
+        {
+            return new JsonResult(Result.Error(guard.Error));
+        }
+
+        var items = await store.LatestAsync(entity!, id!, ct);
+        return new JsonResult(Result.Success(null, new { items }));
+    }
+
+    /// <summary>Lịch sử một loại việc, mới nhất trước — để so điểm lần này với những lần trước.</summary>
+    public async Task<IActionResult> OnGetHistoryAsync(string? entity, string? id, string? kind, CancellationToken ct)
+    {
+        var guard = AiRecordAccess.Check(User, entity, id);
+        if (guard.Error is not null)
+        {
+            return new JsonResult(Result.Error(guard.Error));
+        }
+
+        if (string.IsNullOrWhiteSpace(kind))
+        {
+            return new JsonResult(Result.Error("Thiếu loại kết quả cần xem."));
+        }
+
+        var items = await store.HistoryAsync(entity!, id!, kind, 20, ct);
+        return new JsonResult(Result.Success(null, new { items }));
+    }
+
     /// <summary>Trang không có giao diện riêng.</summary>
     public IActionResult OnGet() => NotFound();
 
@@ -31,11 +66,11 @@ public class ReviewModel(AiReviewer reviewer, AiComposer composer, ILogger<Revie
 
     /// <summary>Tóm tắt diễn biến của một bản ghi.</summary>
     public Task<IActionResult> OnPostSummaryAsync(string? entity, string? id, CancellationToken ct) =>
-        TextAsync(entity, id, (e, i, u) => composer.SummarizeAsync(e, i, u, ct), "tóm tắt");
+        TextAsync(entity, id, (e, i, u) => composer.SummarizeAsync(e, i, u, ct), "tóm tắt", "Summary", ct);
 
     /// <summary>Soạn một tin nhắn gửi khách.</summary>
     public Task<IActionResult> OnPostDraftAsync(string? entity, string? id, CancellationToken ct) =>
-        TextAsync(entity, id, (e, i, u) => composer.DraftAsync(e, i, u, ct), "soạn tin");
+        TextAsync(entity, id, (e, i, u) => composer.DraftAsync(e, i, u, ct), "soạn tin", "Draft", ct);
 
     /// <summary>
     /// Khung chung cho hai tính năng sinh văn bản: cùng cách soát danh sách trắng, cùng cách kiểm
@@ -45,7 +80,9 @@ public class ReviewModel(AiReviewer reviewer, AiComposer composer, ILogger<Revie
         string? entity,
         string? id,
         Func<string, string, Guid, Task<(string? Text, string? Error)>> run,
-        string what)
+        string what,
+        string kind,
+        CancellationToken ct)
     {
         var guard = AiRecordAccess.Check(User, entity, id);
         if (guard.Error is not null)
@@ -56,9 +93,18 @@ public class ReviewModel(AiReviewer reviewer, AiComposer composer, ILogger<Revie
         try
         {
             var (text, error) = await run(entity!, id!, guard.UserId);
-            return text is null
-                ? new JsonResult(Result.Error(error ?? "Chưa làm được."))
-                : new JsonResult(Result.Success(null, new { text }));
+            if (text is null)
+            {
+                return new JsonResult(Result.Error(error ?? "Chưa làm được."));
+            }
+
+            // Lưu NGAY sau khi có kết quả. Trước đây kết quả chỉ đi thẳng ra trình duyệt rồi mất khi
+            // tải lại trang — mở hồ sơ hôm sau là trống trơn, muốn xem lại phải chạy lại và trả tiền
+            // model thêm một lượt.
+            await store.SaveAsync(new TourKit.Application.Ai.SaveAiInsightDto(
+                entity!, id!, kind, guard.UserId, Text: text), ct);
+
+            return new JsonResult(Result.Success(null, new { text }));
         }
         catch (OperationCanceledException)
         {
@@ -90,14 +136,28 @@ public class ReviewModel(AiReviewer reviewer, AiComposer composer, ILogger<Revie
                 return new JsonResult(Result.Error(error ?? "Chưa đánh giá được."));
             }
 
+            var chiTiet = new
+            {
+                criteria = review.Criteria.Select(c => new { c.Label, c.Weight, c.Score, c.Note }),
+                risks = review.Risks,
+                nextActions = review.NextActions,
+            };
+
+            // Giữ lại để lần sau mở hồ sơ còn thấy, và để so điểm lần này với những lần trước — chính
+            // diễn biến điểm mới là thứ nói lên khách đang ấm lên hay nguội đi.
+            await store.SaveAsync(new TourKit.Application.Ai.SaveAiInsightDto(
+                entity!, id!, "Review", guard.UserId,
+                Score: review.Score, Band: review.Band, Summary: review.Summary,
+                DetailJson: System.Text.Json.JsonSerializer.Serialize(chiTiet)), ct);
+
             return new JsonResult(Result.Success(null, new
             {
                 score = review.Score,
                 band = review.Band,
                 summary = review.Summary,
-                criteria = review.Criteria.Select(c => new { c.Label, c.Weight, c.Score, c.Note }),
-                risks = review.Risks,
-                nextActions = review.NextActions,
+                chiTiet.criteria,
+                chiTiet.risks,
+                chiTiet.nextActions,
             }));
         }
         catch (OperationCanceledException)

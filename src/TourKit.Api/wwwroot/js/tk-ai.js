@@ -213,8 +213,12 @@
 
 /* Thẻ trợ lý AI trên một bản ghi (gộp trong tk-ai.js) — chấm điểm, tóm tắt, soạn tin.
    Mount: <div data-ai-review data-entity="Lead" data-entity-id="..."></div>
-   Nhận định KHÔNG được lưu: mỗi lần bấm là một lần chấm trên dữ liệu mới nhất. Lưu lại thì hôm sau
-   người đọc thấy một điểm số cũ mà tưởng là hiện trạng. */
+
+   Kết quả ĐƯỢC LƯU, và mỗi lần bấm là một dòng mới chứ không ghi đè. Bản trước không lưu gì, nên mở
+   lại hồ sơ hôm sau là thẻ trống trơn và muốn xem lại phải chạy lại — mất 15-20 giây cùng một lượt
+   gọi model có tính phí, mà vẫn không so được điểm hôm nay với điểm tuần trước.
+   Nguy cơ của việc lưu là người đọc tưởng điểm cũ là hiện trạng; chặn bằng cách LUÔN hiện thời điểm
+   chấm và người đã chấm ngay cạnh kết quả. */
 (function () {
   'use strict';
 
@@ -271,7 +275,42 @@
       list('Rủi ro / còn thiếu', d.risks, 'ti-alert-triangle') +
       list('Nên làm tiếp', d.nextActions, 'ti-arrow-right') +
       '<div class="text-muted small mt-3">Điểm tổng tính theo trọng số các tiêu chí trong cấu hình, ' +
-      'không phải do AI tự phán. Nhận định không được lưu lại — bạn tự quyết định.</div>';
+      'không phải do AI tự phán. Đây là gợi ý — bạn tự quyết định.</div>';
+  }
+
+  /**
+   * Dòng "chấm lúc nào, ai chấm" đặt ngay trên kết quả cũ.
+   *
+   * Bắt buộc phải có khi đã lưu lịch sử: không có nó thì một điểm số chấm từ tháng trước trông y hệt
+   * điểm vừa chấm xong, và người đọc ra quyết định trên hiện trạng đã cũ mà không hề biết.
+   */
+  function metaLine(item, nhan) {
+    var t = new Date(item.createdAt);
+    var luc = isNaN(t) ? '' : t.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return '<div class="d-flex align-items-center gap-2 mb-2 text-muted small">' +
+             '<i class="ti ti-history"></i><span>' + esc(nhan) + ' lúc ' + esc(luc) +
+             (item.userName ? ' · ' + esc(item.userName) : '') + '</span>' +
+           '</div>';
+  }
+
+  var NHAN = { Review: 'Đã chấm', Summary: 'Đã tóm tắt', Draft: 'Đã soạn tin' };
+
+  /** Dựng lại kết quả đã lưu (không gọi model). */
+  function renderSaved(out, item) {
+    var meta = metaLine(item, NHAN[item.kind] || 'Đã chạy');
+    if (item.kind === 'Review') {
+      var d = { score: item.score, band: item.band, summary: item.summary, criteria: [], risks: [], nextActions: [] };
+      try {
+        var ct = JSON.parse(item.detailJson || '{}');
+        d.criteria = ct.criteria || [];
+        d.risks = ct.risks || [];
+        d.nextActions = ct.nextActions || [];
+      } catch (e) { /* lịch sử cũ có thể thiếu chi tiết — vẫn hiện được điểm và nhận định */ }
+      render(out, d);
+    } else {
+      renderText(out, item.text, item.kind === 'Draft');
+    }
+    out.insertAdjacentHTML('afterbegin', meta);
   }
 
   function mount(el) {
@@ -301,12 +340,76 @@
             '<div class="d-flex gap-2">' + buttons + '</div>' +
           '</div>' +
           '<div data-role="out" class="mt-3 text-muted small">' +
-            'AI đọc hồ sơ và luồng trao đổi của bản ghi này. Kết quả không được lưu — bạn tự quyết định.' +
+            'AI đọc hồ sơ và luồng trao đổi của bản ghi này. Kết quả được lưu lại để lần sau mở ra còn xem được.' +
           '</div>' +
+          '<div data-role="history" class="mt-3 d-none"></div>' +
         '</div>' +
       '</div>';
 
     var out = el.querySelector('[data-role="out"]');
+    var lichSu = el.querySelector('[data-role="history"]');
+    var loaiDangXem = null;
+
+    // Hiện ngay kết quả đã lưu gần nhất. Đây là toàn bộ lý do lưu: mở hồ sơ ra là thấy, không phải
+    // bấm lại và trả tiền model thêm một lượt cho một câu trả lời đã có.
+    fetch(API + '?handler=Latest&entity=' + encodeURIComponent(entity) +
+          '&id=' + encodeURIComponent(el.getAttribute('data-entity-id')))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (res) {
+        var items = (res && res.isSuccess && res.data && res.data.items) || [];
+        if (!items.length) { return; }
+
+        // Cái mới nhất trong ba loại — thứ người dùng vừa làm dở lần trước.
+        items.sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+        loaiDangXem = items[0].kind;
+        out.classList.remove('text-muted', 'small');
+        renderSaved(out, items[0]);
+        capNhatNutLichSu();
+      });
+
+    function capNhatNutLichSu() {
+      if (!loaiDangXem) { return; }
+      lichSu.classList.remove('d-none');
+      lichSu.innerHTML =
+        '<button type="button" class="btn btn-sm btn-label-secondary" data-role="mo-lich-su">' +
+        '<i class="ti ti-history me-1"></i>Các lần ' + esc((NHAN[loaiDangXem] || 'đã chạy').toLowerCase()) + ' trước</button>';
+      lichSu.querySelector('[data-role="mo-lich-su"]').addEventListener('click', moLichSu);
+    }
+
+    function moLichSu() {
+      lichSu.innerHTML = '<div class="text-muted small">Đang tải lịch sử…</div>';
+      fetch(API + '?handler=History&entity=' + encodeURIComponent(entity) +
+            '&id=' + encodeURIComponent(el.getAttribute('data-entity-id')) +
+            '&kind=' + encodeURIComponent(loaiDangXem))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; })
+        .then(function (res) {
+          var items = (res && res.isSuccess && res.data && res.data.items) || [];
+          if (items.length <= 1) {
+            lichSu.innerHTML = '<div class="text-muted small">Chưa có lần nào trước đó.</div>';
+            return;
+          }
+
+          // Bỏ dòng đầu: nó chính là kết quả đang hiện ở trên, lặp lại chỉ gây rối.
+          var html = '<div class="fw-medium small mb-2">Các lần trước</div><ul class="list-unstyled mb-0">';
+          for (var i = 1; i < items.length; i++) {
+            var it = items[i];
+            var t = new Date(it.createdAt);
+            var luc = isNaN(t) ? '' : t.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            html += '<li class="d-flex align-items-center gap-2 py-1 border-top">' +
+                      (it.kind === 'Review'
+                        ? '<span class="badge ' + bandClass(it.band) + '">' + esc(it.score) + '</span>'
+                        : '<i class="ti ti-file-text text-muted"></i>') +
+                      '<span class="small text-muted">' + esc(luc) + (it.userName ? ' · ' + esc(it.userName) : '') + '</span>' +
+                      (it.kind !== 'Review' && it.text
+                        ? '<span class="small text-truncate ms-1" style="max-width:22rem">' + esc(it.text) + '</span>'
+                        : '') +
+                    '</li>';
+          }
+          lichSu.innerHTML = html + '</ul>';
+        });
+    }
 
     el.querySelectorAll('[data-act]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -332,6 +435,10 @@
           }
           if (act.key === 'Review') { render(out, res.data || {}); }
           else { renderText(out, (res.data || {}).text, act.key === 'Draft'); }
+
+          // Vừa chạy xong thì lịch sử dài thêm một dòng — đổi nút sang đúng loại vừa chạy.
+          loaiDangXem = act.key;
+          capNhatNutLichSu();
         });
       });
     });
