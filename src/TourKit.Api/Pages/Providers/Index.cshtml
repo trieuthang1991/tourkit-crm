@@ -158,6 +158,44 @@
           <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
         </div>
       </div>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label">Tên tài khoản</label><input type="text" name="Input.BankAccountName" class="form-control" placeholder="Nhập tên chủ tài khoản" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Website</label><input type="text" name="Input.Website" class="form-control" placeholder="Nhập link" /></div>
+      </div>
+      <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Nhập ghi chú"></textarea></div>
+
+      @* Trường riêng theo LOẠI nhà cung cấp — hệ cũ tách hẳn 4 màn sửa (Edit/EditHotel/
+         EditPlaneTicket/EditVoucher) dùng chung phần trên rồi mỗi màn thêm vài ô của riêng nó.
+         Ở đây gộp một form và chỉ hiện khối khớp loại đang chọn. Ô ẩn KHÔNG bị gửi lên vô nghĩa:
+         phía máy chủ (HoSoTuInput) loại bỏ trường không thuộc loại đang chọn. *@
+      <div class="tk-loai tk-loai-ks d-none">
+        <div class="row">
+          <div class="col-6 mb-3"><label class="form-label">Năm xây dựng</label><input type="number" name="Input.BuiltYear" class="form-control" placeholder="VD 2015" /></div>
+          <div class="col-6 mb-3"><label class="form-label">Quốc gia</label><input type="text" name="Input.Country" class="form-control" placeholder="Nhập quốc gia" /></div>
+        </div>
+      </div>
+      <div class="tk-loai tk-loai-xe d-none">
+        <div class="mb-3">
+          <label class="form-label">Thông tin xe</label>
+          <select name="Input.VehicleOwnership" class="form-select">
+            <option value="">— Không —</option>
+            @foreach (var o in TourKit.Application.Providers.ProviderProfile.VehicleOwnerships) { <option value="@o">@o</option> }
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Loại xe</label>
+          <div class="d-flex flex-wrap gap-3" id="ds-loai-xe">
+            @foreach (var o in TourKit.Application.Providers.ProviderProfile.VehicleTypeOptions)
+            {
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="Input.VehicleTypes" value="@o" id="xe-@o.Replace(" ", "-")" />
+                <label class="form-check-label" for="xe-@o.Replace(" ", "-")">@o</label>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
       @* Panel SẢN PHẨM/DỊCH VỤ — tái lập EditHotel.aspx của hệ cũ: thông tin NCC và bảng giá nằm
          chung một form, bấm Lưu ghi cả hai trong một transaction (uspInsertHotel).
          Chỉ hiện khi SỬA: form tạo mới chưa có đường ghi kèm dịch vụ. *@
@@ -202,7 +240,27 @@
         fill: function ($form, data) {
           $form.find('[name="Input.Code"]').prop('readonly', !!(data && data.id));
           napDichVu(data && data.id ? data.id : null);
+
+          // Ô chọn nhiều phải tự điền: bộ điền sẵn của tk.form gán .val() cho từng ô, với một NHÓM
+          // checkbox cùng tên thì việc đó không tích được ô nào. Xoá sạch trước rồi tích theo mảng —
+          // không xoá thì lần mở sau còn dấu tích của bản ghi trước.
+          var xe = (data && data.vehicleTypes) || [];
+          $form.find('[name="Input.VehicleTypes"]').each(function () {
+            this.checked = xe.indexOf(this.value) >= 0;
+          });
+
+          hienTheoLoai($form);
         } });
+
+      // Hiện đúng khối trường của loại NCC đang chọn. Giá trị số phải so bằng Number: giá trị của
+      // <option> luôn là chuỗi, còn dữ liệu từ lưới là số.
+      function hienTheoLoai($form) {
+        var loai = Number($form.find('[name="Input.Type"]').val());
+        $form.find('.tk-loai-ks').toggleClass('d-none', loai !== 1);   // ProviderType.Hotel
+        $form.find('.tk-loai-xe').toggleClass('d-none', loai !== 2);   // ProviderType.Vehicle
+      }
+
+      $('#frm').on('change', '[name="Input.Type"]', function () { hienTheoLoai($('#frm')); });
 
       // ---- Panel Sản phẩm / Dịch vụ ----
       var dmDichVu = [];   // danh mục dịch vụ, nạp cùng lượt với bảng giá

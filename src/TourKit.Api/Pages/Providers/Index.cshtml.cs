@@ -119,6 +119,16 @@ public class IndexModel : TkListPageModel
         public Guid? MarketTypeId { get; set; }
         public int Rate { get; set; }
         public int Status { get; set; } = 1;
+
+        // ----- Trường mềm, lưu gộp vào Provider.ProfileJson (xem ProviderProfile) -----
+
+        public string? Website { get; set; }          // "Link" bên hệ cũ
+        public string? BankAccountName { get; set; }  // "Tên TK"
+        public string? Note { get; set; }             // "Ghi chú"
+        public int? BuiltYear { get; set; }           // Khách sạn
+        public string? Country { get; set; }          // Khách sạn
+        public string? VehicleOwnership { get; set; } // Vận chuyển: xe nhà / xe đối tác
+        public List<string> VehicleTypes { get; set; } = [];  // Vận chuyển: nhiều hạng ghế
     }
 
     /// <summary>Loại NCC — bám PROVIDER_TYPE của bản cũ (1..6).</summary>
@@ -202,6 +212,15 @@ public class IndexModel : TkListPageModel
             rate = p.Rate,
             status = p.Status,
             statusLabel = StatusLabel(p.Status),
+            // Trường mềm phải đi kèm dòng lưới, vì form sửa nạp từ chính dòng này. Thiếu ở đây là
+            // mở sửa rồi bấm Lưu sẽ ghi null đè lên — đúng lỗi đã xảy ra ở màn chuyến đi.
+            website = p.Profile?.Website,
+            bankAccountName = p.Profile?.BankAccountName,
+            note = p.Profile?.Note,
+            builtYear = p.Profile?.BuiltYear,
+            country = p.Profile?.Country,
+            vehicleOwnership = p.Profile?.VehicleOwnership,
+            vehicleTypes = p.Profile?.VehicleTypes ?? [],
             totalCost = p.TotalCost,
             paid = p.Paid,
             outstanding = p.Outstanding,
@@ -259,7 +278,8 @@ public class IndexModel : TkListPageModel
             await _svc.UpdateWithServicesAsync(g, new UpdateProviderDto(
                 Input.Name, Input.Type, Input.Phone, Input.Email, Input.Address, Input.TaxCode, Input.ContactPerson,
                 Input.BankAccount, Input.BankName, Input.PaymentTermId, Input.Rate, Input.Status,
-                Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId),
+                Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId,
+                Profile: HoSoTuInput()),
                 Services.Select(x => new ProviderServiceLineDto(
                     x.Id, x.ServiceItemId, x.PriceName, x.ContractPrice, x.PublicPrice,
                     x.CurrencyCode, x.AmountOfPeople, x.Note, x.Status)).ToList());
@@ -269,10 +289,37 @@ public class IndexModel : TkListPageModel
             await _svc.CreateAsync(new CreateProviderDto(
                 Input.Code, Input.Name, Input.Type, Input.Phone, Input.Email, Input.Address, Input.TaxCode, Input.ContactPerson,
                 Input.BankAccount, Input.BankName, Input.PaymentTermId, Input.Rate, Input.Status,
-                Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId));
+                Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId,
+                Profile: HoSoTuInput()));
         }
 
         return new JsonResult(Result.Success("Đã lưu nhà cung cấp."));
+    }
+
+    /// <summary>
+    /// Gom trường mềm từ form thành <see cref="ProviderProfile"/>.
+    ///
+    /// Chỉ giữ trường của ĐÚNG loại NCC đang chọn: đổi khách sạn sang xe rồi lưu thì năm xây dựng
+    /// phải biến mất theo, chứ không nằm lại trong JSON như rác vô hình mà giao diện không còn chỗ
+    /// nào hiện ra để sửa hay xoá.
+    /// </summary>
+    private ProviderProfile HoSoTuInput()
+    {
+        var ks = ProviderProfile.CoTruongKhachSan(Input.Type);
+        var xe = ProviderProfile.CoTruongXe(Input.Type);
+
+        static string? Gon(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+        return new ProviderProfile
+        {
+            Website = Gon(Input.Website),
+            BankAccountName = Gon(Input.BankAccountName),
+            Note = Gon(Input.Note),
+            BuiltYear = ks ? Input.BuiltYear : null,
+            Country = ks ? Gon(Input.Country) : null,
+            VehicleOwnership = xe ? Gon(Input.VehicleOwnership) : null,
+            VehicleTypes = xe ? Input.VehicleTypes.Where(v => !string.IsNullOrWhiteSpace(v)).ToList() : [],
+        };
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)

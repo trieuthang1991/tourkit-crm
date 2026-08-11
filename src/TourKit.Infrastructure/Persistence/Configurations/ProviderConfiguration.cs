@@ -16,6 +16,7 @@ public sealed class ProviderConfiguration : IEntityTypeConfiguration<Provider>
         builder.Property(x => x.ContactPerson).HasMaxLength(200);
         builder.Property(x => x.BankAccount).HasMaxLength(64);
         builder.Property(x => x.BankName).HasMaxLength(200);
+        builder.Property(x => x.ProfileJson).HasColumnType("jsonb");
 
         // Index bắt đầu bằng TenantId (conventions §5): tăng tốc mọi truy vấn đã bị lọc theo tenant.
         builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();

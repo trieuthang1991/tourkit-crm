@@ -6,18 +6,20 @@ public sealed record ProviderDto(
     Guid Id, string Code, string Name, ProviderType Type, string? Phone, string? Email, string? Address,
     string? TaxCode, string? ContactPerson, string? BankAccount, string? BankName, Guid? PaymentTermId, int Rate, int Status,
     string? Province = null, Guid? BranchId = null, Guid? MarketTypeId = null,
+    // Trường mềm riêng theo loại NCC (năm xây dựng, loại xe...). Xem ProviderProfile.
+    ProviderProfile? Profile = null,
     // Công nợ NCC (bám danh sách hệ cũ): tổng mua (OrderCost) · đã trả (phiếu chi đã duyệt) · còn nợ. Chỉ ở danh sách.
     decimal TotalCost = 0m, decimal Paid = 0m, decimal Outstanding = 0m);
 
 public sealed record CreateProviderDto(
     string Code, string Name, ProviderType Type, string? Phone, string? Email, string? Address,
     string? TaxCode, string? ContactPerson, string? BankAccount, string? BankName, Guid? PaymentTermId, int Rate, int Status,
-    string? Province = null, Guid? BranchId = null, Guid? MarketTypeId = null);
+    string? Province = null, Guid? BranchId = null, Guid? MarketTypeId = null, ProviderProfile? Profile = null);
 
 public sealed record UpdateProviderDto(
     string Name, ProviderType Type, string? Phone, string? Email, string? Address,
     string? TaxCode, string? ContactPerson, string? BankAccount, string? BankName, Guid? PaymentTermId, int Rate, int Status,
-    string? Province = null, Guid? BranchId = null, Guid? MarketTypeId = null);
+    string? Province = null, Guid? BranchId = null, Guid? MarketTypeId = null, ProviderProfile? Profile = null);
 
 /// <summary>
 /// Một dòng sản phẩm/dịch vụ nằm TRONG form sửa nhà cung cấp.

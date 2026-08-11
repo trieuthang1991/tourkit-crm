@@ -27,4 +27,11 @@ public sealed class Provider : BaseEntity, ITenantEntity
     public Guid? MarketTypeId { get; set; }        // Thị trường (legacy MarketType)
     public int Rate { get; set; }
     public int Status { get; set; }
+
+    /// <summary>
+    /// Trường mềm riêng theo loại NCC (năm xây dựng, quốc gia, loại xe...) — hệ cũ để ở đầu form
+    /// nhưng mỗi loại một bộ khác nhau. Xem <c>TourKit.Application.Providers.ProviderProfile</c>.
+    /// Chỉ để hiển thị/sửa; thứ cần lọc ở SQL phải là cột thật.
+    /// </summary>
+    public string? ProfileJson { get; set; }
 }

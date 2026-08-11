@@ -98,6 +98,7 @@ public sealed class ProviderService(
             MarketTypeId = dto.MarketTypeId,
             Rate = dto.Rate,
             Status = dto.Status,
+            ProfileJson = dto.Profile?.ToJsonOrNull(),
         };
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
@@ -194,6 +195,14 @@ public sealed class ProviderService(
         entity.MarketTypeId = dto.MarketTypeId;
         entity.Rate = dto.Rate;
         entity.Status = dto.Status;
+
+        // Profile null = lời gọi không quan tâm tới trường mềm (API cũ, import) → GIỮ NGUYÊN thứ đang
+        // có. Nếu gán đè null ở đây thì mọi đường sửa chưa gửi Profile sẽ âm thầm xoá sạch năm xây
+        // dựng/loại xe của NCC — đúng kiểu mất dữ liệu mà form sửa chuyến đã dính một lần.
+        if (dto.Profile is { } hoSo)
+        {
+            entity.ProfileJson = hoSo.ToJsonOrNull();
+        }
     }
 
     public async Task DeleteAsync(Guid id)
@@ -220,6 +229,6 @@ public sealed class ProviderService(
     private static ProviderDto Map(Provider p, decimal totalCost = 0m, decimal paid = 0m) => new(
         p.Id, p.Code, p.Name, p.Type, p.Phone, p.Email, p.Address,
         p.TaxCode, p.ContactPerson, p.BankAccount, p.BankName, p.PaymentTermId, p.Rate, p.Status,
-        p.Province, p.BranchId, p.MarketTypeId,
+        p.Province, p.BranchId, p.MarketTypeId, ProviderProfile.Parse(p.ProfileJson),
         totalCost, paid, OrderMath.Outstanding(totalCost, paid));
 }
