@@ -61,6 +61,20 @@ public class IndexModel : TkListPageModel
         public int AmountOfPeople { get; set; }
         public string? Note { get; set; }
         public int Status { get; set; }
+
+        // ----- Trường riêng theo loại NCC, lưu vào ProviderService.ProfileJson -----
+
+        public DateOnly? PeriodFrom { get; set; }       // Khách sạn: "Giai đoạn từ"
+        public DateOnly? PeriodTo { get; set; }         // Khách sạn: "Đến"
+        public string? DayType { get; set; }            // Khách sạn: "Loại ngày"
+        public decimal? NetCostPerDay { get; set; }     // Khách sạn: "Chi phí NET/Ngày"
+        public decimal? SellPricePerDay { get; set; }   // Khách sạn: "Giá bán/Ngày"
+        public string? TicketType { get; set; }         // Vé: "Loại vé"
+        public string? Route { get; set; }              // Vé: "Hành trình vé"
+        public string? DepartTime { get; set; }         // Vé: "Giờ đi"
+        public string? ReturnTime { get; set; }         // Vé: "Giờ về"
+        public DateOnly? DepositDeadline { get; set; }  // Vé: "Hạn cắt cọc"
+        public string? Baggage { get; set; }            // Vé: "Hành lý"
     }
 
     /// <summary>
@@ -90,6 +104,18 @@ public class IndexModel : TkListPageModel
                 amountOfPeople = x.AmountOfPeople,
                 note = x.Note,
                 status = x.Status,
+                // Trường riêng phải đi cùng dòng: form sửa nạp từ đây, thiếu là bấm Lưu ghi null đè lên.
+                periodFrom = x.Profile?.PeriodFrom?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                periodTo = x.Profile?.PeriodTo?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                dayType = x.Profile?.DayType,
+                netCostPerDay = x.Profile?.NetCostPerDay,
+                sellPricePerDay = x.Profile?.SellPricePerDay,
+                ticketType = x.Profile?.TicketType,
+                route = x.Profile?.Route,
+                departTime = x.Profile?.DepartTime,
+                returnTime = x.Profile?.ReturnTime,
+                depositDeadline = x.Profile?.DepositDeadline?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                baggage = x.Profile?.Baggage,
             }),
             items = dm.Items.Select(x => new { id = x.Id, name = x.Name }),
         }));
@@ -282,7 +308,21 @@ public class IndexModel : TkListPageModel
                 Profile: HoSoTuInput()),
                 Services.Select(x => new ProviderServiceLineDto(
                     x.Id, x.ServiceItemId, x.PriceName, x.ContractPrice, x.PublicPrice,
-                    x.CurrencyCode, x.AmountOfPeople, x.Note, x.Status)).ToList());
+                    x.CurrencyCode, x.AmountOfPeople, x.Note, x.Status,
+                    new ProviderServiceLineProfile
+                    {
+                        PeriodFrom = x.PeriodFrom,
+                        PeriodTo = x.PeriodTo,
+                        DayType = Gon(x.DayType),
+                        NetCostPerDay = x.NetCostPerDay,
+                        SellPricePerDay = x.SellPricePerDay,
+                        TicketType = Gon(x.TicketType),
+                        Route = Gon(x.Route),
+                        DepartTime = Gon(x.DepartTime),
+                        ReturnTime = Gon(x.ReturnTime),
+                        DepositDeadline = x.DepositDeadline,
+                        Baggage = Gon(x.Baggage),
+                    })).ToList());
         }
         else
         {
@@ -303,12 +343,13 @@ public class IndexModel : TkListPageModel
     /// phải biến mất theo, chứ không nằm lại trong JSON như rác vô hình mà giao diện không còn chỗ
     /// nào hiện ra để sửa hay xoá.
     /// </summary>
+    /// <summary>Chuỗi rỗng/toàn khoảng trắng coi như không nhập — đừng lưu "" vào JSON.</summary>
+    private static string? Gon(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
     private ProviderProfile HoSoTuInput()
     {
         var ks = ProviderProfile.CoTruongKhachSan(Input.Type);
         var xe = ProviderProfile.CoTruongXe(Input.Type);
-
-        static string? Gon(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
         return new ProviderProfile
         {

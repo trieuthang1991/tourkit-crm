@@ -3,6 +3,7 @@ using TourKit.Application.Common;
 using TourKit.Application.Providers.Dtos;
 using TourKit.Shared.Domain;
 using TourKit.Shared.Entities;
+using TourKit.Shared.Enums;
 
 namespace TourKit.Application.Providers;
 
@@ -128,13 +129,13 @@ public sealed class ProviderService(
         {
             if (dong.Id is Guid dongId && hienCo.FirstOrDefault(s => s.Id == dongId) is { } sua)
             {
-                GanDongDichVu(sua, dong);
+                GanDongDichVu(sua, dong, dto.Type);
                 providerServiceRepo.Update(sua);
                 continue;
             }
 
             var moi = new Shared.Entities.ProviderService { ProviderId = id };
-            GanDongDichVu(moi, dong);
+            GanDongDichVu(moi, dong, dto.Type);
             await providerServiceRepo.AddAsync(moi);
         }
 
@@ -150,7 +151,14 @@ public sealed class ProviderService(
         await providerServiceRepo.SaveChangesAsync();
     }
 
-    private static void GanDongDichVu(Shared.Entities.ProviderService e, ProviderServiceLineDto d)
+    /// <summary>
+    /// Gán trường của một dòng bảng giá.
+    ///
+    /// <paramref name="loai"/> là loại NCC đang lưu — nó quyết định cột riêng nào của dòng còn hiệu
+    /// lực. Truyền vào chứ không đọc từ thực thể NCC, vì lần lưu này có thể ĐANG đổi loại và cột
+    /// riêng phải theo loại MỚI.
+    /// </summary>
+    private static void GanDongDichVu(Shared.Entities.ProviderService e, ProviderServiceLineDto d, ProviderType loai)
     {
         e.ServiceItemId = d.ServiceItemId;
         e.PriceName = d.PriceName?.Trim();
@@ -160,6 +168,12 @@ public sealed class ProviderService(
         e.AmountOfPeople = d.AmountOfPeople;
         e.Note = d.Note?.Trim();
         e.Status = d.Status;
+
+        // Không gửi Profile = lời gọi không quan tâm cột riêng → giữ thứ đang có. Nhưng vẫn phải lọc
+        // lại theo loại: đổi khách sạn sang vé máy bay thì giai đoạn/loại ngày phải mất theo, kể cả
+        // khi lần lưu đó không đụng gì tới dòng.
+        var hoSo = d.Profile ?? ProviderServiceLineProfile.Parse(e.ProfileJson);
+        e.ProfileJson = hoSo.ChiGiuCuaLoai(loai).ToJsonOrNull();
     }
 
     public async Task UpdateAsync(Guid id, UpdateProviderDto dto)

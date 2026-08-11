@@ -3,7 +3,9 @@ namespace TourKit.Application.Providers.Dtos;
 public sealed record ProviderServiceDto(
     Guid Id, Guid ProviderId, Guid? ServiceItemId, string? PriceName, decimal ContractPrice, decimal PublicPrice,
     string? CurrencyCode, decimal ContractPriceVnd, decimal PublicPriceVnd,
-    int AmountOfPeople, string? Note, int Status);
+    int AmountOfPeople, string? Note, int Status,
+    // Trường riêng của dòng theo loại NCC. Xem ProviderServiceLineProfile.
+    ProviderServiceLineProfile? Profile = null);
 
 public sealed record CreateProviderServiceDto(
     Guid ProviderId, Guid? ServiceItemId, string? PriceName, decimal ContractPrice, decimal PublicPrice,

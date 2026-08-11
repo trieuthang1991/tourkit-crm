@@ -258,6 +258,11 @@
         var loai = Number($form.find('[name="Input.Type"]').val());
         $form.find('.tk-loai-ks').toggleClass('d-none', loai !== 1);   // ProviderType.Hotel
         $form.find('.tk-loai-xe').toggleClass('d-none', loai !== 2);   // ProviderType.Vehicle
+
+        // Cột riêng của DÒNG bảng giá. Gọi lại cả sau khi nạp xong dòng, vì lúc đổi loại có thể chưa
+        // có dòng nào trên màn.
+        $form.find('.tk-cot-ks').toggleClass('d-none', loai !== 1);
+        $form.find('.tk-cot-ve').toggleClass('d-none', loai !== 5);    // ProviderType.Airline
       }
 
       $('#frm').on('change', '[name="Input.Type"]', function () { hienTheoLoai($('#frm')); });
@@ -293,6 +298,45 @@
               '<input type="hidden" name="' + p + 'Status" value="' + (d.status == null ? 1 : d.status) + '" />' +
               '<input type="hidden" name="' + p + 'Note" value="' + esc(d.note || '') + '" />' +
               '<button type="button" class="btn btn-sm btn-icon text-danger js-xoa-dv" title="Bỏ dòng này"><i class="ti ti-trash"></i></button></div>' +
+            cotRieng(p, d) +
+          '</div></div>';
+      }
+
+      // Cột riêng của DÒNG giá theo loại NCC — hệ cũ để chúng trong chính hàng tiêu đề bảng giá, tức
+      // mỗi gói giá một bộ giá trị. Dựng cả hai khối rồi ẩn/hiện, không dựng lại dòng khi đổi loại:
+      // dựng lại là mất những gì người dùng đang gõ dở.
+      function cotRieng(p, d) {
+        // Ô ngày dùng type="date" gốc của trình duyệt, KHÔNG gắn .tk-date. flatpickr chỉ chạy một lần
+        // lúc dựng form, còn dòng giá sinh ra sau đó nên sẽ không được gắn — mà nếu gắn sau thì
+        // altInput lại giấu ô gốc đi và kéo theo đúng cái bẫy đã làm luật kiểm tra bị bỏ qua trước
+        // đây. type="date" gửi thẳng yyyy-MM-dd, khớp DateOnly, không cần khởi tạo gì.
+        function o(nhan, ten, gt, loai, chuMo) {
+          return '<div class="col-md-3"><label class="form-label small mb-1">' + nhan + '</label>' +
+            '<input type="' + (loai || 'text') + '" class="form-control form-control-sm"' +
+            ' name="' + ten + '" value="' + esc(gt == null ? '' : gt) +
+            '" placeholder="' + esc(chuMo || '') + '" /></div>';
+        }
+        function chon(nhan, ten, gt, ds) {
+          return '<div class="col-md-3"><label class="form-label small mb-1">' + nhan + '</label>' +
+            '<select class="form-select form-select-sm" name="' + ten + '"><option value="">— Không —</option>' +
+            ds.map(function (x) { return '<option value="' + esc(x) + '"' + (x === gt ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') +
+            '</select></div>';
+        }
+
+        return '<div class="col-12 tk-cot-loai tk-cot-ks d-none"><div class="row g-2 align-items-end">' +
+            o('Giai đoạn từ', p + 'PeriodFrom', d.periodFrom, 'date') +
+            o('Đến', p + 'PeriodTo', d.periodTo, 'date') +
+            chon('Loại ngày', p + 'DayType', d.dayType, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TourKit.Application.Providers.ProviderServiceLineProfile.DayTypes))) +
+            o('Chi phí NET/ngày', p + 'NetCostPerDay', d.netCostPerDay, 'number') +
+            o('Giá bán/ngày', p + 'SellPricePerDay', d.sellPricePerDay, 'number') +
+          '</div></div>' +
+          '<div class="col-12 tk-cot-loai tk-cot-ve d-none"><div class="row g-2 align-items-end">' +
+            chon('Loại vé', p + 'TicketType', d.ticketType, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TourKit.Application.Providers.ProviderServiceLineProfile.TicketTypes))) +
+            o('Hành trình vé', p + 'Route', d.route, 'text', 'VD SGN-HAN-SGN') +
+            o('Giờ đi', p + 'DepartTime', d.departTime, 'text', 'VD 08:30') +
+            o('Giờ về', p + 'ReturnTime', d.returnTime, 'text', 'VD 17:45') +
+            o('Hạn cắt cọc', p + 'DepositDeadline', d.depositDeadline, 'date') +
+            o('Hành lý', p + 'Baggage', d.baggage, 'text', 'VD 23kg') +
           '</div></div>';
       }
 
@@ -320,12 +364,14 @@
             dmDichVu = d.items || [];
             $('#ds-dv').html((d.lines || []).map(dongDv).join(''));
             danhSoLai();
+            hienTheoLoai($('#frm'));
           });
       }
 
       $('#btn-them-dv').on('click', function () {
         $('#ds-dv').append(dongDv({}, $('#ds-dv .tk-dong-dv').length));
         danhSoLai();
+        hienTheoLoai($('#frm'));
       });
 
       $('#ds-dv').on('click', '.js-xoa-dv', function () {

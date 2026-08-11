@@ -12,6 +12,7 @@ public sealed class ProviderServiceConfiguration : IEntityTypeConfiguration<Prov
         builder.Property(x => x.ContractPrice).HasPrecision(18, 2);
         builder.Property(x => x.PublicPrice).HasPrecision(18, 2);
         builder.Property(x => x.Note).HasMaxLength(1000);
+        builder.Property(x => x.ProfileJson).HasColumnType("jsonb");
 
         // Index bắt đầu bằng TenantId (conventions §5): tăng tốc lọc bảng giá theo NCC.
         builder.HasIndex(x => new { x.TenantId, x.ProviderId });

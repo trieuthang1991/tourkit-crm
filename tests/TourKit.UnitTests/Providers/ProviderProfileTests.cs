@@ -117,6 +117,93 @@ public class ProviderProfileTests
         Assert.Null((await svc.GetAsync(ncc.Id)).Profile!.BuiltYear);
     }
 
+    // ================= Trường riêng ở mức DÒNG bảng giá =================
+
+    private static ProviderCrudService NewServiceCoDichVu(
+        out FakeRepository<Provider> nccRepo,
+        out FakeRepository<ProviderServiceEntity> dvRepo)
+    {
+        nccRepo = new FakeRepository<Provider>();
+        dvRepo = new FakeRepository<ProviderServiceEntity>();
+        return new ProviderCrudService(nccRepo, dvRepo, new FakeRepository<OrderCost>(),
+            new FakeRepository<PaymentVoucher>(), new CreateProviderValidator(), new UpdateProviderValidator());
+    }
+
+    private static ProviderServiceLineDto Dong(Guid? id, ProviderServiceLineProfile? hoSo) =>
+        new(id, null, "Gói A", 100m, 150m, "VND", 2, null, 1, hoSo);
+
+    [Fact]
+    public void Doi_sang_loai_khac_thi_bo_truong_cua_loai_cu()
+    {
+        var khachSan = new ProviderServiceLineProfile
+        {
+            PeriodFrom = new DateOnly(2026, 1, 1),
+            DayType = "Cuối tuần",
+            NetCostPerDay = 500_000m,
+        };
+
+        var sangVe = khachSan.ChiGiuCuaLoai(ProviderType.Airline);
+
+        Assert.Null(sangVe.PeriodFrom);
+        Assert.Null(sangVe.DayType);
+        Assert.Null(sangVe.NetCostPerDay);
+        Assert.Null(sangVe.ToJsonOrNull());   // không còn gì thì đừng lưu JSON rỗng
+    }
+
+    [Fact]
+    public async Task Luu_dong_gia_khach_san_roi_doc_lai_van_du_truong_rieng()
+    {
+        var svc = NewServiceCoDichVu(out var nccRepo, out var dvRepo);
+        var ncc = new Provider { Code = "KS10", Name = "Mường Thanh", Type = ProviderType.Hotel };
+        await nccRepo.AddAsync(ncc);
+        await nccRepo.SaveChangesAsync();
+
+        await svc.UpdateWithServicesAsync(ncc.Id,
+            new UpdateProviderDto("Mường Thanh", ProviderType.Hotel, null, null, null, null, null, null, null, null, 4, 1),
+            [Dong(null, new ProviderServiceLineProfile
+            {
+                PeriodFrom = new DateOnly(2026, 6, 1),
+                PeriodTo = new DateOnly(2026, 8, 31),
+                DayType = "Ngày lễ",
+                NetCostPerDay = 1_200_000m,
+            })]);
+
+        var dong = Assert.Single(await dvRepo.ListAsync(s => s.ProviderId == ncc.Id));
+        var hoSo = ProviderServiceLineProfile.Parse(dong.ProfileJson);
+        Assert.Equal(new DateOnly(2026, 6, 1), hoSo.PeriodFrom);
+        Assert.Equal("Ngày lễ", hoSo.DayType);
+        Assert.Equal(1_200_000m, hoSo.NetCostPerDay);
+    }
+
+    /// <summary>
+    /// Đổi loại NCC thì trường riêng của dòng phải mất theo, KỂ CẢ khi lần lưu đó không gửi lại hồ sơ
+    /// dòng. Nếu không, một NCC vé máy bay vẫn ngầm giữ "loại ngày" của thời còn là khách sạn —
+    /// giao diện không còn chỗ nào hiện ra để sửa hay xoá.
+    /// </summary>
+    [Fact]
+    public async Task Doi_loai_NCC_thi_truong_rieng_cua_dong_mat_theo()
+    {
+        var svc = NewServiceCoDichVu(out var nccRepo, out var dvRepo);
+        var ncc = new Provider { Code = "KS11", Name = "Sẽ đổi loại", Type = ProviderType.Hotel };
+        await nccRepo.AddAsync(ncc);
+        var dong = new ProviderServiceEntity
+        {
+            ProviderId = ncc.Id,
+            ProfileJson = new ProviderServiceLineProfile { DayType = "Cuối tuần" }.ToJsonOrNull(),
+        };
+        await dvRepo.AddAsync(dong);
+        await nccRepo.SaveChangesAsync();
+        await dvRepo.SaveChangesAsync();
+
+        // Lưu lại với loại MỚI, dòng không kèm hồ sơ (Profile null).
+        await svc.UpdateWithServicesAsync(ncc.Id,
+            new UpdateProviderDto("Đã thành hãng bay", ProviderType.Airline, null, null, null, null, null, null, null, null, 4, 1),
+            [Dong(dong.Id, null)]);
+
+        Assert.Null(ProviderServiceLineProfile.Parse(
+            (await dvRepo.ListAsync(s => s.ProviderId == ncc.Id)).Single().ProfileJson).DayType);
+    }
+
     [Theory]
     [InlineData(ProviderType.Hotel, true, false)]
     [InlineData(ProviderType.Vehicle, false, true)]

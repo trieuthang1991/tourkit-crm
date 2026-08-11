@@ -141,5 +141,5 @@ public sealed class ProviderServiceService(
     private static ProviderServiceDto Map(ProviderServiceEntity p, decimal rate) => new(
         p.Id, p.ProviderId, p.ServiceItemId, p.PriceName, p.ContractPrice, p.PublicPrice,
         p.CurrencyCode, p.ContractPrice * rate, p.PublicPrice * rate,
-        p.AmountOfPeople, p.Note, p.Status);
+        p.AmountOfPeople, p.Note, p.Status, ProviderServiceLineProfile.Parse(p.ProfileJson));
 }

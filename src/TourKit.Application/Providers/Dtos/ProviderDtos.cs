@@ -33,7 +33,9 @@ public sealed record UpdateProviderDto(
 public sealed record ProviderServiceLineDto(
     Guid? Id, Guid? ServiceItemId, string? PriceName,
     decimal ContractPrice, decimal PublicPrice, string? CurrencyCode,
-    int AmountOfPeople, string? Note, int Status);
+    int AmountOfPeople, string? Note, int Status,
+    // Trường riêng của dòng theo loại NCC. Xem ProviderServiceLineProfile.
+    ProviderServiceLineProfile? Profile = null);
 
 /// <summary>Bộ lọc danh sách NCC (bám hệ cũ). Tất cả optional.</summary>
 public sealed record ProviderListFilter(

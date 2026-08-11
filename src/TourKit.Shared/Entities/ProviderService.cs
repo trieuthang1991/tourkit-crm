@@ -15,4 +15,12 @@ public sealed class ProviderService : BaseEntity, ITenantEntity
     public int AmountOfPeople { get; set; }       // amount_of_people
     public string? Note { get; set; }
     public int Status { get; set; }
+
+    /// <summary>
+    /// Trường riêng của dòng giá theo loại NCC (giai đoạn/loại ngày với khách sạn; hành trình/giờ
+    /// bay/hạn cắt cọc/hành lý với vé máy bay). Xem
+    /// <c>TourKit.Application.Providers.ProviderServiceLineProfile</c>.
+    /// Giá và số lượng vẫn là cột thật vì báo cáo cộng theo chúng ở SQL.
+    /// </summary>
+    public string? ProfileJson { get; set; }
 }
