@@ -19,13 +19,18 @@ namespace TourKit.Api.Pages.Providers;
 public class IndexModel : TkListPageModel
 {
     private readonly IProviderService _svc;
+    private readonly IProviderServiceService _providerServices;
+    private readonly IServiceItemService _serviceItems;
     private readonly IPaymentTermService _paymentTerms;
     private readonly IBranchService _branches;
     private readonly IMarketTypeService _marketTypes;
 
-    public IndexModel(IProviderService svc, IPaymentTermService paymentTerms, IBranchService branches, IMarketTypeService marketTypes)
+    public IndexModel(IProviderService svc, IProviderServiceService providerServices, IServiceItemService serviceItems,
+        IPaymentTermService paymentTerms, IBranchService branches, IMarketTypeService marketTypes)
     {
         _svc = svc;
+        _providerServices = providerServices;
+        _serviceItems = serviceItems;
         _paymentTerms = paymentTerms;
         _branches = branches;
         _marketTypes = marketTypes;
@@ -38,6 +43,63 @@ public class IndexModel : TkListPageModel
 
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
+
+    /// <summary>
+    /// Các dòng sản phẩm/dịch vụ gửi lên CÙNG form sửa NCC — tái lập panel "SẢN PHẨM/DỊCH VỤ" của
+    /// hệ cũ (EditHotel.aspx). Dòng cũ không nằm trong danh sách này nghĩa là người dùng đã bỏ nó.
+    /// </summary>
+    [BindProperty] public List<DongDichVuInput> Services { get; set; } = [];
+
+    public sealed class DongDichVuInput
+    {
+        public Guid? Id { get; set; }
+        public Guid? ServiceItemId { get; set; }
+        public string? PriceName { get; set; }
+        public decimal ContractPrice { get; set; }
+        public decimal PublicPrice { get; set; }
+        public string? CurrencyCode { get; set; }
+        public int AmountOfPeople { get; set; }
+        public string? Note { get; set; }
+        public int Status { get; set; }
+    }
+
+    /// <summary>
+    /// Bảng dịch vụ của một NCC, để form sửa nạp sẵn khi mở. Kèm danh mục dịch vụ cho ô chọn —
+    /// gửi chung một lượt để form không phải gọi hai lần.
+    /// </summary>
+    public async Task<IActionResult> OnGetServicesAsync(Guid providerId)
+    {
+        if (providerId == Guid.Empty)
+        {
+            return new JsonResult(Result.Success(null, new { lines = Array.Empty<object>(), items = Array.Empty<object>() }));
+        }
+
+        var ds = await _providerServices.ListAsync(1, MaxLines, providerId, null);
+        var dm = await _serviceItems.ListAsync(1, LookupSize);
+
+        return new JsonResult(Result.Success(null, new
+        {
+            lines = ds.Items.Select(x => new
+            {
+                id = x.Id,
+                serviceItemId = x.ServiceItemId,
+                priceName = x.PriceName,
+                contractPrice = x.ContractPrice,
+                publicPrice = x.PublicPrice,
+                currencyCode = x.CurrencyCode,
+                amountOfPeople = x.AmountOfPeople,
+                note = x.Note,
+                status = x.Status,
+            }),
+            items = dm.Items.Select(x => new { id = x.Id, name = x.Name }),
+        }));
+    }
+
+    /// <summary>Trần số dòng nạp về form. Vượt mức này thì sửa hàng loạt ở màn Bảng giá NCC hợp lý hơn.</summary>
+    private const int MaxLines = 200;
+
+    /// <summary>Danh mục dịch vụ cho ô chọn — danh mục nhỏ, nạp có giới hạn chứ không get-all.</summary>
+    private const int LookupSize = 500;
 
     public sealed class InputModel
     {
@@ -192,10 +254,15 @@ public class IndexModel : TkListPageModel
 
         if (Id is Guid g && g != Guid.Empty)
         {
-            await _svc.UpdateAsync(g, new UpdateProviderDto(
+            // Sửa: ghi NCC và bảng dịch vụ trong MỘT lần — bám uspInsertHotel của hệ cũ, hỏng giữa
+            // chừng thì không có gì được ghi. Tạo mới vẫn đi đường cũ vì form tạo chưa có panel dịch vụ.
+            await _svc.UpdateWithServicesAsync(g, new UpdateProviderDto(
                 Input.Name, Input.Type, Input.Phone, Input.Email, Input.Address, Input.TaxCode, Input.ContactPerson,
                 Input.BankAccount, Input.BankName, Input.PaymentTermId, Input.Rate, Input.Status,
-                Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId));
+                Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId),
+                Services.Select(x => new ProviderServiceLineDto(
+                    x.Id, x.ServiceItemId, x.PriceName, x.ContractPrice, x.PublicPrice,
+                    x.CurrencyCode, x.AmountOfPeople, x.Note, x.Status)).ToList());
         }
         else
         {

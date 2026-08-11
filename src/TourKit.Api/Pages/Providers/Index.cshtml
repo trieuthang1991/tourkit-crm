@@ -158,6 +158,17 @@
           <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
         </div>
       </div>
+      @* Panel SẢN PHẨM/DỊCH VỤ — tái lập EditHotel.aspx của hệ cũ: thông tin NCC và bảng giá nằm
+         chung một form, bấm Lưu ghi cả hai trong một transaction (uspInsertHotel).
+         Chỉ hiện khi SỬA: form tạo mới chưa có đường ghi kèm dịch vụ. *@
+      <div id="pnl-dv" class="d-none border-top pt-3 mt-2">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="mb-0"><i class="ti ti-package me-2"></i>Sản phẩm / Dịch vụ</h6>
+          <button type="button" class="btn btn-sm btn-label-primary" id="btn-them-dv"><i class="ti ti-plus me-1"></i>Thêm dòng</button>
+        </div>
+        <div id="ds-dv" class="d-flex flex-column gap-2"></div>
+        <div class="text-muted small mt-2" id="dv-trong">Chưa có dịch vụ nào. Bấm "Thêm dòng" để khai bảng giá.</div>
+      </div>
       </div>
       <div class="tk-oc-actions">
         <button type="submit" class="btn btn-primary me-2">Lưu</button>
@@ -188,7 +199,81 @@
         rules: { 'Input.Code': { required: true }, 'Input.Name': { required: true } },
         messages: { 'Input.Code': { required: 'Bắt buộc nhập mã' }, 'Input.Name': { required: 'Bắt buộc nhập tên' } },
         // Mã NCC không đổi được khi sửa (UpdateProviderDto không nhận Code).
-        fill: function ($form, data) { $form.find('[name="Input.Code"]').prop('readonly', !!(data && data.id)); } });
+        fill: function ($form, data) {
+          $form.find('[name="Input.Code"]').prop('readonly', !!(data && data.id));
+          napDichVu(data && data.id ? data.id : null);
+        } });
+
+      // ---- Panel Sản phẩm / Dịch vụ ----
+      var dmDichVu = [];   // danh mục dịch vụ, nạp cùng lượt với bảng giá
+
+      function oSo(ten, gt, buoc) {
+        return '<input type="number" step="' + (buoc || 'any') + '" class="form-control form-control-sm" ' +
+               'name="' + ten + '" value="' + (gt == null ? '' : gt) + '" />';
+      }
+
+      function dongDv(d, i) {
+        d = d || {};
+        var p = 'Services[' + i + '].';
+        var opt = '<option value="">— Chọn dịch vụ —</option>' + dmDichVu.map(function (x) {
+          return '<option value="' + x.id + '"' + (x.id === d.serviceItemId ? ' selected' : '') + '>' + esc(x.name) + '</option>';
+        }).join('');
+
+        return '<div class="border rounded p-2 tk-dong-dv">' +
+          '<input type="hidden" name="' + p + 'Id" value="' + (d.id || '') + '" />' +
+          '<div class="row g-2 align-items-end">' +
+            '<div class="col-md-4"><label class="form-label small mb-1">Dịch vụ</label>' +
+              '<select class="form-select form-select-sm" name="' + p + 'ServiceItemId">' + opt + '</select></div>' +
+            '<div class="col-md-5"><label class="form-label small mb-1">Tên gói giá</label>' +
+              '<input type="text" class="form-control form-control-sm" name="' + p + 'PriceName" value="' + esc(d.priceName || '') + '" placeholder="VD: Phòng Deluxe 2 khách" /></div>' +
+            '<div class="col-md-3"><label class="form-label small mb-1">Số khách</label>' + oSo(p + 'AmountOfPeople', d.amountOfPeople == null ? 1 : d.amountOfPeople, '1') + '</div>' +
+            '<div class="col-md-4"><label class="form-label small mb-1">Giá hợp đồng</label>' + oSo(p + 'ContractPrice', d.contractPrice || 0) + '</div>' +
+            '<div class="col-md-4"><label class="form-label small mb-1">Giá công bố</label>' + oSo(p + 'PublicPrice', d.publicPrice || 0) + '</div>' +
+            '<div class="col-md-2"><label class="form-label small mb-1">Tiền tệ</label>' +
+              '<input type="text" class="form-control form-control-sm" name="' + p + 'CurrencyCode" value="' + esc(d.currencyCode || 'VND') + '" /></div>' +
+            '<div class="col-md-2 text-end">' +
+              '<input type="hidden" name="' + p + 'Status" value="' + (d.status == null ? 1 : d.status) + '" />' +
+              '<input type="hidden" name="' + p + 'Note" value="' + esc(d.note || '') + '" />' +
+              '<button type="button" class="btn btn-sm btn-icon text-danger js-xoa-dv" title="Bỏ dòng này"><i class="ti ti-trash"></i></button></div>' +
+          '</div></div>';
+      }
+
+      // Đánh số lại name="Services[i]." sau mỗi lần thêm/bỏ. Model binding của .NET dừng ở chỉ số
+      // đầu tiên bị khuyết — bỏ dòng giữa mà không đánh lại thì các dòng sau BIẾN MẤT không báo gì.
+      function danhSoLai() {
+        $('#ds-dv .tk-dong-dv').each(function (i) {
+          $(this).find('[name^="Services["]').each(function () {
+            this.name = this.name.replace(/^Services\[\d+\]\./, 'Services[' + i + '].');
+          });
+        });
+        $('#dv-trong').toggleClass('d-none', $('#ds-dv .tk-dong-dv').length > 0);
+      }
+
+      function napDichVu(providerId) {
+        $('#ds-dv').empty();
+        $('#pnl-dv').toggleClass('d-none', !providerId);
+        if (!providerId) { return; }
+
+        fetch('?handler=Services&providerId=' + encodeURIComponent(providerId))
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .catch(function () { return null; })
+          .then(function (res) {
+            var d = (res && res.isSuccess && res.data) || { lines: [], items: [] };
+            dmDichVu = d.items || [];
+            $('#ds-dv').html((d.lines || []).map(dongDv).join(''));
+            danhSoLai();
+          });
+      }
+
+      $('#btn-them-dv').on('click', function () {
+        $('#ds-dv').append(dongDv({}, $('#ds-dv .tk-dong-dv').length));
+        danhSoLai();
+      });
+
+      $('#ds-dv').on('click', '.js-xoa-dv', function () {
+        $(this).closest('.tk-dong-dv').remove();
+        danhSoLai();
+      });
 
       function delRow(d) {
         tk.confirmDelete({ title: 'Xoá nhà cung cấp?', text: d.name || '' }).then(function (ok) {
