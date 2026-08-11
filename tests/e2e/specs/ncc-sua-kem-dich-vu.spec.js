@@ -59,8 +59,8 @@ test.describe('Sửa NCC kèm bảng dịch vụ', () => {
     await page.locator('#btn-them-dv').click();
     const dongMoi = page.locator('#ds-dv .tk-dong-dv').last();
     await dongMoi.locator('[name$=".PriceName"]').fill(ten);
-    await dongMoi.locator('[name$=".ContractPrice"]').fill('123000');
-    await dongMoi.locator('[name$=".PublicPrice"]').fill('150000');
+    await dongMoi.locator('[data-tien$=".ContractPrice"]').fill('123000');
+    await dongMoi.locator('[data-tien$=".PublicPrice"]').fill('150000');
 
     await page.locator('#frm button[type="submit"]').click();
     await expect(page.locator('#oc')).not.toHaveClass(/show/, { timeout: 25_000 });

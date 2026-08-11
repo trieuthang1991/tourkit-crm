@@ -37,6 +37,54 @@
 
   // ---- Format VN ----
   tk.money = function (n) { return (Number(n) || 0).toLocaleString('vi-VN'); };
+  // ---- Ô nhập TIỀN ----
+  // Hiện có dấu phân cách nghìn kiểu Việt ("1.200.000"), nhưng GỬI ĐI số thô ("1200000").
+  //
+  // Vì sao không dùng type="number": nó không cho hiện dấu phân cách, mà bảng giá toàn số 7-9 chữ số
+  // nên "1200000" và "12000000" nhìn gần như nhau — người nhập lệch một chữ số không nhận ra. Nó còn
+  // kèm nút tăng/giảm vô nghĩa với tiền, và cuộn chuột trên ô đang focus là đổi giá trị lúc nào không hay.
+  //
+  // Vì sao tách hai ô: một ô không thể vừa hiện "1.200.000" vừa gửi "1200000". Ô nhìn thấy chỉ để
+  // hiển thị, ô ẩn mang name thật nên giá trị gửi lên luôn parse được, không phụ thuộc lúc submit
+  // người dùng đang focus hay không.
+  tk.oTien = function (ten, giaTri, chuMo) {
+    var raw = (giaTri == null || giaTri === '') ? '' : String(giaTri);
+    return '<div class="input-group input-group-sm">' +
+      '<input type="text" inputmode="decimal" class="form-control form-control-sm tk-tien text-end"' +
+      ' data-tien="' + ten + '" value="' + tk.escape(tk.tienDep(raw)) + '"' +
+      ' placeholder="' + tk.escape(chuMo || '0') + '" autocomplete="off" />' +
+      // Ô ẩn luôn có SỐ, kể cả khi ô nhìn thấy đang trống: cột giá ở CSDL không cho null, mà model
+      // binding gặp chuỗi rỗng cho decimal là hỏng cả form và người dùng chỉ thấy "không lưu được"
+      // mà không ô nào báo đỏ. Trống nghĩa là 0, và placeholder "0" nói đúng điều đó.
+      '<input type="hidden" name="' + ten + '" value="' + tk.escape(raw === '' ? '0' : raw) + '" />' +
+      '</div>';
+  };
+
+  /** "1200000" -> "1.200.000". Giữ nguyên phần thập phân người dùng đang gõ dở. */
+  tk.tienDep = function (v) {
+    if (v == null || v === '') { return ''; }
+    var s = String(v).replace(/[^\d,.]/g, '').replace(/\./g, '');
+    var p = s.split(',');
+    var nguyen = (p[0] || '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return p.length > 1 ? nguyen + ',' + p[1] : nguyen;
+  };
+
+  /** "1.200.000,5" -> "1200000.5" — dạng duy nhất model binding đọc được. */
+  tk.tienTho = function (v) {
+    if (v == null || v === '') { return ''; }
+    return String(v).replace(/\./g, '').replace(',', '.').replace(/[^\d.\-]/g, '');
+  };
+
+  // Gắn MỘT lần cho cả trang: dòng bảng giá sinh động sau khi trang đã dựng, gắn theo từng ô thì ô
+  // mới thêm không có người xử lý và âm thầm gửi lên chuỗi có dấu chấm.
+  $(document).on('input', '.tk-tien', function () {
+    var vt = this.selectionStart, dai = this.value.length;
+    this.value = tk.tienDep(this.value);
+    $(this).next('input[type="hidden"]').val(tk.tienTho(this.value) || '0');
+    // Giữ con trỏ đứng yên khi số dấu chấm thay đổi, nếu không mỗi lần gõ con trỏ nhảy về cuối.
+    try { this.setSelectionRange(vt + (this.value.length - dai), vt + (this.value.length - dai)); } catch (e) { /* ô không hỗ trợ */ }
+  });
+
   tk.escape = function (s) { return $('<div>').text(s == null ? '' : s).html(); };
   tk.trunc = function (s, max) { var e = tk.escape(s); return '<span class="d-inline-block text-truncate align-middle" style="max-width:' + (max || 180) + 'px" title="' + e + '">' + e + '</span>'; };
 

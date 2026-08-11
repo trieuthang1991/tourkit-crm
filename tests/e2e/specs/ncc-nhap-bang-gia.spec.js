@@ -75,7 +75,7 @@ test.describe('Nhập bảng giá từ tệp', () => {
     // Dòng có sẵn, thêm bằng tay rồi lưu.
     await page.locator('#btn-them-dv').click();
     await page.locator('#ds-dv .tk-dong-dv').last().locator('[name$=".PriceName"]').fill('Dòng có sẵn');
-    await page.locator('#ds-dv .tk-dong-dv').last().locator('[name$=".ContractPrice"]').fill('100000');
+    await page.locator('#ds-dv .tk-dong-dv').last().locator('[data-tien$=".ContractPrice"]').fill('100000');
     await page.locator('#frm button[type="submit"]').click();
     await expect(page.locator('#oc')).not.toHaveClass(/show/, { timeout: 25_000 });
 

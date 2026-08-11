@@ -420,6 +420,24 @@
       // ---- Panel Sản phẩm / Dịch vụ ----
       var dmDichVu = [];   // danh mục dịch vụ, nạp cùng lượt với bảng giá
 
+      // Tiền tệ CHỌN từ danh mục, không gõ tay: gõ tay thì "USD", "usd", "Đô", "$" thành bốn loại
+      // tiền khác nhau, mà quy đổi về VND tra theo đúng mã này — sai mã là sai tiền, không phải sai
+      // chính tả. Danh mục đã có sẵn ở màn /tien-te.
+      var dmTienTe = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+          Model.Currencies.Select(c => c.Code)));
+
+      function oTienTe(ten, gt) {
+        var chon = gt || 'VND';
+        var opt = dmTienTe.map(function (m) {
+          return '<option value="' + esc(m) + '"' + (m === chon ? ' selected' : '') + '>' + esc(m) + '</option>';
+        }).join('');
+        // Mã cũ không còn trong danh mục thì vẫn giữ, cùng lý do với keepLegacyOption của tk.form.
+        if (chon && dmTienTe.indexOf(chon) < 0) {
+          opt = '<option value="' + esc(chon) + '" selected>' + esc(chon) + ' (ngoài danh mục)</option>' + opt;
+        }
+        return '<select class="form-select form-select-sm" name="' + ten + '">' + opt + '</select>';
+      }
+
       function oSo(ten, gt, buoc) {
         return '<input type="number" step="' + (buoc || 'any') + '" class="form-control form-control-sm" ' +
                'name="' + ten + '" value="' + (gt == null ? '' : gt) + '" />';
@@ -440,10 +458,9 @@
             '<div class="col-md-5"><label class="form-label small mb-1">Tên gói giá</label>' +
               '<input type="text" class="form-control form-control-sm" name="' + p + 'PriceName" value="' + esc(d.priceName || '') + '" placeholder="VD: Phòng Deluxe 2 khách" /></div>' +
             '<div class="col-md-3"><label class="form-label small mb-1">Số khách</label>' + oSo(p + 'AmountOfPeople', d.amountOfPeople == null ? 1 : d.amountOfPeople, '1') + '</div>' +
-            '<div class="col-md-4"><label class="form-label small mb-1">Giá hợp đồng</label>' + oSo(p + 'ContractPrice', d.contractPrice || 0) + '</div>' +
-            '<div class="col-md-4"><label class="form-label small mb-1">Giá công bố</label>' + oSo(p + 'PublicPrice', d.publicPrice || 0) + '</div>' +
-            '<div class="col-md-2"><label class="form-label small mb-1">Tiền tệ</label>' +
-              '<input type="text" class="form-control form-control-sm" name="' + p + 'CurrencyCode" value="' + esc(d.currencyCode || 'VND') + '" /></div>' +
+            '<div class="col-md-4"><label class="form-label small mb-1">Giá hợp đồng</label>' + tk.oTien(p + 'ContractPrice', d.contractPrice, '0') + '</div>' +
+            '<div class="col-md-4"><label class="form-label small mb-1">Giá công bố</label>' + tk.oTien(p + 'PublicPrice', d.publicPrice, '0') + '</div>' +
+            '<div class="col-md-2"><label class="form-label small mb-1">Tiền tệ</label>' + oTienTe(p + 'CurrencyCode', d.currencyCode) + '</div>' +
             '<div class="col-md-2 text-end">' +
               '<input type="hidden" name="' + p + 'Status" value="' + (d.status == null ? 1 : d.status) + '" />' +
               '<input type="hidden" name="' + p + 'Note" value="' + esc(d.note || '') + '" />' +

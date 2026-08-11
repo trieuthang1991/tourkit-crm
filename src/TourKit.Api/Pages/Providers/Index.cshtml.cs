@@ -26,10 +26,12 @@ public class IndexModel : TkListPageModel
     private readonly IPaymentTermService _paymentTerms;
     private readonly IBranchService _branches;
     private readonly IMarketTypeService _marketTypes;
+    private readonly ICurrencyService _currencies;
     private readonly TourKit.Api.Ai.AiBangGia _aiBangGia;
 
     public IndexModel(IProviderService svc, IProviderServiceService providerServices, IServiceItemService serviceItems,
         IPaymentTermService paymentTerms, IBranchService branches, IMarketTypeService marketTypes,
+        ICurrencyService currencies,
         TourKit.Api.Ai.AiBangGia aiBangGia)
     {
         _svc = svc;
@@ -38,6 +40,7 @@ public class IndexModel : TkListPageModel
         _paymentTerms = paymentTerms;
         _branches = branches;
         _marketTypes = marketTypes;
+        _currencies = currencies;
         _aiBangGia = aiBangGia;
     }
 
@@ -45,6 +48,9 @@ public class IndexModel : TkListPageModel
     public IReadOnlyList<PaymentTermDto> PaymentTerms { get; private set; } = [];
     public IReadOnlyList<BranchDto> Branches { get; private set; } = [];
     public IReadOnlyList<MarketTypeDto> MarketTypes { get; private set; } = [];
+
+    /// <summary>Danh mục tiền tệ cho ô chọn ở dòng bảng giá — mã tiền phải chọn, không gõ tay.</summary>
+    public IReadOnlyList<CurrencyDto> Currencies { get; private set; } = [];
 
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
@@ -331,6 +337,7 @@ public class IndexModel : TkListPageModel
         PaymentTerms = await _paymentTerms.ListAsync();
         Branches = await _branches.ListAsync();
         MarketTypes = await _marketTypes.ListAsync();
+        Currencies = await _currencies.ListAsync();
     }
 
     /// <summary>Dựng bộ lọc từ query — ĐỦ 8 tiêu chí của ProviderListFilter (không lọc ở client).</summary>
