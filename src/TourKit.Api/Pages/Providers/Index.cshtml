@@ -61,7 +61,9 @@
 
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / tên / SĐT / email / người liên hệ" /></div>
-      <div class="col-md-2"><input type="text" id="f-province" class="form-control" placeholder="Tỉnh thành" /></div>
+      <div class="col-md-2">
+        <select id="f-province" class="form-select tk-s2f" data-placeholder="Tỉnh thành"><option value=""></option>@foreach (var t in TourKit.Shared.Domain.TinhThanh.TatCa) { <option value="@t">@t</option> }</select>
+      </div>
       <div class="col-md-2">
         <select id="f-branchId" class="form-select tk-s2f" data-placeholder="Chi nhánh"><option value=""></option>@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }</select>
       </div>
@@ -96,73 +98,105 @@
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:560px;max-width:100%">
+@* Rộng 92vw thay vì ~640px như quy ước chung: form này không còn là "sửa nhanh" mà chứa
+   trường riêng theo loại, danh sách người liên hệ, bảng giá nhiều cột và bảng xem trước khi
+   nhập tệp. Chặn trên 1360px để trên màn siêu rộng dòng không kéo dài quá tầm mắt. *@
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:min(92vw,1360px);max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">nhà cung cấp</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
   <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
       <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
-      <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Mã <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã NCC" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên NCC" /></div>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Loại <span class="text-danger">*</span></label>
-        <select name="Input.Type" class="form-select">
-          @foreach (var t in TourKit.Api.Pages.Providers.IndexModel.TypeOptions)
-          {
-            <option value="@t.Value">@t.Label</option>
-          }
-        </select>
-      </div>
-      <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" placeholder="Nhập số điện thoại" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" placeholder="Nhập email" /></div>
-      </div>
-      <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.Address" class="form-control" placeholder="Nhập địa chỉ" /></div>
-      <div class="mb-3"><label class="form-label">Tỉnh thành</label><input type="text" name="Input.Province" class="form-control" placeholder="Nhập tỉnh thành" /></div>
-      <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Mã số thuế</label><input type="text" name="Input.TaxCode" class="form-control" placeholder="Nhập MST" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Người liên hệ</label><input type="text" name="Input.ContactPerson" class="form-control" placeholder="Nhập người liên hệ" /></div>
-      </div>
-      <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Ngân hàng</label><input type="text" name="Input.BankName" class="form-control" placeholder="Nhập ngân hàng" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Số TK</label><input type="text" name="Input.BankAccount" class="form-control" placeholder="Nhập số tài khoản" /></div>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Điều khoản thanh toán</label>
-        <select name="Input.PaymentTermId" class="form-select tk-s2" data-placeholder="Chọn điều khoản">
-          <option value="">— Không —</option>
-          @foreach (var p in Model.PaymentTerms) { <option value="@p.Id">@p.Name</option> }
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Chi nhánh</label>
-        <select name="Input.BranchId" class="form-select tk-s2" data-placeholder="Chọn chi nhánh">
-          <option value="">— Không —</option>
-          @foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Nhóm/Thị trường</label>
-        <select name="Input.MarketTypeId" class="form-select tk-s2" data-placeholder="Chọn nhóm/thị trường">
-          <option value="">— Không —</option>
-          @foreach (var m in Model.MarketTypes) { <option value="@m.Id">@m.Name</option> }
-        </select>
-      </div>
-      <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Đánh giá</label><input type="number" name="Input.Rate" class="form-control" placeholder="0" value="0" /></div>
-        <div class="col-6 mb-3">
-          <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
-          <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
+
+      @* Ba nhóm cạnh nhau khi màn đủ rộng. Nới panel mà vẫn để MỘT cột thì mỗi ô kéo dài hết
+         1360px, mắt phải quét ngang cả màn cho một ô ngắn — rộng hơn nhưng khó dùng hơn.
+         Gom bằng kẻ ngang + tiêu đề nhỏ, không lồng thẻ card: form trong panel mà bọc card nữa
+         thì thành hộp trong hộp. *@
+      <div class="row g-4">
+
+        <div class="col-12 col-lg-6 col-xl-4">
+          <h6 class="text-muted small text-uppercase mb-3">Thông tin chung</h6>
+          <div class="row">
+            <div class="col-6 mb-3"><label class="form-label">Mã <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã NCC" /></div>
+            <div class="col-6 mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên NCC" /></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Loại <span class="text-danger">*</span></label>
+            <select name="Input.Type" class="form-select">
+@foreach (var t in TourKit.Api.Pages.Providers.IndexModel.TypeOptions)
+{
+              <option value="@t.Value">@t.Label</option>
+}
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" placeholder="Nhập số điện thoại" /></div>
+            <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" placeholder="Nhập email" /></div>
+          </div>
+          <div class="mb-3"><label class="form-label">Website</label><input type="text" name="Input.Website" class="form-control" placeholder="Nhập link" /></div>
         </div>
+
+        <div class="col-12 col-lg-6 col-xl-4">
+          <h6 class="text-muted small text-uppercase mb-3">Địa chỉ &amp; liên hệ</h6>
+          <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.Address" class="form-control" placeholder="Nhập địa chỉ" /></div>
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Tỉnh thành</label>
+              @* Chọn từ danh sách, không gõ tay: gõ tay thì "Hà Nội", "hà nội", "HN" thành ba giá trị
+                 khác nhau và bộ lọc/thống kê theo địa bàn hết tin được. *@
+              <select name="Input.Province" class="form-select tk-s2" data-placeholder="Chọn tỉnh thành">
+                <option value="">— Không —</option>
+@foreach (var t in TourKit.Shared.Domain.TinhThanh.TatCa) { <option value="@t">@t</option> }
+              </select>
+            </div>
+            <div class="col-6 mb-3"><label class="form-label">Mã số thuế</label><input type="text" name="Input.TaxCode" class="form-control" placeholder="Nhập MST" /></div>
+          </div>
+          <div class="mb-3"><label class="form-label">Người liên hệ chính</label><input type="text" name="Input.ContactPerson" class="form-control" placeholder="Nhập người liên hệ" /></div>
+          <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="3" placeholder="Nhập ghi chú"></textarea></div>
+        </div>
+
+        <div class="col-12 col-lg-6 col-xl-4">
+          <h6 class="text-muted small text-uppercase mb-3">Thanh toán &amp; phân loại</h6>
+          <div class="row">
+            <div class="col-6 mb-3"><label class="form-label">Ngân hàng</label><input type="text" name="Input.BankName" class="form-control" placeholder="Nhập ngân hàng" /></div>
+            <div class="col-6 mb-3"><label class="form-label">Số TK</label><input type="text" name="Input.BankAccount" class="form-control" placeholder="Nhập số tài khoản" /></div>
+          </div>
+          <div class="mb-3"><label class="form-label">Tên tài khoản</label><input type="text" name="Input.BankAccountName" class="form-control" placeholder="Nhập tên chủ tài khoản" /></div>
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Điều khoản thanh toán</label>
+              <select name="Input.PaymentTermId" class="form-select tk-s2" data-placeholder="Chọn điều khoản">
+                <option value="">— Không —</option>
+@foreach (var p in Model.PaymentTerms) { <option value="@p.Id">@p.Name</option> }
+              </select>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label">Chi nhánh</label>
+              <select name="Input.BranchId" class="form-select tk-s2" data-placeholder="Chọn chi nhánh">
+                <option value="">— Không —</option>
+@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nhóm/Thị trường</label>
+            <select name="Input.MarketTypeId" class="form-select tk-s2" data-placeholder="Chọn nhóm/thị trường">
+              <option value="">— Không —</option>
+@foreach (var m in Model.MarketTypes) { <option value="@m.Id">@m.Name</option> }
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-6 mb-3"><label class="form-label">Đánh giá</label><input type="number" name="Input.Rate" class="form-control" placeholder="0" value="0" /></div>
+            <div class="col-6 mb-3">
+              <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+              <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Tên tài khoản</label><input type="text" name="Input.BankAccountName" class="form-control" placeholder="Nhập tên chủ tài khoản" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Website</label><input type="text" name="Input.Website" class="form-control" placeholder="Nhập link" /></div>
-      </div>
-      <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="2" placeholder="Nhập ghi chú"></textarea></div>
+
 
       @* Trường riêng theo LOẠI nhà cung cấp — hệ cũ tách hẳn 4 màn sửa (Edit/EditHotel/
          EditPlaneTicket/EditVoucher) dùng chung phần trên rồi mỗi màn thêm vài ô của riêng nó.
@@ -307,6 +341,10 @@
           $form.find('[name="Input.VehicleTypes"]').each(function () {
             this.checked = xe.indexOf(this.value) >= 0;
           });
+
+          // Tỉnh thành cũ ngoài danh sách (dữ liệu gõ tay trước đây: "Đà Lạt", "Nha Trang"...) KHÔNG
+          // cần xử lý ở đây: tk.form đã có keepLegacyOption giữ lại bằng một option tạm. Viết thêm
+          // một bản nữa ở đây là hai chỗ cùng lo một việc rồi trôi lệch nhau.
 
           // Dựng lại từ đầu mỗi lần mở — không xoá thì người liên hệ của NCC trước còn nguyên trên form.
           napLienHe(data && data.contacts);

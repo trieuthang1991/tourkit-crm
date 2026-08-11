@@ -5,7 +5,9 @@
     ViewData["Title"] = "Data khách hàng";
     ViewData["SaveUrl"] = "?handler=Save";
     // Tỉnh/thành: ưu tiên facet lấy từ data thật (khớp giá trị đang lưu), rỗng thì dùng danh mục tỉnh.
-    var cityOptions = Model.Options.Cities.Count > 0 ? Model.Options.Cities : VietnamProvinces.All;
+    // Danh mục dùng CHUNG với màn nhà cung cấp — hai danh sách tỉnh trong một hệ thống chắc chắn
+    // trôi lệch nhau, và bản cũ ở đây còn ghim 63 tỉnh trước sáp nhập 01/07/2025.
+    var cityOptions = Model.Options.Cities.Count > 0 ? Model.Options.Cities : TourKit.Shared.Domain.TinhThanh.TatCa;
 }
 
 @section VendorStyles {

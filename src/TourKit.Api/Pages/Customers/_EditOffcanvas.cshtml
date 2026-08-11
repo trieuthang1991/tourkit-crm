@@ -121,7 +121,7 @@
         <label class="form-label">Tỉnh/Thành</label>
         <select name="Input.City" class="form-select oc-select2" data-placeholder="Chọn tỉnh/thành">
           <option value="">— Chọn tỉnh/thành —</option>
-          @foreach (var p in VietnamProvinces.All)
+          @foreach (var p in TourKit.Shared.Domain.TinhThanh.TatCa)
           {
               <option value="@p">@p</option>
           }
