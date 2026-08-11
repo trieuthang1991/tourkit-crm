@@ -330,6 +330,7 @@ public sealed class CustomerService(
             PhoneNormalized = NormalizedPhoneOrNull(dto.Phone),
             CrmProfileJson = profile.ToJsonOrNull(),
         };
+        await ChanTrungSoDienThoai(dto.Phone, null);
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
 
@@ -362,6 +363,8 @@ public sealed class CustomerService(
             Tags = dto.Tags ?? [],
             AssignedTo = dto.AssignedTo ?? [],
         };
+
+        await ChanTrungSoDienThoai(dto.Phone, id);
 
         entity.FullName = dto.FullName.Trim();
         entity.Phone = dto.Phone;
@@ -460,6 +463,25 @@ public sealed class CustomerService(
         var candidates = await repo.ListAsync(c => c.PhoneNormalized == norm);
         var match = candidates.FirstOrDefault(c => excludeId == null || c.Id != excludeId.Value);
         return match is null ? null : MapDuplicate(match);
+    }
+
+    /// <summary>
+    /// Khách hàng định danh bằng SỐ ĐIỆN THOẠI — hai khách khác nhau không được cùng một số.
+    ///
+    /// Luật này trước đây chỉ nằm ở trang Razor, nên <c>POST /api/v1/customers</c> gọi thẳng
+    /// <see cref="CreateAsync"/> là đi vòng qua được: API tạo ra đúng thứ giao diện đang chặn.
+    /// Đặt ở tầng dịch vụ thì mọi lối vào đều chịu chung một luật.
+    ///
+    /// So theo <c>PhoneNormalized</c> nên +84912… và 0912… là MỘT người. Khách không có số (hoặc số
+    /// ngắn hơn 8 chữ số) thì bỏ qua — họ tên không phải khoá định danh, trùng tên là chuyện bình thường.
+    /// </summary>
+    private async Task ChanTrungSoDienThoai(string? phone, Guid? boQuaId)
+    {
+        if (await FindByPhoneAsync(phone, boQuaId) is { } trung)
+        {
+            var ma = string.IsNullOrEmpty(trung.Code) ? "" : $" ({trung.Code})";
+            throw new ConflictException($"Số điện thoại đã tồn tại — khách: {trung.FullName}{ma}");
+        }
     }
 
     /// <summary>SĐT chuẩn hoá cho cột PhoneNormalized — null nếu không có số.</summary>
