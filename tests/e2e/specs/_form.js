@@ -163,3 +163,21 @@ export async function choKetQuaLuu(page) {
   }
   return null;
 }
+
+/**
+ * Lọc bảng danh mục client-side theo từ khoá, rồi trả về locator của dòng khớp.
+ *
+ * Vì sao KHÔNG tìm thẳng trong `#tbl tbody tr`: tk.tableClient để `pageLength: 20` và
+ * `ordering: false`, nên bảng chỉ render 20 dòng đầu theo thứ tự máy chủ trả về. Bản ghi vừa tạo
+ * nằm ở cuối, và một khi danh mục vượt 20 dòng thì nó rơi sang trang 2 — bài kiểm thử đỏ với thông
+ * báo "không tìm thấy bản ghi vừa tạo" dù bản ghi đã lưu đúng.
+ *
+ * Đã xảy ra thật: /loai-xe tích tới 32 dòng thì bài "tạo rồi sửa rồi xoá" bắt đầu đỏ, trong khi mã
+ * sản phẩm không hề đổi. Gõ vào ô tìm kiếm cũng chính là thao tác người dùng thật làm để tìm dòng.
+ */
+export async function locVaTimDong(page, tuKhoa) {
+  const o = page.locator('#tbl_filter input');
+  await o.waitFor({ timeout: 20_000 });
+  await o.fill(tuKhoa);
+  return page.locator('#tbl tbody tr', { hasText: tuKhoa });
+}

@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures.js';
 import DANH_SACH from './o-bat-buoc.data.js';
-import { LAN, moThemMoi, dienO, giaTri, oBiAn, choKetQuaLuu } from './_form.js';
+import { LAN, moThemMoi, dienO, giaTri, oBiAn, choKetQuaLuu, locVaTimDong } from './_form.js';
 
 /**
  * Đường SỬA và XOÁ — hai luồng mà toàn bộ bài kiểm thử trước đó không chạm tới.
@@ -134,7 +134,7 @@ test('/loai-xe — tạo rồi sửa rồi xoá được chính bản ghi vừa 
 
   // --- Tìm đúng dòng vừa tạo ---
   await page.goto('/loai-xe');
-  const dong = page.locator('#tbl tbody tr', { hasText: ma });
+  const dong = await locVaTimDong(page, ma);
   await expect(dong, 'không tìm thấy bản ghi vừa tạo trong danh sách').toHaveCount(1, { timeout: 20_000 });
 
   // --- Sửa ---

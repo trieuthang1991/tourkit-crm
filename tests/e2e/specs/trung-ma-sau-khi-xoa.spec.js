@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures.js';
-import { LAN, moThemMoi, dienO, giaTri, choKetQuaLuu } from './_form.js';
+import { LAN, moThemMoi, dienO, giaTri, choKetQuaLuu, locVaTimDong } from './_form.js';
 
 /**
  * Xoá một danh mục rồi tạo lại đúng mã đó phải nhận câu lỗi NÓI ĐƯỢC, không phải lỗi hệ thống.
@@ -34,7 +34,7 @@ test('/loai-xe — xoá danh mục rồi tạo lại đúng mã đó phải đư
 
   // --- Xoá (xoá MỀM: bản ghi vẫn nằm trong bảng và vẫn chiếm chỗ chỉ mục) ---
   await page.goto('/loai-xe');
-  const dong = page.locator('#tbl tbody tr', { hasText: lan1.ma });
+  const dong = await locVaTimDong(page, lan1.ma);
   await expect(dong).toHaveCount(1, { timeout: 20_000 });
   await dong.locator('.js-del').click();
   await page.locator('.swal2-confirm').click();
