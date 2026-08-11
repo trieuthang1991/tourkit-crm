@@ -151,6 +151,29 @@ public sealed class ProviderService(
         await providerServiceRepo.SaveChangesAsync();
     }
 
+    /// <summary>Nối thêm dòng bảng giá — xem <see cref="IProviderService.ThemDichVuAsync"/>.</summary>
+    public async Task<int> ThemDichVuAsync(Guid providerId, IReadOnlyList<ProviderServiceLineDto> lines)
+    {
+        var ncc = await repo.GetByIdAsync(providerId) ?? throw new NotFoundException();
+        if (lines.Count == 0)
+        {
+            return 0;
+        }
+
+        foreach (var dong in lines)
+        {
+            var moi = new Shared.Entities.ProviderService { ProviderId = providerId };
+
+            // Loại lấy từ chính NCC, không nhận từ bên gọi: tệp nhập không mang loại NCC, mà cột riêng
+            // của dòng phải theo đúng loại của NCC đang nhận dữ liệu.
+            GanDongDichVu(moi, dong, ncc.Type);
+            await providerServiceRepo.AddAsync(moi);
+        }
+
+        await providerServiceRepo.SaveChangesAsync();
+        return lines.Count;
+    }
+
     /// <summary>
     /// Gán trường của một dòng bảng giá.
     ///

@@ -222,7 +222,28 @@
       <div id="pnl-dv" class="d-none border-top pt-3 mt-2">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h6 class="mb-0"><i class="ti ti-package me-2"></i>Sản phẩm / Dịch vụ</h6>
-          <button type="button" class="btn btn-sm btn-label-primary" id="btn-them-dv"><i class="ti ti-plus me-1"></i>Thêm dòng</button>
+          <div class="d-flex gap-2">
+            @* Nhập từ tệp theo mẫu. Mẫu tải theo ĐÚNG loại NCC đang chọn vì cột riêng khác nhau. *@
+            <a class="btn btn-sm btn-label-secondary" id="btn-tai-mau" href="#" title="Tải tệp mẫu"><i class="ti ti-download me-1"></i>Mẫu</a>
+            <button type="button" class="btn btn-sm btn-label-secondary" id="btn-nhap-tep"><i class="ti ti-file-import me-1"></i>Nhập tệp</button>
+            <input type="file" id="tep-nhap" class="d-none" accept=".csv,.xlsx" />
+            <button type="button" class="btn btn-sm btn-label-primary" id="btn-them-dv"><i class="ti ti-plus me-1"></i>Thêm dòng</button>
+          </div>
+        </div>
+
+        @* Bảng xem trước — chủ dự án chốt luôn phải duyệt trước khi ghi. *@
+        <div id="xem-truoc" class="d-none border rounded p-2 mb-2 bg-lighter">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong class="small" id="xt-tom-tat"></strong>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-sm btn-label-secondary" id="btn-huy-nhap">Bỏ</button>
+              <button type="button" class="btn btn-sm btn-primary" id="btn-ghi-nhap">Ghi vào bảng giá</button>
+            </div>
+          </div>
+          <div id="xt-hong" class="small text-danger mb-2"></div>
+          <div class="table-responsive" style="max-height:240px;overflow:auto">
+            <table class="table table-sm mb-0"><tbody id="xt-dong"></tbody></table>
+          </div>
         </div>
         <div id="ds-dv" class="d-flex flex-column gap-2"></div>
         <div class="text-muted small mt-2" id="dv-trong">Chưa có dịch vụ nào. Bấm "Thêm dòng" để khai bảng giá.</div>
@@ -467,6 +488,90 @@
       $('#ds-dv').on('click', '.js-xoa-dv', function () {
         $(this).closest('.tk-dong-dv').remove();
         danhSoLai();
+      });
+
+      // ---- Nhập bảng giá từ tệp ----
+      var dongCho = [];   // dòng đã đọc, ĐANG CHỜ người dùng duyệt — chưa ghi gì
+
+      // Mẫu phải theo đúng loại NCC đang chọn: cột riêng của khách sạn khác hẳn hàng không, tải nhầm
+      // mẫu là cả tệp sai cột ngay từ đầu.
+      $('#btn-tai-mau').on('click', function (e) {
+        e.preventDefault();
+        window.location = '?handler=MauNhap&loaiNcc=' + encodeURIComponent($('#frm [name="Input.Type"]').val());
+      });
+
+      $('#btn-nhap-tep').on('click', function () { $('#tep-nhap').val('').trigger('click'); });
+
+      $('#tep-nhap').on('change', function () {
+        var tep = this.files && this.files[0];
+        if (!tep) { return; }
+
+        var fd = new FormData();
+        fd.append('providerId', $('#frm [name="Id"]').val() || '');
+        fd.append('file', tep);
+
+        fetch('?handler=XemTruocNhap', { method: 'POST', body: fd, headers: { RequestVerificationToken: tk.token() } })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.isSuccess) { tk.error(res.message || 'Không đọc được tệp.'); return; }
+            veXemTruoc(res.data);
+          })
+          .catch(function () { tk.error('Không đọc được tệp.'); });
+      });
+
+      function veXemTruoc(d) {
+        dongCho = (d.nhan || []).map(function (x) {
+          var h = x.hoSo || {};
+          return {
+            PriceName: x.tenGoiGia, AmountOfPeople: x.soKhach, ContractPrice: x.giaHopDong,
+            PublicPrice: x.giaCongBo, CurrencyCode: x.tienTe, Note: x.ghiChu,
+            PeriodFrom: h.periodFrom, PeriodTo: h.periodTo, DayType: h.dayType,
+            NetCostPerDay: h.netCostPerDay, SellPricePerDay: h.sellPricePerDay,
+            TicketType: h.ticketType, Route: h.route, DepartTime: h.departTime,
+            ReturnTime: h.returnTime, DepositDeadline: h.depositDeadline, Baggage: h.baggage
+          };
+        });
+
+        var hong = d.hong || [];
+        $('#xt-tom-tat').text('Đọc được ' + dongCho.length + ' dòng' + (hong.length ? ', ' + hong.length + ' dòng lỗi' : ''));
+
+        // Dòng lỗi ghi kèm SỐ DÒNG trong tệp — người dùng mở tệp ra sửa đúng chỗ, không phải dò lại cả bảng.
+        $('#xt-hong').html(hong.map(function (x) {
+          return '<div>Dòng ' + x.soDong + (x.tenGoiGia ? ' (' + esc(x.tenGoiGia) + ')' : '') + ': ' + esc(x.loi.join('; ')) + '</div>';
+        }).join(''));
+
+        $('#xt-dong').html(dongCho.map(function (x, i) {
+          return '<tr><td class="small">' + (i + 1) + '</td><td class="small">' + esc(x.PriceName || '') + '</td>' +
+            '<td class="small text-end">' + money(x.ContractPrice) + '</td>' +
+            '<td class="small text-end">' + money(x.PublicPrice) + '</td></tr>';
+        }).join(''));
+
+        $('#btn-ghi-nhap').prop('disabled', dongCho.length === 0);
+        $('#xem-truoc').removeClass('d-none');
+      }
+
+      $('#btn-huy-nhap').on('click', function () { dongCho = []; $('#xem-truoc').addClass('d-none'); });
+
+      $('#btn-ghi-nhap').on('click', function () {
+        var id = $('#frm [name="Id"]').val();
+        if (!id || !dongCho.length) { return; }
+
+        var $n = $(this).prop('disabled', true);
+        fetch('?handler=Nhap&providerId=' + encodeURIComponent(id), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', RequestVerificationToken: tk.token() },
+          body: JSON.stringify(dongCho)
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            $n.prop('disabled', false);
+            if (!res.isSuccess) { tk.error(res.message || 'Nhập thất bại.'); return; }
+            tk.toast(res.message || 'Đã nhập.');
+            dongCho = [];
+            $('#xem-truoc').addClass('d-none');
+            napDichVu(id);   // nạp lại bảng giá để thấy ngay dòng vừa nhập
+          })
+          .catch(function () { $n.prop('disabled', false); tk.error('Nhập thất bại.'); });
       });
 
       function delRow(d) {

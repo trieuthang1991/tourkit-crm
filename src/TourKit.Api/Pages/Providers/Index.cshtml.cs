@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
@@ -8,6 +9,7 @@ using TourKit.Application.Catalog;
 using TourKit.Application.Catalog.Dtos;
 using TourKit.Application.Providers;
 using TourKit.Application.Providers.Dtos;
+using TourKit.Application.Providers.Import;
 using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Pages.Providers;
@@ -134,6 +136,111 @@ public class IndexModel : TkListPageModel
             }),
             items = dm.Items.Select(x => new { id = x.Id, name = x.Name }),
         }));
+    }
+
+    // ===================== Nhập bảng giá từ tệp =====================
+
+    /// <summary>
+    /// Tải tệp mẫu ứng với loại NCC — cột riêng khác nhau nên mẫu cũng khác nhau.
+    ///
+    /// Tham số tên <c>loaiNcc</c> chứ KHÔNG phải <c>loai</c>: route của trang này đã có đoạn "loai"
+    /// (/nha-cung-cap/loai/tat-ca), mà giá trị ROUTE thắng query string khi model binding. Đặt trùng
+    /// tên thì tham số luôn nhận "tat-ca", không parse được số, và mẫu nào cũng trả về mẫu chung —
+    /// hỏng im lặng, không có lỗi nào.
+    /// </summary>
+    public IActionResult OnGetMauNhap(int loaiNcc)
+    {
+        var t = Enum.IsDefined(typeof(ProviderType), loaiNcc) ? (ProviderType)loaiNcc : ProviderType.Other;
+        var csv = MauNhapDichVu.MauCsv(t);
+
+        // BOM UTF-8: thiếu nó là người dùng mở mẫu bằng Excel thấy tiêu đề tiếng Việt thành ký tự rác,
+        // sửa lại rồi tải lên, và cột không khớp nữa.
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
+        return File(bytes, "text/csv", $"mau-bang-gia-{TypeSlug(t)}.csv");
+    }
+
+    private static string TypeSlug(ProviderType t) => t switch
+    {
+        ProviderType.Hotel => "khach-san",
+        ProviderType.Airline => "hang-khong",
+        _ => "chung",
+    };
+
+    /// <summary>
+    /// Đọc tệp rồi trả về bảng XEM TRƯỚC — không ghi gì.
+    ///
+    /// Chủ dự án chốt luôn có bước xem trước: đọc sai một cột mà ghi thẳng thì bảng giá hỏng chỉ lộ ra
+    /// khi có người phát hiện giá lệch, lúc đó đã dùng để báo giá cho khách rồi.
+    /// </summary>
+    public async Task<IActionResult> OnPostXemTruocNhapAsync(Guid providerId, IFormFile? file)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return new JsonResult(Result.Error("Chưa chọn tệp."));
+        }
+
+        var ncc = await _svc.GetAsync(providerId);
+
+        BangNhap bang;
+        try
+        {
+            await using var s = file.OpenReadStream();
+            bang = DocBangTuTep.Doc(s, file.FileName);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or FormatException or IOException)
+        {
+            // Tệp hỏng/không đúng định dạng là lỗi NGƯỜI DÙNG, không phải sự cố hệ thống — nói rõ ra
+            // thay vì để nó thành 500 "Đã có lỗi xảy ra".
+            return new JsonResult(Result.Error("Không đọc được tệp. Hãy dùng đúng tệp .csv hoặc .xlsx theo mẫu."));
+        }
+
+        var kq = new NhapDichVuService().XemTruoc(bang, ncc.Type);
+
+        return new JsonResult(Result.Success(null, new
+        {
+            loaiNcc = TypeLabel(ncc.Type),
+            nhan = kq.Nhan.Select(x => new
+            {
+                soDong = x.SoDong,
+                tenGoiGia = x.Line!.PriceName,
+                soKhach = x.Line.AmountOfPeople,
+                giaHopDong = x.Line.ContractPrice,
+                giaCongBo = x.Line.PublicPrice,
+                tienTe = x.Line.CurrencyCode,
+                ghiChu = x.Line.Note,
+                hoSo = x.Line.Profile,
+            }),
+            hong = kq.Hong.Select(x => new { soDong = x.SoDong, tenGoiGia = x.TenGoiGia, loi = x.Loi }),
+        }));
+    }
+
+    /// <summary>Ghi những dòng người dùng đã duyệt ở bảng xem trước. NỐI THÊM, không thay bảng giá đang có.</summary>
+    public async Task<IActionResult> OnPostNhapAsync(Guid providerId, [FromBody] List<DongDichVuInput>? lines)
+    {
+        if (lines is null || lines.Count == 0)
+        {
+            return new JsonResult(Result.Error("Không có dòng nào để nhập."));
+        }
+
+        var soDong = await _svc.ThemDichVuAsync(providerId, lines.Select(x => new ProviderServiceLineDto(
+            null, null, x.PriceName, x.ContractPrice, x.PublicPrice, x.CurrencyCode,
+            x.AmountOfPeople, x.Note, 1,
+            new ProviderServiceLineProfile
+            {
+                PeriodFrom = x.PeriodFrom,
+                PeriodTo = x.PeriodTo,
+                DayType = Gon(x.DayType),
+                NetCostPerDay = x.NetCostPerDay,
+                SellPricePerDay = x.SellPricePerDay,
+                TicketType = Gon(x.TicketType),
+                Route = Gon(x.Route),
+                DepartTime = Gon(x.DepartTime),
+                ReturnTime = Gon(x.ReturnTime),
+                DepositDeadline = x.DepositDeadline,
+                Baggage = Gon(x.Baggage),
+            })).ToList());
+
+        return new JsonResult(Result.Success($"Đã nhập {soDong} dòng bảng giá."));
     }
 
     /// <summary>Trần số dòng nạp về form. Vượt mức này thì sửa hàng loạt ở màn Bảng giá NCC hợp lý hơn.</summary>
