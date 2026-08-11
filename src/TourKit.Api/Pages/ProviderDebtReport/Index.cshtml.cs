@@ -1,4 +1,7 @@
+using System.Globalization;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TourKit.Application.Reports;
 using TourKit.Application.Reports.Dtos;
@@ -24,6 +27,34 @@ public class IndexModel : PageModel
     /// trên màn Nhà cung cấp đi bằng đường này. Rỗng nghĩa là đang xem toàn bộ.
     /// </summary>
     public string? LocNccTen { get; private set; }
+
+    /// <summary>
+    /// Xuất CSV đúng thứ đang hiện trên màn — kể cả khi đang lọc theo một NCC.
+    ///
+    /// Báo cáo này không có nút xuất trong khi 15 màn khác đều có, nên bài kiểm thử xuất file tự bỏ
+    /// qua thay vì đỏ: thiếu tính năng mà nhìn vào kết quả kiểm thử lại tưởng đã phủ.
+    /// </summary>
+    public async Task<IActionResult> OnGetExportAsync()
+    {
+        await OnGetAsync();   // dùng chung đường nạp + lọc, để file xuất không bao giờ lệch với màn hình
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Nhà cung cấp,Tổng chi phí,Đã chi,Còn phải trả,0-30 ngày,31-60,61-90,>90");
+        foreach (var x in Items)
+        {
+            static string C(string? v) => "\"" + (v ?? "").Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+            static string S(decimal v) => v.ToString(CultureInfo.InvariantCulture);
+
+            sb.Append(C(x.ProviderName)).Append(',')
+              .Append(S(x.TotalCost)).Append(',').Append(S(x.Paid)).Append(',').Append(S(x.Outstanding)).Append(',')
+              .Append(S(x.Current)).Append(',').Append(S(x.D30)).Append(',').Append(S(x.D60)).Append(',')
+              .Append(S(x.D90Plus)).AppendLine();
+        }
+
+        // BOM UTF-8: thiếu nó là Excel mở ra tên NCC tiếng Việt thành ký tự rác.
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+        return File(bytes, "text/csv", "cong-no-ncc.csv");
+    }
 
     public async Task OnGetAsync()
     {

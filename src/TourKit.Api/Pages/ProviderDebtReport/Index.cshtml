@@ -52,6 +52,9 @@
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h5 class="mb-0">Công nợ phải trả NCC (phân tuổi nợ)</h5>
+    @* Giữ nguyên tham số đang lọc để file xuất khớp đúng thứ đang hiện trên màn. *@
+    <a id="btn-export" class="btn btn-sm btn-label-secondary"
+       href="?handler=Export&providerId=@(Request.Query["providerId"])"><i class="ti ti-file-export me-1"></i> Xuất CSV</a>
   </div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
