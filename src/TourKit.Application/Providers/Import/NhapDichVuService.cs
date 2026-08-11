@@ -78,11 +78,19 @@ public sealed class NhapDichVuService
                 loi.Add($"Thiếu {MauNhapDichVu.TenGoiGia}");
             }
 
-            var giaHopDong = So(O(MauNhapDichVu.GiaHopDong), MauNhapDichVu.GiaHopDong, batBuoc: true, loi);
-            var giaCongBo = So(O(MauNhapDichVu.GiaCongBo), MauNhapDichVu.GiaCongBo, batBuoc: false, loi);
             var soKhach = SoNguyen(O(MauNhapDichVu.SoKhach), loi);
-
             var hoSo = HoSo(O, loai, loi);
+
+            // Giá theo NGÀY của khách sạn chính là giá hợp đồng/công bố của gói, chỉ khác đơn vị tính.
+            //
+            // Bảng giá khách sạn ngoài đời không có cột nào tên "Giá hợp đồng" — nó ghi "Giá NET/đêm"
+            // và "Giá bán/đêm". Không nhận hai cột đó làm giá thì một tài liệu đọc HOÀN TOÀN ĐÚNG vẫn
+            // cho ra 0 dòng dùng được, toàn bộ báo "Thiếu Giá hợp đồng" — người dùng không hiểu phải
+            // sửa gì vì tài liệu của họ có đủ giá.
+            var giaHopDong = So(O(MauNhapDichVu.GiaHopDong), MauNhapDichVu.GiaHopDong,
+                batBuoc: hoSo.NetCostPerDay is null, loi) ?? hoSo.NetCostPerDay;
+            var giaCongBo = So(O(MauNhapDichVu.GiaCongBo), MauNhapDichVu.GiaCongBo, batBuoc: false, loi)
+                ?? hoSo.SellPricePerDay;
 
             if (loi.Count > 0)
             {

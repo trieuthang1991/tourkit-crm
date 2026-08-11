@@ -168,4 +168,49 @@ public class NhapDichVuTests
             Assert.Single(kq.Nhan);
         }
     }
+
+    /// <summary>
+    /// Bảng giá khách sạn ngoài đời ghi "Giá NET/đêm" và "Giá bán/đêm", không có cột nào tên
+    /// "Giá hợp đồng". Không nhận hai cột đó làm giá thì một tài liệu đọc HOÀN TOÀN ĐÚNG vẫn cho ra
+    /// 0 dòng dùng được — phát hiện khi đo thật với model trên file báo giá khách sạn.
+    /// </summary>
+    [Fact]
+    public void Khach_san_chi_co_gia_theo_ngay_van_nhan_duoc()
+    {
+        var kq = Svc.XemTruoc(Bang(CotKhachSan,
+            ["Deluxe City View", "2", "", "", "", "", "2026-06-01", "2026-08-31", "", "1.200.000", "1.500.000"]),
+            ProviderType.Hotel);
+
+        Assert.Empty(kq.Hong);
+        var d = Assert.Single(kq.Nhan);
+        Assert.Equal(1_200_000m, d.Line!.ContractPrice);
+        Assert.Equal(1_500_000m, d.Line.PublicPrice);
+
+        // Vẫn giữ nguyên ở hồ sơ dòng: đây là giá THEO NGÀY, không phải chỉ là giá gói.
+        Assert.Equal(1_200_000m, d.Line.Profile!.NetCostPerDay);
+    }
+
+    /// <summary>Có cả hai thì cột chính thắng — giá theo ngày chỉ là đường lùi, không phải đè lên.</summary>
+    [Fact]
+    public void Co_ca_hai_thi_gia_hop_dong_thang()
+    {
+        var kq = Svc.XemTruoc(Bang(CotKhachSan,
+            ["Phòng A", "2", "800000", "950000", "", "", "", "", "", "1.200.000", "1.500.000"]),
+            ProviderType.Hotel);
+
+        Assert.Empty(kq.Hong);
+        Assert.Equal(800_000m, kq.Nhan[0].Line!.ContractPrice);
+        Assert.Equal(950_000m, kq.Nhan[0].Line!.PublicPrice);
+    }
+
+    /// <summary>Không có giá nào thì vẫn phải báo thiếu — nới cho khách sạn không được nới thành bỏ kiểm.</summary>
+    [Fact]
+    public void Khong_co_gia_nao_thi_van_bao_thieu()
+    {
+        var kq = Svc.XemTruoc(Bang(CotKhachSan,
+            ["Phòng A", "2", "", "", "", "", "", "", "", "", ""]), ProviderType.Hotel);
+
+        Assert.Single(kq.Hong);
+        Assert.Contains(MauNhapDichVu.GiaHopDong, kq.Hong[0].Loi[0], StringComparison.Ordinal);
+    }
 }

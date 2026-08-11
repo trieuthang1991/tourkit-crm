@@ -137,6 +137,24 @@ Sửa `ai-scoring.json` có hiệu lực ngay, không cần khởi động lại
 **Provider = cách kết nối. Feature = dùng gì.** Model ghi thẳng mã thật của hãng, không qua bí danh:
 đọc một dòng là biết đang chạy bằng model gì, không phải lần theo một bảng ánh xạ ở chỗ khác.
 
+### Các hãng đã khai sẵn
+
+| Tên trong cấu hình | `Kind` | `BaseUrl` | Ghi chú |
+|---|---|---|---|
+| `deepseek` | `OpenAiCompatible` | `https://api.deepseek.com/v1` | Đang dùng cho hầu hết tính năng |
+| `openai` | `OpenAiCompatible` | `https://api.openai.com/v1` | |
+| `grok` | `OpenAiCompatible` | `https://api.x.ai/v1` | xAI Grok — model `grok-4`, `grok-3`, `grok-3-mini` |
+| `claude` | `Anthropic` | `https://api.anthropic.com` | Adapter riêng |
+| `fptai` | `Http` | `https://api.fpt.ai` | OCR, chưa nối |
+| `log` | `Log` | — | Giả lập, không gọi ra ngoài, không cần khoá |
+
+Grok dùng chung adapter `OpenAiCompatible` vì API của xAI tương thích OpenAI — thêm hãng này là việc
+của **cấu hình**, không phải viết code. Muốn chạy thử bằng Grok thì điền `Ai:Providers:grok:ApiKey`
+rồi trỏ `Provider` của tính năng sang `"grok"` kèm `Model` là mã model của xAI.
+
+Khoá để rỗng thì hệ thống **vẫn khởi động bình thường** — nó chỉ đòi khoá của hãng nào đang được một
+tính năng ĐANG BẬT trỏ tới. Nhờ vậy khai sẵn nhiều hãng không biến thành gánh nặng cho máy chưa dùng.
+
 Nên chọn model nào (bạn tự quyết, hệ thống không ép):
 
 | Việc | Gợi ý | Vì sao |
