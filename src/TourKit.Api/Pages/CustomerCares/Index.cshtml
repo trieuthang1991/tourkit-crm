@@ -60,7 +60,7 @@
   <div class="tk-pad">
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Tiêu đề lịch chăm sóc…" /></div>
-      <div class="col-md-3"><select id="f-customerId" class="form-select" style="width:100%"><option value=""></option></select></div>
+      <div class="col-md-3"><select id="f-customerId" class="form-select" data-placeholder="Khách hàng" style="width:100%"><option value=""></option></select></div>
       <div class="col-md-3">
         <select id="f-assignedToUserId" class="form-select tk-s2f" data-placeholder="Người phụ trách"><option value=""></option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
       </div>
@@ -116,11 +116,11 @@
       <input type="hidden" name="Id" />
       <div class="mb-3" id="row-customer">
         <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
-        <select name="Input.CustomerId" id="oc-customer" class="form-select" style="width:100%"></select>
+        <select name="Input.CustomerId" id="oc-customer" class="form-select" data-placeholder="Gõ tên/SĐT để tìm…" style="width:100%"></select>
       </div>
       <div class="mb-3 d-none" id="row-customer-name">
         <label class="form-label">Khách hàng</label>
-        <input type="text" id="oc-customer-name" class="form-control" disabled />
+        <input type="text" id="oc-customer-name" class="form-control" placeholder="Tự điền theo khách đã chọn" disabled />
       </div>
       <div class="mb-3"><label class="form-label">Tiêu đề <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Nội dung cần chăm sóc" /></div>
       <div class="mb-3"><label class="form-label">Nội dung</label><textarea name="Input.Detail" class="form-control" rows="2" placeholder="Chi tiết nội dung chăm sóc"></textarea></div>
