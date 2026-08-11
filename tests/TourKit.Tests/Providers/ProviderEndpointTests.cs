@@ -61,6 +61,48 @@ public class ProviderEndpointTests : IClassFixture<AuthTestFactory>
         Assert.Equal(HttpStatusCode.NotFound, afterDelete.StatusCode);
     }
 
+    /// <summary>
+    /// Xoá NCC rồi tạo lại ĐÚNG mã đó phải được — luật do chủ dự án chốt: danh mục tái dùng mã,
+    /// đơn hàng thì không. Nhà cung cấp là dữ liệu danh mục, không phải chứng từ.
+    ///
+    /// Chạy trên CSDL thật nên bài này chốt đúng thứ kiểm thử đơn vị không thấy: chỉ mục duy nhất.
+    /// Hàm chặn trùng của service truy vấn qua bộ lọc toàn cục nên vốn đã không nhìn thấy bản xoá
+    /// mềm — thứ chặn là chỉ mục ở CSDL, và nó chỉ lộ ra khi có CSDL thật.
+    /// </summary>
+    [Fact]
+    public async Task Xoa_NCC_roi_tao_lai_dung_ma_do_phai_duoc()
+    {
+        var client = await LoggedInClientAsync("prov-reuse");
+
+        static CreateProviderDto Ncc(string ten) => new(
+            "NCC-TAI-DUNG", ten, ProviderType.Hotel, null, null, null, null, null, null, null, null, 0, 1);
+
+        var lan1 = await client.PostAsJsonAsync("/api/v1/providers", Ncc("Lần 1"));
+        Assert.Equal(HttpStatusCode.Created, lan1.StatusCode);
+        var tao = await lan1.Content.ReadFromJsonAsync<ProviderDto>();
+
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await client.DeleteAsync($"/api/v1/providers/{tao!.Id}")).StatusCode);
+
+        var lan2 = await client.PostAsJsonAsync("/api/v1/providers", Ncc("Lần 2"));
+        Assert.Equal(HttpStatusCode.Created, lan2.StatusCode);
+    }
+
+    /// <summary>Còn SỐNG mà trùng mã thì vẫn phải chặn — nới cho bản đã xoá không được nới cả cái này.</summary>
+    [Fact]
+    public async Task Trung_ma_voi_NCC_dang_song_van_bi_chan()
+    {
+        var client = await LoggedInClientAsync("prov-dup");
+
+        static CreateProviderDto Ncc(string ten) => new(
+            "NCC-TRUNG", ten, ProviderType.Hotel, null, null, null, null, null, null, null, null, 0, 1);
+
+        Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync("/api/v1/providers", Ncc("A"))).StatusCode);
+
+        var lan2 = await client.PostAsJsonAsync("/api/v1/providers", Ncc("B"));
+        Assert.Equal(HttpStatusCode.Conflict, lan2.StatusCode);
+    }
+
     [Fact]
     public async Task Create_provider_without_code_is_400()
     {

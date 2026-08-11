@@ -19,7 +19,7 @@ public sealed class ProviderConfiguration : IEntityTypeConfiguration<Provider>
         builder.Property(x => x.ProfileJson).HasColumnType("jsonb");
 
         // Index bắt đầu bằng TenantId (conventions §5): tăng tốc mọi truy vấn đã bị lọc theo tenant.
-        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã phải được.
         builder.HasIndex(x => new { x.TenantId, x.Type, x.Status });
     }
 }

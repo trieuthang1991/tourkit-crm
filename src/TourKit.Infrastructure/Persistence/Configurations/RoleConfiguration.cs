@@ -9,6 +9,6 @@ public sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
     public void Configure(EntityTypeBuilder<Role> builder)
     {
         builder.Property(x => x.Name).IsRequired().HasMaxLength(100);
-        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng tên phải được.
     }
 }

@@ -16,7 +16,7 @@ public sealed class AgentConfiguration : IEntityTypeConfiguration<Agent>
         builder.Property(x => x.TaxCode).HasMaxLength(20);
         builder.Property(x => x.Address).HasMaxLength(300);
 
-        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();   // H3: mã đại lý duy nhất
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique().HasFilter("NOT \"IsDeleted\"");   // H3: mã đại lý duy nhất. Lọc IsDeleted: đây là DANH MỤC — xoá rồi tạo lại đúng mã phải được.
     }
 }
 
