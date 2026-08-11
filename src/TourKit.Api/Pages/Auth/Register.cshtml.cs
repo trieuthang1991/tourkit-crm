@@ -137,8 +137,10 @@ public class RegisterModel : PageModel
             return RedirectToPage("/Auth/Login");
         }
 
+        // Cùng lối vào Google nên cùng mức ghi nhớ: để đây true mà đăng nhập Google là false thì
+        // lần ĐẦU đăng ký được ghi nhớ, những lần sau thì không — hành vi đổi giữa chừng, khó hiểu.
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
-            new AuthenticationProperties { IsPersistent = true });
+            new AuthenticationProperties { IsPersistent = false });
         await HttpContext.SignOutAsync(ExternalAuthDefaults.Scheme);
         return LocalRedirect("/tong-quan");
     }

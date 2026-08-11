@@ -121,7 +121,18 @@ public class LoginModel : PageModel
 
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme, principal,
-                    new AuthenticationProperties { IsPersistent = true });
+                    new AuthenticationProperties
+                    {
+                        // Không ghi nhớ, khớp mặc định của đường email/mật khẩu (ô "Ghi nhớ đăng nhập"
+                        // mặc định TẮT). Trước đây đường Google luôn IsPersistent = true, nên cùng một
+                        // hệ thống mà hai lối vào cho hai mức ghi nhớ khác nhau: vào bằng Google là
+                        // cookie nằm lại trên đĩa, người dùng không có cách nào chọn "chỉ phiên này" —
+                        // rộng hơn mong đợi trên máy dùng chung.
+                        //
+                        // Quay về từ Google thì không còn form để đọc lựa chọn của người dùng, nên lấy
+                        // mức CHẶT hơn làm mặc định.
+                        IsPersistent = false,
+                    });
 
                 // Xoá cookie tạm ngay khi đã có cookie chính: để lại thì người dùng còn cầm một vé
                 // "email này đã xác minh" đi lại được thêm 10 phút mà không việc gì phải cầm nữa.
