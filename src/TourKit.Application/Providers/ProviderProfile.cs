@@ -5,6 +5,27 @@ using TourKit.Shared.Enums;
 namespace TourKit.Application.Providers;
 
 /// <summary>
+/// Một người liên hệ của nhà cung cấp — hệ cũ để thành khối "Thông tin liên hệ" lặp lại ở cả 4 màn
+/// sửa (<c>foreach (var item in dataServices)</c> dựng một <c>.row.member</c> mỗi người).
+///
+/// Cột <c>Provider.ContactPerson</c> vẫn giữ: danh sách NCC hiển thị và TÌM KIẾM theo nó ở SQL, mà
+/// tìm trong JSON là quét cả bảng. Nó mang tên người liên hệ chính; danh sách này mang đầy đủ.
+/// </summary>
+public sealed record ProviderContact
+{
+    public string? FullName { get; init; }
+    public string? Position { get; init; }      // "Chức vụ"
+    public DateOnly? DateOfBirth { get; init; } // "Ngày sinh"
+    public string? Phone { get; init; }
+    public string? Email { get; init; }
+
+    /// <summary>Dòng không có gì thì đừng lưu — người dùng bấm "Thêm" rồi bỏ trống là chuyện thường.</summary>
+    public bool Rong =>
+        string.IsNullOrWhiteSpace(FullName) && string.IsNullOrWhiteSpace(Position) &&
+        DateOfBirth is null && string.IsNullOrWhiteSpace(Phone) && string.IsNullOrWhiteSpace(Email);
+}
+
+/// <summary>
 /// Trường "mềm" của nhà cung cấp — thứ hệ cũ có ở ĐẦU form sửa nhưng khác nhau theo từng loại NCC,
 /// gộp trong một cột JSON (<c>Provider.ProfileJson</c>) thay vì mỗi loại một cột.
 ///
@@ -23,6 +44,9 @@ public sealed record ProviderProfile
     public string? Website { get; init; }           // "Link"
     public string? Note { get; init; }              // "Ghi chú"
     public string? BankAccountName { get; init; }   // "Tên TK" — khác BankAccount (số TK) và BankName
+
+    /// <summary>"Thông tin liên hệ" — hệ cũ cho khai NHIỀU người trên mọi loại NCC.</summary>
+    public IReadOnlyList<ProviderContact> Contacts { get; init; } = [];
 
     // ----- Khách sạn (EditHotel.aspx) -----
 
@@ -88,7 +112,7 @@ public sealed record ProviderProfile
         var empty = Website is null && Note is null && BankAccountName is null &&
             BuiltYear is null && Country is null && VehicleOwnership is null &&
             HotelClass is null && ProjectName is null &&
-            VehicleTypes.Count == 0;
+            VehicleTypes.Count == 0 && Contacts.Count == 0;
         return empty ? null : JsonSerializer.Serialize(this, Options);
     }
 }

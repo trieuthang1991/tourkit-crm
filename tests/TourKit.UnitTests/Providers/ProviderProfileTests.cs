@@ -117,6 +117,71 @@ public class ProviderProfileTests
         Assert.Null((await svc.GetAsync(ncc.Id)).Profile!.BuiltYear);
     }
 
+    // ================= Danh sách người liên hệ =================
+
+    [Fact]
+    public void Dong_lien_he_khong_dien_gi_thi_coi_la_rong()
+    {
+        Assert.True(new ProviderContact().Rong);
+        Assert.True(new ProviderContact { FullName = "   " }.Rong);
+        Assert.False(new ProviderContact { Phone = "0900000000" }.Rong);
+    }
+
+    [Fact]
+    public async Task Luu_nhieu_nguoi_lien_he_roi_doc_lai_giu_dung_thu_tu()
+    {
+        var svc = NewService(out _);
+
+        var tao = await svc.CreateAsync(new CreateProviderDto(
+            "KS20", "Có ba người liên hệ", ProviderType.Hotel, null, null, null, null, null, null, null, null, 4, 1,
+            Profile: new ProviderProfile
+            {
+                Contacts =
+                [
+                    new ProviderContact { FullName = "Nguyễn A", Position = "Giám đốc", Phone = "0900000001" },
+                    new ProviderContact { FullName = "Trần B", Position = "Kế toán", Email = "b@ncc.vn" },
+                    new ProviderContact { FullName = "Lê C", DateOfBirth = new DateOnly(1990, 3, 15) },
+                ],
+            }));
+
+        var lai = (await svc.GetAsync(tao.Id)).Profile!.Contacts;
+        Assert.Equal(3, lai.Count);
+        Assert.Equal("Nguyễn A", lai[0].FullName);
+        Assert.Equal("Kế toán", lai[1].Position);
+        Assert.Equal(new DateOnly(1990, 3, 15), lai[2].DateOfBirth);
+    }
+
+    /// <summary>Người liên hệ chung cho MỌI loại NCC — hệ cũ có khối này ở cả 4 màn sửa.</summary>
+    [Fact]
+    public async Task Nguoi_lien_he_khong_bi_bo_khi_doi_loai_NCC()
+    {
+        var svc = NewService(out var repo);
+        var ncc = new Provider
+        {
+            Code = "KS21",
+            Name = "Đổi loại",
+            Type = ProviderType.Hotel,
+            ProfileJson = new ProviderProfile
+            {
+                BuiltYear = 2000,
+                Contacts = [new ProviderContact { FullName = "Nguyễn A" }],
+            }.ToJsonOrNull(),
+        };
+        await repo.AddAsync(ncc);
+        await repo.SaveChangesAsync();
+
+        await svc.UpdateAsync(ncc.Id, new UpdateProviderDto(
+            "Nay là hãng bay", ProviderType.Airline, null, null, null, null, null, null, null, null, 4, 1,
+            Profile: new ProviderProfile
+            {
+                Contacts = [new ProviderContact { FullName = "Nguyễn A" }],
+            }));
+
+        var doc = await svc.GetAsync(ncc.Id);
+        Assert.Single(doc.Profile!.Contacts);
+        Assert.Null(doc.Profile.BuiltYear);   // trường riêng của khách sạn thì mất theo
+    }
+
     // ================= Trường riêng ở mức DÒNG bảng giá =================
 
     private static ProviderCrudService NewServiceCoDichVu(

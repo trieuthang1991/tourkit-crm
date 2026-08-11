@@ -50,6 +50,21 @@ public class IndexModel : TkListPageModel
     /// </summary>
     [BindProperty] public List<DongDichVuInput> Services { get; set; } = [];
 
+    /// <summary>
+    /// Danh sách người liên hệ gửi lên cùng form — tái lập khối "Thông tin liên hệ" lặp lại của hệ cũ.
+    /// Lưu trong ProfileJson chứ không thành bảng riêng: đây là dữ liệu đi kèm NCC, không tra cứu độc lập.
+    /// </summary>
+    [BindProperty] public List<LienHeInput> Contacts { get; set; } = [];
+
+    public sealed class LienHeInput
+    {
+        public string? FullName { get; set; }
+        public string? Position { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+    }
+
     public sealed class DongDichVuInput
     {
         public Guid? Id { get; set; }
@@ -252,6 +267,14 @@ public class IndexModel : TkListPageModel
             vehicleOwnership = p.Profile?.VehicleOwnership,
             hotelClass = p.Profile?.HotelClass,
             projectName = p.Profile?.ProjectName,
+            contacts = (p.Profile?.Contacts ?? []).Select(c => new
+            {
+                fullName = c.FullName,
+                position = c.Position,
+                dateOfBirth = c.DateOfBirth?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                phone = c.Phone,
+                email = c.Email,
+            }),
             vehicleTypes = p.Profile?.VehicleTypes ?? [],
             totalCost = p.TotalCost,
             paid = p.Paid,
@@ -308,7 +331,7 @@ public class IndexModel : TkListPageModel
             // Sửa: ghi NCC và bảng dịch vụ trong MỘT lần — bám uspInsertHotel của hệ cũ, hỏng giữa
             // chừng thì không có gì được ghi. Tạo mới vẫn đi đường cũ vì form tạo chưa có panel dịch vụ.
             await _svc.UpdateWithServicesAsync(g, new UpdateProviderDto(
-                Input.Name, Input.Type, Input.Phone, Input.Email, Input.Address, Input.TaxCode, Input.ContactPerson,
+                Input.Name, Input.Type, Input.Phone, Input.Email, Input.Address, Input.TaxCode, NguoiLienHeChinh(),
                 Input.BankAccount, Input.BankName, Input.PaymentTermId, Input.Rate, Input.Status,
                 Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId,
                 Profile: HoSoTuInput()),
@@ -333,7 +356,7 @@ public class IndexModel : TkListPageModel
         else
         {
             await _svc.CreateAsync(new CreateProviderDto(
-                Input.Code, Input.Name, Input.Type, Input.Phone, Input.Email, Input.Address, Input.TaxCode, Input.ContactPerson,
+                Input.Code, Input.Name, Input.Type, Input.Phone, Input.Email, Input.Address, Input.TaxCode, NguoiLienHeChinh(),
                 Input.BankAccount, Input.BankName, Input.PaymentTermId, Input.Rate, Input.Status,
                 Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId,
                 Profile: HoSoTuInput()));
@@ -352,6 +375,16 @@ public class IndexModel : TkListPageModel
     /// <summary>Chuỗi rỗng/toàn khoảng trắng coi như không nhập — đừng lưu "" vào JSON.</summary>
     private static string? Gon(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
+    /// <summary>
+    /// Người liên hệ ghi vào CỘT <c>ContactPerson</c>.
+    ///
+    /// Cột này không thừa dù danh sách đã nằm trong JSON: lưới hiển thị nó và ô tìm kiếm dò theo nó
+    /// ở SQL, mà tìm bên trong JSON là quét cả bảng. Nếu người dùng chỉ khai danh sách mà bỏ trống ô
+    /// này thì lấy người ĐẦU TIÊN — bỏ trống sẽ khiến NCC biến mất khỏi kết quả tìm theo tên liên hệ.
+    /// </summary>
+    private string? NguoiLienHeChinh() =>
+        Gon(Input.ContactPerson) ?? Contacts.Select(c => Gon(c.FullName)).FirstOrDefault(x => x is not null);
+
     private ProviderProfile HoSoTuInput()
     {
         var ks = ProviderProfile.CoTruongKhachSan(Input.Type);
@@ -368,6 +401,19 @@ public class IndexModel : TkListPageModel
             VehicleOwnership = xe ? Gon(Input.VehicleOwnership) : null,
             HotelClass = vc ? Gon(Input.HotelClass) : null,
             ProjectName = vc ? Gon(Input.ProjectName) : null,
+            // Bỏ dòng trống: người dùng bấm "Thêm người" rồi không điền gì là chuyện thường, lưu lại
+            // thì lần mở sau form đầy dòng rỗng và số người liên hệ đếm sai.
+            Contacts = Contacts
+                .Select(x => new ProviderContact
+                {
+                    FullName = Gon(x.FullName),
+                    Position = Gon(x.Position),
+                    DateOfBirth = x.DateOfBirth,
+                    Phone = Gon(x.Phone),
+                    Email = Gon(x.Email),
+                })
+                .Where(x => !x.Rong)
+                .ToList(),
             VehicleTypes = xe ? Input.VehicleTypes.Where(v => !string.IsNullOrWhiteSpace(v)).ToList() : [],
         };
     }

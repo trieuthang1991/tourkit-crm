@@ -196,6 +196,17 @@
         </div>
       </div>
 
+      @* Khối "Thông tin liên hệ" lặp lại — hệ cũ có ở CẢ 4 màn sửa, dựng một dòng mỗi người.
+         Ô "Người liên hệ" ở trên vẫn giữ vì lưới và ô tìm kiếm dò theo cột đó ở SQL. *@
+      <div class="border-top pt-3 mt-2">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="mb-0"><i class="ti ti-users me-2"></i>Thông tin liên hệ</h6>
+          <button type="button" class="btn btn-sm btn-label-primary" id="btn-them-lh"><i class="ti ti-plus me-1"></i>Thêm người</button>
+        </div>
+        <div id="ds-lh" class="d-flex flex-column gap-2"></div>
+        <div class="text-muted small mt-2" id="lh-trong">Chưa có người liên hệ nào.</div>
+      </div>
+
       @* Hệ cũ (EditVoucher.aspx) đánh dấu * cho cả hai ô này. Bắt buộc CÓ ĐIỀU KIỆN — chỉ khi loại
          là Voucher, vì với 6 loại còn lại khối này không hiện. Luật kiểm tra gắn ở dưới phần JS. *@
       <div class="tk-loai tk-loai-vc d-none">
@@ -275,6 +286,9 @@
             this.checked = xe.indexOf(this.value) >= 0;
           });
 
+          // Dựng lại từ đầu mỗi lần mở — không xoá thì người liên hệ của NCC trước còn nguyên trên form.
+          napLienHe(data && data.contacts);
+
           hienTheoLoai($form);
         } });
 
@@ -293,6 +307,55 @@
       }
 
       $('#frm').on('change', '[name="Input.Type"]', function () { hienTheoLoai($('#frm')); });
+
+      // ---- Khối Thông tin liên hệ ----
+
+      function dongLh(d, i) {
+        d = d || {};
+        var p = 'Contacts[' + i + '].';
+        function o(nhan, ten, gt, loai, cot) {
+          return '<div class="' + cot + '"><label class="form-label small mb-1">' + nhan + '</label>' +
+            '<input type="' + (loai || 'text') + '" class="form-control form-control-sm" name="' + p + ten +
+            '" value="' + esc(gt == null ? '' : gt) + '" /></div>';
+        }
+
+        return '<div class="border rounded p-2 tk-dong-lh"><div class="row g-2 align-items-end">' +
+            o('Họ và tên', 'FullName', d.fullName, 'text', 'col-md-3') +
+            o('Chức vụ', 'Position', d.position, 'text', 'col-md-2') +
+            o('Ngày sinh', 'DateOfBirth', d.dateOfBirth, 'date', 'col-md-3') +
+            o('Số điện thoại', 'Phone', d.phone, 'text', 'col-md-2') +
+            o('Email', 'Email', d.email, 'text', 'col-md-2') +
+            '<div class="col-12 text-end">' +
+              '<button type="button" class="btn btn-sm btn-icon text-danger js-xoa-lh" title="Bỏ người này"><i class="ti ti-trash"></i></button>' +
+            '</div>' +
+          '</div></div>';
+      }
+
+      // Cùng bẫy như bảng dịch vụ: model binding của .NET dừng ở chỉ số đầu tiên bị khuyết, nên bỏ
+      // dòng giữa mà không đánh số lại thì những người phía sau BIẾN MẤT không báo gì.
+      function danhSoLaiLh() {
+        $('#ds-lh .tk-dong-lh').each(function (i) {
+          $(this).find('[name^="Contacts["]').each(function () {
+            this.name = this.name.replace(/^Contacts\[\d+\]\./, 'Contacts[' + i + '].');
+          });
+        });
+        $('#lh-trong').toggleClass('d-none', $('#ds-lh .tk-dong-lh').length > 0);
+      }
+
+      function napLienHe(ds) {
+        $('#ds-lh').html((ds || []).map(dongLh).join(''));
+        danhSoLaiLh();
+      }
+
+      $('#btn-them-lh').on('click', function () {
+        $('#ds-lh').append(dongLh({}, $('#ds-lh .tk-dong-lh').length));
+        danhSoLaiLh();
+      });
+
+      $('#ds-lh').on('click', '.js-xoa-lh', function () {
+        $(this).closest('.tk-dong-lh').remove();
+        danhSoLaiLh();
+      });
 
       // ---- Panel Sản phẩm / Dịch vụ ----
       var dmDichVu = [];   // danh mục dịch vụ, nạp cùng lượt với bảng giá
