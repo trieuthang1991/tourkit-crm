@@ -41,13 +41,48 @@ function thanForm(html) {
   return ket < 0 ? html.slice(bd) : html.slice(bd, ket);
 }
 
+/**
+ * Bỏ các khối `class="tk-loai ..."` — ô chỉ hiện với MỘT loại bản ghi.
+ *
+ * Bài o-bat-buoc mở form ở trạng thái mặc định rồi kiểm "bỏ trống ô có dấu * thì phải báo lỗi". Ô
+ * nằm trong khối đang ẩn không thoả điều đó: nó không hiện ra để điền, và luật kiểm tra của nó cũng
+ * chỉ bật khi đúng loại. Giữ chúng lại là bài kiểm thử đỏ vì một ô người dùng không nhìn thấy.
+ *
+ * Chúng vẫn được kiểm — bằng bài e2e riêng của từng loại (ncc-truong-theo-loai.spec.js).
+ */
+function boKhoiTheoLoai(than) {
+  if (!than) return than;
+
+  // Cắt theo cặp <div> lồng nhau, không dùng regex tham lam: khối có div con bên trong.
+  let ra = '';
+  let i = 0;
+  for (;;) {
+    const bd = than.indexOf('class="tk-loai ', i);
+    if (bd < 0) { ra += than.slice(i); return ra; }
+
+    const moDau = than.lastIndexOf('<div', bd);
+    ra += than.slice(i, moDau);
+
+    let sau = than.indexOf('>', bd) + 1;
+    let sau2 = sau;
+    for (let sauDo = 1; sauDo > 0;) {
+      const mo = than.indexOf('<div', sau2);
+      const dong = than.indexOf('</div>', sau2);
+      if (dong < 0) return ra;
+      if (mo >= 0 && mo < dong) { sauDo++; sau2 = mo + 4; continue; }
+      sauDo--; sau2 = dong + 6;
+    }
+    i = sau2;
+  }
+}
+
 const ra = [];
 for (const tep of duyet(GOC)) {
   const html = readFileSync(tep, 'utf8');
   if (!/offcanvas: *'#oc', *form: *'#frm'/.test(html)) continue;
   if (!/oc\.open\(null\)/.test(html)) continue;
 
-  const than = thanForm(html);
+  const than = boKhoiTheoLoai(thanForm(html));
   if (!than) continue;
 
   // Quy ước của repo: label nằm NGAY TRÊN field, nên mỗi field lấy label gần nhất đứng trước.

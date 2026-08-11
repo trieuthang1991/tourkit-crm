@@ -205,13 +205,40 @@ public class ProviderProfileTests
     }
 
     [Theory]
-    [InlineData(ProviderType.Hotel, true, false)]
-    [InlineData(ProviderType.Vehicle, false, true)]
-    [InlineData(ProviderType.Restaurant, false, false)]
-    [InlineData(ProviderType.Airline, false, false)]
-    public void Loai_nao_hien_truong_nay(ProviderType loai, bool ks, bool xe)
+    [InlineData(ProviderType.Hotel, true, false, false)]
+    [InlineData(ProviderType.Vehicle, false, true, false)]
+    [InlineData(ProviderType.Voucher, false, false, true)]
+    [InlineData(ProviderType.Restaurant, false, false, false)]
+    [InlineData(ProviderType.Airline, false, false, false)]
+    public void Loai_nao_hien_truong_nay(ProviderType loai, bool ks, bool xe, bool vc)
     {
         Assert.Equal(ks, ProviderProfile.CoTruongKhachSan(loai));
         Assert.Equal(xe, ProviderProfile.CoTruongXe(loai));
+        Assert.Equal(vc, ProviderProfile.CoTruongVoucher(loai));
+    }
+
+    /// <summary>
+    /// Voucher là loại NCC thứ 7, KHÔNG lấy số 2 như <c>ServicesType.Vouchers</c> bên hệ cũ: số 2 ở
+    /// enum này đã là Vehicle và đang có dữ liệu. Đánh lại số là đổi nghĩa mọi dòng NCC đã lưu.
+    /// </summary>
+    [Fact]
+    public void Voucher_khong_duoc_lay_so_cua_loai_dang_co_du_lieu()
+    {
+        Assert.Equal(7, (int)ProviderType.Voucher);
+        Assert.Equal(2, (int)ProviderType.Vehicle);
+    }
+
+    [Fact]
+    public async Task Voucher_luu_class_hotel_va_ten_du_an_roi_doc_lai_van_con()
+    {
+        var svc = NewService(out _);
+
+        var tao = await svc.CreateAsync(new CreateProviderDto(
+            "VC01", "Gói nghỉ dưỡng", ProviderType.Voucher, null, null, null, null, null, null, null, null, 0, 1,
+            Profile: new ProviderProfile { HotelClass = "4 sao", ProjectName = "Dự án Hạ Long" }));
+
+        var doc = await svc.GetAsync(tao.Id);
+        Assert.Equal("4 sao", doc.Profile!.HotelClass);
+        Assert.Equal("Dự án Hạ Long", doc.Profile.ProjectName);
     }
 }

@@ -196,6 +196,15 @@
         </div>
       </div>
 
+      @* Hệ cũ (EditVoucher.aspx) đánh dấu * cho cả hai ô này. Bắt buộc CÓ ĐIỀU KIỆN — chỉ khi loại
+         là Voucher, vì với 6 loại còn lại khối này không hiện. Luật kiểm tra gắn ở dưới phần JS. *@
+      <div class="tk-loai tk-loai-vc d-none">
+        <div class="row">
+          <div class="col-6 mb-3"><label class="form-label">Class Hotel <span class="text-danger">*</span></label><input type="text" name="Input.HotelClass" class="form-control" placeholder="VD 4 sao" /></div>
+          <div class="col-6 mb-3"><label class="form-label">Tên dự án <span class="text-danger">*</span></label><input type="text" name="Input.ProjectName" class="form-control" placeholder="Nhập tên dự án" /></div>
+        </div>
+      </div>
+
       @* Panel SẢN PHẨM/DỊCH VỤ — tái lập EditHotel.aspx của hệ cũ: thông tin NCC và bảng giá nằm
          chung một form, bấm Lưu ghi cả hai trong một transaction (uspInsertHotel).
          Chỉ hiện khi SỬA: form tạo mới chưa có đường ghi kèm dịch vụ. *@
@@ -228,14 +237,31 @@
   <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script>
     var oc;
+
+    // Loại đang chọn có phải Voucher không — quyết định hai ô bắt buộc có điều kiện.
+    function laVoucher() { return Number($('#frm [name="Input.Type"]').val()) === 7; }
+
     $(function () {
       var g = tk.g, esc = g.esc, money = g.money;
 
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'nhà cung cấp',
-        rules: { 'Input.Code': { required: true }, 'Input.Name': { required: true } },
-        messages: { 'Input.Code': { required: 'Bắt buộc nhập mã' }, 'Input.Name': { required: 'Bắt buộc nhập tên' } },
+        // Class Hotel và Tên dự án bắt buộc CÓ ĐIỀU KIỆN: hệ cũ đánh dấu * cho chúng ở EditVoucher,
+        // nhưng khối đó chỉ hiện khi loại là Voucher. Dùng hàm thay vì true để 6 loại còn lại không
+        // bị đòi điền một ô đang ẩn — người dùng sẽ thấy "bắt buộc" mà không biết ô nằm ở đâu.
+        rules: {
+          'Input.Code': { required: true },
+          'Input.Name': { required: true },
+          'Input.HotelClass': { required: laVoucher },
+          'Input.ProjectName': { required: laVoucher },
+        },
+        messages: {
+          'Input.Code': { required: 'Bắt buộc nhập mã' },
+          'Input.Name': { required: 'Bắt buộc nhập tên' },
+          'Input.HotelClass': { required: 'Bắt buộc nhập Class Hotel' },
+          'Input.ProjectName': { required: 'Bắt buộc nhập tên dự án' },
+        },
         // Mã NCC không đổi được khi sửa (UpdateProviderDto không nhận Code).
         fill: function ($form, data) {
           $form.find('[name="Input.Code"]').prop('readonly', !!(data && data.id));
@@ -258,6 +284,7 @@
         var loai = Number($form.find('[name="Input.Type"]').val());
         $form.find('.tk-loai-ks').toggleClass('d-none', loai !== 1);   // ProviderType.Hotel
         $form.find('.tk-loai-xe').toggleClass('d-none', loai !== 2);   // ProviderType.Vehicle
+        $form.find('.tk-loai-vc').toggleClass('d-none', loai !== 7);   // ProviderType.Voucher
 
         // Cột riêng của DÒNG bảng giá. Gọi lại cả sau khi nạp xong dòng, vì lúc đổi loại có thể chưa
         // có dòng nào trên màn.

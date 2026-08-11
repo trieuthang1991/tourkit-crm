@@ -175,7 +175,7 @@ public static class RouteMap
     /// <summary>Slug loại nhà cung cấp → ProviderType. Guide 4 (HDV) · Airline 5 (vé máy bay).</summary>
     public static readonly IReadOnlyDictionary<string, int> ProviderLoai = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
     {
-        ["hdv"] = 4, ["ve"] = 5, ["khach-san"] = 1, ["van-chuyen"] = 2, ["nha-hang"] = 3,
+        ["hdv"] = 4, ["ve"] = 5, ["khach-san"] = 1, ["van-chuyen"] = 2, ["nha-hang"] = 3, ["voucher"] = 7,
     };
 
     /// <summary>Slug loại đơn hàng (đoạn "loai" trong route) → BookingType. FIT 0·GIT 1·Landtour 2·Dịch vụ lẻ 4·Visa 5.</summary>

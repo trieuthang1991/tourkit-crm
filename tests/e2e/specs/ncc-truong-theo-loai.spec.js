@@ -12,6 +12,7 @@ import { test, expect } from '../fixtures.js';
  */
 const KHACH_SAN = '1';
 const VAN_CHUYEN = '2';
+const VOUCHER = '7';
 
 async function moTaoMoi(page) {
   await page.goto('/nha-cung-cap/loai/tat-ca');
@@ -97,6 +98,76 @@ test.describe('Trường riêng theo loại NCC', () => {
     // Mở sang một NCC khác ngay sau đó.
     await page.evaluate(() => window.oc.open({ id: null, type: 2, name: 'tạm', code: 'tam' }));
     await expect(page.locator('#frm [name="Input.VehicleTypes"][value="29 chỗ"]')).not.toBeChecked();
+  });
+});
+
+/**
+ * Voucher là loại NCC hệ cũ có màn sửa riêng (EditVoucher.aspx) mà bản mới còn thiếu.
+ *
+ * Hai ô của nó được hệ cũ đánh dấu * — nên ở form gộp chúng bắt buộc CÓ ĐIỀU KIỆN: chỉ khi loại là
+ * Voucher. Đây là chỗ dễ sai nhất, vì "bắt buộc" mà ô đang ẩn thì người dùng thấy báo lỗi nhưng
+ * không biết ô nằm đâu.
+ */
+test.describe('Loại NCC Voucher', () => {
+  test('Chọn Voucher thì hiện Class Hotel + Tên dự án', async ({ trang: page }) => {
+    await moTaoMoi(page);
+
+    await page.selectOption('[name="Input.Type"]', VOUCHER);
+    await expect(page.locator('#frm .tk-loai-vc')).toBeVisible();
+    await expect(page.locator('#frm .tk-loai-ks')).toBeHidden();
+  });
+
+  test('Là Voucher mà bỏ trống hai ô đó thì phải báo lỗi, không lưu', async ({ trang: page }) => {
+    await moTaoMoi(page);
+
+    await page.fill('[name="Input.Code"]', 'E2E-VC-' + String(Date.now()).slice(-6));
+    await page.fill('[name="Input.Name"]', 'Voucher thiếu ô');
+    await page.selectOption('[name="Input.Type"]', VOUCHER);
+    await page.locator('#frm button[type="submit"]').click();
+
+    // Form phải còn mở — chưa lưu.
+    await expect(page.locator('#oc')).toHaveClass(/show/);
+    await expect(page.locator('#frm [name="Input.HotelClass"]')).toHaveClass(/is-invalid/);
+  });
+
+  /**
+   * Chiều ngược lại, quan trọng không kém: 6 loại còn lại KHÔNG được bị đòi điền hai ô đang ẩn.
+   * Nếu luật bắt buộc gắn cứng thay vì theo điều kiện, mọi NCC khách sạn sẽ không lưu nổi.
+   */
+  test('Loại khác thì không bị đòi điền hai ô đó', async ({ trang: page }) => {
+    const ma = 'E2E-KS3-' + String(Date.now()).slice(-6);
+    await moTaoMoi(page);
+
+    await page.fill('[name="Input.Code"]', ma);
+    await page.fill('[name="Input.Name"]', 'Khách sạn bình thường');
+    await page.selectOption('[name="Input.Type"]', KHACH_SAN);
+    await page.locator('#frm button[type="submit"]').click();
+
+    await expect(page.locator('#oc')).not.toHaveClass(/show/, { timeout: 25_000 });
+  });
+
+  test('Lưu Voucher đủ hai ô thì mở lại vẫn còn', async ({ trang: page }) => {
+    const ma = 'E2E-VC2-' + String(Date.now()).slice(-6);
+    await moTaoMoi(page);
+
+    await page.fill('[name="Input.Code"]', ma);
+    await page.fill('[name="Input.Name"]', 'Gói nghỉ dưỡng ' + ma);
+    await page.selectOption('[name="Input.Type"]', VOUCHER);
+    await page.fill('[name="Input.HotelClass"]', '4 sao');
+    await page.fill('[name="Input.ProjectName"]', 'Dự án Hạ Long');
+    await page.locator('#frm button[type="submit"]').click();
+    await expect(page.locator('#oc')).not.toHaveClass(/show/, { timeout: 25_000 });
+
+    await moSuaTheoMa(page, ma);
+    await expect(page.locator('#frm .tk-loai-vc')).toBeVisible();
+    await expect(page.locator('[name="Input.HotelClass"]')).toHaveValue('4 sao');
+    await expect(page.locator('[name="Input.ProjectName"]')).toHaveValue('Dự án Hạ Long');
+  });
+
+  /** Tab lọc theo loại phải có Voucher, và route /nha-cung-cap/loai/voucher phải mở được. */
+  test('Có tab Voucher và route riêng của nó chạy được', async ({ trang: page }) => {
+    await page.goto('/nha-cung-cap/loai/voucher');
+    await expect(page.locator('.nav-link[data-type="7"]')).toHaveCount(1);
   });
 });
 

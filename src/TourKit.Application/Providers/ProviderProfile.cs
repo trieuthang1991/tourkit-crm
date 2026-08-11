@@ -44,10 +44,21 @@ public sealed record ProviderProfile
     public static readonly IReadOnlyList<string> VehicleTypeOptions =
         ["4 chỗ", "7 chỗ", "16 chỗ", "29 chỗ", "35 chỗ", "45 chỗ", "47 chỗ"];
 
+    // ----- Voucher (EditVoucher.aspx) -----
+
+    /// <summary>"Class Hotel" — hạng khách sạn của gói voucher. Hệ cũ tra từ danh mục ClassHotel;
+    /// ở đây lưu chuỗi mềm, nâng thành liên kết thực thể sau nếu cần lọc/báo cáo theo nó.</summary>
+    public string? HotelClass { get; init; }
+
+    /// <summary>"Tên dự án".</summary>
+    public string? ProjectName { get; init; }
+
     /// <summary>Loại NCC nào hiện trường riêng nào — dùng chung cho cả giao diện lẫn kiểm thử.</summary>
     public static bool CoTruongKhachSan(ProviderType t) => t == ProviderType.Hotel;
 
     public static bool CoTruongXe(ProviderType t) => t == ProviderType.Vehicle;
+
+    public static bool CoTruongVoucher(ProviderType t) => t == ProviderType.Voucher;
 
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -76,6 +87,7 @@ public sealed record ProviderProfile
     {
         var empty = Website is null && Note is null && BankAccountName is null &&
             BuiltYear is null && Country is null && VehicleOwnership is null &&
+            HotelClass is null && ProjectName is null &&
             VehicleTypes.Count == 0;
         return empty ? null : JsonSerializer.Serialize(this, Options);
     }

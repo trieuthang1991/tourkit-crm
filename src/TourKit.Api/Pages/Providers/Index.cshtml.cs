@@ -154,13 +154,16 @@ public class IndexModel : TkListPageModel
         public int? BuiltYear { get; set; }           // Khách sạn
         public string? Country { get; set; }          // Khách sạn
         public string? VehicleOwnership { get; set; } // Vận chuyển: xe nhà / xe đối tác
+        public string? HotelClass { get; set; }       // Voucher: "Class Hotel"
+        public string? ProjectName { get; set; }      // Voucher: "Tên dự án"
         public List<string> VehicleTypes { get; set; } = [];  // Vận chuyển: nhiều hạng ghế
     }
 
     /// <summary>Loại NCC — bám PROVIDER_TYPE của bản cũ (1..6).</summary>
     public static readonly (int Value, string Label)[] TypeOptions =
     [
-        (1, "Khách sạn"), (2, "Vận chuyển"), (3, "Nhà hàng"), (4, "HDV"), (5, "Hàng không"), (6, "Khác"),
+        (1, "Khách sạn"), (2, "Vận chuyển"), (3, "Nhà hàng"), (4, "HDV"), (5, "Hàng không"),
+        (7, "Voucher"), (6, "Khác"),
     ];
 
     public static string TypeLabel(ProviderType t) => t switch
@@ -170,6 +173,7 @@ public class IndexModel : TkListPageModel
         ProviderType.Restaurant => "Nhà hàng",
         ProviderType.Guide => "HDV",
         ProviderType.Airline => "Hàng không",
+        ProviderType.Voucher => "Voucher",
         ProviderType.Other => "Khác",
         _ => t.ToString(),
     };
@@ -246,6 +250,8 @@ public class IndexModel : TkListPageModel
             builtYear = p.Profile?.BuiltYear,
             country = p.Profile?.Country,
             vehicleOwnership = p.Profile?.VehicleOwnership,
+            hotelClass = p.Profile?.HotelClass,
+            projectName = p.Profile?.ProjectName,
             vehicleTypes = p.Profile?.VehicleTypes ?? [],
             totalCost = p.TotalCost,
             paid = p.Paid,
@@ -350,6 +356,7 @@ public class IndexModel : TkListPageModel
     {
         var ks = ProviderProfile.CoTruongKhachSan(Input.Type);
         var xe = ProviderProfile.CoTruongXe(Input.Type);
+        var vc = ProviderProfile.CoTruongVoucher(Input.Type);
 
         return new ProviderProfile
         {
@@ -359,6 +366,8 @@ public class IndexModel : TkListPageModel
             BuiltYear = ks ? Input.BuiltYear : null,
             Country = ks ? Gon(Input.Country) : null,
             VehicleOwnership = xe ? Gon(Input.VehicleOwnership) : null,
+            HotelClass = vc ? Gon(Input.HotelClass) : null,
+            ProjectName = vc ? Gon(Input.ProjectName) : null,
             VehicleTypes = xe ? Input.VehicleTypes.Where(v => !string.IsNullOrWhiteSpace(v)).ToList() : [],
         };
     }
