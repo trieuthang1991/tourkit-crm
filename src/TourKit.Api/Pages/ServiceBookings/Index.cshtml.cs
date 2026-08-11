@@ -7,6 +7,7 @@ using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Providers;
 using TourKit.Shared.Enums;
 
+using TourKit.Api.Web;
 namespace TourKit.Api.Pages.ServiceBookings;
 
 // Đặt dịch vụ lẻ: DataTables SERVER-SIDE + GIỮ ĐỦ thông tin bản cũ
@@ -67,7 +68,7 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Providers = (await _providers.ListAsync(1, 1000)).Items.Select(p => (p.Id, $"{p.Name} ({p.Code})")).ToList();
+        Providers = (await _providers.ListAsync(1, TranDanhMuc.NhaCungCap)).Items.Select(p => (p.Id, $"{p.Name} ({p.Code})")).ToList();
     }
 
     /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí ServiceBookingListFilter hỗ trợ.</summary>
@@ -101,7 +102,7 @@ public class IndexModel : TkListPageModel
         var providerIds = result.Items.Where(b => b.ProviderId is not null).Select(b => b.ProviderId!.Value).ToHashSet();
         var names = providerIds.Count == 0
             ? []
-            : (await _providers.ListAsync(1, 1000)).Items.Where(p => providerIds.Contains(p.Id)).ToDictionary(p => p.Id, p => p.Name);
+            : (await _providers.ListAsync(1, TranDanhMuc.NhaCungCap)).Items.Where(p => providerIds.Contains(p.Id)).ToDictionary(p => p.Id, p => p.Name);
 
         // Mã ĐƠN: tra Order.Code cho các đơn gắn với booking TRONG TRANG (không nạp cả bảng đơn).
         var orderIds = result.Items.Where(b => b.OrderId is not null).Select(b => b.OrderId!.Value).Distinct().ToList();

@@ -92,8 +92,8 @@ public class IndexModel : TkListPageModel
     {
         Stats = await _svc.GetStatsAsync();
         Markets = (await _markets.ListAsync()).Select(m => (m.Id.ToString(), m.Name)).ToList();
-        Providers = (await _providers.ListAsync(1, 500)).Items.Select(p => (p.Id.ToString(), p.Name)).ToList();
-        Orders = (await _orders.ListOrdersAsync(1, 200)).Items
+        Providers = (await _providers.ListAsync(1, TranDanhMuc.NhaCungCap)).Items.Select(p => (p.Id.ToString(), p.Name)).ToList();
+        Orders = (await _orders.ListOrdersAsync(1, TranDanhMuc.DonHang)).Items
             .Select(o => (o.Id.ToString(), Text: $"{o.Code} — {o.CustomerName ?? "—"}")).ToList();
     }
 

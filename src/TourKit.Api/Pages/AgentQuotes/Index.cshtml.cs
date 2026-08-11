@@ -50,7 +50,7 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Agents = (await _agents.ListAsync(1, 500)).Items.Select(a => (a.Id, a.Name)).ToList();
+        Agents = (await _agents.ListAsync(1, TranDanhMuc.DaiLy)).Items.Select(a => (a.Id, a.Name)).ToList();
     }
 
     /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí AgentQuoteRequestListFilter hỗ trợ.</summary>

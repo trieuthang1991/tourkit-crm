@@ -99,7 +99,7 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Providers = (await _providers.ListAsync(1, 1000)).Items.Select(p => (p.Id, p.Name)).ToList();
+        Providers = (await _providers.ListAsync(1, TranDanhMuc.NhaCungCap)).Items.Select(p => (p.Id, p.Name)).ToList();
         Markets = (await _markets.ListAsync()).Select(m => m.Name).ToList();
 
         var today = DateOnly.FromDateTime(DateTime.Today);

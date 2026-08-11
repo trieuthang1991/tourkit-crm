@@ -51,7 +51,7 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Agents = (await _agents.ListAsync(1, 500)).Items.Select(a => (a.Id, a.Name)).ToList();
+        Agents = (await _agents.ListAsync(1, TranDanhMuc.DaiLy)).Items.Select(a => (a.Id, a.Name)).ToList();
         ConfirmedQuotes = (await _quotes.ListAsync(1, 200, new AgentQuoteRequestListFilter(Status: (int)AgentQuoteStatus.Confirmed)))
             .Items.Select(q => (q.Id, Text: $"{q.ProductName} — {q.AgentName ?? "—"} ({(q.QuotedAmount ?? 0m).ToString("#,##0", CultureInfo.InvariantCulture)})")).ToList();
     }

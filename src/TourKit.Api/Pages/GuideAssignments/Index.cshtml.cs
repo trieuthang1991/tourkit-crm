@@ -76,7 +76,7 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Departures = (await _departures.ListAsync(1, 1000)).Items
+        Departures = (await _departures.ListAsync(1, TranDanhMuc.Chuyen)).Items
             .Select(d => (d.Id, $"{d.Code} — {d.Title}")).ToList();
         Guides = (await _providers.ListAsync(1, 1000, new ProviderListFilter(Type: (int)ProviderType.Guide))).Items
             .Select(p => (p.Id, p.Name)).ToList();

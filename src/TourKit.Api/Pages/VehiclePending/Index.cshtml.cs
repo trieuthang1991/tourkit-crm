@@ -5,6 +5,7 @@ using TourKit.Api.Pages.Shared;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
 
+using TourKit.Api.Web;
 namespace TourKit.Api.Pages.VehiclePending;
 
 // Lịch xe chờ duyệt — 2 khung: LỊCH (FullCalendar của template) và BẢNG (DataTables server-side).
@@ -53,9 +54,9 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Departures = (await _departures.ListAsync(1, 1000)).Items
+        Departures = (await _departures.ListAsync(1, TranDanhMuc.Chuyen)).Items
             .Select(d => (d.Id, $"{d.Code} — {d.Title}")).ToList();
-        Vehicles = (await _vehicles.ListAsync(1, 1000)).Items
+        Vehicles = (await _vehicles.ListAsync(1, TranDanhMuc.Xe)).Items
             .Select(v => (v.Id, $"{v.Name} ({v.SeatType} chỗ)")).ToList();
     }
 

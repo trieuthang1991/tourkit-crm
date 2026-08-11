@@ -97,7 +97,7 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Providers = (await _providers.ListAsync(1, 500)).Items.Select(p => (p.Id.ToString(), p.Name)).ToList();
+        Providers = (await _providers.ListAsync(1, TranDanhMuc.NhaCungCap)).Items.Select(p => (p.Id.ToString(), p.Name)).ToList();
     }
 
     /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí FlightTicketIndividualListFilter hỗ trợ.</summary>

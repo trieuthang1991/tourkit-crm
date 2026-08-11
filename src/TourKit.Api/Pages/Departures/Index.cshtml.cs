@@ -65,7 +65,7 @@ public class IndexModel : TkListPageModel
     {
         Stats = await _svc.GetStatsAsync();
         TourTypes = (await _svc.GetFilterOptionsAsync()).TourTypes;
-        Templates = (await _templates.ListAsync(1, 1000)).Items
+        Templates = (await _templates.ListAsync(1, TranDanhMuc.TourMau)).Items
             .Select(t => (t.Id, $"{t.Code} — {t.Title}")).ToList();
         Users = (await _users.ListAsync()).Select(u => (u.Id, u.FullName)).ToList();
     }
