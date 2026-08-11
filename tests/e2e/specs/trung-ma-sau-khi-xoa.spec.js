@@ -38,7 +38,9 @@ test('/loai-xe — xoá danh mục rồi tạo lại đúng mã đó phải đư
   await expect(dong).toHaveCount(1, { timeout: 20_000 });
   await dong.locator('.js-del').click();
   await page.locator('.swal2-confirm').click();
-  await expect(page.locator('#tbl tbody tr', { hasText: lan1.ma })).toHaveCount(0, { timeout: 20_000 });
+  // Xoá xong trang nạp lại nên ô tìm kiếm trống trở lại — lọc lại trước khi khẳng định đã mất, nếu
+  // không thì bảng quá 20 dòng sẽ cho kết quả 0 vì bản ghi ở trang 2 chứ không phải vì đã xoá.
+  await expect(await locVaTimDong(page, lan1.ma)).toHaveCount(0, { timeout: 20_000 });
 
   // --- Lần 2: tạo lại ĐÚNG mã vừa xoá ---
   const lan2 = await taoLoaiXe();

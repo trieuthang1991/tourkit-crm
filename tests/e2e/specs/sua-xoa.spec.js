@@ -147,14 +147,18 @@ test('/loai-xe — tạo rồi sửa rồi xoá được chính bản ghi vừa 
   await page.locator('#frm button[type="submit"]').click();
   expect(await choKetQuaLuu(page), 'sửa loại xe thất bại').toBeNull();
 
+  // MỌI lần tra danh sách đều phải qua ô tìm kiếm, không chỉ lần đầu: bảng để pageLength 20 nên
+  // khi danh mục vượt 20 dòng thì bản ghi nằm ở trang 2, và bài test đỏ với câu "danh sách vẫn hiện
+  // tên cũ" — một câu mô tả sai hẳn nguyên nhân, khiến người đọc đi tìm lỗi ở chỗ không có.
   await page.goto('/loai-xe');
-  await expect(page.locator('#tbl tbody tr', { hasText: tenMoi }),
-    'sửa xong nhưng danh sách vẫn hiện tên cũ').toHaveCount(1, { timeout: 20_000 });
+  const dongMoi = await locVaTimDong(page, tenMoi);
+  await expect(dongMoi, 'sửa xong nhưng danh sách vẫn hiện tên cũ').toHaveCount(1, { timeout: 20_000 });
 
   // --- Xoá --- (hộp xác nhận là SweetAlert, không phải confirm của trình duyệt)
-  await page.locator('#tbl tbody tr', { hasText: tenMoi }).locator('.js-del').click();
+  await dongMoi.locator('.js-del').click();
   await page.locator('.swal2-confirm').click();
 
-  await expect(page.locator('#tbl tbody tr', { hasText: tenMoi }),
-    'xoá xong nhưng bản ghi vẫn còn trong danh sách').toHaveCount(0, { timeout: 20_000 });
+  // Xoá xong trang tự nạp lại nên ô tìm kiếm trống trở lại — lọc lại trước khi khẳng định đã mất.
+  const conLai = await locVaTimDong(page, tenMoi);
+  await expect(conLai, 'xoá xong nhưng bản ghi vẫn còn trong danh sách').toHaveCount(0, { timeout: 20_000 });
 });
