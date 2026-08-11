@@ -157,3 +157,37 @@ async function moSuaTheoMa(page, ma) {
   await muc.click();
   await expect(page.locator('#oc')).toHaveClass(/show/, { timeout: 15_000 });
 }
+
+/**
+ * Đường AI: tài liệu báo giá (PDF/DOC/DOCX) không có mẫu cố định — mỗi NCC trình bày một kiểu — nên
+ * model dựng lại thành bảng theo đúng cột của mẫu, rồi đi tiếp qua CHÍNH lớp kiểm của đường CSV.
+ *
+ * Gắn @ai vì bài này gọi model thật. Khẳng định cố ý LỎNG: model đọc được bao nhiêu dòng là chuyện
+ * của model, thứ bài này chốt là đường đi có thông suốt không — bóc chữ, dựng bảng đúng cột, ra bảng
+ * xem trước, và KHÔNG ghi gì trước khi người dùng duyệt.
+ */
+test.describe('@ai Nhập bảng giá từ tài liệu', () => {
+  test('Tải file Word báo giá thì AI dựng được bảng xem trước', async ({ trang: page }) => {
+    test.setTimeout(120_000);
+
+    const ma = 'E2E-AI-' + String(Date.now()).slice(-6);
+    await taoNcc(page, ma, KHACH_SAN);
+    await moSuaTheoMa(page, ma);
+    await expect(page.locator('#pnl-dv')).toBeVisible({ timeout: 20_000 });
+
+    await page.locator('#tep-nhap').setInputFiles('fixtures/bao-gia-khach-san.docx');
+
+    // Model mất vài giây tới vài chục giây; chờ rộng tay.
+    await expect(page.locator('#xem-truoc')).toBeVisible({ timeout: 90_000 });
+    await expect(page.locator('#xt-tom-tat')).toContainText(/Đọc được \d+ dòng/);
+
+    // Chưa duyệt thì chưa được ghi gì — luật này không phụ thuộc model đoán đúng hay sai.
+    await expect(page.locator('#ds-dv .tk-dong-dv')).toHaveCount(0);
+
+    const soDong = await page.locator('#xt-dong tr').count();
+    expect(soDong, 'AI không dựng được dòng nào từ tài liệu').toBeGreaterThan(0);
+
+    await page.locator('#btn-ghi-nhap').click();
+    await expect(page.locator('#ds-dv .tk-dong-dv')).toHaveCount(soDong, { timeout: 30_000 });
+  });
+});

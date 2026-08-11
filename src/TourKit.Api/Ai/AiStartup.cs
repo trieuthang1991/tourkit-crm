@@ -56,6 +56,7 @@ public static class AiStartup
         builder.Services.AddScoped<AiRecordSheet>();
         builder.Services.AddScoped<AiReviewer>();
         builder.Services.AddScoped<AiComposer>();
+        builder.Services.AddScoped<AiBangGia>();
     }
 
     /// <summary>

@@ -26,9 +26,11 @@ public class IndexModel : TkListPageModel
     private readonly IPaymentTermService _paymentTerms;
     private readonly IBranchService _branches;
     private readonly IMarketTypeService _marketTypes;
+    private readonly TourKit.Api.Ai.AiBangGia _aiBangGia;
 
     public IndexModel(IProviderService svc, IProviderServiceService providerServices, IServiceItemService serviceItems,
-        IPaymentTermService paymentTerms, IBranchService branches, IMarketTypeService marketTypes)
+        IPaymentTermService paymentTerms, IBranchService branches, IMarketTypeService marketTypes,
+        TourKit.Api.Ai.AiBangGia aiBangGia)
     {
         _svc = svc;
         _providerServices = providerServices;
@@ -36,6 +38,7 @@ public class IndexModel : TkListPageModel
         _paymentTerms = paymentTerms;
         _branches = branches;
         _marketTypes = marketTypes;
+        _aiBangGia = aiBangGia;
     }
 
     public ProviderStatsDto Stats { get; private set; } = new(0, 0, 0);
@@ -180,18 +183,38 @@ public class IndexModel : TkListPageModel
         }
 
         var ncc = await _svc.GetAsync(providerId);
+        var cot = MauNhapDichVu.Cot(ncc.Type).Select(c => c.TieuDe).ToList();
 
         BangNhap bang;
         try
         {
             await using var s = file.OpenReadStream();
-            bang = DocBangTuTep.Doc(s, file.FileName);
+
+            if (DocChuTuTaiLieu.LaTaiLieu(file.FileName))
+            {
+                // Tài liệu báo giá: mỗi NCC trình bày một kiểu nên không có mẫu cố định — AI dựng lại
+                // thành bảng theo đúng cột của mẫu, rồi đi tiếp qua CÙNG một lớp kiểm với đường CSV.
+                var (bangAi, loiAi) = await _aiBangGia.DocAsync(
+                    DocChuTuTaiLieu.Doc(s, file.FileName), cot, TourKit.Api.Ai.AiRecordAccess.ReadUserId(User) ?? Guid.Empty, HttpContext.RequestAborted);
+
+                if (bangAi is null)
+                {
+                    return new JsonResult(Result.Error(loiAi ?? "Không đọc được tài liệu."));
+                }
+
+                bang = bangAi;
+            }
+            else
+            {
+                bang = DocBangTuTep.Doc(s, file.FileName);
+            }
         }
         catch (Exception ex) when (ex is InvalidDataException or FormatException or IOException)
         {
             // Tệp hỏng/không đúng định dạng là lỗi NGƯỜI DÙNG, không phải sự cố hệ thống — nói rõ ra
             // thay vì để nó thành 500 "Đã có lỗi xảy ra".
-            return new JsonResult(Result.Error("Không đọc được tệp. Hãy dùng đúng tệp .csv hoặc .xlsx theo mẫu."));
+            return new JsonResult(Result.Error(
+                "Không đọc được tệp. Hãy dùng tệp .csv/.xlsx theo mẫu, hoặc .pdf/.docx là bản gốc (không phải ảnh scan)."));
         }
 
         var kq = new NhapDichVuService().XemTruoc(bang, ncc.Type);

@@ -28,7 +28,12 @@ public static class AiFeatures
     /// <summary>Nhúng vector cho kho tài liệu quy trình (giai đoạn 3).</summary>
     public const string Embedding = "Embedding";
 
-    /// <summary>Đọc giấy tờ khách gửi vào (OCR) — KHÔNG cần LLM, gọi thẳng dịch vụ OCR.</summary>
+    /// <summary>
+    /// Đọc tài liệu gửi vào rồi dựng lại thành bảng có cấu trúc — dùng cho nhập bảng giá NCC từ tệp
+    /// PDF/DOC/DOCX, nơi mỗi nhà cung cấp trình bày một kiểu nên không thể có mẫu cố định.
+    ///
+    /// Model chỉ khớp chữ vào tên cột cho sẵn; khâu kiểm dữ liệu vẫn do mã tất định làm.
+    /// </summary>
     public const string DocumentRead = "DocumentRead";
 
     /// <summary>Chatbot cho khách hàng cuối (giai đoạn 4) — chạy tiến trình riêng, bộ công cụ hẹp.</summary>
@@ -43,7 +48,7 @@ public static class AiFeatures
             [Summarize] = "Tóm tắt bản ghi",
             [Scoring] = "Chấm điểm khách hàng và cơ hội",
             [Embedding] = "Nhúng vector cho tra cứu tài liệu",
-            [DocumentRead] = "Đọc giấy tờ (OCR)",
+            [DocumentRead] = "Đọc tài liệu thành bảng",
             [CustomerChat] = "Chatbot khách hàng",
         };
 
@@ -63,7 +68,10 @@ public static class AiFeatures
     /// nào thì thêm tên nó vào đây — đúng một dòng.
     /// </summary>
     public static IReadOnlySet<string> Implemented { get; } =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Assistant, Scoring, Summarize, Draft };
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            Assistant, Scoring, Summarize, Draft, DocumentRead,
+        };
 
     /// <summary>Tính năng này đã có code chạy chưa.</summary>
     public static bool IsImplemented(string name) => Implemented.Contains(name);
