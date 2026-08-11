@@ -77,3 +77,93 @@ test.describe('Ô chọn NCC gọi server', () => {
       `endpoint tra cứu trả ${res.status()} cho người chưa đăng nhập`).toBeTruthy();
   });
 });
+
+/**
+ * Màn vé lẻ: vừa đổi ô chọn NCC sang gọi server, vừa đổi 4 ô tiền khỏi type="number".
+ *
+ * Ô tiền ở đây do RAZOR dựng sẵn (khác dòng bảng giá do JS dựng), nên phải đi qua tk.tienAuto —
+ * và mấu chốt là tk.tienSync: bộ điền của tk.form gán theo name, mà name nằm ở ô ẩn, nên không đồng
+ * bộ thì mở sửa một vé có tiền mà ô người dùng nhìn thấy vẫn trống, họ gõ lại và ĐÈ lên số cũ.
+ */
+test.describe('Vé lẻ: ô tiền và ô chọn NCC', () => {
+  test('Không còn ô tiền dùng type=number', async ({ trang: page }) => {
+    await page.goto('/ve-may-bay-le');
+    await page.evaluate(() => window.oc.open(null));
+    await expect(page.locator('#oc')).toHaveClass(/show/, { timeout: 15_000 });
+
+    for (const ten of ['SellAmount', 'ReceivedAmount', 'TotalCost', 'PaidAmount']) {
+      await expect(page.locator(`#frm [data-tien$=".${ten}"]`),
+        `ô ${ten} chưa chuyển sang ô tiền`).toHaveCount(1);
+      await expect(page.locator(`#frm input[type="number"][name$=".${ten}"]`),
+        `ô ${ten} vẫn còn type=number`).toHaveCount(0);
+    }
+  });
+
+  test('Gõ số thì hiện dấu phân cách, giá trị gửi đi vẫn là số thô', async ({ trang: page }) => {
+    await page.goto('/ve-may-bay-le');
+    await page.evaluate(() => window.oc.open(null));
+    await expect(page.locator('#oc')).toHaveClass(/show/, { timeout: 15_000 });
+
+    const nhin = page.locator('#frm [data-tien$=".SellAmount"]');
+    await nhin.fill('1200000');
+
+    await expect(nhin, 'ô tiền không hiện dấu phân cách nghìn').toHaveValue('1.200.000');
+    await expect(page.locator('#frm input[type="hidden"][name$=".SellAmount"]'),
+      'ô ẩn phải mang số thô để model binding đọc được').toHaveValue('1200000');
+  });
+
+  test('Mở sửa vé có tiền thì ô nhìn thấy hiện đúng số, không trống', async ({ trang: page }) => {
+    await page.goto('/ve-may-bay-le');
+
+    const dong = page.locator('.tabulator-row:not(.tabulator-calcs)');
+    await dong.first().waitFor({ state: 'visible', timeout: 20_000 });
+    await dong.first().locator('.tabulator-cell[tabulator-field="__act"]').click();
+
+    const muc = page.locator('.tabulator-menu-item').filter({ hasText: /^Sửa/ }).first();
+    await muc.waitFor({ state: 'visible', timeout: 10_000 });
+    await muc.click();
+    await expect(page.locator('#oc')).toHaveClass(/show/, { timeout: 15_000 });
+
+    const an = await page.locator('#frm input[type="hidden"][name$=".SellAmount"]').inputValue();
+    test.skip(!an || Number(an) === 0, 'Vé này không có tiền để đối chiếu.');
+
+    const nhin = await page.locator('#frm [data-tien$=".SellAmount"]').inputValue();
+    expect(nhin, 'ô tiền nhìn thấy trống trong khi ô ẩn có số — người dùng sẽ gõ đè lên số cũ')
+      .not.toBe('');
+    expect(nhin.replace(/\./g, ''), 'số hiện ra không khớp số đang lưu').toBe(an.split('.')[0]);
+  });
+
+  test('Ô chọn NCC không còn nhúng cả danh mục', async ({ trang: page }) => {
+    await page.goto('/ve-may-bay-le');
+    await expect(page.locator('#f-providerRef option')).toHaveCount(0);
+  });
+});
+
+/**
+ * Quét CẢ SÁU màn có ô chọn NCC.
+ *
+ * Chuyển từng màn thì dễ sót một ô, mà sót thì không có gì báo: ô nạp sẵn vẫn chạy đúng cho tới ngày
+ * danh mục vượt trần. Bài này bắt sót ngay.
+ */
+const MAN_NCC = [
+  { duong: '/ve-may-bay-doan', loc: '#f-providerRef' },
+  { duong: '/ve-may-bay-le', loc: '#f-providerRef' },
+  { duong: '/quy-ve', loc: '#f-providerId' },
+  { duong: '/quy-phong', loc: '#f-providerRef' },
+  { duong: '/booking-dich-vu', loc: '#f-providerId' },
+  { duong: '/phieu-dieu-hanh', loc: '#f-providerId' },
+];
+
+test.describe('Mọi màn có ô chọn NCC đều gọi server', () => {
+  for (const m of MAN_NCC) {
+    test(`${m.duong} — ô lọc NCC không nhúng sẵn danh mục`, async ({ trang: page }) => {
+      const res = await page.goto(m.duong);
+      test.skip(!res || res.status() >= 400, `Không mở được ${m.duong}.`);
+
+      const o = page.locator(m.loc);
+      await expect(o, `không tìm thấy ô lọc NCC ${m.loc}`).toHaveCount(1);
+      await expect(o.locator('option'),
+        'ô lọc NCC vẫn nhúng sẵn option — màn này chưa chuyển sang gọi server').toHaveCount(0);
+    });
+  }
+});

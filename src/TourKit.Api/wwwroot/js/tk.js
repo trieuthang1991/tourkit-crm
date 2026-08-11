@@ -132,6 +132,35 @@
     $el.trigger('change');
   };
 
+
+  /**
+   * Nâng ô tiền do RAZOR dựng sẵn thành cặp "ô hiện thị + ô ẩn".
+   *
+   * Razor chỉ cần đánh dấu <input data-tien-auto name="Input.X" value="0">, phần còn lại làm ở đây —
+   * để chỉ có MỘT bản hiện thực định dạng tiền. Viết lại markup đó bằng tay trong .cshtml là bản thứ
+   * hai, và hai bản sẽ trôi lệch nhau.
+   */
+  tk.tienAuto = function (root) {
+    $(root || document).find('input[data-tien-auto]').each(function () {
+      var ten = this.name, gt = this.value, chuMo = this.getAttribute('placeholder') || '0';
+      $(this).replaceWith(tk.oTien(ten, gt, chuMo));
+    });
+  };
+
+  /**
+   * Đồng bộ ô tiền NHÌN THẤY từ ô ẩn, gọi sau khi nạp dữ liệu vào form.
+   *
+   * Bộ điền của tk.form gán theo name, mà name nằm ở ô ẩn — nên nạp xong thì ô ẩn đúng còn ô người
+   * dùng nhìn thấy vẫn trống. Mở sửa một vé có tiền mà ô hiện 0 thì người dùng gõ lại, và con số họ
+   * gõ đè lên số cũ.
+   */
+  tk.tienSync = function (root) {
+    $(root || document).find('input.tk-tien').each(function () {
+      var $h = $(this).next('input[type="hidden"]');
+      if ($h.length) { this.value = tk.tienDep($h.val()); }
+    });
+  };
+
   tk.escape = function (s) { return $('<div>').text(s == null ? '' : s).html(); };
   tk.trunc = function (s, max) { var e = tk.escape(s); return '<span class="d-inline-block text-truncate align-middle" style="max-width:' + (max || 180) + 'px" title="' + e + '">' + e + '</span>'; };
 
@@ -511,6 +540,7 @@
 
     // Select2 (search + tags multi) trong offcanvas
     if ($.fn.select2) {
+      tk.tienAuto($form);
       $form.find('.tk-s2').each(function () { $(this).select2({ dropdownParent: $(ocEl), width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || '' }); });
       $form.find('.tk-s2-tags').each(function () { $(this).select2({ dropdownParent: $(ocEl), width: '100%', multiple: true, placeholder: $(this).data('placeholder') || '' }); });
     }
@@ -586,6 +616,9 @@
         key = key.charAt(0).toLowerCase() + key.slice(1);
         setField(name, data ? data[key] : macDinh(this));
       });
+      // Ô tiền: name nằm ở ô ẩn nên vòng điền ở trên chỉ chạm được ô ẩn. Không đồng bộ thì mở sửa
+      // một bản ghi có tiền mà ô người dùng nhìn thấy vẫn trống — họ gõ lại và đè lên số cũ.
+      tk.tienSync($form);
       if (opts.fill) { opts.fill($form, data); }
       var lbl = ocEl.querySelector('.offcanvas-title');
       if (lbl && opts.title) { lbl.textContent = (data ? ('Sửa ' + opts.title) : ('Thêm ' + opts.title)); }

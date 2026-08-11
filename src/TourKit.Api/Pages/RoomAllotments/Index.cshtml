@@ -81,7 +81,7 @@
       <div class="col-md-2"><input type="text" id="f-province" class="form-control" placeholder="Tỉnh thành" /></div>
       <div class="col-md-2"><input type="text" id="f-market" class="form-control" placeholder="Thị trường" /></div>
       <div class="col-md-2">
-        <select id="f-providerRef" class="form-select tk-s2f" data-placeholder="Nhà cung cấp"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
+        <select id="f-providerRef" class="form-select" data-placeholder="Nhà cung cấp"></select>
       </div>
       <div class="col-md-3 d-flex gap-2">
         <select id="f-rating" class="form-select"><option value="">Hạng sao</option><option value="1">1★</option><option value="2">2★</option><option value="3">3★</option><option value="4">4★</option><option value="5">5★</option></select>
@@ -158,10 +158,7 @@
            một mã kiểu "KS001" sẽ tạo ra dòng không bao giờ lọc ra được. *@
         <div class="col-6 mb-3">
           <label class="form-label">Nhà cung cấp <span class="text-danger">*</span></label>
-          <select name="Input.ProviderRef" class="form-select tk-s2" data-placeholder="Chọn nhà cung cấp">
-            <option value=""></option>
-            @foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }
-          </select>
+          <select name="Input.ProviderRef" class="form-select" data-placeholder="Chọn nhà cung cấp"></select>
         </div>
         <div class="col-6 mb-3"><label class="form-label">Tên dịch vụ / Phòng <span class="text-danger">*</span></label><input type="text" name="Input.ServiceName" class="form-control" placeholder="VD: Deluxe Double" /></div>
       </div>
@@ -328,6 +325,12 @@
 
     $(function () {
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
+      // Ô chọn NCC gọi SERVER — xem ghi chú ở màn vé đoàn và TranDanhMuc.
+      tk.s2ajax('#f-providerRef', { url: '?handler=ProviderLookup', placeholder: 'Nhà cung cấp' });
+      tk.s2ajax('#frm [name="Input.ProviderRef"]', {
+        url: '?handler=ProviderLookup', parent: '#oc', placeholder: 'Chọn nhà cung cấp'
+      });
       if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
 
       var g = tk.g, esc = g.esc, money = g.money;
@@ -396,7 +399,12 @@
 
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'ô quỹ phòng',
         rules: { 'Input.ProviderRef': { required: true }, 'Input.ServiceName': { required: true }, 'Input.Date': { required: true } },
-        messages: { 'Input.ProviderRef': { required: 'Bắt buộc nhập mã NCC' }, 'Input.ServiceName': { required: 'Bắt buộc nhập tên dịch vụ/phòng' }, 'Input.Date': { required: 'Bắt buộc chọn ngày' } } });
+        messages: { 'Input.ProviderRef': { required: 'Bắt buộc nhập mã NCC' }, 'Input.ServiceName': { required: 'Bắt buộc nhập tên dịch vụ/phòng' }, 'Input.Date': { required: 'Bắt buộc chọn ngày' } },
+        // Ô NCC nay gọi server nên lúc mở sửa chưa có option nào cho giá trị đang lưu. Không nạp sẵn
+        // nhãn thì ô trống, và lần Lưu kế tiếp ghi null đè lên mã NCC — mất liên kết, không báo gì.
+        fill: function ($form, data) {
+          tk.s2set($form.find('[name="Input.ProviderRef"]'), data && data.providerRef, data && data.providerName);
+        } });
 
       // ---- Ô lưới: mở offcanvas sửa đúng ô quỹ đang bấm (dữ liệu lấy từ ma trận đã nạp) ----
       $('#grid tbody').on('click', '.tk-gcell', function () {

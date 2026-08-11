@@ -57,7 +57,7 @@
     <div class="row g-2 align-items-center">
       <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Mã phiếu / NCC / tên dịch vụ" /></div>
       <div class="col-md-4">
-        <select id="f-providerId" class="form-select tk-s2f" data-placeholder="Nhà cung cấp"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
+        <select id="f-providerId" class="form-select" data-placeholder="Nhà cung cấp"></select>
       </div>
       <div class="col-md-3 d-flex gap-2">
         <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm kiếm</button>
@@ -111,6 +111,9 @@
     $(function () {
       var g = tk.g, esc = g.esc, money = g.money;
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
+      // Ô lọc NCC gọi SERVER — xem ghi chú ở màn vé đoàn và TranDanhMuc.
+      tk.s2ajax('#f-providerId', { url: '?handler=ProviderLookup', placeholder: 'Nhà cung cấp' });
 
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Pay',
         rules: { 'Input.PaidAmount': { required: true, min: 0 } },

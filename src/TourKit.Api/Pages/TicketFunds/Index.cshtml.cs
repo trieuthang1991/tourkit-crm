@@ -57,7 +57,7 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Providers = (await _providers.ListAsync(1, TranDanhMuc.NhaCungCap)).Items.Select(p => (p.Id, p.Name)).ToList();
+        // Ô chọn NCC nay gọi server (?handler=ProviderLookup) nên không nạp danh mục xuống trang nữa.
     }
 
     /// <summary>

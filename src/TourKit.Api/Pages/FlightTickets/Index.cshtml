@@ -128,7 +128,7 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Nhà cung cấp</label>
-        <select name="Input.ProviderRef" class="form-select tk-s2" data-placeholder="Chọn nhà cung cấp">
+        <select name="Input.ProviderRef" class="form-select" data-placeholder="Chọn nhà cung cấp">
         </select>
       </div>
       <div class="mb-3"><label class="form-label">Ngày đi</label><input type="text" name="Input.DepartureDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
@@ -229,7 +229,13 @@
         rules: { 'Input.Pnr': { required: true } }, messages: { 'Input.Pnr': { required: 'Bắt buộc nhập PNR' } },
         // Ref thị trường/NCC có thể là id legacy KHÔNG nằm trong danh mục → thêm option tạm để không mất giá trị khi lưu.
         fill: function ($form, data) {
-          [['Input.MarketRef', 'marketRef', 'marketName'], ['Input.ProviderRef', 'providerRef', 'providerName']].forEach(function (m) {
+          // NCC nay là ô GỌI SERVER: phải dựng lại đúng một lựa chọn mang TÊN. Để nó đi chung vòng
+          // lặp dưới thì keepLegacyOption của tk.form đã kịp chèn một option nhãn là chính cái id,
+          // vòng lặp thấy option đã tồn tại nên không thêm nhãn đẹp nữa — người dùng đọc ra một chuỗi
+          // GUID thay vì tên nhà cung cấp.
+          tk.s2set($form.find('[name="Input.ProviderRef"]'), data && data.providerRef, data && data.providerName);
+
+          [['Input.MarketRef', 'marketRef', 'marketName']].forEach(function (m) {
             var $sel = $form.find('[name="' + m[0] + '"]');
             var val = data ? data[m[1]] : '';
             if (val && !$sel.find('option[value="' + val + '"]').length) {

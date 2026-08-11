@@ -60,7 +60,7 @@
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / mô tả dịch vụ" /></div>
       <div class="col-md-2">
-        <select id="f-providerId" class="form-select tk-s2f" data-placeholder="Nhà cung cấp"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
+        <select id="f-providerId" class="form-select" data-placeholder="Nhà cung cấp"></select>
       </div>
       <div class="col-md-2">
         <select id="f-status" class="form-select tk-auto"><option value="">Trạng thái</option><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
@@ -96,6 +96,9 @@
     $(function () {
       var g = tk.g, esc = g.esc, money = g.money;
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
+      // Ô lọc NCC gọi SERVER — xem ghi chú ở màn vé đoàn và TranDanhMuc.
+      tk.s2ajax('#f-providerId', { url: '?handler=ProviderLookup', placeholder: 'Nhà cung cấp' });
 
       var grid = tk.grid('#grid-service-bookings', {
         // Mọi tiêu chí đẩy xuống SERVER (ServiceBookingListFilter) — không lọc ở client.

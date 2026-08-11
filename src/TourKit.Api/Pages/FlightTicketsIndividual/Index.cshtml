@@ -66,7 +66,7 @@
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã / PNR / khách / số vé" /></div>
       <div class="col-md-3">
-        <select id="f-providerRef" class="form-select tk-s2f" data-placeholder="Nhà cung cấp / hãng"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
+        <select id="f-providerRef" class="form-select" data-placeholder="Nhà cung cấp / hãng"></select>
       </div>
       <div class="col-md-3">
         <select id="f-status" class="form-select tk-auto">
@@ -117,9 +117,7 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Nhà cung cấp / hãng</label>
-        <select name="Input.ProviderRef" class="form-select tk-s2" data-placeholder="Chọn nhà cung cấp">
-          <option value=""></option>
-          @foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }
+        <select name="Input.ProviderRef" class="form-select" data-placeholder="Chọn nhà cung cấp">
         </select>
       </div>
       <div class="row">
@@ -134,12 +132,12 @@
         <div class="col-6 mb-3"><label class="form-label">Ngày về (CO)</label><input type="text" name="Input.ReturnDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Tổng thu</label><input type="number" step="any" name="Input.SellAmount" class="form-control" placeholder="0" value="0" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Thực thu</label><input type="number" step="any" name="Input.ReceivedAmount" class="form-control" placeholder="0" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Tổng thu</label><input type="text" data-tien-auto name="Input.SellAmount" class="form-control" placeholder="0" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Thực thu</label><input type="text" data-tien-auto name="Input.ReceivedAmount" class="form-control" placeholder="0" value="0" /></div>
       </div>
       <div class="row">
-        <div class="col-6 mb-3"><label class="form-label">Tổng chi (giá vốn)</label><input type="number" step="any" name="Input.TotalCost" class="form-control" placeholder="0" value="0" /></div>
-        <div class="col-6 mb-3"><label class="form-label">Thực chi</label><input type="number" step="any" name="Input.PaidAmount" class="form-control" placeholder="0" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Tổng chi (giá vốn)</label><input type="text" data-tien-auto name="Input.TotalCost" class="form-control" placeholder="0" value="0" /></div>
+        <div class="col-6 mb-3"><label class="form-label">Thực chi</label><input type="text" data-tien-auto name="Input.PaidAmount" class="form-control" placeholder="0" value="0" /></div>
       </div>
       <div class="row">
         <div class="col-6 mb-3"><label class="form-label">Hạn chi</label><input type="text" name="Input.PaymentDueDate" class="form-control tk-date" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
@@ -197,6 +195,12 @@
 
     $(function () {
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
+      // Ô chọn NCC gọi SERVER — xem ghi chú ở màn vé đoàn và TranDanhMuc.
+      tk.s2ajax('#f-providerRef', { url: '?handler=ProviderLookup', placeholder: 'Nhà cung cấp / hãng' });
+      tk.s2ajax('#frm [name="Input.ProviderRef"]', {
+        url: '?handler=ProviderLookup', parent: '#oc', placeholder: 'Chọn nhà cung cấp'
+      });
       if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
 
       var g = tk.g, esc = g.esc, money = g.money;
@@ -207,12 +211,10 @@
         messages: { 'Input.Code': { required: 'Bắt buộc nhập mã vé' }, 'Input.CustomerName': { required: 'Bắt buộc nhập tên khách' }, 'Input.Pnr': { required: 'Bắt buộc nhập PNR' } },
         // Ref NCC có thể là id legacy KHÔNG nằm trong danh mục → thêm option tạm để không mất giá trị khi lưu.
         fill: function ($form, data) {
-          var $sel = $form.find('[name="Input.ProviderRef"]');
-          var val = data ? data.providerRef : '';
-          if (val && !$sel.find('option[value="' + val + '"]').length) {
-            $sel.append(new Option(data.providerName || val, val, true, true));
-          }
-          $sel.val(val || null).trigger('change');
+          // Ô GỌI SERVER: dựng lại đúng một lựa chọn mang TÊN. Kiểu "chỉ thêm nếu chưa có option"
+          // không dùng được nữa — keepLegacyOption của tk.form đã kịp chèn một option nhãn là chính
+          // cái id, nên điều kiện đó sai và người dùng đọc ra chuỗi GUID thay vì tên NCC.
+          tk.s2set($form.find('[name="Input.ProviderRef"]'), data && data.providerRef, data && data.providerName);
         }
       });
       // Sau khi lưu qua tk.form → làm tươi KPI + số đếm sub-tab.

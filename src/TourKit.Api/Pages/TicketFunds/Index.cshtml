@@ -61,7 +61,7 @@
     <div class="row g-2 align-items-center">
       <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Mã vé" /></div>
       <div class="col-md-4">
-        <select id="f-providerId" class="form-select tk-s2f" data-placeholder="Nhà cung cấp"><option value=""></option>@foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }</select>
+        <select id="f-providerId" class="form-select" data-placeholder="Nhà cung cấp"></select>
       </div>
       <div class="col-md-3 d-flex gap-2">
         <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
@@ -102,10 +102,7 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Nhà cung cấp</label>
-        <select name="Input.ProviderId" class="form-select tk-s2" data-placeholder="Chọn nhà cung cấp">
-          <option value=""></option>
-          @foreach (var p in Model.Providers) { <option value="@p.Id">@p.Name</option> }
-        </select>
+        <select name="Input.ProviderId" class="form-select" data-placeholder="Chọn nhà cung cấp"></select>
       </div>
       @* Giá dịch vụ LỌC THEO nhà cung cấp đang chọn ở trên — không lọc thì rất dễ gắn nhầm giá của
          NCC khác vào quỹ vé, mà nhìn vào bảng không thể phát hiện ra. *@
@@ -145,6 +142,12 @@
       var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
 
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+
+      // Ô chọn NCC gọi SERVER — xem ghi chú ở màn vé đoàn và TranDanhMuc.
+      tk.s2ajax('#f-providerId', { url: '?handler=ProviderLookup', placeholder: 'Nhà cung cấp' });
+      tk.s2ajax('#frm [name="Input.ProviderId"]', {
+        url: '?handler=ProviderLookup', parent: '#oc', placeholder: 'Chọn nhà cung cấp'
+      });
 
       function refreshStats() {
         $.getJSON('?handler=Stats', function (s) {
@@ -199,6 +202,9 @@
           ocForm.open(row);
           // Nhãn đơn hàng lấy từ chính dòng lưới; nhãn giá dịch vụ phải hỏi server vì lưới không có.
           setPicked('#oc-order', row && row.orderId, row && row.orderCode);
+          // NCC nay cũng là ô gọi server nên phải nạp sẵn nhãn y như hai ô trên — không nạp thì ô
+          // trống khi mở sửa và lần Lưu kế tiếp xoá mất liên kết NCC.
+          setPicked('[name="Input.ProviderId"]', row && row.providerId, row && row.providerName);
           setPicked('#oc-service', null, null);
 
           if (row && row.providerServiceId && row.providerId) {
