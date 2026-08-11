@@ -85,6 +85,53 @@
     try { this.setSelectionRange(vt + (this.value.length - dai), vt + (this.value.length - dai)); } catch (e) { /* ô không hỗ trợ */ }
   });
 
+  // ---- Ô chọn GỌI SERVER (select2 ajax) ----
+  // Dùng khi danh mục có thể lớn: nạp hết vào <option> thì hoặc trang nặng, hoặc phải đặt trần — mà
+  // vượt trần là hỏng IM LẶNG (ô vẫn hiện bình thường, chỉ thiếu lựa chọn, người dùng tưởng dữ liệu
+  // chưa có). Xem TranDanhMuc và TranDanhMucTests.
+  //
+  // opts: { url, placeholder, parent (offcanvas), min (số ký tự tối thiểu), extra() }
+  tk.s2ajax = function (el, opts) {
+    opts = opts || {};
+    var $el = $(el);
+    if (!$el.length || !$.fn.select2) { return $el; }
+
+    return $el.select2({
+      width: '100%',
+      allowClear: true,
+      placeholder: opts.placeholder || $el.data('placeholder') || 'Gõ để tìm…',
+      dropdownParent: opts.parent ? $(opts.parent) : undefined,
+      // minimumInputLength 1: gõ một ký tự là đã lọc được, nhưng vẫn tránh cú gọi rỗng lúc vừa mở.
+      minimumInputLength: opts.min == null ? 1 : opts.min,
+      ajax: {
+        url: opts.url,
+        dataType: 'json',
+        delay: 250,                     // gõ nhanh không bắn một request mỗi phím
+        data: function (p) {
+          var d = { q: p.term };
+          if (opts.extra) { $.extend(d, opts.extra()); }
+          return d;
+        },
+        processResults: function (d) { return d; }
+      }
+    });
+  };
+
+  /**
+   * Nạp sẵn MỘT lựa chọn cho ô gọi server, dùng khi mở sửa bản ghi cũ.
+   *
+   * Ô gọi server lúc mở form thì rỗng vì chưa gõ gì. Không nạp sẵn thì người dùng thấy ô trống, bấm
+   * Lưu là ghi null đè lên khoá ngoại — mất liên kết mà không có gì báo. Đây đúng kiểu mất dữ liệu
+   * đã xảy ra ở form sửa chuyến đi và ở ô tỉnh thành.
+   */
+  tk.s2set = function (el, id, text) {
+    var $el = $(el);
+    if (!$el.length) { return; }
+    $el.empty();
+    if (id) { $el.append(new Option(text || String(id), id, true, true)); }
+    $el.trigger('change');
+  };
+
   tk.escape = function (s) { return $('<div>').text(s == null ? '' : s).html(); };
   tk.trunc = function (s, max) { var e = tk.escape(s); return '<span class="d-inline-block text-truncate align-middle" style="max-width:' + (max || 180) + 'px" title="' + e + '">' + e + '</span>'; };
 
