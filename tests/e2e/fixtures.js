@@ -16,6 +16,22 @@ const BO_QUA = [
 ];
 
 /**
+ * Lỗi tải tài nguyên của MÁY CHỦ NGOÀI thì bỏ qua — lọc theo NGUỒN GỐC, không theo câu chữ.
+ *
+ * Layout dùng chung nạp Public Sans từ fonts.googleapis.com (chủ dự án đã chốt giữ CDN). CDN chập
+ * là cả bộ đỏ ngẫu nhiên, và mỗi lần chập lại báo một kiểu khác nhau: có lần ERR_NAME_NOT_RESOLVED,
+ * có lần 404. Câu 404 KHÔNG chứa URL — chặn theo chữ là không thể phân biệt 404 của CDN với 404 của
+ * chính ứng dụng, tức là sẽ bịt luôn lỗi thật. `location()` thì có URL, nên chặn theo host là chặt.
+ *
+ * An toàn vì mọi tài nguyên của ứng dụng đều nằm ở localhost: bỏ thứ không phải localhost thì không
+ * thể bỏ sót lỗi của ứng dụng. Không rõ nguồn (URL rỗng) thì vẫn tính là lỗi.
+ */
+function cuaMayChuNgoai(url) {
+  if (!url) { return false; }
+  try { return !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(new URL(url).hostname); } catch (e) { return false; }
+}
+
+/**
  * Mọi bài kiểm thử đều theo dõi lỗi JavaScript và tự đỏ nếu có.
  *
  * Đây là lý do chính bộ e2e này tồn tại: bộ kiểm thử C# không chạm tới JavaScript, nên một file
@@ -26,7 +42,11 @@ export const test = base.extend({
   loiTrang: [async ({ page }, use) => {
     const loi = [];
     page.on('pageerror', (e) => loi.push(String(e.message)));
-    page.on('console', (m) => { if (m.type() === 'error') { loi.push(m.text()); } });
+    page.on('console', (m) => {
+      if (m.type() !== 'error') { return; }
+      if (cuaMayChuNgoai(m.location()?.url)) { return; }
+      loi.push(m.text());
+    });
 
     await use(loi);
 
