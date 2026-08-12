@@ -17,16 +17,21 @@ public sealed class TicketFundService(
         var f = filter ?? new TicketFundListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        var all = await repo.ListAsync(t =>
+        // Từ khoá ở đây chỉ khớp MÃ VÉ — cột của chính bảng này, không phải bảng khác. Nên toàn bộ
+        // bộ lọc đẩy được xuống SQL và không cần đường chậm nào: cắt trang ngay ở CSDL.
+        //
+        // ToLower() thay cho StringComparison.OrdinalIgnoreCase: bản có StringComparison KHÔNG dịch
+        // được sang SQL (EF ném lỗi lúc chạy). Phép hạ chữ diễn ra ở Postgres, không ở .NET, nên ba
+        // analyzer dưới đây khuyên sai chỗ.
+        var kwL = kw?.ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        var (pageItems, tong) = await repo.PageAsync(page, size, t => t.CreatedAt, descending: true, t =>
             (f.ProviderId == null || t.ProviderId == f.ProviderId) &&
             (f.OrderId == null || t.OrderId == f.OrderId) &&
             (f.Status == null || t.Status == f.Status) &&
-            (f.IsClosed == null || t.IsClosed == f.IsClosed));
-
-        var filtered = all
-            .Where(t => kw == null || t.TicketCode.Contains(kw, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(t => t.CreatedAt).ToList();
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
+            (f.IsClosed == null || t.IsClosed == f.IsClosed) &&
+            (kwL == null || t.TicketCode.ToLower().Contains(kwL)));
+#pragma warning restore CA1304, CA1311, CA1862
 
         var orderIds = pageItems.Select(t => t.OrderId).ToHashSet();
         var providerIds = pageItems.Where(t => t.ProviderId != null).Select(t => t.ProviderId!.Value).ToHashSet();
@@ -38,7 +43,7 @@ public sealed class TicketFundService(
             OrderCode = orderCodes.GetValueOrDefault(t.OrderId),
             ProviderName = t.ProviderId is { } pid ? providerNames.GetValueOrDefault(pid) : null,
         }).ToList();
-        return new PagedResult<TicketFundDto>(dtos, filtered.Count, page, size);
+        return new PagedResult<TicketFundDto>(dtos, tong, page, size);
     }
 
     public async Task<TicketFundStatsDto> GetStatsAsync()

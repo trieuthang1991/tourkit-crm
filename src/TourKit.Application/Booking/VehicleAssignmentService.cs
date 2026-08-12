@@ -19,19 +19,29 @@ public sealed class VehicleAssignmentService(
     public async Task<PagedResult<VehicleAssignmentDto>> ListAsync(int page, int size, VehicleAssignmentListFilter? filter = null)
     {
         var f = filter ?? new VehicleAssignmentListFilter();
-        var all = await repo.ListAsync(a =>
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        System.Linq.Expressions.Expression<Func<VehicleAssignment, bool>> viTu = a =>
             (f.VehicleId == null || a.VehicleId == f.VehicleId) &&
             (f.DepartureId == null || a.TourDepartureId == f.DepartureId) &&
             (f.Status == null || a.Status == f.Status) &&
             (f.DateFrom == null || a.TimeGo >= f.DateFrom) &&
-            (f.DateTo == null || a.TimeGo <= f.DateTo));
+            (f.DateTo == null || a.TimeGo <= f.DateTo);
+
+        // KHÔNG có từ khoá → cắt trang ngay ở SQL, chỉ làm giàu đúng một trang.
+        if (kw == null)
+        {
+            var (trang, tong) = await repo.PageAsync(
+                page, size, a => a.TimeGo ?? a.CreatedAt, descending: true, viTu);
+            return new PagedResult<VehicleAssignmentDto>(await LamGiauAsync(trang), tong, page, size);
+        }
+
+        var all = await repo.ListAsync(viTu);
 
         // Từ khoá: khớp tên xe / mã-tên chuyến / tài xế. Các trường tên xe & chuyến nằm ở bảng khác,
         // join không dịch được sang SQL → nạp tên cho TOÀN BỘ tập đã lọc rồi so khớp ở bộ nhớ
         // (an toàn cho provider InMemory của test), chạy trên tập đã bị các tiêu chí trên thu hẹp.
-        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
         IReadOnlyList<VehicleAssignment> matched = all;
-        if (kw != null)
         {
             var vIds = all.Select(a => a.VehicleId).ToHashSet();
             var dIds = all.Select(a => a.TourDepartureId).ToHashSet();
@@ -55,14 +65,28 @@ public sealed class VehicleAssignmentService(
         var ordered = matched.OrderByDescending(a => a.TimeGo ?? a.CreatedAt).ToList();
         var pageItems = ordered.Skip((page - 1) * size).Take(size).ToList();
 
-        var vehicleIds = pageItems.Select(a => a.VehicleId).ToHashSet();
-        var departureIds = pageItems.Select(a => a.TourDepartureId).ToHashSet();
+        return new PagedResult<VehicleAssignmentDto>(await LamGiauAsync(pageItems), ordered.Count, page, size);
+    }
+
+    /// <summary>
+    /// Làm giàu tên xe + tên/mã chuyến cho ĐÚNG danh sách truyền vào. Đường nhanh và đường chậm dùng
+    /// CHUNG hàm này — hai bản sao sẽ trôi lệch, mà lệch ở đây nghĩa là cùng dữ liệu hiện ra khác nhau.
+    /// </summary>
+    private async Task<List<VehicleAssignmentDto>> LamGiauAsync(IReadOnlyList<VehicleAssignment> ds)
+    {
+        if (ds.Count == 0)
+        {
+            return [];
+        }
+
+        var vehicleIds = ds.Select(a => a.VehicleId).ToHashSet();
+        var departureIds = ds.Select(a => a.TourDepartureId).ToHashSet();
         var vehicles = (await vehicleRepo.ListAsync(v => vehicleIds.Contains(v.Id)))
             .ToDictionary(v => v.Id, v => v);
         var departures = (await departureRepo.ListAsync(d => departureIds.Contains(d.Id)))
             .ToDictionary(d => d.Id, d => d);
 
-        var dtos = pageItems.Select(a =>
+        return ds.Select(a =>
         {
             vehicles.TryGetValue(a.VehicleId, out var veh);
             departures.TryGetValue(a.TourDepartureId, out var dep);
@@ -73,7 +97,6 @@ public sealed class VehicleAssignmentService(
                 DepartureCode = dep?.Code,
             };
         }).ToList();
-        return new PagedResult<VehicleAssignmentDto>(dtos, ordered.Count, page, size);
     }
 
     public async Task<VehicleAssignmentStatsDto> GetStatsAsync()

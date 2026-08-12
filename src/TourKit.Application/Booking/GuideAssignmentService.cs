@@ -19,19 +19,30 @@ public sealed class GuideAssignmentService(
     public async Task<PagedResult<GuideAssignmentDto>> ListAsync(int page, int size, GuideAssignmentListFilter? filter = null)
     {
         var f = filter ?? new GuideAssignmentListFilter();
-        var all = await repo.ListAsync(a =>
+        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
+
+        System.Linq.Expressions.Expression<Func<TourGuideAssignment, bool>> viTu = a =>
             (f.ProviderId == null || a.ProviderId == f.ProviderId) &&
             (f.DepartureId == null || a.TourDepartureId == f.DepartureId) &&
             (f.Status == null || a.Status == f.Status) &&
             (f.DateFrom == null || a.TimeGo >= f.DateFrom) &&
-            (f.DateTo == null || a.TimeGo <= f.DateTo));
+            (f.DateTo == null || a.TimeGo <= f.DateTo);
+
+        // KHÔNG có từ khoá → cắt trang ngay ở SQL, chỉ làm giàu đúng một trang. Chỉ từ khoá mới buộc
+        // phải nạp cả tập (nó khớp tên HDV và mã/tên chuyến — nằm ở bảng khác, không dịch được).
+        if (kw == null)
+        {
+            var (trang, tong) = await repo.PageAsync(
+                page, size, a => a.TimeGo ?? a.CreatedAt, descending: true, viTu);
+            return new PagedResult<GuideAssignmentDto>(await LamGiauAsync(trang), tong, page, size);
+        }
+
+        var all = await repo.ListAsync(viTu);
 
         // Từ khoá: khớp tên HDV / mã-tên chuyến. Các trường này nằm ở bảng khác, join không dịch được
         // sang SQL → nạp tên cho TOÀN BỘ tập đã lọc rồi so khớp ở bộ nhớ (an toàn cho provider InMemory
         // của test), chạy trên tập đã bị các tiêu chí trên thu hẹp.
-        var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
         IReadOnlyList<TourGuideAssignment> matched = all;
-        if (kw != null)
         {
             var pIds = all.Select(a => a.ProviderId).ToHashSet();
             var dIds = all.Select(a => a.TourDepartureId).ToHashSet();
@@ -53,15 +64,29 @@ public sealed class GuideAssignmentService(
         var ordered = matched.OrderByDescending(a => a.TimeGo ?? a.CreatedAt).ToList();
         var pageItems = ordered.Skip((page - 1) * size).Take(size).ToList();
 
-        // Làm giàu tên HDV + tên/mã chuyến theo lô.
-        var providerIds = pageItems.Select(a => a.ProviderId).ToHashSet();
-        var departureIds = pageItems.Select(a => a.TourDepartureId).ToHashSet();
+        return new PagedResult<GuideAssignmentDto>(await LamGiauAsync(pageItems), ordered.Count, page, size);
+    }
+
+    /// <summary>
+    /// Làm giàu tên HDV + tên/mã chuyến cho ĐÚNG danh sách truyền vào (thường là một trang).
+    /// Tách ra để đường nhanh và đường chậm dùng CHUNG — hai bản sao sẽ trôi lệch, và lệch ở đây
+    /// nghĩa là hai đường cùng dữ liệu mà hiện ra khác nhau.
+    /// </summary>
+    private async Task<List<GuideAssignmentDto>> LamGiauAsync(IReadOnlyList<TourGuideAssignment> ds)
+    {
+        if (ds.Count == 0)
+        {
+            return [];
+        }
+
+        var providerIds = ds.Select(a => a.ProviderId).ToHashSet();
+        var departureIds = ds.Select(a => a.TourDepartureId).ToHashSet();
         var providerNames = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id)))
             .ToDictionary(p => p.Id, p => p.Name);
         var departures = (await departureRepo.ListAsync(d => departureIds.Contains(d.Id)))
             .ToDictionary(d => d.Id, d => d);
 
-        var dtos = pageItems.Select(a =>
+        return ds.Select(a =>
         {
             departures.TryGetValue(a.TourDepartureId, out var dep);
             return Map(a) with
@@ -71,7 +96,6 @@ public sealed class GuideAssignmentService(
                 DepartureCode = dep?.Code,
             };
         }).ToList();
-        return new PagedResult<GuideAssignmentDto>(dtos, ordered.Count, page, size);
     }
 
     public async Task<GuideAssignmentStatsDto> GetStatsAsync()

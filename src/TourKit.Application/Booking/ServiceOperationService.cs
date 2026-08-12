@@ -21,6 +21,18 @@ public sealed class ServiceOperationService(
 {
     public async Task<PagedResult<ServiceOperationDto>> ListAsync(int page, int size, ServiceOperationListFilter? filter = null)
     {
+        var f = filter ?? new ServiceOperationListFilter();
+
+        // Chỉ tiêu chí "trạng thái chi" mới cần tra phiếu chi đã ghi nhận rồi mới lọc được — nó không
+        // phải cột của bảng này. Hai tiêu chí còn lại (NCC, từ khoá) đều là cột thật, nên khi không
+        // lọc theo trạng thái chi thì cắt trang thẳng ở SQL và chỉ làm giàu đúng một trang.
+        if (f.PaymentStatus == null)
+        {
+            var (trang, tong) = await repo.PageAsync(
+                page, size, s => s.StartDate ?? s.CreatedAt, descending: true, ViTu(f));
+            return new PagedResult<ServiceOperationDto>(await LamGiauAsync(trang), tong, page, size);
+        }
+
         var all = await QueryAsync(filter);
         var pageItems = all.Skip((page - 1) * size).Take(size).ToList();
 
@@ -30,6 +42,34 @@ public sealed class ServiceOperationService(
 
         var dtos = pageItems.Select(s => Map(s, providerNames, recognized)).ToList();
         return new PagedResult<ServiceOperationDto>(dtos, all.Count, page, size);
+    }
+
+    /// <summary>Vị từ đẩy được xuống SQL: NCC + từ khoá (mã, mô tả — đều là cột của bảng này).</summary>
+    private static System.Linq.Expressions.Expression<Func<ServiceBooking, bool>> ViTu(ServiceOperationListFilter f)
+    {
+        // ToLower() thay cho StringComparison: bản có StringComparison không dịch được sang SQL.
+        var kwL = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim().ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        return s =>
+            (f.ProviderId == null || s.ProviderId == f.ProviderId) &&
+            (kwL == null || s.Code.ToLower().Contains(kwL) || s.Description.ToLower().Contains(kwL));
+#pragma warning restore CA1304, CA1311, CA1862
+    }
+
+    /// <summary>Làm giàu tên NCC + số đã chi hiệu lực cho ĐÚNG danh sách truyền vào.</summary>
+    private async Task<List<ServiceOperationDto>> LamGiauAsync(IReadOnlyList<ServiceBooking> ds)
+    {
+        if (ds.Count == 0)
+        {
+            return [];
+        }
+
+        var providerIds = ds.Where(s => s.ProviderId is not null).Select(s => s.ProviderId!.Value).ToHashSet();
+        var providerNames = (await providerRepo.ListAsync(p => providerIds.Contains(p.Id)))
+            .ToDictionary(p => p.Id, p => p.Name);
+        var recognized = await BuildRecognizedPaidLookupAsync(ds);
+
+        return ds.Select(s => Map(s, providerNames, recognized)).ToList();
     }
 
     public async Task<ServiceOperationStatsDto> GetStatsAsync(ServiceOperationListFilter? filter = null)

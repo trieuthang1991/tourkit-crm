@@ -20,10 +20,31 @@ public sealed class FlightTicketService(
 {
     public async Task<PagedResult<FlightTicketDto>> ListAsync(int page, int size, FlightTicketListFilter? filter = null)
     {
-        var filtered = await QueryAsync(filter);
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
-        var dtos = await MapManyAsync(pageItems);
-        return new PagedResult<FlightTicketDto>(dtos, filtered.Count, page, size);
+        // Mọi tiêu chí lọc ở màn này đều là CỘT CỦA CHÍNH BẢNG vé (kể cả từ khoá — nó khớp PNR), nên
+        // cắt trang thẳng ở SQL, không cần đường chậm nào.
+        var (pageItems, tong) = await repo.PageAsync(
+            page, size, t => t.DepartureDate ?? t.CreatedAt, descending: true, ViTu(filter));
+        return new PagedResult<FlightTicketDto>(await MapManyAsync(pageItems), tong, page, size);
+    }
+
+    /// <summary>Vị từ dịch được xuống SQL, dùng chung cho danh sách và thống kê.</summary>
+    private static System.Linq.Expressions.Expression<Func<FlightTicket, bool>> ViTu(FlightTicketListFilter? filter)
+    {
+        var f = filter ?? new FlightTicketListFilter();
+        // ToLower() thay cho StringComparison: bản có StringComparison không dịch được sang SQL.
+        var kwL = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim().ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        return t =>
+            (f.MarketRef == null || t.MarketRef == f.MarketRef) &&
+            (f.ProviderRef == null || t.ProviderRef == f.ProviderRef) &&
+            (f.TourType == null || t.TourType == f.TourType) &&
+            (f.Days == null || t.Days == f.Days) &&
+            (f.DepartureFrom == null || (t.DepartureDate != null && t.DepartureDate >= f.DepartureFrom)) &&
+            (kwL == null || t.Pnr.ToLower().Contains(kwL)) &&
+            // string.IsNullOrWhiteSpace KHÔNG dịch được sang SQL — viết tường minh null/rỗng.
+            (f.Assigned == null ||
+                (f.Assigned.Value ? t.OrderRef != null && t.OrderRef != "" : t.OrderRef == null || t.OrderRef == ""));
+#pragma warning restore CA1304, CA1311, CA1862
     }
 
     public async Task<FlightTicketStatsDto> GetStatsAsync(FlightTicketListFilter? filter = null)

@@ -20,10 +20,51 @@ public sealed class FlightTicketIndividualService(
 {
     public async Task<PagedResult<FlightTicketIndividualDto>> ListAsync(int page, int size, FlightTicketIndividualListFilter? filter = null)
     {
-        var filtered = await QueryAsync(filter);
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
-        var dtos = await MapManyAsync(pageItems);
-        return new PagedResult<FlightTicketIndividualDto>(dtos, filtered.Count, page, size);
+        // Mọi tiêu chí — kể cả các tab (chờ chi, chi một phần, tới hạn…) — chỉ dùng CỘT CỦA CHÍNH
+        // BẢNG này và phép tính số học, nên dịch hết được sang SQL. Cắt trang thẳng ở CSDL.
+        var (pageItems, tong) = await repo.PageAsync(
+            page, size, t => t.DepartDate ?? t.CreatedAt, descending: true, ViTu(filter));
+        return new PagedResult<FlightTicketIndividualDto>(await MapManyAsync(pageItems), tong, page, size);
+    }
+
+    /// <summary>Vị từ dịch được xuống SQL, dùng chung cho danh sách và thống kê.</summary>
+    private static System.Linq.Expressions.Expression<Func<FlightTicketIndividual, bool>> ViTu(
+        FlightTicketIndividualListFilter? filter)
+    {
+        var f = filter ?? new FlightTicketIndividualListFilter();
+        var kwL = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim().ToLowerInvariant();
+        var tab = string.IsNullOrWhiteSpace(f.Tab) ? null : f.Tab.Trim();
+        var now = DateTimeOffset.UtcNow;
+        var sapToiHan = now.AddHours(24);
+
+#pragma warning disable CA1304, CA1311, CA1862
+        return t =>
+            (f.ProviderRef == null || t.ProviderRef == f.ProviderRef) &&
+            (f.Status == null || t.Status == f.Status) &&
+            (f.DepartFrom == null || (t.DepartDate != null && t.DepartDate >= f.DepartFrom)) &&
+            (f.DepartTo == null || (t.DepartDate != null && t.DepartDate <= f.DepartTo)) &&
+            (kwL == null
+                || t.Code.ToLower().Contains(kwL)
+                || t.Pnr.ToLower().Contains(kwL)
+                || t.CustomerName.ToLower().Contains(kwL)
+                || (t.TicketCode != null && t.TicketCode.ToLower().Contains(kwL))) &&
+            // Các tab bám ĐÚNG luật của MatchTab — giữ hai bản cùng nghĩa, xem chú thích ở MatchTab.
+            (tab == null
+                || (tab == "new" && t.Status == 0)
+                || (tab == "approved" && t.Status == 1)
+                || (tab == "rejected" && t.Status == 2)
+                || (tab == "pending-pay" && t.TotalCost > 0 && t.PaidAmount <= 0)
+                || (tab == "partial-pay" && t.PaidAmount > 0 && t.PaidAmount < t.TotalCost)
+                || (tab == "success" && t.TotalCost > 0 && t.PaidAmount >= t.TotalCost && t.ReceivedAmount >= t.SellAmount)
+                || (tab == "partial-receive" && t.SellAmount > 0 && t.ReceivedAmount < t.SellAmount)
+                || (tab == "due-soon" && t.TotalCost - t.PaidAmount > 0 && t.PaymentDueDate != null
+                    && t.PaymentDueDate >= now && t.PaymentDueDate <= sapToiHan)
+                || (tab == "overdue" && t.TotalCost - t.PaidAmount > 0 && t.PaymentDueDate != null
+                    && t.PaymentDueDate < now)
+                || (tab != "new" && tab != "approved" && tab != "rejected" && tab != "pending-pay"
+                    && tab != "partial-pay" && tab != "success" && tab != "partial-receive"
+                    && tab != "due-soon" && tab != "overdue"));
+#pragma warning restore CA1304, CA1311, CA1862
     }
 
     public async Task<FlightTicketIndividualStatsDto> GetStatsAsync(FlightTicketIndividualListFilter? filter = null)
@@ -153,6 +194,13 @@ public sealed class FlightTicketIndividualService(
     }
 
     /// <summary>Khớp sub-tab hệ cũ. PayableRemaining = TotalCost − PaidAmount; ReceivableRemaining = SellAmount − ReceivedAmount.</summary>
+    /// <summary>
+    /// Bản trong bộ nhớ của luật tab, dùng cho thống kê và các lối gọi cũ.
+    ///
+    /// CÓ hai bản (ở đây và trong <see cref="ViTu"/>) vì một bản chạy ở SQL, một bản chạy ở C# —
+    /// biểu thức dịch được sang SQL không viết dưới dạng switch được. Sửa luật tab thì phải sửa CẢ
+    /// HAI, nếu không danh sách và thẻ thống kê sẽ đếm khác nhau trên cùng một bộ lọc.
+    /// </summary>
     private static bool MatchTab(FlightTicketIndividual t, string tab, DateTimeOffset now) => tab switch
     {
         "new" => t.Status == 0,
