@@ -28,17 +28,16 @@ public sealed class CampaignService(
         var f = filter ?? new CampaignListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        var all = await repo.ListAsync(c =>
+        // Cả ba tiêu chí đều là cột của chính bảng → cắt trang thẳng ở SQL.
+        var kwL = kw?.ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        var (pageEntities, tong) = await repo.PageAsync(page, size, c => c.CreatedAt, descending: true, c =>
             (f.Channel == null || (int)c.Channel == f.Channel) &&
-            (f.Status == null || c.Status == f.Status));
+            (f.Status == null || c.Status == f.Status) &&
+            (kwL == null || c.Name.ToLower().Contains(kwL)));
+#pragma warning restore CA1304, CA1311, CA1862
 
-        var filtered = all
-            .Where(c => kw == null || c.Name.Contains(kw, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(c => c.CreatedAt)
-            .ToList();
-
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).Select(Map).ToList();
-        return new PagedResult<CampaignDto>(pageItems, filtered.Count, page, size);
+        return new PagedResult<CampaignDto>(pageEntities.Select(Map).ToList(), tong, page, size);
     }
 
     /// <summary>

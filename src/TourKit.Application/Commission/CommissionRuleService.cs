@@ -16,9 +16,23 @@ public sealed class CommissionRuleService(
         var f = filter ?? new CommissionRuleListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        var all = await repo.ListAsync(r =>
+        System.Linq.Expressions.Expression<Func<CommissionRule, bool>> viTu = r =>
             (f.UserId == null || r.UserId == f.UserId) &&
-            (f.Status == null || r.Status == f.Status));
+            (f.Status == null || r.Status == f.Status);
+
+        // Từ khoá khớp TÊN NHÂN VIÊN — nằm ở bảng khác nên phải làm giàu trước mới lọc được. Không
+        // gõ từ khoá thì cắt trang thẳng ở SQL và chỉ tra tên cho đúng một trang.
+        if (kw == null)
+        {
+            var (trang, tong) = await repo.PageAsync(page, size, r => r.Percentage, descending: true, viTu);
+            var idTrang = trang.Select(r => r.UserId).ToHashSet();
+            var tenTrang = (await userRepo.ListAsync(u => idTrang.Contains(u.Id)))
+                .ToDictionary(u => u.Id, u => string.IsNullOrWhiteSpace(u.FullName) ? u.Email : u.FullName);
+            var dtoTrang = trang.Select(r => Map(r) with { UserName = tenTrang.GetValueOrDefault(r.UserId) }).ToList();
+            return new PagedResult<CommissionRuleDto>(dtoTrang, tong, page, size);
+        }
+
+        var all = await repo.ListAsync(viTu);
 
         var userIds = all.Select(r => r.UserId).ToHashSet();
         var userNames = (await userRepo.ListAsync(u => userIds.Contains(u.Id)))

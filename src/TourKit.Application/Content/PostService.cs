@@ -18,24 +18,20 @@ public sealed class PostService(
 
     public async Task<PagedResult<PostDto>> ListAsync(int page, int size, Guid? categoryId, int? status, string? q = null)
     {
-        var items = await repo.ListAsync(p =>
+        // Cả ba tiêu chí (chuyên mục, trạng thái, từ khoá khớp tiêu đề + slug) đều là cột của chính
+        // bảng bài viết → cắt trang thẳng ở SQL. ToLower() thay cho StringComparison vì bản có
+        // StringComparison không dịch được sang SQL; phép hạ chữ diễn ra ở Postgres, không ở .NET.
+        var kwL = string.IsNullOrWhiteSpace(q) ? null : q.Trim().ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        var (pageEntities, tong) = await repo.PageAsync(page, size, p => p.PublishedAt ?? p.CreatedAt, descending: true, p =>
             (categoryId == null || p.CategoryId == categoryId) &&
-            (status == null || p.Status == status));
-
-        // Từ khoá: khớp tiêu đề + slug. EF không dịch được StringComparison nên lọc ở bộ nhớ trên tập
-        // ĐÃ thu hẹp bởi chuyên mục/trạng thái (LINQ-to-objects, an toàn cho provider InMemory của test).
-        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
-        if (kw != null)
-        {
-            items = items.Where(p =>
-                p.Title.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
-                p.Slug.Contains(kw, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
+            (status == null || p.Status == status) &&
+            (kwL == null || p.Title.ToLower().Contains(kwL) || p.Slug.ToLower().Contains(kwL)));
+#pragma warning restore CA1304, CA1311, CA1862
 
         var names = await LoadCategoryNamesAsync();
-        var ordered = items.OrderByDescending(p => p.PublishedAt ?? p.CreatedAt).ToList();
-        var pageItems = ordered.Skip((page - 1) * size).Take(size).Select(p => Map(p, names)).ToList();
-        return new PagedResult<PostDto>(pageItems, ordered.Count, page, size);
+        var pageItems = pageEntities.Select(p => Map(p, names)).ToList();
+        return new PagedResult<PostDto>(pageItems, tong, page, size);
     }
 
     public async Task<PostDto> GetAsync(Guid id)

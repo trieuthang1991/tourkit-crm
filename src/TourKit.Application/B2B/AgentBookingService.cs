@@ -20,14 +20,14 @@ public sealed class AgentBookingService(
         var f = filter ?? new AgentBookingListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        var all = await repo.ListAsync(b =>
+        // Cả ba tiêu chí đều là cột của chính bảng → cắt trang thẳng ở SQL.
+        var kwL = kw?.ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        var (pageItems, tong) = await repo.PageAsync(page, size, b => b.CreatedAt, descending: true, b =>
             (f.AgentId == null || b.AgentId == f.AgentId) &&
-            (f.Status == null || b.Status == f.Status));
-
-        var filtered = all
-            .Where(b => kw == null || b.Code.Contains(kw, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(b => b.CreatedAt).ToList();
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
+            (f.Status == null || b.Status == f.Status) &&
+            (kwL == null || b.Code.ToLower().Contains(kwL)));
+#pragma warning restore CA1304, CA1311, CA1862
 
         var agentIds = pageItems.Select(b => b.AgentId).ToHashSet();
         var agentNames = (await agentRepo.ListAsync(a => agentIds.Contains(a.Id))).ToDictionary(a => a.Id, a => a.Name);
@@ -35,7 +35,7 @@ public sealed class AgentBookingService(
         var dtos = pageItems
             .Select(b => new AgentBookingSummaryDto(b.Id, b.AgentId, b.QuoteRequestId, b.Code, b.TotalAmount, b.Status, agentNames.GetValueOrDefault(b.AgentId)))
             .ToList();
-        return new PagedResult<AgentBookingSummaryDto>(dtos, filtered.Count, page, size);
+        return new PagedResult<AgentBookingSummaryDto>(dtos, tong, page, size);
     }
 
     public async Task<AgentBookingStatsDto> GetStatsAsync()

@@ -21,20 +21,20 @@ public sealed class AgentQuoteRequestService(
         var f = filter ?? new AgentQuoteRequestListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        var all = await repo.ListAsync(r =>
+        // Cả ba tiêu chí đều là cột của chính bảng → cắt trang thẳng ở SQL.
+        var kwL = kw?.ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        var (pageItems, tong) = await repo.PageAsync(page, size, r => r.CreatedAt, descending: true, r =>
             (f.AgentId == null || r.AgentId == f.AgentId) &&
-            (f.Status == null || (int)r.Status == f.Status));
-
-        var filtered = all
-            .Where(r => kw == null || r.ProductName.Contains(kw, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(r => r.CreatedAt).ToList();
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
+            (f.Status == null || (int)r.Status == f.Status) &&
+            (kwL == null || r.ProductName.ToLower().Contains(kwL)));
+#pragma warning restore CA1304, CA1311, CA1862
 
         var agentIds = pageItems.Select(r => r.AgentId).ToHashSet();
         var agentNames = (await agentRepo.ListAsync(a => agentIds.Contains(a.Id))).ToDictionary(a => a.Id, a => a.Name);
 
         var dtos = pageItems.Select(r => Map(r) with { AgentName = agentNames.GetValueOrDefault(r.AgentId) }).ToList();
-        return new PagedResult<AgentQuoteRequestDto>(dtos, filtered.Count, page, size);
+        return new PagedResult<AgentQuoteRequestDto>(dtos, tong, page, size);
     }
 
     public async Task<AgentQuoteStatsDto> GetStatsAsync()

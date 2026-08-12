@@ -381,13 +381,28 @@
       bootstrap.Modal.getOrCreateInstance(document.getElementById('huy-modal')).show();
     }
 
-    /** Cộng lại giá trị dự kiến khi người dùng gõ — đúng công thức server dùng. */
+    /**
+     * Cộng lại giá trị dự kiến khi người dùng gõ — đúng công thức server dùng.
+     *
+     * Ô TIỀN đọc từ ô NHÌN THẤY rồi bỏ dấu phân cách, KHÔNG đọc ô ẩn. Lý do là thứ tự sự kiện: ô ẩn
+     * do một bộ lắng nghe gắn ở `document` (trong tk.js) cập nhật, còn hàm này chạy từ bộ lắng nghe
+     * gắn ở `#frm` — mà sự kiện nổi bọt từ trong ra ngoài nên `#frm` chạy TRƯỚC `document`. Đọc ô ẩn
+     * ở đây là đọc giá trị của lần gõ TRƯỚC, và tổng thiếu đúng ô người dùng vừa nhập.
+     *
+     * Lỗi này từng xuất hiện, được sửa bằng cách nghe thêm `input.tk-tien` — nhưng cách đó chỉ làm
+     * nó xảy ra ít hơn chứ không hết, vì thứ tự nổi bọt vẫn vậy. Đọc thẳng ô nhìn thấy thì không còn
+     * phụ thuộc thứ tự nào nữa.
+     */
     function tinhTong() {
       var $f = $('#frm');
       function so(ten) { return Number($f.find('[name="Input.' + ten + '"]').val()) || 0; }
-      // Ô tiền giữ số thô ở ô ẩn (tk.tienAuto), nên đọc theo name sẽ ra đúng số.
-      var t = so('AdultQty') * so('PriceAdult') + so('ChildQty') * so('PriceChild')
-            + so('ChildSmallQty') * so('PriceChildSmall') + so('BabyQty') * so('PriceBaby');
+      function tien(ten) {
+        var $o = $f.find('[data-tien$=".' + ten + '"]');
+        return $o.length ? Number(tk.tienTho($o.val())) || 0 : so(ten);
+      }
+
+      var t = so('AdultQty') * tien('PriceAdult') + so('ChildQty') * tien('PriceChild')
+            + so('ChildSmallQty') * tien('PriceChildSmall') + so('BabyQty') * tien('PriceBaby');
       $('#tong-gia-tri').text(tk.money(t));
     }
 

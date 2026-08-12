@@ -16,11 +16,24 @@ public sealed class CustomerCommissionRuleService(
     {
         var f = filter ?? new CustomerCommissionRuleListFilter();
 
-        var all = await repo.ListAsync(r =>
+        System.Linq.Expressions.Expression<Func<CustomerCommissionRule, bool>> viTu = r =>
             (f.CustomerType == null || r.CustomerType == f.CustomerType) &&
-            (f.Status == null || r.Status == f.Status));
+            (f.Status == null || r.Status == f.Status);
 
         var names = (await customerTypeRepo.ListAsync()).ToDictionary(t => t.Code, t => t.Name);
+
+        // Từ khoá khớp TÊN LOẠI KHÁCH — lấy từ danh mục nên phải làm giàu trước mới lọc được. Không
+        // gõ từ khoá thì cắt trang thẳng ở SQL.
+        if (string.IsNullOrWhiteSpace(f.Q))
+        {
+            var (trang, tong) = await repo.PageAsync(page, size, r => r.Percentage, descending: true, viTu);
+            var dtoTrang = trang
+                .Select(r => Map(r) with { CustomerTypeName = names.GetValueOrDefault(r.CustomerType) })
+                .ToList();
+            return new PagedResult<CustomerCommissionRuleDto>(dtoTrang, tong, page, size);
+        }
+
+        var all = await repo.ListAsync(viTu);
 
         var enriched = all
             .Select(r => Map(r) with { CustomerTypeName = names.GetValueOrDefault(r.CustomerType) })

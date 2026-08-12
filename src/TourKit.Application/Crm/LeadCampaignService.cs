@@ -20,13 +20,13 @@ public sealed class LeadCampaignService(
         var f = filter ?? new LeadCampaignListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        var all = await repo.ListAsync(c => f.CreatedByUserId == null || c.CreatedByUserId == f.CreatedByUserId);
-        var filtered = all
-            .Where(c => kw == null || c.Name.Contains(kw, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(c => c.CreatedAt)
-            .ToList();
-
-        var pageItems = filtered.Skip((page - 1) * size).Take(size).ToList();
+        // Hai tiêu chí đều là cột của chính bảng → cắt trang thẳng ở SQL.
+        var kwL = kw?.ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        var (pageItems, tong) = await repo.PageAsync(page, size, c => c.CreatedAt, descending: true, c =>
+            (f.CreatedByUserId == null || c.CreatedByUserId == f.CreatedByUserId) &&
+            (kwL == null || c.Name.ToLower().Contains(kwL)));
+#pragma warning restore CA1304, CA1311, CA1862
 
         var leadsByCampaign = (await leadRepo.ListAsync(l => l.CampaignId != null))
             .GroupBy(l => l.CampaignId!.Value)
@@ -34,7 +34,7 @@ public sealed class LeadCampaignService(
         var userNames = (await userRepo.ListAsync()).ToDictionary(u => u.Id, u => u.FullName);
 
         var dtos = pageItems.Select(c => Map(c, leadsByCampaign.GetValueOrDefault(c.Id, []), userNames)).ToList();
-        return new PagedResult<LeadCampaignDto>(dtos, filtered.Count, page, size);
+        return new PagedResult<LeadCampaignDto>(dtos, tong, page, size);
     }
 
     public async Task<LeadCampaignStatsDto> GetStatsAsync()
