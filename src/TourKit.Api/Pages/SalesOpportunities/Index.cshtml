@@ -515,12 +515,33 @@
         // Không mời người dùng làm việc chắc chắn bị từ chối: cơ hội đã chốt thì khoá hết.
         if (!r.convertedOrderId) {
           if (r.stageCode !== HUY) {
+            items.push({ label: '<i class="ti ti-checkbox me-2"></i>Chốt thành đơn', action: function () { chotDon(r); } });
             items.push({ label: '<i class="ti ti-circle-x me-2"></i>Huỷ cơ hội', action: function () { moHopHuy(r.id); } });
           }
           items.push({ separator: true });
           items.push({ label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá cơ hội</span>', action: function () { xoa(r); } });
         }
         return items;
+      }
+
+      /**
+       * Chốt cơ hội thành đơn thật. Hỏi lại trước vì đây là bước MỘT CHIỀU: chốt xong thì cơ hội bị
+       * khoá sửa/xoá/chuyển cột, vì số liệu của nó đã đi vào đơn hàng.
+       */
+      function chotDon(r) {
+        tk.confirmWarn({
+          title: 'Chốt cơ hội thành đơn?',
+          text: 'Sẽ tạo đơn thật cho ' + r.soKhach + ' khách, giá trị ' + tk.money(r.estimatedValue)
+              + ' đ. Sau khi chốt, cơ hội này không sửa hay xoá được nữa.',
+          confirm: 'Chốt đơn'
+        }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData(); fd.append('id', r.id);
+          tk.post('?handler=ChotDon', fd).then(function (res) {
+            if (res && res.isSuccess) { grid.reload(); tk.toast(res.message); }
+            else { tk.error((res && res.message) || 'Không chốt được đơn.'); }
+          });
+        });
       }
 
       function xoa(r) {

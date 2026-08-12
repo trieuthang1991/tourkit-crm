@@ -3,7 +3,17 @@ using TourKit.Shared.Enums;
 namespace TourKit.Application.Booking.Dtos;
 
 /// <summary>Yêu cầu đặt khách (dùng chung giữa "đặt chốt ngay" và "giữ chỗ").</summary>
-public sealed record CreateBookingDto(Guid CustomerId, int AdultQty, int ChildQty, int ChildSmallQty, int BabyQty);
+/// <summary>
+/// Đặt khách lên chuyến.
+///
+/// <paramref name="OpportunityId"/> — cơ hội bán hàng sinh ra đơn này, nếu có. Đây là cách hệ cũ nối
+/// hai thứ lại: thủ tục <c>uspInsertTourSampleCustomer_V4</c> nhận mã phiếu, tạo <c>tour_customers</c>
+/// và <c>Orders</c> xong MỚI quay lại đánh dấu phiếu đã chốt. Làm ngược lại — cho cơ hội tự sinh đơn —
+/// sẽ đẻ ra đường tạo đơn thứ hai, lệch luật sức chứa và giá với đường đang có.
+/// </summary>
+public sealed record CreateBookingDto(
+    Guid CustomerId, int AdultQty, int ChildQty, int ChildSmallQty, int BabyQty,
+    Guid? OpportunityId = null);
 
 /// <summary>
 /// Giá chỗ truyền tường minh (thay vì lấy từ mẫu tour) — dùng cho chuyến RIÊNG FIT không template:

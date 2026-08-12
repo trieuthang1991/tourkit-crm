@@ -27,6 +27,7 @@ public sealed class BookingService(
     IRepository<PaymentVoucher> paymentRepo,
     IRepository<MarketType> marketRepo,
     IRepository<Invoice> invoiceRepo,
+    IRepository<SalesOpportunity> opportunityRepo,
     IOrderQueries orderQueries) : IBookingService
 {
     public async Task<OrderDto> CreateBookingAsync(Guid departureId, CreateBookingDto dto, SeatPrices? priceOverride = null)
@@ -34,7 +35,50 @@ public sealed class BookingService(
         var (order, _) = await BuildAsync(
             departureId, dto.CustomerId, dto.AdultQty, dto.ChildQty, dto.ChildSmallQty, dto.BabyQty,
             isHold: false, priceOverride);
+
+        await ChotCoHoiAsync(dto.OpportunityId, order.Id);
+
         return MapOrder(order);
+    }
+
+    /// <summary>
+    /// Đánh dấu cơ hội đã CHỐT ĐƠN — chỉ chạy khi đơn thật đã được tạo xong.
+    ///
+    /// Đây là lý do cột "Chốt đơn" không đặt tay được ở màn Cơ hội: nó phải có một đơn thật phía sau.
+    /// Bám đúng thứ tự của hệ cũ (<c>uspInsertTourSampleCustomer_V4</c>): tạo chỗ và đơn trước, cập
+    /// nhật phiếu sau.
+    ///
+    /// KHÔNG gọi từ <see cref="CreateHoldAsync"/>: giữ chỗ chưa phải chốt deal — khách vẫn có thể bỏ,
+    /// và chỗ giữ tự nhả khi hết hạn. Đánh dấu chốt ở đó thì phễu đầy những cơ hội "đã chốt" mà tiền
+    /// chưa bao giờ về.
+    /// </summary>
+    private async Task ChotCoHoiAsync(Guid? opportunityId, Guid orderId)
+    {
+        if (opportunityId is not { } id)
+        {
+            return;
+        }
+
+        var coHoi = await opportunityRepo.GetByIdAsync(id)
+            ?? throw new ValidationAppException("Cơ hội không tồn tại.");
+
+        if (coHoi.ConvertedOrderId is not null)
+        {
+            throw new ConflictException("Cơ hội này đã chốt thành đơn khác rồi.");
+        }
+
+        // Cơ hội ĐÃ HUỶ thì không chốt được. Thiếu chốt chặn này thì một cơ hội đang nằm trong thống
+        // kê "lý do mất khách" vẫn sinh ra đơn thật — hai báo cáo đá nhau và không bên nào sai rõ
+        // ràng để lần ra. Lỗ hổng này lộ ra vì dữ liệu mẫu vô tình gắn chuyến vào một cơ hội đã huỷ.
+        if (coHoi.StageCode == OpportunityStageCode.Huy)
+        {
+            throw new ConflictException("Cơ hội đã huỷ, không chốt thành đơn được — chuyển nó ra khỏi cột Huỷ trước.");
+        }
+
+        coHoi.ConvertedOrderId = orderId;
+        coHoi.StageCode = OpportunityStageCode.ChotDon;
+        opportunityRepo.Update(coHoi);
+        await opportunityRepo.SaveChangesAsync();
     }
 
     public async Task<SeatDto> CreateHoldAsync(Guid departureId, CreateBookingDto dto)

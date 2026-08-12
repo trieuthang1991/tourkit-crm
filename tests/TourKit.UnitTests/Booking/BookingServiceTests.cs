@@ -22,7 +22,8 @@ public sealed class BookingServiceTests
         FakeRepository<Provider>? providerRepo = null,
         FakeRepository<PaymentVoucher>? paymentRepo = null,
         FakeRepository<MarketType>? marketRepo = null,
-        FakeRepository<Invoice>? invoiceRepo = null)
+        FakeRepository<Invoice>? invoiceRepo = null,
+        FakeRepository<SalesOpportunity>? opportunityRepo = null)
         => new(
             departureRepo ?? new FakeRepository<TourDeparture>(),
             seatRepo ?? new FakeRepository<TourCustomer>(),
@@ -39,6 +40,7 @@ public sealed class BookingServiceTests
             paymentRepo ?? new FakeRepository<PaymentVoucher>(),
             marketRepo ?? new FakeRepository<MarketType>(),
             invoiceRepo ?? new FakeRepository<Invoice>(),
+            opportunityRepo ?? new FakeRepository<SalesOpportunity>(),
             new FakeOrderQueries(orderRepo ?? new FakeRepository<Order>(), receiptRepo ?? new FakeRepository<ReceiptVoucher>()));
 
     /// <summary>
@@ -126,6 +128,109 @@ public sealed class BookingServiceTests
 
         Assert.Equal(13_000_000m, order.TotalRevenue);   // 2*5tr + 1*3tr
         Assert.Equal(OrderStatus.Confirmed, order.Status);
+    }
+
+    // ---- Chốt cơ hội thành đơn (B3) ----
+    // Hệ cũ nối hai thứ theo thứ tự: tạo chỗ + đơn TRƯỚC, đánh dấu phiếu SAU
+    // (uspInsertTourSampleCustomer_V4). Đây là lý do cột "Chốt đơn" ở màn Cơ hội không đặt tay được.
+
+    [Fact]
+    public async Task Tao_don_kem_co_hoi_thi_danh_dau_co_hoi_da_chot()
+    {
+        var (departureRepo, templateRepo, customerRepo, departureId, customerId) =
+            await SeedAsync(totalSlots: 30, priceAdult: 5_000_000m);
+        var coHoiRepo = new FakeRepository<SalesOpportunity>();
+        var coHoi = new SalesOpportunity { Code = "CH-01", Title = "Hỏi Đà Nẵng", ContactName = "Chị Lan" };
+        await coHoiRepo.AddAsync(coHoi);
+        await coHoiRepo.SaveChangesAsync();
+
+        var service = NewService(departureRepo: departureRepo, templateRepo: templateRepo,
+            customerRepo: customerRepo, opportunityRepo: coHoiRepo);
+
+        var don = await service.CreateBookingAsync(departureId,
+            new CreateBookingDto(customerId, 2, 0, 0, 0, OpportunityId: coHoi.Id));
+
+        var sau = await coHoiRepo.GetByIdAsync(coHoi.Id);
+        Assert.Equal(don.Id, sau!.ConvertedOrderId);
+        Assert.Equal(OpportunityStageCode.ChotDon, sau.StageCode);
+    }
+
+    [Fact]
+    public async Task Chot_lai_co_hoi_da_chot_thi_tu_choi()
+    {
+        var (departureRepo, templateRepo, customerRepo, departureId, customerId) =
+            await SeedAsync(totalSlots: 30, priceAdult: 5_000_000m);
+        var coHoiRepo = new FakeRepository<SalesOpportunity>();
+        var coHoi = new SalesOpportunity
+        {
+            Code = "CH-02", Title = "Đã chốt", ContactName = "Anh Bình",
+            ConvertedOrderId = Guid.NewGuid(), StageCode = OpportunityStageCode.ChotDon,
+        };
+        await coHoiRepo.AddAsync(coHoi);
+        await coHoiRepo.SaveChangesAsync();
+
+        var service = NewService(departureRepo: departureRepo, templateRepo: templateRepo,
+            customerRepo: customerRepo, opportunityRepo: coHoiRepo);
+
+        await Assert.ThrowsAsync<ConflictException>(() => service.CreateBookingAsync(departureId,
+            new CreateBookingDto(customerId, 1, 0, 0, 0, OpportunityId: coHoi.Id)));
+    }
+
+    [Fact]
+    public async Task Giu_cho_KHONG_danh_dau_co_hoi_da_chot()
+    {
+        // Giữ chỗ chưa phải chốt deal: khách vẫn bỏ được và chỗ tự nhả khi hết hạn. Đánh dấu chốt ở
+        // đây thì phễu đầy cơ hội "đã chốt" mà tiền chưa bao giờ về.
+        var (departureRepo, templateRepo, customerRepo, departureId, customerId) =
+            await SeedAsync(totalSlots: 30, priceAdult: 5_000_000m);
+        var coHoiRepo = new FakeRepository<SalesOpportunity>();
+        var coHoi = new SalesOpportunity { Code = "CH-03", Title = "Đang giữ chỗ", ContactName = "Chị Mai" };
+        await coHoiRepo.AddAsync(coHoi);
+        await coHoiRepo.SaveChangesAsync();
+
+        var service = NewService(departureRepo: departureRepo, templateRepo: templateRepo,
+            customerRepo: customerRepo, opportunityRepo: coHoiRepo);
+
+        await service.CreateHoldAsync(departureId,
+            new CreateBookingDto(customerId, 1, 0, 0, 0, OpportunityId: coHoi.Id));
+
+        var sau = await coHoiRepo.GetByIdAsync(coHoi.Id);
+        Assert.Null(sau!.ConvertedOrderId);
+        Assert.NotEqual(OpportunityStageCode.ChotDon, sau.StageCode);
+    }
+
+    [Fact]
+    public async Task Co_hoi_da_huy_thi_khong_chot_thanh_don_duoc()
+    {
+        // Một cơ hội đang nằm trong thống kê "lý do mất khách" mà vẫn sinh ra đơn thật thì hai báo
+        // cáo đá nhau, và không bên nào sai rõ ràng để lần ra.
+        var (departureRepo, templateRepo, customerRepo, departureId, customerId) =
+            await SeedAsync(totalSlots: 30, priceAdult: 5_000_000m);
+        var coHoiRepo = new FakeRepository<SalesOpportunity>();
+        var coHoi = new SalesOpportunity
+        {
+            Code = "CH-04", Title = "Đã huỷ", ContactName = "Anh Dũng",
+            StageCode = OpportunityStageCode.Huy,
+        };
+        await coHoiRepo.AddAsync(coHoi);
+        await coHoiRepo.SaveChangesAsync();
+
+        var service = NewService(departureRepo: departureRepo, templateRepo: templateRepo,
+            customerRepo: customerRepo, opportunityRepo: coHoiRepo);
+
+        await Assert.ThrowsAsync<ConflictException>(() => service.CreateBookingAsync(departureId,
+            new CreateBookingDto(customerId, 1, 0, 0, 0, OpportunityId: coHoi.Id)));
+    }
+
+    [Fact]
+    public async Task Co_hoi_khong_ton_tai_thi_tu_choi_tao_don()
+    {
+        var (departureRepo, templateRepo, customerRepo, departureId, customerId) =
+            await SeedAsync(totalSlots: 30, priceAdult: 5_000_000m);
+        var service = NewService(departureRepo: departureRepo, templateRepo: templateRepo, customerRepo: customerRepo);
+
+        await Assert.ThrowsAsync<ValidationAppException>(() => service.CreateBookingAsync(departureId,
+            new CreateBookingDto(customerId, 1, 0, 0, 0, OpportunityId: Guid.NewGuid())));
     }
 
     [Fact]

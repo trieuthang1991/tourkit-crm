@@ -6,6 +6,7 @@ using TourKit.Api.Pages.Shared;
 using TourKit.Api.Services;
 using TourKit.Api.Web;
 using TourKit.Application.Booking;
+using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog;
 using TourKit.Application.Common;
 using TourKit.Application.Sales;
@@ -31,6 +32,7 @@ public class IndexModel : TkListPageModel
     private readonly ITransferReasonService _reasons;
     private readonly ITourTemplateService _templates;
     private readonly IDepartureService _departures;
+    private readonly IBookingService _booking;
 
     public IndexModel(
         ISalesOpportunityService svc,
@@ -40,7 +42,8 @@ public class IndexModel : TkListPageModel
         IMarketTypeService markets,
         ITransferReasonService reasons,
         ITourTemplateService templates,
-        IDepartureService departures)
+        IDepartureService departures,
+        IBookingService booking)
     {
         _svc = svc;
         _users = users;
@@ -50,6 +53,7 @@ public class IndexModel : TkListPageModel
         _reasons = reasons;
         _templates = templates;
         _departures = departures;
+        _booking = booking;
     }
 
     public SalesOpportunityStatsDto Stats { get; private set; } = new(0, 0m, 0m, 0, 0, new Dictionary<int, int>());
@@ -357,6 +361,76 @@ public class IndexModel : TkListPageModel
         catch (NotFoundException)
         {
             return new JsonResult(Result.Error("Không tìm thấy cơ hội."));
+        }
+    }
+
+    /// <summary>
+    /// Chốt cơ hội thành ĐƠN THẬT.
+    ///
+    /// Đi qua <see cref="IBookingService.CreateBookingAsync"/> — cùng đường với màn chi tiết chuyến —
+    /// chứ KHÔNG tự dựng Order ở đây. Một đường tạo đơn thứ hai sẽ lệch luật sức chứa và giá với
+    /// đường đang có, và lệch âm thầm: đơn vẫn tạo được, chỉ là vượt chỗ hoặc sai giá.
+    ///
+    /// Việc đánh dấu cơ hội đã chốt nằm TRONG BookingService, sau khi đơn đã lưu — đúng thứ tự của
+    /// hệ cũ. Ở đây chỉ kiểm những thứ người dùng phải bổ sung trước.
+    /// </summary>
+    public async Task<IActionResult> OnPostChotDonAsync(Guid id)
+    {
+        if (!CanManage)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền chốt đơn."));
+        }
+
+        SalesOpportunityDto o;
+        try
+        {
+            o = await _svc.GetAsync(id);
+        }
+        catch (NotFoundException)
+        {
+            return new JsonResult(Result.Error("Không tìm thấy cơ hội."));
+        }
+
+        if (o.ConvertedOrderId is not null)
+        {
+            return new JsonResult(Result.Error("Cơ hội này đã chốt thành đơn rồi."));
+        }
+
+        // Nói RÕ thiếu gì thay vì chỉ báo "không chốt được": hai thứ này người dùng bổ sung được
+        // ngay trong form, còn thông báo chung chung thì họ phải tự đoán.
+        if (o.TourDepartureId is not { } chuyenId)
+        {
+            return new JsonResult(Result.Error("Chưa chọn chuyến khởi hành cho cơ hội này — mở sửa và chọn chuyến trước."));
+        }
+
+        if (o.CustomerId is not { } khachId)
+        {
+            return new JsonResult(Result.Error("Chưa gắn khách hàng cho cơ hội này — mở sửa và chọn khách trước."));
+        }
+
+        if (o.AdultQty + o.ChildQty + o.ChildSmallQty + o.BabyQty <= 0)
+        {
+            return new JsonResult(Result.Error("Cơ hội chưa có khách nào — nhập số khách trước khi chốt."));
+        }
+
+        try
+        {
+            // Giá lấy từ CƠ HỘI, không lấy giá niêm yết của mẫu tour: cơ hội là thứ đã thoả thuận với
+            // khách, chốt xong mà đơn mang giá khác là sai ngay tại lúc bàn giao.
+            var don = await _booking.CreateBookingAsync(
+                chuyenId,
+                new CreateBookingDto(khachId, o.AdultQty, o.ChildQty, o.ChildSmallQty, o.BabyQty, OpportunityId: id),
+                new SeatPrices(o.PriceAdult, o.PriceChild, o.PriceChildSmall, o.PriceBaby));
+
+            return new JsonResult(Result.Success($"Đã chốt đơn {don.Code}.", new { orderId = don.Id }));
+        }
+        catch (ValidationAppException ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+        catch (ConflictException ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
         }
     }
 

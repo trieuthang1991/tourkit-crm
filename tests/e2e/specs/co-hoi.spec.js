@@ -63,9 +63,11 @@ test.describe('Cơ hội bán hàng', () => {
     await page.goto('/co-hoi');
 
     const kq = await page.evaluate(async () => {
-      const r = await fetch('/co-hoi?handler=Data&page=1&size=1');
+      // Quét rộng rồi mới lọc: lấy đúng một dòng rồi lọc là phụ thuộc thứ tự lưới — chỉ cần một cơ
+      // hội đã chốt trôi lên đầu là bài âm thầm bị bỏ qua.
+      const r = await fetch('/co-hoi?handler=Data&page=1&size=50');
       const j = await r.json();
-      const row = (j.data || []).find((x) => !x.convertedOrderId);
+      const row = (j.data || []).find((x) => !x.convertedOrderId && x.stageCode !== 5);
       if (!row) { return null; }
 
       const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
@@ -87,9 +89,11 @@ test.describe('Cơ hội bán hàng', () => {
     await page.goto('/co-hoi');
 
     const kq = await page.evaluate(async () => {
-      const r = await fetch('/co-hoi?handler=Data&page=1&size=1');
+      // Quét rộng rồi mới lọc: lấy đúng một dòng rồi lọc là phụ thuộc thứ tự lưới — chỉ cần một cơ
+      // hội đã chốt trôi lên đầu là bài âm thầm bị bỏ qua.
+      const r = await fetch('/co-hoi?handler=Data&page=1&size=50');
       const j = await r.json();
-      const row = (j.data || []).find((x) => !x.convertedOrderId);
+      const row = (j.data || []).find((x) => !x.convertedOrderId && x.stageCode !== 5);
       if (!row) { return null; }
 
       const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
@@ -108,15 +112,118 @@ test.describe('Cơ hội bán hàng', () => {
     expect(kq.isSuccess, 'đặt tay chốt đơn được — sẽ có cơ hội chốt mà không có đơn').toBeFalsy();
   });
 
+  /**
+   * Chốt thành đơn — bước MỘT CHIỀU.
+   *
+   * Kiểm cả hai vế: thiếu chuyến/khách thì phải nói RÕ thiếu gì (chứ không im lặng hoặc báo chung
+   * chung), và chốt xong thì cơ hội bị khoá — vì số liệu của nó đã đi vào đơn hàng.
+   */
+  test('Chốt đơn khi thiếu chuyến thì nói rõ thiếu gì', async ({ trang: page }) => {
+    await page.goto('/co-hoi');
+
+    const kq = await page.evaluate(async () => {
+      const r = await fetch('/co-hoi?handler=Data&page=1&size=50');
+      const j = await r.json();
+      const row = (j.data || []).find((x) => !x.convertedOrderId && !x.tourDepartureId);
+      if (!row) { return null; }
+
+      const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+      const fd = new FormData();
+      fd.append('id', row.id);
+      const res = await fetch('/co-hoi?handler=ChotDon', {
+        method: 'POST', body: fd, headers: token ? { RequestVerificationToken: token } : {},
+      });
+      return await res.json();
+    });
+
+    test.skip(kq === null, 'Không có cơ hội nào thiếu chuyến để thử.');
+    expect(kq.isSuccess).toBeFalsy();
+    expect(String(kq.message), 'báo lỗi không nói thiếu chuyến').toContain('chuyến');
+  });
+
+  test('Chốt đơn thành công thì cơ hội bị khoá và sang cột Chốt đơn', async ({ trang: page }) => {
+    await page.goto('/co-hoi');
+
+    // TỰ DỰNG cơ hội để thử, không mượn dữ liệu mẫu: chốt đơn là bước MỘT CHIỀU, mượn thì bài này
+    // chỉ chạy đúng một lần rồi những lần sau âm thầm bị bỏ qua — tệ hơn là đỏ, vì không ai để ý.
+    const kq = await page.evaluate(async () => {
+      const token = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+      const post = async (url, fd) => {
+        const t = token();
+        const res = await fetch(url, { method: 'POST', body: fd, headers: t ? { RequestVerificationToken: t } : {} });
+        return await res.json();
+      };
+
+      const chuyen = (await (await fetch('/co-hoi?handler=DepartureLookup&q=')).json()).results?.[0];
+      const khach = (await (await fetch('/khach-hang?handler=Data&draw=1&start=0&length=1')).json()).data?.[0];
+      if (!chuyen || !khach) { return null; }
+
+      const ma = 'CH-E2E-' + Date.now();
+      const f = new FormData();
+      f.append('Input.Code', ma);
+      f.append('Input.Title', 'Cơ hội do bài kiểm thử tạo');
+      f.append('Input.ContactName', 'Khách kiểm thử');
+      f.append('Input.AdultQty', '1');
+      f.append('Input.PriceAdult', '1000000');
+      f.append('Input.TourDepartureId', chuyen.id);
+      f.append('Input.CustomerId', khach.id);
+      const tao = await post('/co-hoi?handler=Save', f);
+      if (!tao.isSuccess) { return { loiTao: tao.message }; }
+
+      const lay = async () => (await (await fetch('/co-hoi?handler=Data&page=1&size=50&q=' + ma)).json()).data || [];
+      const row = (await lay()).find((x) => x.code === ma);
+      if (!row) { return { loiTao: 'tạo xong không tìm thấy' }; }
+
+      const goi = async (handler, extra) => {
+        const fd = new FormData();
+        fd.append('id', row.id);
+        Object.entries(extra || {}).forEach(([k, v]) => fd.append(k, v));
+        return await post('/co-hoi?handler=' + handler, fd);
+      };
+
+      const chot = await goi('ChotDon');
+      const sau = (await lay()).find((x) => x.id === row.id);
+      // Chốt rồi thì mọi đường ghi khác phải đóng lại.
+      const chotLai = await goi('ChotDon');
+      const chuyenCot = await goi('Move', { stageCode: '3' });
+      const xoa = await goi('Delete');
+
+      return { chot, stageCode: sau?.stageCode, coDon: !!sau?.convertedOrderId, chotLai, chuyenCot, xoa };
+    });
+
+    test.skip(kq === null, 'Chưa có chuyến hoặc khách hàng nào để dựng cơ hội thử.');
+    expect(kq.loiTao, `không tạo được cơ hội để thử: ${kq.loiTao}`).toBeUndefined();
+
+    expect(kq.chot.isSuccess, `chốt đơn thất bại: ${kq.chot.message}`).toBeTruthy();
+    expect(kq.coDon, 'chốt xong mà cơ hội không gắn đơn nào').toBe(true);
+    expect(kq.stageCode, 'chốt xong mà không sang cột Chốt đơn').toBe(6);
+
+    expect(kq.chotLai.isSuccess, 'chốt lại lần hai vẫn được — sẽ đẻ ra hai đơn cho một cơ hội').toBeFalsy();
+    expect(kq.chuyenCot.isSuccess, 'cơ hội đã chốt mà vẫn kéo sang cột khác được').toBeFalsy();
+    expect(kq.xoa.isSuccess, 'cơ hội đã chốt mà vẫn xoá được — đơn hàng sẽ trỏ vào hư không').toBeFalsy();
+  });
+
   test('Hộp huỷ chặn ngay ở giao diện khi chưa chọn lý do', async ({ trang: page }) => {
     await page.goto('/co-hoi');
+
+    // Lọc xuống ĐÚNG một cơ hội còn huỷ được. Lấy dòng đầu thì bài này phụ thuộc thứ tự lưới: chỉ
+    // cần một cơ hội đã chốt trôi lên đầu là bài âm thầm bị bỏ qua.
+    const ma = await page.evaluate(async () => {
+      const r = await fetch('/co-hoi?handler=Data&page=1&size=50');
+      const j = await r.json();
+      return (j.data || []).find((x) => !x.convertedOrderId && x.stageCode !== 5)?.code ?? null;
+    });
+    test.skip(!ma, 'Không có cơ hội nào còn huỷ được.');
+
+    await page.locator('#f-q').fill(ma);
+    await page.waitForTimeout(1200);
 
     const dong = page.locator('.tabulator-row:not(.tabulator-calcs)');
     await dong.first().waitFor({ state: 'visible', timeout: 20_000 });
     await dong.first().locator('.tabulator-cell[tabulator-field="__act"]').click();
 
     const muc = page.locator('.tabulator-menu-item').filter({ hasText: /^Huỷ cơ hội/ }).first();
-    test.skip(await muc.count() === 0, 'Dòng đầu không huỷ được (đã huỷ hoặc đã chốt).');
+    await muc.waitFor({ state: 'visible', timeout: 10_000 });
     await muc.click();
 
     const hop = page.locator('#huy-modal');

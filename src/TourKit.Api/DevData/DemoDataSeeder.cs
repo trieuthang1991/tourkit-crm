@@ -801,9 +801,10 @@ public static class DemoDataSeeder
         // ĐẶT TRƯỚC mục 8 có chủ đích: mục 8 THOÁT SỚM khi đã có đơn OD_0001, nên mọi thứ viết sau
         // nó không bao giờ chạy trên máy đã có dữ liệu — thêm vào cuối file là thêm vào chỗ chết.
         //
-        // Guard riêng vì mã cơ hội có ràng buộc duy nhất: thêm lại ở lần khởi động sau sẽ ném
-        // DbUpdateException và chặn luôn cả ứng dụng.
-        if (!await db.Set<SalesOpportunity>().AnyAsync())
+        // Guard theo TỪNG MÃ chứ không theo "đã có cơ hội nào chưa": mã cơ hội có ràng buộc duy
+        // nhất nên thêm trùng sẽ ném DbUpdateException và chặn cả ứng dụng, nhưng guard theo cả bảng
+        // lại khoá luôn việc bổ sung dòng mẫu mới về sau — thêm dòng nào cũng không bao giờ chạy
+        // trên máy đã gieo. Đây đúng lối get-or-create theo mã tự nhiên mà phần trên của file dùng.
         {
             var lyDoHuy = await db.Set<TransferReason>().OrderBy(r => r.SortOrder).FirstOrDefaultAsync();
 
@@ -832,14 +833,45 @@ public static class DemoDataSeeder
                     OpportunityStageCode.DangXuLy, 4, 2, 32_000_000m, 24_000_000m, brHn.Id, uSalesHn.Id),
                 MkCoHoi("CH-2608-04", "Chị Mai hỏi Hàn Quốc mùa thu", "Phạm Thị Mai", "0913000004",
                     OpportunityStageCode.DaXuLy, 2, 0, 18_500_000m, 0m, brHcm.Id, uSalesHcm.Id),
+                MkCoHoi("CH-2608-06", "Anh Sơn chốt Hạ Long, sẵn sàng xuống đơn", "Đinh Trường Sơn", "0913000006",
+                    OpportunityStageCode.DaXuLy, 2, 1, 4_000_000m, 2_500_000m, brHn.Id, uSalesHn.Id),
                 MkCoHoi("CH-2608-05", "Anh Dũng hỏi Sapa cuối tuần", "Hoàng Tiến Dũng", "0913000005",
                     OpportunityStageCode.Huy, 6, 2, 3_200_000m, 2_400_000m, brHn.Id, uSalesHn.Id),
             };
-            db.AddRange(coHoi);
-            await db.SaveChangesAsync();
+            // Gắn chuyến + khách cho đúng cơ hội "sẵn sàng xuống đơn". Tra theo MÃ chứ không theo vị
+            // trí: bản đầu dùng coHoi[^1] và khi chèn thêm một dòng ở giữa thì hai trường này rơi
+            // nhầm sang cơ hội ĐÃ HUỶ — sai im lặng, chỉ lộ ra vì bài kiểm thử bị bỏ qua.
+            var sanSangXuongDon = coHoi.Single(x => x.Code == "CH-2608-06");
+            sanSangXuongDon.TourDepartureId = depHalong.Id;
+            sanSangXuongDon.CustomerId = c1.Id;
+
+            // BẢO ĐẢM chứ không chỉ THÊM: dòng "sẵn sàng xuống đơn" có thể đã được gieo ở lần trước
+            // mà thiếu chuyến/khách (lỗi cũ gán nhầm sang cơ hội khác). Guard theo mã sẽ bỏ qua nó
+            // vĩnh viễn, nên phải vá lại tại đây — nếu không thì bài kiểm thử chốt đơn bị bỏ qua im
+            // lặng và không ai biết luồng đó chưa từng chạy.
+            var daCoSanSang = await db.Set<SalesOpportunity>()
+                .FirstOrDefaultAsync(x => x.Code == "CH-2608-06");
+            if (daCoSanSang is not null &&
+                (daCoSanSang.TourDepartureId is null || daCoSanSang.CustomerId is null))
+            {
+                daCoSanSang.TourDepartureId ??= depHalong.Id;
+                daCoSanSang.CustomerId ??= c1.Id;
+                db.Update(daCoSanSang);
+                await db.SaveChangesAsync();
+            }
+
+            var maDaCo = await db.Set<SalesOpportunity>().Select(x => x.Code).ToListAsync();
+            var canThem = coHoi.Where(x => !maDaCo.Contains(x.Code)).ToList();
+            if (canThem.Count > 0)
+            {
+                db.AddRange(canThem);
+                await db.SaveChangesAsync();
+            }
 
             // Người phụ trách để ở BẢNG RIÊNG (không phải cột chuỗi id như hệ cũ) nên gán sau khi cơ hội
-            // đã có khoá chính.
+            // đã có khoá chính. Chỉ gán khi vừa gieo LẦN ĐẦU, tránh nhân đôi ở lần chạy sau.
+            if (canThem.Count == coHoi.Length)
+            {
             db.AddRange(
                 new SalesOpportunityAssignee { OpportunityId = coHoi[0].Id, UserId = uSalesHn.Id },
                 new SalesOpportunityAssignee { OpportunityId = coHoi[1].Id, UserId = uSalesHcm.Id },
@@ -849,6 +881,7 @@ public static class DemoDataSeeder
                 new SalesOpportunityAssignee { OpportunityId = coHoi[4].Id, UserId = uSalesHn.Id });
 
             await db.SaveChangesAsync();
+            }
         }
 
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
