@@ -15,13 +15,23 @@ public sealed class FakeRepository<T> : IRepository<T> where T : BaseEntity
     private readonly List<T> _items = [];
     private readonly List<T> _pendingAdds = [];
 
+    /// <summary>
+    /// Tổng số dòng đã NẠP VỀ BỘ NHỚ qua ListAsync — thước đo duy nhất phân biệt "cắt trang ở SQL"
+    /// với "nạp cả bảng rồi cắt trong bộ nhớ". Không có nó thì sửa xong không ai chứng minh được là
+    /// đã nhanh hơn, và lần refactor sau rất dễ đưa mọi thứ về như cũ mà bộ kiểm thử vẫn xanh.
+    /// PageAsync KHÔNG cộng vào đây: nó cắt trang trước khi trả về, đúng thứ ta muốn.
+    /// </summary>
+    public int SoDongDaNap { get; private set; }
+
     public Task<T?> GetByIdAsync(Guid id)
         => Task.FromResult(_items.FirstOrDefault(e => e.Id == id));
 
     public Task<IReadOnlyList<T>> ListAsync(Expression<Func<T, bool>>? predicate = null)
     {
         var query = predicate is null ? _items.AsEnumerable() : _items.AsQueryable().Where(predicate);
-        return Task.FromResult<IReadOnlyList<T>>(query.ToList());
+        var ds = query.ToList();
+        SoDongDaNap += ds.Count;
+        return Task.FromResult<IReadOnlyList<T>>(ds);
     }
 
     public Task<(IReadOnlyList<T> Items, int Total)> PageAsync(int page, int size, Expression<Func<T, bool>>? predicate = null)

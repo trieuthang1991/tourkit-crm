@@ -187,7 +187,7 @@ public sealed class BookingService(
         }
 
         // Lọc cột thật (trạng thái, NV sales, chi nhánh, ngày tạo) ở DB; q + khoảng ngày đi lọc sau khi làm giàu.
-        var all = await orderRepo.ListAsync(o =>
+        System.Linq.Expressions.Expression<Func<Order, bool>> viTu = o =>
             (custFilterIds == null || custFilterIds.Contains(o.CustomerId)) &&
             (f.Status == null || (int)o.Status == f.Status) &&
             (f.SalesUserId == null || o.SalesUserId == f.SalesUserId) &&
@@ -203,7 +203,32 @@ public sealed class BookingService(
             (f.CustomerId == null || o.CustomerId == f.CustomerId) &&
             (f.VisaStatus == null || o.VisaStatus == f.VisaStatus) &&
             (f.CreatedFrom == null || o.CreatedAt >= f.CreatedFrom) &&
-            (f.CreatedTo == null || o.CreatedAt <= f.CreatedTo));
+            (f.CreatedTo == null || o.CreatedAt <= f.CreatedTo);
+
+        // TÁM tiêu chí dưới đây cần dữ liệu LÀM GIÀU mới lọc được (tên khách, tên tour, phiếu thu,
+        // dòng chi phí, hoá đơn, phòng ban) — không dịch xuống SQL được.
+        //
+        // Không dùng tiêu chí nào trong số đó thì cắt trang NGAY Ở SQL và chỉ làm giàu đúng một
+        // trang. Trước đây mọi lần mở màn đều kéo về TOÀN BỘ đơn khớp bộ lọc rồi vứt đi tất cả trừ
+        // 20 dòng — cách hỏng của nó là chậm dần đều, không đổ vỡ, nên không ai nối được về nguyên
+        // nhân. Cùng lối fast-path/slow-path mà CustomerService.ListAsync đang dùng.
+        var canLamGiauMoiLoc =
+            kw != null || f.ProviderId != null || f.InvoiceStatus != null ||
+            f.DepartureFrom != null || f.DepartureTo != null || f.PaymentStatus != null ||
+            !string.IsNullOrWhiteSpace(f.TourType) || f.DepartmentId != null;
+
+        IReadOnlyList<Order> all;
+        int tongNhanh = 0;
+        if (canLamGiauMoiLoc)
+        {
+            all = await orderRepo.ListAsync(viTu);
+        }
+        else
+        {
+            var (trang, tong) = await orderRepo.PageAsync(page, size, o => o.CreatedAt, descending: true, viTu);
+            all = trang;
+            tongNhanh = tong;
+        }
 
         // Nạp theo lô để làm giàu danh sách: tên KH, tên tour + ngày đi, số đã thu (phiếu thu đã ghi nhận).
         var customerIds = all.Select(o => o.CustomerId).ToHashSet();
@@ -284,8 +309,9 @@ public sealed class BookingService(
         // TT hóa đơn (Invoice.OrderId/Status: 0 nháp,1 phát hành,2 huỷ): 0 chưa xuất · 1 đã xuất · 2 đã duyệt.
         var invoiceStatusByOrder = f.InvoiceStatus == null
             ? new Dictionary<Guid, List<int>>()
-            : (await invoiceRepo.ListAsync(iv => iv.OrderId != null))
-                .Where(iv => orderIds.Contains(iv.OrderId!.Value))
+            // Lọc theo tập đơn NGAY Ở SQL. Bản cũ nạp mọi hoá đơn có OrderId rồi mới loại ở bộ nhớ —
+            // với công ty xuất hoá đơn đều tay thì đó là cả bảng Invoices cho một lần mở màn.
+            : (await invoiceRepo.ListAsync(iv => iv.OrderId != null && orderIds.Contains(iv.OrderId.Value)))
                 .GroupBy(iv => iv.OrderId!.Value)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.Status).ToList());
         bool MatchInvoice(Guid orderId)
@@ -303,6 +329,15 @@ public sealed class BookingService(
                 2 => active.Contains(1),      // đã duyệt (đã phát hành)
                 _ => true,
             };
+        }
+
+        // ĐƯỜNG NHANH: đã cắt trang và sắp xếp ở SQL, tám tiêu chí kia không dùng → trả thẳng.
+        // Chạy tiếp qua khối .Where bên dưới thì cũng ra đúng ngần ấy dòng, nhưng lại sắp xếp và
+        // cắt trang LẦN NỮA trên một trang đã cắt — số trang sau trang 1 sẽ rỗng.
+        if (!canLamGiauMoiLoc)
+        {
+            var nhanh = enriched.OrderByDescending(x => x.CreatedAt).Select(x => x.Dto).ToList();
+            return new PagedResult<OrderDto>(nhanh, tongNhanh, page, size);
         }
 
         var filtered = enriched

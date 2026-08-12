@@ -233,6 +233,86 @@ public sealed class BookingServiceTests
             new CreateBookingDto(customerId, 1, 0, 0, 0, OpportunityId: Guid.NewGuid())));
     }
 
+    // ---- Phân trang: cắt ở SQL hay nạp cả bảng rồi cắt trong bộ nhớ ----
+    //
+    // Đây là bài canh chống TÁI PHÁT. Nạp cả bảng vẫn ra ĐÚNG kết quả, chỉ chậm dần theo lượng dữ
+    // liệu — nên không bài kiểm thử nào về mặt nghiệp vụ bắt được. Phải đo bằng số dòng nạp về.
+
+    private static async Task<(FakeRepository<Order> Orders, Guid DepId, Guid CustId,
+        FakeRepository<TourDeparture> Dep, FakeRepository<TourTemplate> Tpl, FakeRepository<Customer> Cus)>
+        SeedNhieuDonAsync(int soDon)
+    {
+        var (departureRepo, templateRepo, customerRepo, departureId, customerId) =
+            await SeedAsync(totalSlots: 10_000, priceAdult: 1_000_000m);
+
+        var orderRepo = new FakeRepository<Order>();
+        for (var i = 0; i < soDon; i++)
+        {
+            await orderRepo.AddAsync(new Order
+            {
+                Code = $"OD-{i:0000}", TourDepartureId = departureId, CustomerId = customerId,
+                Status = OrderStatus.Confirmed, TotalRevenue = 1_000_000m,
+            });
+        }
+        await orderRepo.SaveChangesAsync();
+
+        return (orderRepo, departureId, customerId, departureRepo, templateRepo, customerRepo);
+    }
+
+    [Fact]
+    public async Task Danh_sach_don_KHONG_loc_dac_biet_thi_chi_nap_dung_mot_trang()
+    {
+        var (orderRepo, _, _, dep, tpl, cus) = await SeedNhieuDonAsync(200);
+        var service = NewService(departureRepo: dep, templateRepo: tpl, customerRepo: cus, orderRepo: orderRepo);
+
+        var truoc = orderRepo.SoDongDaNap;
+        var kq = await service.ListOrdersAsync(1, 20);
+
+        Assert.Equal(20, kq.Items.Count);
+        Assert.Equal(200, kq.Total);
+
+        // Cắt trang ở SQL thì KHÔNG dòng đơn nào đi qua ListAsync. Ngưỡng để rộng một chút phòng
+        // khi sau này thêm một lượt tra phụ, nhưng vẫn chặn được kiểu nạp cả 200 dòng.
+        var daNap = orderRepo.SoDongDaNap - truoc;
+        Assert.True(daNap <= 20,
+            $"nạp {daNap} dòng đơn cho một trang 20 — đang kéo cả bảng về rồi mới cắt trang");
+    }
+
+    [Fact]
+    public async Task Trang_hai_van_ra_dung_dong_khi_di_duong_nhanh()
+    {
+        // Bẫy của đường nhanh: cắt trang ở SQL rồi lỡ cắt LẦN NỮA trong bộ nhớ thì mọi trang sau
+        // trang 1 đều rỗng — mà tổng số vẫn đúng, nên nhìn thanh phân trang không thấy gì lạ.
+        var (orderRepo, _, _, dep, tpl, cus) = await SeedNhieuDonAsync(50);
+        var service = NewService(departureRepo: dep, templateRepo: tpl, customerRepo: cus, orderRepo: orderRepo);
+
+        var t1 = await service.ListOrdersAsync(1, 20);
+        var t2 = await service.ListOrdersAsync(2, 20);
+        var t3 = await service.ListOrdersAsync(3, 20);
+
+        Assert.Equal(20, t1.Items.Count);
+        Assert.Equal(20, t2.Items.Count);
+        Assert.Equal(10, t3.Items.Count);
+
+        // Ba trang không được trùng dòng nào.
+        var ma = t1.Items.Concat(t2.Items).Concat(t3.Items).Select(x => x.Code).ToList();
+        Assert.Equal(50, ma.Distinct().Count());
+    }
+
+    [Fact]
+    public async Task Loc_theo_tu_khoa_van_ra_dung_ket_qua_du_phai_di_duong_cham()
+    {
+        // Từ khoá tra cả tên khách và tên tour nên buộc phải làm giàu trước rồi mới lọc. Đường chậm
+        // vẫn phải ĐÚNG — tối ưu mà đổi kết quả thì không còn là tối ưu.
+        var (orderRepo, _, _, dep, tpl, cus) = await SeedNhieuDonAsync(30);
+        var service = NewService(departureRepo: dep, templateRepo: tpl, customerRepo: cus, orderRepo: orderRepo);
+
+        var kq = await service.ListOrdersAsync(1, 20, new OrderListFilter(Q: "OD-0007"));
+
+        Assert.Equal(1, kq.Total);
+        Assert.Equal("OD-0007", Assert.Single(kq.Items).Code);
+    }
+
     [Fact]
     public async Task Booking_over_TotalSlots_is_rejected()
     {
