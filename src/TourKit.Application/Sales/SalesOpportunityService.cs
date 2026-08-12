@@ -239,6 +239,78 @@ public sealed class SalesOpportunityService(
             .ToList();
     }
 
+    public async Task<IReadOnlyList<OpportunityByUserRowDto>> ReportByUserAsync(
+        DateTimeOffset? tu, DateTimeOffset? den)
+    {
+        // Báo cáo theo KỲ: nạp đúng khoảng ngày rồi gom trong bộ nhớ.
+        //
+        // Không đẩy được xuống SQL vì phép gom đi qua BẢNG NỐI người phụ trách và một cơ hội đếm cho
+        // NHIỀU người — với IRepository hiện có thì không diễn đạt được câu JOIN đó. Bù lại, ràng
+        // buộc khoảng ngày vẫn nằm ở SQL nên lượng nạp về bị chặn theo kỳ, không phải cả bảng.
+        var ds = await repo.ListAsync(o =>
+            (tu == null || o.CreatedAt >= tu) && (den == null || o.CreatedAt <= den));
+        if (ds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = ds.Select(o => o.Id).ToHashSet();
+        var phanCong = (await assigneeRepo.ListAsync(a => !a.IsFollower && ids.Contains(a.OpportunityId)))
+            .ToList();
+
+        var theoCoHoi = ds.ToDictionary(o => o.Id);
+
+        return phanCong
+            .GroupBy(a => a.UserId)
+            .Select(g =>
+            {
+                var cua = g.Select(a => theoCoHoi[a.OpportunityId]).ToList();
+                var chot = cua.Count(o => o.StageCode == OpportunityStageCode.ChotDon);
+                var huy = cua.Count(o => o.StageCode == OpportunityStageCode.Huy);
+                var mo = cua.Count - chot - huy;
+
+                return new OpportunityByUserRowDto(
+                    g.Key,
+                    string.Empty,   // tên do tầng giao diện tra từ danh bạ (cache theo tenant)
+                    cua.Count, chot, huy, mo,
+                    cua.Where(o => o.StageCode != OpportunityStageCode.ChotDon
+                                && o.StageCode != OpportunityStageCode.Huy)
+                       .Sum(OpportunityMath.GiaTri),
+                    cua.Where(o => o.StageCode == OpportunityStageCode.ChotDon).Sum(OpportunityMath.GiaTri),
+                    cua.Count == 0 ? 0d : Math.Round(chot * 100d / cua.Count, 1));
+            })
+            .OrderByDescending(r => r.DaChot)
+            .ThenByDescending(r => r.Tong)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<OpportunityCancelReasonRowDto>> ReportCancelReasonsAsync(
+        DateTimeOffset? tu, DateTimeOffset? den)
+    {
+        var huy = await repo.ListAsync(o =>
+            o.StageCode == OpportunityStageCode.Huy &&
+            (tu == null || o.CreatedAt >= tu) && (den == null || o.CreatedAt <= den));
+        if (huy.Count == 0)
+        {
+            return [];
+        }
+
+        var ten = (await reasonRepo.ListAsync()).ToDictionary(r => r.Id, r => r.Name);
+
+        return huy
+            .GroupBy(o => o.CancelReasonId)
+            .Select(g => new OpportunityCancelReasonRowDto(
+                g.Key,
+                // Lý do là BẮT BUỘC khi huỷ, nên nhóm "không rõ" chỉ chứa dữ liệu có từ trước luật
+                // hoặc lý do đã bị xoá khỏi danh mục. Vẫn hiện ra chứ không giấu: giấu đi thì tổng
+                // của báo cáo không khớp số cơ hội đã huỷ và không ai giải thích được phần chênh.
+                g.Key is { } id && ten.TryGetValue(id, out var n) ? n : "Không rõ lý do",
+                g.Count(),
+                g.Sum(OpportunityMath.GiaTri)))
+            .OrderByDescending(r => r.GiaTriMat)
+            .ToList();
+    }
+
     // ---- riêng tư ----
 
     /// <summary>

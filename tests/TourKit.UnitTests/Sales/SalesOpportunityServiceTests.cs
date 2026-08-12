@@ -309,6 +309,82 @@ public class SalesOpportunityServiceTests
         Assert.Equal(1, tk.TheoCot[OpportunityStageCode.DangXuLy]);
     }
 
+    // ---- Báo cáo (B4) ----
+
+    [Fact]
+    public async Task Bao_cao_theo_nhan_vien_tinh_dung_ty_le_chot()
+    {
+        var svc = NewService(out _, out _, out _, out var reasons);
+        var lyDo = new TransferReason { Name = "Giá cao" };
+        await reasons.AddAsync(lyDo);
+        await reasons.SaveChangesAsync();
+
+        var toi = Guid.NewGuid();
+        var a = await svc.CreateAsync(NewDto("CH-R1") with
+        {
+            Assignees = [new OpportunityAssigneeDto(toi, false)],
+            AdultQty = 1, ChildQty = 0, ChildSmallQty = 0, BabyQty = 0, PriceAdult = 100m,
+        });
+        var b = await svc.CreateAsync(NewDto("CH-R2") with
+        {
+            Assignees = [new OpportunityAssigneeDto(toi, false)],
+            AdultQty = 1, ChildQty = 0, ChildSmallQty = 0, BabyQty = 0, PriceAdult = 300m,
+        });
+        // Người THEO DÕI không tính vào hiệu suất của ai cả.
+        await svc.CreateAsync(NewDto("CH-R3") with
+        {
+            Assignees = [new OpportunityAssigneeDto(Guid.NewGuid(), true)],
+        });
+
+        await svc.MoveStageAsync(b.Id, new MoveOpportunityStageDto(OpportunityStageCode.Huy, lyDo.Id));
+
+        var bc = await svc.ReportByUserAsync(null, null);
+        var dong = Assert.Single(bc, r => r.UserId == toi);
+
+        Assert.Equal(2, dong.Tong);
+        Assert.Equal(1, dong.DangMo);
+        Assert.Equal(1, dong.DaHuy);
+        Assert.Equal(0, dong.DaChot);
+        Assert.Equal(0d, dong.TyLeChot);
+        Assert.Equal(100m, dong.GiaTriDangMo);
+    }
+
+    [Fact]
+    public async Task Bao_cao_ly_do_huy_gom_theo_ly_do_va_cong_gia_tri_mat()
+    {
+        var svc = NewService(out _, out _, out _, out var reasons);
+        var giaCao = new TransferReason { Name = "Giá cao" };
+        var hetCho = new TransferReason { Name = "Hết chỗ" };
+        await reasons.AddAsync(giaCao);
+        await reasons.AddAsync(hetCho);
+        await reasons.SaveChangesAsync();
+
+        async Task HuyVoi(string ma, decimal gia, Guid lyDo)
+        {
+            var ch = await svc.CreateAsync(NewDto(ma) with
+            {
+                AdultQty = 1, ChildQty = 0, ChildSmallQty = 0, BabyQty = 0, PriceAdult = gia,
+            });
+            await svc.MoveStageAsync(ch.Id, new MoveOpportunityStageDto(OpportunityStageCode.Huy, lyDo));
+        }
+
+        await HuyVoi("CH-H1", 100m, giaCao.Id);
+        await HuyVoi("CH-H2", 200m, giaCao.Id);
+        await HuyVoi("CH-H3", 5_000m, hetCho.Id);
+
+        var bc = await svc.ReportCancelReasonsAsync(null, null);
+
+        // Sắp theo GIÁ TRỊ mất, không theo số lượng: một cơ hội lớn mất đi quan trọng hơn hai cơ hội
+        // nhỏ, xếp theo số đếm thì nó chìm xuống cuối bảng.
+        Assert.Equal("Hết chỗ", bc[0].ReasonName);
+        Assert.Equal(5_000m, bc[0].GiaTriMat);
+        Assert.Equal(1, bc[0].SoCoHoi);
+
+        Assert.Equal("Giá cao", bc[1].ReasonName);
+        Assert.Equal(300m, bc[1].GiaTriMat);
+        Assert.Equal(2, bc[1].SoCoHoi);
+    }
+
     // ---- Xác thực đầu vào ----
 
     [Fact]

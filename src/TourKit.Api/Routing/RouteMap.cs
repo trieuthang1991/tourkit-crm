@@ -121,6 +121,7 @@ public static class RouteMap
 
         // --- Báo cáo ---
         ("/SellerReport/Index", "bao-cao-nhan-vien"),
+        ("/OpportunityReport/Index", "bao-cao-co-hoi"),
         ("/FinanceReport/Index", "bao-cao-tai-chinh"),
         ("/TourTypeReport/Index", "thu-chi-theo-tour"),
         ("/SystemReport/Index", "bao-cao-tong-hop"),

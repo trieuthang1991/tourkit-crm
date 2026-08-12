@@ -86,3 +86,24 @@ public sealed record UpdateSalesOpportunityDto(
 
 /// <summary>Chuyển cơ hội sang cột khác. <paramref name="CancelReasonId"/> bắt buộc khi sang cột Huỷ.</summary>
 public sealed record MoveOpportunityStageDto(int StageCode, Guid? CancelReasonId = null, string? CancelNote = null);
+
+/// <summary>
+/// Một dòng báo cáo "cơ hội theo nhân viên" (hệ cũ <c>uspReportBookingTicket</c>).
+///
+/// <paramref name="TyLeChot"/> là con số duy nhất người quản lý thật sự nhìn: tổng cơ hội chỉ nói
+/// người đó bận tới mức nào, còn tỉ lệ chốt mới nói họ bán được hay không.
+/// </summary>
+public sealed record OpportunityByUserRowDto(
+    Guid UserId, string UserName,
+    int Tong, int DaChot, int DaHuy, int DangMo,
+    decimal GiaTriDangMo, decimal GiaTriDaChot,
+    double TyLeChot);
+
+/// <summary>
+/// Một dòng báo cáo "lý do mất khách" (hệ cũ <c>StatisticsCancelReason</c>).
+///
+/// Kèm <paramref name="GiaTriMat"/> chứ không chỉ đếm số: mất 10 cơ hội nhỏ và mất 1 cơ hội lớn là
+/// hai vấn đề khác nhau, đếm suông thì cái thứ hai biến mất khỏi báo cáo.
+/// </summary>
+public sealed record OpportunityCancelReasonRowDto(
+    Guid? ReasonId, string ReasonName, int SoCoHoi, decimal GiaTriMat);

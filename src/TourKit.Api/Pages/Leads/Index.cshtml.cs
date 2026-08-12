@@ -13,7 +13,10 @@ using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Pages.Leads;
 
-// Cơ hội bán hàng (Lead): DataTables SERVER-SIDE + GIỮ ĐỦ thông tin bản cũ
+// Khách tiềm năng (Lead) — số khách thô được chia cho sale, hệ cũ để ở menu "Chia số Sale".
+// ĐỪNG NHẦM với màn Cơ hội bán hàng (/co-hoi, SalesOpportunity): cơ hội là nhu cầu đã có số khách
+// và giá, còn ở đây mới chỉ có tên với số điện thoại.
+// DataTables SERVER-SIDE + GIỮ ĐỦ thông tin bản cũ
 // (web/src/features/leads/LeadsPage.tsx): 7 thẻ KPI, 7 tiêu chí lọc đẩy xuống SQL,
 // cột ghép (Cơ hội = tên + chi nhánh · Liên hệ = SĐT + email), nút Chuyển thành KH, export CSV.
 [Authorize(Policy = "lead.view")]
@@ -144,7 +147,7 @@ public class IndexModel : TkListPageModel
     /// <summary>
     /// MỘT cơ hội theo id, cùng hình dạng với dòng lưới để mở thẳng offcanvas sửa.
     ///
-    /// Dùng cho đường dẫn sâu <c>/co-hoi?mo={id}</c> — người nhận thông báo "@nhắc bạn trong Cơ hội
+    /// Dùng cho đường dẫn sâu <c>/khach-tiem-nang?mo={id}</c> — người nhận thông báo "@nhắc bạn trong Cơ hội
     /// bán hàng" bấm vào phải mở ĐÚNG cơ hội đó. Không thể lấy từ dữ liệu lưới đã tải: cơ hội cần mở
     /// thường không nằm ở trang đầu.
     /// </summary>
@@ -256,7 +259,7 @@ public class IndexModel : TkListPageModel
         }
 
         var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-        return File(bytes, "text/csv", "co-hoi-ban-hang.csv");
+        return File(bytes, "text/csv", "khach-tiem-nang.csv");
     }
 
     public async Task<IActionResult> OnPostSaveAsync()
@@ -275,7 +278,7 @@ public class IndexModel : TkListPageModel
             await _svc.CreateAsync(new CreateLeadDto(Input.FullName, Input.Phone, Input.Email, Input.Source, Input.AssignedToUserId, Input.BranchId));
         }
 
-        return new JsonResult(Result.Success("Đã lưu cơ hội bán hàng."));
+        return new JsonResult(Result.Success("Đã lưu khách tiềm năng."));
     }
 
     public async Task<IActionResult> OnPostConvertAsync(Guid id)
@@ -288,7 +291,7 @@ public class IndexModel : TkListPageModel
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
         await _svc.DeleteAsync(id);
-        TempData["ok"] = "Đã xoá cơ hội.";
+        TempData["ok"] = "Đã xoá khách tiềm năng.";
         return RedirectToPage();
     }
 }

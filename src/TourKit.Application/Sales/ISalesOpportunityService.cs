@@ -25,4 +25,14 @@ public interface ISalesOpportunityService
 
     /// <summary>Các cột của phễu, đã sắp theo thứ tự hiển thị — nguồn cho lưới lẫn bảng kanban.</summary>
     Task<IReadOnlyList<OpportunityStageDto>> ListStagesAsync();
+
+    /// <summary>
+    /// Cơ hội theo NGƯỜI PHỤ TRÁCH trong khoảng thời gian (hệ cũ <c>uspReportBookingTicket</c>).
+    /// Một cơ hội có nhiều người phụ trách thì tính cho TỪNG người — đây là báo cáo hiệu suất cá
+    /// nhân, chia đôi công theo đầu người sẽ làm mọi con số lẻ và không ai đối chiếu được.
+    /// </summary>
+    Task<IReadOnlyList<OpportunityByUserRowDto>> ReportByUserAsync(DateTimeOffset? tu, DateTimeOffset? den);
+
+    /// <summary>Thống kê LÝ DO MẤT KHÁCH (hệ cũ <c>StatisticsCancelReason</c>) — đếm kèm giá trị đã mất.</summary>
+    Task<IReadOnlyList<OpportunityCancelReasonRowDto>> ReportCancelReasonsAsync(DateTimeOffset? tu, DateTimeOffset? den);
 }

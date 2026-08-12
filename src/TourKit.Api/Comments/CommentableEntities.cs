@@ -25,12 +25,20 @@ public static class CommentableEntities
     /// <summary>
     /// MỌI link ở đây BẮT BUỘC chứa <c>{id}</c>. Trỏ về màn danh sách thì người nhận thông báo phải
     /// tự đi tìm lại bản ghi giữa hàng nghìn dòng — thông báo mất gần hết tác dụng.
-    /// Cơ hội chưa có màn chi tiết nên dùng đường dẫn sâu <c>?mo={id}</c>, trang tự mở offcanvas.
+    /// Hai loại dưới đây chưa có màn chi tiết nên dùng đường dẫn sâu <c>?mo={id}</c>, trang tự mở
+    /// offcanvas đúng bản ghi.
+    ///
+    /// LƯU Ý khi đổi đường dẫn của một màn: link ở đây không tự đi theo. Trước kia bảng này không
+    /// được kiểm gì, nên link cũ vẫn mở ra một trang bình thường — chỉ là trang KHÁC — và chỉ lộ khi
+    /// người dùng bấm vào thông báo. Đã xảy ra thật lúc tách /co-hoi thành hai màn. Nay có
+    /// CommentableEntitiesTests.Link_phai_tro_dung_trang_so_huu_ban_ghi canh, nhưng bài đó giữ danh
+    /// sách trang RIÊNG — thêm loại mới ở đây thì thêm cả ở đó.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, Entry> Map =
         new Dictionary<string, Entry>(StringComparer.Ordinal)
         {
-            ["Lead"] = new("Cơ hội bán hàng", Permissions.LeadView, "/co-hoi?mo={id}"),
+            ["Lead"] = new("Khách tiềm năng", Permissions.LeadView, "/khach-tiem-nang?mo={id}"),
+            ["SalesOpportunity"] = new("Cơ hội bán hàng", Permissions.OpportunityView, "/co-hoi?mo={id}"),
             ["Customer"] = new("Khách hàng", Permissions.CustomerView, "/khach-hang/{id}"),
             ["Order"] = new("Đơn hàng", Permissions.BookingView, "/don-hang/{id}"),
         };

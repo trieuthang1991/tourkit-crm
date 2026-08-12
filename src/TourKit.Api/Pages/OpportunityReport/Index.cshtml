@@ -1,0 +1,134 @@
+@page
+@model TourKit.Api.Pages.OpportunityReport.IndexModel
+@{ ViewData["Title"] = "Báo cáo phễu cơ hội"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+
+@{
+  string N(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture);
+  string I(int v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">CRM <span class="mx-1">/</span> <span class="text-body">Báo cáo phễu cơ hội</span></div>
+    <h4 class="mb-0">Báo cáo phễu cơ hội</h4>
+  </div>
+  <form method="get" class="d-flex gap-2 align-items-center">
+    <input type="text" name="tu" class="form-control tk-datef" placeholder="Từ ngày" autocomplete="off"
+           value="@(Model.Tu?.ToString("yyyy-MM-dd"))" />
+    <input type="text" name="den" class="form-control tk-datef" placeholder="đến ngày" autocomplete="off"
+           value="@(Model.Den?.ToString("yyyy-MM-dd"))" />
+    <button type="submit" class="btn btn-primary text-nowrap"><i class="ti ti-search me-1"></i>Xem</button>
+    <a href="/bao-cao-co-hoi" class="btn btn-icon btn-label-secondary" title="Bỏ lọc kỳ"><i class="ti ti-rotate"></i></a>
+  </form>
+</div>
+
+<div class="tk-surface">
+  <div class="tk-stat-strip">
+    <div class="tk-stat">
+      <span class="tk-stat-ic bg-label-secondary"><i class="ti ti-target"></i></span>
+      <div class="lh-sm"><div class="tk-stat-value">@I(Model.TongCoHoi)</div><small class="tk-stat-label">Cơ hội trong kỳ</small></div>
+    </div>
+    <div class="tk-stat">
+      <span class="tk-stat-ic bg-label-success"><i class="ti ti-circle-check"></i></span>
+      <div class="lh-sm"><div class="tk-stat-value">@I(Model.TongChot)</div><small class="tk-stat-label">Đã chốt</small></div>
+    </div>
+    <div class="tk-stat">
+      <span class="tk-stat-ic bg-label-primary"><i class="ti ti-percentage"></i></span>
+      <div class="lh-sm"><div class="tk-stat-value">@Model.TyLeChotChung.ToString("0.#")%</div><small class="tk-stat-label">Tỉ lệ chốt chung</small></div>
+    </div>
+    <div class="tk-stat">
+      <span class="tk-stat-ic bg-label-danger"><i class="ti ti-cash-off"></i></span>
+      <div class="lh-sm"><div class="tk-stat-value">@N(Model.TongGiaTriMat)</div><small class="tk-stat-label">Giá trị đã mất</small></div>
+    </div>
+  </div>
+
+  <h6 class="px-3 pt-3 mb-2">Hiệu suất theo nhân viên</h6>
+  @if (Model.TheoNhanVien.Count == 0)
+  {
+    <p class="text-muted px-3 pb-3 mb-0">Kỳ này chưa có cơ hội nào được phân công.</p>
+  }
+  else
+  {
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Nhân viên</th>
+            <th class="text-end">Tổng</th>
+            <th class="text-end">Đang mở</th>
+            <th class="text-end">Đã chốt</th>
+            <th class="text-end">Đã huỷ</th>
+            <th class="text-end">Tỉ lệ chốt</th>
+            <th class="text-end">Giá trị đang mở</th>
+            <th class="text-end">Giá trị đã chốt</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var r in Model.TheoNhanVien)
+          {
+            <tr>
+              <td>@r.UserName</td>
+              <td class="text-end">@I(r.Tong)</td>
+              <td class="text-end">@I(r.DangMo)</td>
+              <td class="text-end fw-medium text-success">@I(r.DaChot)</td>
+              <td class="text-end text-muted">@I(r.DaHuy)</td>
+              <td class="text-end fw-medium">@r.TyLeChot.ToString("0.#")%</td>
+              <td class="text-end">@N(r.GiaTriDangMo)</td>
+              <td class="text-end fw-medium">@N(r.GiaTriDaChot)</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <h6 class="px-3 pt-4 mb-2">Lý do mất khách</h6>
+  @if (Model.LyDoHuy.Count == 0)
+  {
+    <p class="text-muted px-3 pb-3 mb-0">Kỳ này chưa có cơ hội nào bị huỷ.</p>
+  }
+  else
+  {
+    <div class="table-responsive pb-2">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Lý do</th>
+            <th class="text-end">Số cơ hội</th>
+            @* Sắp theo GIÁ TRỊ chứ không theo số lượng: mất 10 cơ hội nhỏ và mất 1 cơ hội lớn là
+               hai vấn đề khác nhau, xếp theo số đếm thì cái thứ hai chìm xuống cuối bảng. *@
+            <th class="text-end">Giá trị đã mất</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var r in Model.LyDoHuy)
+          {
+            <tr>
+              <td>@r.ReasonName</td>
+              <td class="text-end">@I(r.SoCoHoi)</td>
+              <td class="text-end fw-medium text-danger">@N(r.GiaTriMat)</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
+@section PageScripts {
+  <script>
+    $(function () {
+      if (window.flatpickr) {
+        flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true });
+      }
+    });
+  </script>
+}

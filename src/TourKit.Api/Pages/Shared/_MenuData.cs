@@ -33,6 +33,7 @@ public static class MenuData
             // Cơ hội bán hàng dùng quyền RIÊNG (opportunity.*): khác nghiệp vụ với khách tiềm năng
             // nên thường cũng khác người được xem — cơ hội có tiền, khách tiềm năng thì chưa.
             new("crm-opp", "Cơ hội bán hàng", To: "/co-hoi", Perm: "opportunity.view"),
+            new("crm-opp-report", "Báo cáo phễu cơ hội", To: "/bao-cao-co-hoi", Perm: "opportunity.view"),
             new("crm-data", "Data khách hàng", To: "/khach-hang", Perm: "customer.view"),
             new("crm-dedup", "Rà khách trùng", To: "/khach-hang/trung-lap", Perm: "customer.view"),
             new("crm-care", "Quản lý lịch hẹn", To: "/lich-hen", Perm: "care.view"),

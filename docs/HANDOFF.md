@@ -91,6 +91,30 @@ Mockup tĩnh + menu: `D:/MiGroup/tourkitapp/tourkit/UI/*.html`, `.../CMS/KojiCRM
 
 ---
 
+### 2026-08-12 — TÁCH "Cơ hội bán hàng" ra khỏi "Khách tiềm năng"
+
+Trước đây `/co-hoi` trỏ vào thực thể `Lead` — SAI khái niệm. Hệ cũ (KojiCRM) có HAI mục riêng:
+"Chia số Sale" (chia data thô cho sale) và "Cơ hội bán hàng" = `/booking-ticket`, bảng
+`BookingTicket`: phiếu yêu cầu đi tour, có mã phiếu, nội dung, số khách, giá, tour đang hỏi.
+
+Nay:
+
+| Đường dẫn | Thực thể | Quyền |
+|---|---|---|
+| `/co-hoi` | `SalesOpportunity` (phễu chốt đơn) | `opportunity.*` |
+| `/khach-tiem-nang` | `Lead` (số khách thô) | `lead.*` |
+| `/chia-so-sale` | `LeadCampaign` | `lead.*` |
+| `/bao-cao-co-hoi` | báo cáo phễu + lý do mất khách | `opportunity.view` |
+
+Bốn chỗ CỐ Ý làm khác hệ cũ vì hệ cũ có vấn đề ở đúng đó: người phụ trách để **bảng riêng** (hệ cũ
+nhét `"3,17,42"` vào cột text), **bốn** bậc khách thay vì ba (khớp đơn hàng), tệp đính kèm trỏ
+`FileUpload` theo Guid thay vì lưu đường dẫn, và giá trị phễu là **biểu thức dùng chung** thay vì
+cột lưu sẵn.
+
+Ba luật ở tầng dịch vụ: huỷ **bắt buộc** có lý do; "Chốt đơn" **không đặt tay** (do `BookingService`
+đánh dấu sau khi đơn thật đã tạo, đúng thứ tự `uspInsertTourSampleCustomer_V4`); cơ hội đã chốt thì
+khoá sửa/xoá/chuyển cột.
+
 ## 4. VIỆC CÒN LẠI (ưu tiên cho AI kế nhiệm)
 
 > **3 QUYẾT ĐỊNH CHẶN CỨNG — chỉ chủ dự án cấp được (đừng làm bừa):**

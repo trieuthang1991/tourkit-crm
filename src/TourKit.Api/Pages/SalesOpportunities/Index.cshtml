@@ -241,6 +241,15 @@
           <input class="form-check-input" type="checkbox" name="Input.FromWebsite" value="true" id="chk-web" />
           <label class="form-check-label" for="chk-web">Yêu cầu đến từ website</label>
         </div>
+
+        @* Trao đổi nằm TRONG vùng cuộn .tk-oc-fields để thanh Lưu/Huỷ vẫn dính đáy. An toàn khi ở
+           trong <form>: luồng bình luận không tự dựng <form>, nút Gửi là type="button", và textarea
+           không có name nên không bị gửi kèm khi lưu cơ hội.
+
+           Dùng ĐÚNG cơ chế EntityComment sẵn có thay vì dựng bảng bình luận riêng cho cơ hội — hệ cũ
+           có hẳn module BookingTicketComment, nhưng ở đây ActivityLog + EntityComment đã trả lời
+           chung một câu hỏi cho mọi bản ghi: "đã xảy ra chuyện gì" và "vì sao". *@
+        <div id="opp-comments" class="tk-oc-comments d-none" data-comments data-entity="SalesOpportunity"></div>
       </div>
 
       <div class="tk-oc-actions">
@@ -290,6 +299,7 @@
 
 @section PageScripts {
   <script src="~/js/tk-grid.js" asp-append-version="true"></script>
+  <script src="~/js/tk-comments.js" asp-append-version="true"></script>
   <script>
     var oc, grid;
 
@@ -442,7 +452,7 @@
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
       if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
 
-      oc = tk.form({
+      var ocForm = tk.form({
         offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'cơ hội',
         rules: {
           'Input.Code': { required: true },
@@ -462,6 +472,26 @@
           setTimeout(tinhTong, 0);
         }
       });
+
+      // Bọc tk.form để gắn luồng trao đổi theo ĐÚNG cơ hội đang mở. Cơ hội mới chưa có id nên ẩn
+      // hẳn: chưa có gì để bình luận, và gắn vào id rỗng sẽ tạo một luồng mồ côi.
+      oc = {
+        open: function (row) {
+          ocForm.open(row);
+          var box = document.getElementById('opp-comments');
+          var id = row && row.id;
+          box.classList.toggle('d-none', !id);
+          if (id) {
+            box.dataset.entityId = id;
+            tk.comments.mount(box);
+          } else {
+            // Xoá hẳn id cũ, đừng chỉ ẩn: để sót thì lần mở sau (hoặc vòng quét lúc tải trang) sẽ
+            // hiện trao đổi của cơ hội TRƯỚC ĐÓ trên form đang tạo mới.
+            delete box.dataset.entityId;
+            box.innerHTML = '';
+          }
+        }
+      };
 
       // Ô chọn mẫu tour và chuyến GỌI SERVER: cả hai đều là danh mục tăng theo thời gian.
       tk.s2ajax('#frm [name="Input.TourDepartureId"]', {
