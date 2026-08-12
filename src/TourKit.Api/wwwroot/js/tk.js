@@ -64,10 +64,13 @@
   // Vì sao tách hai ô: một ô không thể vừa hiện "1.200.000" vừa gửi "1200000". Ô nhìn thấy chỉ để
   // hiển thị, ô ẩn mang name thật nên giá trị gửi lên luôn parse được, không phụ thuộc lúc submit
   // người dùng đang focus hay không.
-  tk.oTien = function (ten, giaTri, chuMo) {
+  // co: 'sm' (mặc định — dùng cho dòng trong bảng giá) hoặc '' (cỡ thường — dùng trong form).
+  // Ép cứng cỡ nhỏ ở mọi nơi làm ô tiền thấp hơn hẳn ô số bên cạnh khi đặt trong form, nhìn so le.
+  tk.oTien = function (ten, giaTri, chuMo, co) {
     var raw = (giaTri == null || giaTri === '') ? '' : String(giaTri);
-    return '<div class="input-group input-group-sm">' +
-      '<input type="text" inputmode="decimal" class="form-control form-control-sm tk-tien text-end"' +
+    var nho = co === undefined || co === 'sm';
+    return '<div class="input-group' + (nho ? ' input-group-sm' : '') + '">' +
+      '<input type="text" inputmode="decimal" class="form-control' + (nho ? ' form-control-sm' : '') + ' tk-tien text-end"' +
       ' data-tien="' + ten + '" value="' + tk.escape(tk.tienDep(raw)) + '"' +
       ' placeholder="' + tk.escape(chuMo || '0') + '" autocomplete="off" />' +
       // Ô ẩn luôn có SỐ, kể cả khi ô nhìn thấy đang trống: cột giá ở CSDL không cho null, mà model
@@ -163,7 +166,10 @@
   tk.tienAuto = function (root) {
     $(root || document).find('input[data-tien-auto]').each(function () {
       var ten = this.name, gt = this.value, chuMo = this.getAttribute('placeholder') || '0';
-      $(this).replaceWith(tk.oTien(ten, gt, chuMo));
+      // GIỮ NGUYÊN cỡ của ô gốc: ô trong form khai form-control (cỡ thường) thì ô tiền thay vào
+      // cũng phải cỡ thường, nếu không nó thấp hơn ô bên cạnh và cả hàng nhìn lệch.
+      var co = this.classList.contains('form-control-sm') ? 'sm' : '';
+      $(this).replaceWith(tk.oTien(ten, gt, chuMo, co));
     });
   };
 
@@ -181,12 +187,17 @@
     });
   };
 
+
   tk.escape = function (s) { return $('<div>').text(s == null ? '' : s).html(); };
   tk.trunc = function (s, max) { var e = tk.escape(s); return '<span class="d-inline-block text-truncate align-middle" style="max-width:' + (max || 180) + 'px" title="' + e + '">' + e + '</span>'; };
 
   // ---- DataTables server-side chuẩn (ngôn ngữ VN, fix width, dom Vuexy) ----
   tk.dtLanguage = {
-    processing: 'Đang tải...', search: 'Tìm:', lengthMenu: 'Hiện _MENU_ dòng',
+    // Chỉ báo đang tải: vòng xoay theo màu thương hiệu + chữ, gói trong một viên thuốc nổi giữa
+    // bảng. Bản mặc định của DataTables là ba chấm nảy trong khung trần — trông như trang chưa làm
+    // xong. Markup để Ở ĐÂY (một chỗ) thay vì mỗi màn tự khai.
+    processing: '<span class="tk-load"><span class="tk-load-spin"></span>Đang tải…</span>',
+    search: 'Tìm:', lengthMenu: 'Hiện _MENU_ dòng',
     info: 'Hiện _START_–_END_ trên _TOTAL_', infoEmpty: 'Không có dữ liệu', infoFiltered: '(lọc từ _MAX_)',
     zeroRecords: 'Không tìm thấy', emptyTable: 'Chưa có dữ liệu',
     paginate: { first: '«', last: '»', next: '›', previous: '‹' }

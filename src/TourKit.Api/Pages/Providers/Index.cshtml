@@ -490,14 +490,14 @@
             '</select></div>';
         }
 
-        return '<div class="col-12 tk-cot-loai tk-cot-ks d-none"><div class="row g-2 align-items-end">' +
+        return '<div class="col-12 tk-cot-ks d-none"><div class="row g-2 align-items-end">' +
             o('Giai đoạn từ', p + 'PeriodFrom', d.periodFrom, 'date') +
             o('Đến', p + 'PeriodTo', d.periodTo, 'date') +
             chon('Loại ngày', p + 'DayType', d.dayType, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TourKit.Application.Providers.ProviderServiceLineProfile.DayTypes))) +
             o('Chi phí NET/ngày', p + 'NetCostPerDay', d.netCostPerDay, 'number') +
             o('Giá bán/ngày', p + 'SellPricePerDay', d.sellPricePerDay, 'number') +
           '</div></div>' +
-          '<div class="col-12 tk-cot-loai tk-cot-ve d-none"><div class="row g-2 align-items-end">' +
+          '<div class="col-12 tk-cot-ve d-none"><div class="row g-2 align-items-end">' +
             chon('Loại vé', p + 'TicketType', d.ticketType, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TourKit.Application.Providers.ProviderServiceLineProfile.TicketTypes))) +
             o('Hành trình vé', p + 'Route', d.route, 'text', 'VD SGN-HAN-SGN') +
             o('Giờ đi', p + 'DepartTime', d.departTime, 'text', 'VD 08:30') +

@@ -206,7 +206,12 @@
             all: 'Tất cả',
             counter: { showing: 'Hiện', of: 'trên', rows: 'dòng', pages: 'trang' }
           },
-          data: { loading: 'Đang tải…', error: 'Lỗi tải dữ liệu' }
+          // Cùng một chỉ báo với DataTables (xem tk.dtLanguage.processing): hai lưới nằm cạnh nhau
+          // trong cùng sản phẩm mà mỗi cái quay một kiểu thì trông như hai phần mềm ghép lại.
+          data: {
+            loading: '<span class="tk-load"><span class="tk-load-spin"></span>Đang tải…</span>',
+            error: '<span class="tk-load tk-load-loi"><i class="ti ti-alert-triangle me-2"></i>Lỗi tải dữ liệu</span>'
+          }
         }
       },
       layout: 'fitColumns',

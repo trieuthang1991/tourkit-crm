@@ -336,8 +336,17 @@ public class IndexModel : TkListPageModel
     /// Chuyển cột (kéo thẻ kanban hoặc chọn ở form). Lý do huỷ đi kèm ngay tại đây — tách thành hai
     /// lần gọi thì có khoảng giữa mà cơ hội đã huỷ nhưng chưa có lý do, đúng thứ báo cáo cần.
     /// </summary>
-    public async Task<IActionResult> OnPostMoveAsync(Guid id, int stageCode, Guid? cancelReasonId, string? cancelNote)
+    public async Task<IActionResult> OnPostMoveAsync(
+        Guid id, int? stageCode, int? to, Guid? cancelReasonId, string? cancelNote)
     {
+        // Nhận CẢ HAI tên tham số: bảng kanban dùng chung gửi "to", còn hộp lý do huỷ và các lời gọi
+        // khác gửi "stageCode". Bắt kanban đổi theo mình thì phải sửa cả bộ dùng chung của mọi màn.
+        var cot = to ?? stageCode;
+        if (cot is not { } cotDich)
+        {
+            return new JsonResult(Result.Error("Thiếu cột đích."));
+        }
+
         if (!CanManage)
         {
             return new JsonResult(Result.Error("Bạn không có quyền chuyển cột."));
@@ -346,7 +355,7 @@ public class IndexModel : TkListPageModel
         await NapCotAsync();
         try
         {
-            var sau = await _svc.MoveStageAsync(id, new MoveOpportunityStageDto(stageCode, cancelReasonId, cancelNote));
+            var sau = await _svc.MoveStageAsync(id, new MoveOpportunityStageDto(cotDich, cancelReasonId, cancelNote));
             await NapNhanAsync([sau]);
             return new JsonResult(Result.Success("Đã chuyển cột.", Dong(sau)));
         }

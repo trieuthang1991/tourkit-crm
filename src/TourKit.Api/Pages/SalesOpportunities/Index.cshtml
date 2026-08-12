@@ -35,8 +35,8 @@
   </div>
   <div class="d-flex gap-2">
     <div class="btn-group" role="group">
-      <button type="button" class="btn btn-label-secondary active" id="view-list" title="Dạng bảng"><i class="ti ti-list"></i></button>
-      <button type="button" class="btn btn-label-secondary" id="view-kanban" title="Dạng Kanban"><i class="ti ti-layout-kanban"></i></button>
+      <button type="button" class="btn btn-label-secondary active" id="view-table" title="Dạng bảng"><i class="ti ti-list"></i></button>
+      <button type="button" class="btn btn-label-secondary" id="view-kanban" title="Bảng Kanban"><i class="ti ti-layout-kanban"></i></button>
     </div>
     <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất file</a>
     @if (Model.CanManage)
@@ -61,7 +61,7 @@
     }
   </div>
 
-  <div class="tk-toolbar">
+  <div class="tk-pad">
     <div class="row g-2 align-items-center">
       <div class="col-md-3"><input type="text" id="f-q" class="form-control" placeholder="Tìm mã, tên cơ hội, khách, SĐT" /></div>
       <div class="col-md-2">
@@ -114,19 +114,18 @@
     </div>
   </div>
 
-  <div id="pane-list">
-    <div id="grid-opp"></div>
-  </div>
+  <div id="grid-opp"></div>
 
-  <div id="pane-kanban" class="app-kanban d-none">
+  <div id="pane-kanban" class="app-kanban tk-pad d-none">
     <div class="kanban-wrapper"></div>
   </div>
 </div>
 
 @Html.AntiForgeryToken()
 
-@* Offcanvas CRUD — rộng vì form có 4 bậc khách × (số lượng + giá) *@
-<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:900px;max-width:100%">
+@* Offcanvas CRUD. 680px là mức RỘNG NHẤT trong dải chung của app (520–680) — đủ cho lưới 3 cột
+   số lượng/đơn giá mà không lạc lõng giữa các màn khác. *@
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:680px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">cơ hội</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
   <div class="offcanvas-body tk-oc">
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
@@ -134,19 +133,26 @@
         <input type="hidden" name="Id" />
 
         <div class="row">
-          <div class="col-md-4 mb-3"><label class="form-label">Mã cơ hội <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="VD: CH-2608-01" /></div>
-          <div class="col-md-8 mb-3"><label class="form-label">Tên cơ hội <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Chị Lan hỏi Đà Nẵng 4N3Đ tháng 9" /></div>
+          <div class="col-md-5 mb-3"><label class="form-label">Mã cơ hội <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="VD: CH-2608-01" /></div>
+          <div class="col-md-7 mb-3"><label class="form-label">Tên cơ hội <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Chị Lan hỏi Đà Nẵng 4N3Đ tháng 9" /></div>
         </div>
 
-        <h6 class="text-muted small text-uppercase mt-2 mb-2">Khách hỏi</h6>
+        <h6 class="text-muted small text-uppercase mb-3">Khách hỏi</h6>
         <div class="row">
-          <div class="col-md-4 mb-3"><label class="form-label">Tên khách <span class="text-danger">*</span></label><input type="text" name="Input.ContactName" class="form-control" placeholder="Nguyễn Thị Lan" /></div>
-          <div class="col-md-3 mb-3"><label class="form-label">Điện thoại</label><input type="text" name="Input.ContactPhone" class="form-control" placeholder="09xxxxxxxx" /></div>
-          <div class="col-md-5 mb-3"><label class="form-label">Email</label><input type="text" name="Input.ContactEmail" class="form-control" placeholder="ten@congty.vn" /></div>
+          <div class="col-md-6 mb-3"><label class="form-label">Tên khách <span class="text-danger">*</span></label><input type="text" name="Input.ContactName" class="form-control" placeholder="Nguyễn Thị Lan" /></div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Điện thoại <span class="text-danger">*</span></label>
+            @* Khách định danh bằng SĐT: gõ số xong hệ thống tự tra, có thì gắn hồ sơ sẵn, chưa có
+               thì cho tạo nhanh ngay tại đây. Xem tk.khachSdt. *@
+            <input type="text" name="Input.ContactPhone" class="form-control" placeholder="09xxxxxxxx"
+                   data-khach-sdt data-khach-id="Input.CustomerId"
+                   data-khach-ten="Input.ContactName" data-khach-email="Input.ContactEmail" />
+            <input type="hidden" name="Input.CustomerId" />
+          </div>
+          <div class="col-md-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.ContactEmail" class="form-control" placeholder="ten@congty.vn" /></div>
+          <div class="col-md-6 mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.ContactAddress" class="form-control" placeholder="Số nhà, đường, phường/xã" /></div>
         </div>
-        <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.ContactAddress" class="form-control" placeholder="Số nhà, đường, phường/xã" /></div>
-
-        <h6 class="text-muted small text-uppercase mt-2 mb-2">Nhu cầu</h6>
+        <h6 class="text-muted small text-uppercase mt-4 mb-3">Nhu cầu</h6>
         <div class="row">
           <div class="col-md-6 mb-3">
             <label class="form-label">Mẫu tour đang hỏi</label>
@@ -165,7 +171,7 @@
            Dựng bằng lưới div chứ KHÔNG dùng <table>: bộ soát màn danh sách đếm dòng bằng
            "table tbody tr", nên một bảng nằm trong form sẽ bị tính thành dòng dữ liệu và làm bài
            kiểm thử lọc không bao giờ về 0. *@
-        <div class="tk-bac-khach mb-3">
+        <div class="mb-3">
           <div class="row g-2 fw-medium text-muted small">
             <div class="col-4">Bậc khách</div>
             <div class="col-4">Số lượng</div>
@@ -199,7 +205,7 @@
 
         <div class="mb-3"><label class="form-label">Nội dung yêu cầu</label><textarea name="Input.Content" class="form-control tk-rte-field" rows="4" placeholder="Khách cần gì: ngày đi dự kiến, khách sạn mấy sao, yêu cầu riêng…"></textarea></div>
 
-        <h6 class="text-muted small text-uppercase mt-2 mb-2">Phân công &amp; nguồn</h6>
+        <h6 class="text-muted small text-uppercase mt-4 mb-3">Phân công &amp; nguồn</h6>
         <div class="row">
           <div class="col-md-6 mb-3">
             <label class="form-label">Người phụ trách</label>
@@ -215,21 +221,21 @@
           </div>
         </div>
         <div class="row">
-          <div class="col-md-4 mb-3">
+          <div class="col-md-6 mb-3">
             <label class="form-label">Nguồn khách</label>
             <select name="Input.CustomerSourceId" class="form-select tk-s2" data-placeholder="Chọn nguồn khách">
               <option value="">— Chưa rõ —</option>
               @foreach (var s in Model.Sources) { <option value="@s.Id">@s.Name</option> }
             </select>
           </div>
-          <div class="col-md-4 mb-3">
+          <div class="col-md-6 mb-3">
             <label class="form-label">Thị trường</label>
             <select name="Input.MarketTypeId" class="form-select tk-s2" data-placeholder="Chọn thị trường">
               <option value="">— Chưa rõ —</option>
               @foreach (var m in Model.Markets) { <option value="@m.Id">@m.Name</option> }
             </select>
           </div>
-          <div class="col-md-4 mb-3">
+          <div class="col-md-12 mb-3">
             <label class="form-label">Chi nhánh</label>
             <select name="Input.BranchId" class="form-select tk-s2" data-placeholder="Chọn chi nhánh">
               <option value="">— Không thuộc chi nhánh —</option>
@@ -300,6 +306,7 @@
 @section PageScripts {
   <script src="~/js/tk-grid.js" asp-append-version="true"></script>
   <script src="~/js/tk-comments.js" asp-append-version="true"></script>
+  <script src="~/js/tk-khach.js" asp-append-version="true"></script>
   <script>
     var oc, grid;
 
@@ -311,111 +318,49 @@
     var CHOT = @TourKit.Shared.Entities.OpportunityStageCode.ChotDon;
     var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
 
-    var KB_SIZE = 15;
-    var kanban = null, kbPage = {}, kbCards = {};
+    var kb = null;
 
-    function filterValues() { return grid ? grid.filters() : {}; }
-
-    function kbQuery(stage, page) {
-      var d = filterValues();
-      var p = new URLSearchParams();
-      Object.keys(d).forEach(function (k) { if (k !== 'stageCode') { p.set(k, d[k]); } });
-      p.set('stageCode', stage); p.set('page', page); p.set('size', KB_SIZE);
-      return '?handler=KanbanColumn&' + p.toString();
-    }
-
-    function kbCardHtml(c) {
-      var sub = [c.contactPhone, c.soKhach + ' khách'].filter(Boolean).map(tk.escape).join(' · ');
-      return '<div class="fw-medium kanban-text">' + tk.escape(c.title) + '</div>' +
-        (sub ? '<div class="small text-muted">' + sub + '</div>' : '') +
-        '<div class="small fw-medium mt-1">' + tk.money(c.estimatedValue) + ' đ</div>';
-    }
-
-    function kbBoardEl(stage) { return document.querySelector('.kanban-board[data-id="st-' + stage + '"]'); }
-
-    function kbSyncMore(stage, hasMore, total) {
-      var board = kbBoardEl(stage); if (!board) { return; }
-      var head = board.querySelector('.kanban-title-board');
-      if (head && head.dataset.base) { head.textContent = head.dataset.base + ' (' + total + ')'; }
-      var btn = board.querySelector('.kb-more');
-      if (!hasMore) { if (btn) { btn.remove(); } return; }
-      if (!btn) {
-        btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-sm btn-label-primary w-100 kb-more mt-2';
-        btn.textContent = 'Tải thêm';
-        btn.addEventListener('click', function () { kbLoadMore(stage); });
-        board.appendChild(btn);
-      }
-    }
-
-    function kbLoadMore(stage) {
-      var next = (kbPage[stage] || 1) + 1;
-      $.getJSON(kbQuery(stage, next), function (res) {
-        kbPage[stage] = next;
-        res.cards.forEach(function (c) {
-          kbCards[c.id] = c;
-          kanban.addElement('st-' + stage, { id: c.id, title: kbCardHtml(c) });
-        });
-        kbSyncMore(stage, res.hasMore, res.total);
-      });
-    }
-
-    /** Gửi lệnh chuyển cột. Tách riêng vì cả kéo–thả lẫn hộp lý do huỷ đều dùng. */
-    function chuyenCot(id, stage, reasonId, note) {
-      var fd = new FormData();
-      fd.append('id', id); fd.append('stageCode', stage);
-      if (reasonId) { fd.append('cancelReasonId', reasonId); }
-      if (note) { fd.append('cancelNote', note); }
-      return tk.post('?handler=Move', fd);
-    }
-
-    function kbRender() {
-      $('.kanban-wrapper').empty();
-      kbPage = {}; kbCards = {};
-      var reqs = STAGES.map(function (s) { return $.getJSON(kbQuery(s.code, 1)); });
-      $.when.apply($, reqs).done(function () {
-        var results = STAGES.length === 1 ? [arguments] : Array.prototype.slice.call(arguments);
-        var boards = STAGES.map(function (s, i) {
-          var res = results[i][0];
-          kbPage[s.code] = 1;
-          res.cards.forEach(function (c) { kbCards[c.id] = c; });
+    /**
+     * Bảng Kanban dựng bằng tk.kanban dùng chung, KHÔNG tự gọi jKanban.
+     *
+     * Bản đầu tôi tự viết lại toàn bộ (dựng cột, thẻ, nút "Tải thêm", kéo–thả) — chạy được nhưng
+     * thẻ và đầu cột lệch khuôn với màn Công việc và Lịch hẹn, đúng chỗ chủ dự án nhận ra ngay.
+     * Bộ dùng chung đã gói sẵn cả bốn thứ đó theo khuôn app-kanban của theme.
+     */
+    function kbBuild() {
+      kb = tk.kanban({
+        pane: '#pane-kanban',
+        columns: STAGES.map(function (s) {
           return {
-            id: 'st-' + s.code,
-            title: tk.escape(s.name) + ' (' + res.total + ')',
-            item: res.cards.map(function (c) { return { id: c.id, title: kbCardHtml(c) }; })
+            id: s.code,
+            name: s.name,
+            // Hai cột hệ thống luôn đỏ/xanh, các cột giữa để màu trung tính — màu ở đây là NGỮ NGHĨA
+            // (thắng/thua), không phải trang trí, nên không cho danh mục đổi.
+            color: s.code === CHOT ? 'success' : (s.code === HUY ? 'danger' : 'info')
           };
-        });
-
-        kanban = new jKanban({
-          element: '.kanban-wrapper', gutter: '12px', widthBoard: '260px',
-          dragItems: CAN_MANAGE, dragBoards: false, boards: boards,
-          dropEl: function (el, target) {
-            var id = el.getAttribute('data-eid');
-            var toStage = parseInt(target.parentElement.getAttribute('data-id').replace('st-', ''), 10);
-
-            // Kéo sang Huỷ thì phải hỏi lý do TRƯỚC khi ghi. Ghi rồi mới hỏi sẽ để lại khoảng giữa
-            // có cơ hội đã huỷ mà chưa có lý do — đúng thứ báo cáo cần.
-            if (toStage === HUY) { moHopHuy(id); return; }
-
-            chuyenCot(id, toStage).then(function (r) {
-              if (r && r.isSuccess) { tk.toast(r.message); if (grid) { grid.reload(); } }
-              else { tk.error((r && r.message) || 'Không chuyển cột được.'); kbRender(); }
-            });
-          },
-          click: function (el) {
-            var c = kbCards[el.getAttribute('data-eid')];
-            if (c) { oc.open(c); }
-          }
-        });
-
-        STAGES.forEach(function (s, i) {
-          var board = kbBoardEl(s.code);
-          var head = board && board.querySelector('.kanban-title-board');
-          if (head) { head.dataset.base = s.name; }
-          kbSyncMore(s.code, results[i][0].hasMore, results[i][0].total);
-        });
+        }),
+        moveUrl: '?handler=Move',
+        url: function (colId, page, size) {
+          var d = grid ? grid.filters() : {};
+          var p = new URLSearchParams();
+          // Cột ĐÃ là một bước phễu → bỏ ô lọc cột, nếu không chỉ một cột có thẻ.
+          Object.keys(d).forEach(function (k) { if (k !== 'stageCode') { p.set(k, d[k]); } });
+          p.set('stageCode', colId); p.set('page', page); p.set('size', size);
+          return '?handler=KanbanColumn&' + p.toString();
+        },
+        card: function (c) {
+          return {
+            title: c.title,
+            meta: [c.code, c.contactPhone].filter(Boolean).join(' · '),
+            foot: tk.money(c.estimatedValue) + ' đ',
+            footIcon: 'ti ti-cash',
+            who: c.contactName
+          };
+        },
+        onCardClick: function (row) { oc.open(row); },
+        onMoved: function () { if (grid) { grid.reload(); } }
       });
+      kb.render();
     }
 
     /** Thẻ thống kê chạy theo BỘ LỌC: lọc xuống một chi nhánh mà thẻ vẫn hiện số toàn công ty thì
@@ -464,6 +409,15 @@
           'Input.Title': { required: 'Bắt buộc nhập tên cơ hội' },
           'Input.ContactName': { required: 'Bắt buộc nhập tên khách' }
         },
+        // Ô ẩn giữ mã khách KHÔNG được jQuery Validate soi (tk.form đặt ignore ':hidden'), nên chặn ở
+        // đây. Báo ngay cạnh ô số điện thoại — đó mới là chỗ người dùng phải thao tác, chứ không phải
+        // một ô ẩn họ không nhìn thấy.
+        beforeSave: function ($f) {
+          if (($f.find('[name="Input.CustomerId"]').val() || '').trim()) { return true; }
+          tk.error('Chưa gắn hồ sơ khách. Gõ số điện thoại để tra, chưa có thì bấm "Tạo nhanh".');
+          $f.find('[name="Input.ContactPhone"]').trigger('focus');
+          return false;
+        },
         fill: function ($form, data) {
           // Hai ô chọn nhiều người: tk.form điền theo name nhưng select nhiều lựa chọn cần mảng.
           $form.find('[name="Input.AssigneeIds"]').val((data && data.assigneeIds) || []).trigger('change');
@@ -492,6 +446,9 @@
           }
         }
       };
+
+      // Ô SĐT tự tra khách hàng (và cho tạo nhanh khi chưa có).
+      tk.khachSdt('#frm');
 
       // Ô chọn mẫu tour và chuyến GỌI SERVER: cả hai đều là danh mục tăng theo thời gian.
       tk.s2ajax('#frm [name="Input.TourDepartureId"]', {
@@ -593,7 +550,7 @@
             bootstrap.Modal.getInstance(document.getElementById('huy-modal')).hide();
             tk.toast(r.message);
             if (grid) { grid.reload(); }
-            if (!$('#pane-kanban').hasClass('d-none')) { kbRender(); }
+            if (kb && !$('#pane-kanban').hasClass('d-none')) { kb.render(); }
           } else {
             tk.error((r && r.message) || 'Không huỷ được.');
           }
@@ -601,14 +558,18 @@
       });
 
 
-      $('#view-list').on('click', function () {
-        $('#pane-list').removeClass('d-none'); $('#pane-kanban').addClass('d-none');
-        $('#view-list').addClass('active'); $('#view-kanban').removeClass('active');
+      // Chuyển Bảng ↔ Kanban. Dải thống kê và thanh lọc Ở LẠI vì Kanban dùng chung bộ lọc đó;
+      // chỉ đổi khung nhìn bên dưới. Kanban chỉ dựng ở lần mở đầu tiên.
+      $('#view-table').on('click', function () {
+        $('#pane-kanban').addClass('d-none'); $('#grid-opp').removeClass('d-none');
+        $(this).addClass('active'); $('#view-kanban').removeClass('active');
+        if (grid) { grid.table.redraw(true); }
       });
       $('#view-kanban').on('click', function () {
-        $('#pane-kanban').removeClass('d-none'); $('#pane-list').addClass('d-none');
-        $('#view-kanban').addClass('active'); $('#view-list').removeClass('active');
-        kbRender();
+        $('#grid-opp').addClass('d-none'); $('#pane-kanban').removeClass('d-none');
+        $(this).addClass('active'); $('#view-table').removeClass('active');
+        $('#bulkbar').addClass('d-none').removeClass('d-flex');
+        if (!kb) { kbBuild(); } else { kb.render(); }
       });
 
       // Đường dẫn sâu /co-hoi?mo={id} — mở đúng cơ hội đó, kể cả khi nó không ở trang đầu.

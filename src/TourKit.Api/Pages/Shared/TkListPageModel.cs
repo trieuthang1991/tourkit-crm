@@ -99,6 +99,110 @@ public abstract class TkListPageModel : PageModel
     }
 
     /// <summary>
+    /// Tra KHÁCH HÀNG THEO SỐ ĐIỆN THOẠI (<c>?handler=KhachTheoSdt</c>).
+    ///
+    /// Khách hàng định danh bằng SĐT — hai khách khác nhau không được cùng một số (luật ở
+    /// <c>CustomerService</c>). Nên ở MỌI form có liên quan tới khách, việc đầu tiên phải là hỏi
+    /// "số này đã có ai chưa": có thì lấy đúng hồ sơ đó, chưa có thì tạo mới.
+    ///
+    /// Không làm vậy thì mỗi form lại đẻ ra một khách trùng số, và tới lúc đối soát công nợ mới phát
+    /// hiện một người có ba hồ sơ — lúc đó gộp lại rất tốn công vì đơn hàng đã bám vào cả ba.
+    ///
+    /// Trả về CẢ HAI: danh sách gợi ý theo số đang gõ dở, và bản ghi khớp chính xác (nếu có). Chỉ trả
+    /// bản khớp chính xác thì người dùng phải nhớ trọn mười chữ số mới tra được; chỉ trả danh sách
+    /// thì gõ đủ số rồi vẫn phải bấm chọn một dòng duy nhất — thừa một thao tác ở mọi lần nhập.
+    ///
+    /// Đặt ở LỚP CƠ SỞ vì mọi màn danh sách đều có thể cần: cơ hội, đơn hàng, báo giá, đặt dịch vụ.
+    /// </summary>
+    public async Task<IActionResult> OnGetKhachTheoSdtAsync(string? sdt)
+    {
+        var svc = HttpContext.RequestServices
+            .GetRequiredService<TourKit.Application.Customers.ICustomerService>();
+
+        var so = (sdt ?? string.Empty).Trim();
+        if (so.Length < 3)
+        {
+            return new JsonResult(new { results = Array.Empty<object>(), khop = (object?)null });
+        }
+
+        // GỢI Ý theo số đang gõ dở, không đợi gõ đủ: người dùng nhớ "khách này số đuôi 888" là ra
+        // được ngay, khỏi phải nhớ trọn mười chữ số. ListAsync đã tra theo PhoneNormalized nên
+        // 0912… và +84912… ra cùng một người.
+        var goiY = await svc.ListAsync(1, 8, new TourKit.Application.Customers.Dtos.CustomerListFilter(Q: so));
+
+        // Khớp CHÍNH XÁC thì client gắn luôn, khỏi bắt chọn lại một dòng duy nhất.
+        var khop = await svc.FindByPhoneAsync(so);
+
+        return new JsonResult(new
+        {
+            results = goiY.Items.Select(c => new
+            {
+                id = c.Id,
+                code = c.Code,
+                fullName = c.FullName,
+                phone = c.Phone,
+                email = c.Email,
+            }),
+            khop = khop is null ? null : new
+            {
+                id = khop.Id,
+                code = khop.Code,
+                fullName = khop.FullName,
+                phone = khop.Phone,
+                email = khop.Email,
+            },
+        });
+    }
+
+    /// <summary>
+    /// TẠO NHANH khách ngay trong form đang mở (<c>?handler=TaoNhanhKhach</c>).
+    ///
+    /// Bắt người dùng rời form hiện tại, sang màn Khách hàng tạo hồ sơ rồi quay lại là cách chắc
+    /// chắn nhất khiến họ bỏ dở việc đang làm — hoặc gõ đại một cái tên vào ô chữ để đi tiếp, và
+    /// thế là mất luôn liên kết tới hồ sơ khách.
+    ///
+    /// Chỉ nhận đúng những gì form liên kết biết: tên, số, email. Phần hồ sơ đầy đủ (nguồn, phân
+    /// loại, thẻ…) để người dùng bổ sung sau ở màn Khách hàng — nhồi hết vào đây thì "tạo nhanh"
+    /// không còn nhanh.
+    /// </summary>
+    public async Task<IActionResult> OnPostTaoNhanhKhachAsync(string? fullName, string? phone, string? email)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            return new JsonResult(TourKit.Api.Web.Result.Error("Bắt buộc nhập tên khách."));
+        }
+
+        var svc = HttpContext.RequestServices
+            .GetRequiredService<TourKit.Application.Customers.ICustomerService>();
+
+        try
+        {
+            var moi = await svc.CreateAsync(new TourKit.Application.Customers.Dtos.CreateCustomerDto(
+                fullName.Trim(), string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(),
+                Email: string.IsNullOrWhiteSpace(email) ? null : email.Trim()));
+
+            return new JsonResult(TourKit.Api.Web.Result.Success($"Đã tạo khách {moi.FullName}.", new
+            {
+                id = moi.Id,
+                code = moi.Code,
+                fullName = moi.FullName,
+                phone = moi.Phone,
+                email = moi.Email,
+            }));
+        }
+        catch (TourKit.Application.Common.ConflictException ex)
+        {
+            // Luật chặn trùng SĐT nằm ở tầng dịch vụ nên bắt được cả trường hợp hai người cùng bấm
+            // "Tạo nhanh" một lúc — thông báo của service đã nêu tên khách đang giữ số đó.
+            return new JsonResult(TourKit.Api.Web.Result.Error(ex.Message));
+        }
+        catch (TourKit.Application.Common.ValidationAppException ex)
+        {
+            return new JsonResult(TourKit.Api.Web.Result.Error(ex.Message));
+        }
+    }
+
+    /// <summary>
     /// Tra chuyến khởi hành cho ô chọn gọi server (<c>?handler=DepartureLookup</c>).
     ///
     /// Cùng lý do đặt ở lớp cơ sở như <see cref="OnGetProviderLookupAsync"/>: ô chọn chuyến có ở 4 màn

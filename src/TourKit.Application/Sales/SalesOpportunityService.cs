@@ -206,7 +206,7 @@ public sealed class SalesOpportunityService(
         {
             if (dto.CancelReasonId is null)
             {
-                throw new ValidationAppException("Huỷ cơ hội phải chọn lý do.");
+                throw new ValidationAppException("Huỷ cơ hội phải chọn lý do — dùng menu ⋮ › Huỷ cơ hội để chọn.");
             }
 
             if (!await reasonRepo.AnyAsync(r => r.Id == dto.CancelReasonId.Value))

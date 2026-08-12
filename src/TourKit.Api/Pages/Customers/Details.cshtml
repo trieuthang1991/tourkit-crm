@@ -185,9 +185,15 @@
         <div class="card-body">
           <div class="table-responsive">
             <table id="tbl-don" class="table table-hover">
-              <thead><tr>
-                <th style="width:44px">#</th><th>Mã đơn</th><th>Tour / Ngày đi</th><th>Số chỗ</th>
-                <th class="text-end">Doanh thu</th><th class="text-end">Đã thu / Còn nợ</th><th>Trạng thái</th><th></th>
+              <thead><tr class="text-nowrap">
+                <th style="width:44px">#</th>
+                <th style="width:120px">Mã đơn</th>
+                <th style="min-width:240px">Tour / Ngày đi</th>
+                <th style="width:90px">Số chỗ</th>
+                <th class="text-end" style="width:130px">Doanh thu</th>
+                <th class="text-end" style="width:150px">Đã thu / Còn nợ</th>
+                <th style="width:130px">Trạng thái</th>
+                <th style="width:56px"></th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -202,8 +208,13 @@
         <div class="card-body">
           <div class="table-responsive">
             <table id="tbl-cham" class="table table-hover">
-              <thead><tr>
-                <th style="width:44px">#</th><th>Nội dung</th><th>Ngày hẹn</th><th>Phụ trách</th><th>Phản hồi</th><th>Trạng thái</th>
+              <thead><tr class="text-nowrap">
+                <th style="width:44px">#</th>
+                <th style="min-width:260px">Nội dung</th>
+                <th style="width:110px">Ngày hẹn</th>
+                <th style="width:150px">Phụ trách</th>
+                <th style="min-width:200px">Phản hồi</th>
+                <th style="width:130px">Trạng thái</th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -262,7 +273,7 @@
             STT,
             { data: null, render: function (r) { return '<a href="/don-hang/' + r.id + '" class="fw-medium">' + tk.escape(r.code) + '</a>'; } },
             { data: null, render: function (r) {
-                var s = '<div>' + tk.escape(tk.trunc(r.tourTitle || '—', 120)) + '</div>';
+                var s = '<div>' + tk.trunc(r.tourTitle || '—', 220) + '</div>';
                 if (r.departureDate) { s += '<div class="small text-muted">đi ' + r.departureDate + '</div>'; }
                 return s; } },
             { data: null, render: function (r) { return '<span class="badge bg-label-primary">' + r.seatTotal + ' chỗ</span>'; } },
@@ -283,11 +294,11 @@
             STT,
             { data: null, render: function (r) {
                 var s = '<div class="fw-medium">' + tk.escape(r.title) + '</div>';
-                if (r.detail) { s += '<div class="small text-muted">' + tk.escape(tk.trunc(r.detail, 120)) + '</div>'; }
+                if (r.detail) { s += '<div class="small text-muted">' + tk.trunc(r.detail, 260) + '</div>'; }
                 return s; } },
             { data: null, render: function (r) { return r.remindAt || '—'; } },
             { data: null, render: function (r) { return tk.escape(r.assigneeName || '—'); } },
-            { data: null, render: function (r) { return r.feedback ? tk.escape(tk.trunc(r.feedback, 120)) : '—'; } },
+            { data: null, render: function (r) { return r.feedback ? tk.trunc(r.feedback, 220) : '—'; } },
             { data: null, render: function (r) { return '<span class="badge bg-label-' + (r.statusColor || 'secondary') + '">' + tk.escape(r.statusLabel) + '</span>'; } }
           ]
         });

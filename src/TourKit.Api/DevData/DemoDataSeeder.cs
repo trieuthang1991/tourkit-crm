@@ -838,9 +838,14 @@ public static class DemoDataSeeder
                 MkCoHoi("CH-2608-05", "Anh Dũng hỏi Sapa cuối tuần", "Hoàng Tiến Dũng", "0913000005",
                     OpportunityStageCode.Huy, 6, 2, 3_200_000m, 2_400_000m, brHn.Id, uSalesHn.Id),
             };
-            // Gắn chuyến + khách cho đúng cơ hội "sẵn sàng xuống đơn". Tra theo MÃ chứ không theo vị
-            // trí: bản đầu dùng coHoi[^1] và khi chèn thêm một dòng ở giữa thì hai trường này rơi
-            // nhầm sang cơ hội ĐÃ HUỶ — sai im lặng, chỉ lộ ra vì bài kiểm thử bị bỏ qua.
+            // MỌI cơ hội đều phải gắn hồ sơ khách (luật ở validator). Bộ gieo ghi thẳng qua DbContext
+            // nên không đi qua validator — không gán ở đây thì dữ liệu mẫu vi phạm chính luật mà màn
+            // hình đang bắt người dùng tuân theo.
+            foreach (var ch in coHoi) { ch.CustomerId = c1.Id; }
+
+            // Gắn chuyến cho đúng cơ hội "sẵn sàng xuống đơn". Tra theo MÃ chứ không theo vị trí:
+            // bản đầu dùng coHoi[^1] và khi chèn thêm một dòng ở giữa thì trường này rơi nhầm sang
+            // cơ hội ĐÃ HUỶ — sai im lặng, chỉ lộ ra vì bài kiểm thử bị bỏ qua.
             var sanSangXuongDon = coHoi.Single(x => x.Code == "CH-2608-06");
             sanSangXuongDon.TourDepartureId = depHalong.Id;
             sanSangXuongDon.CustomerId = c1.Id;

@@ -38,6 +38,45 @@ test.describe('Tab ở màn chi tiết khách hàng', () => {
   });
 
   /**
+   * Nội dung ô KHÔNG được lộ mã HTML ra ngoài.
+   *
+   * tk.trunc TRẢ VỀ HTML và đã tự escape bên trong. Bọc thêm tk.escape quanh nó là escape luôn cả
+   * thẻ <span>, nên người dùng đọc thấy nguyên đoạn mã thay vì nội dung. Bảng vẫn dựng, vẫn có dòng,
+   * nên mọi bài kiểm thử "có dữ liệu chưa" đều xanh — chỉ mắt người mới thấy sai.
+   */
+  test('Ô nội dung không lộ mã HTML ra ngoài', async ({ trang: page }) => {
+    await moKhach(page);
+
+    for (const [tab, bang] of [['#pane-don-hang', '#tbl-don'], ['#pane-cham-soc', '#tbl-cham']]) {
+      await page.locator(`[data-bs-target="${tab}"]`).click();
+      await expect(page.locator(`${bang} tbody tr`)).not.toHaveCount(0, { timeout: 20_000 });
+
+      const chu = await page.locator(`${bang} tbody`).innerText();
+      expect(chu, `${bang}: mã HTML hiện ra như chữ thường`).not.toContain('<span');
+      expect(chu, `${bang}: mã HTML hiện ra như chữ thường`).not.toContain('class=');
+    }
+  });
+
+  /**
+   * Tiêu đề cột không được bị bóp xuống thành từng chữ một dòng.
+   *
+   * DataTables tự chia bề rộng khi cột không khai width, nên tiêu đề dài như "Đã thu / Còn nợ" bị
+   * ép xuống nhiều dòng và bảng trông vỡ. Quy ước §3b đã ghi phải đặt width cố định.
+   */
+  test('Tiêu đề cột không bị bóp xuống nhiều dòng', async ({ trang: page }) => {
+    await moKhach(page);
+    await page.locator('[data-bs-target="#pane-don-hang"]').click();
+    await expect(page.locator('#tbl-don tbody tr')).not.toHaveCount(0, { timeout: 20_000 });
+
+    // Một ô tiêu đề một dòng cao khoảng 20–28px. Cao gấp đôi nghĩa là chữ đã xuống dòng.
+    for (const nhan of ['Tour / Ngày đi', 'Đã thu / Còn nợ']) {
+      const o = page.locator('#tbl-don thead th', { hasText: nhan }).first();
+      const h = (await o.boundingBox())?.height ?? 0;
+      expect(h, `tiêu đề "${nhan}" cao ${h}px — đang bị bóp xuống nhiều dòng`).toBeLessThan(56);
+    }
+  });
+
+  /**
    * Hai bảng chỉ được gọi khi người dùng mở đúng tab của nó. Nạp sẵn cả ba lúc vào trang là bắt mọi
    * lần xem hồ sơ phải trả giá cho hai truy vấn mà phần lớn thời gian không ai dùng tới.
    */

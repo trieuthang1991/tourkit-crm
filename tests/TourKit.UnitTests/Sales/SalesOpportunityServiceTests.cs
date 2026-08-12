@@ -44,10 +44,13 @@ public class SalesOpportunityServiceTests
             new CreateSalesOpportunityValidator(), new UpdateSalesOpportunityValidator(), new FakeCurrentUser());
     }
 
+    /// <summary>Mọi cơ hội PHẢI gắn hồ sơ khách — id nào cũng được, luật chỉ đòi có.</summary>
+    private static readonly Guid KhachMau = Guid.NewGuid();
+
     private static CreateSalesOpportunityDto NewDto(string ma = "CH-01") => new(
         Code: ma, Title: "Chị Lan hỏi Đà Nẵng 4N3Đ", Content: null,
         ContactName: "Nguyễn Thị Lan", ContactPhone: "0900000000", ContactEmail: null, ContactAddress: null,
-        CustomerId: null,
+        CustomerId: KhachMau,
         AdultQty: 2, ChildQty: 1, ChildSmallQty: 0, BabyQty: 0,
         PriceAdult: 5_000_000m, PriceChild: 3_000_000m, PriceChildSmall: 0m, PriceBaby: 0m,
         TemplateId: null, TourDepartureId: null);
@@ -189,7 +192,7 @@ public class SalesOpportunityServiceTests
         var sua = await svc.UpdateAsync(ch.Id, new UpdateSalesOpportunityDto(
             Code: "CH-02", Title: "Đổi tên", Content: null,
             ContactName: "Nguyễn Thị Lan", ContactPhone: null, ContactEmail: null, ContactAddress: null,
-            CustomerId: null,
+            CustomerId: KhachMau,
             AdultQty: 2, ChildQty: 0, ChildSmallQty: 0, BabyQty: 0,
             PriceAdult: 1m, PriceChild: 0m, PriceChildSmall: 0m, PriceBaby: 0m,
             TemplateId: null, TourDepartureId: null));
@@ -255,7 +258,7 @@ public class SalesOpportunityServiceTests
         await svc.UpdateAsync(ch.Id, new UpdateSalesOpportunityDto(
             Code: ch.Code, Title: ch.Title, Content: null,
             ContactName: ch.ContactName, ContactPhone: null, ContactEmail: null, ContactAddress: null,
-            CustomerId: null,
+            CustomerId: KhachMau,
             AdultQty: 1, ChildQty: 0, ChildSmallQty: 0, BabyQty: 0,
             PriceAdult: 0m, PriceChild: 0m, PriceChildSmall: 0m, PriceBaby: 0m,
             TemplateId: null, TourDepartureId: null,
@@ -404,6 +407,19 @@ public class SalesOpportunityServiceTests
 
         await Assert.ThrowsAsync<ValidationAppException>(() => svc.CreateAsync(NewDto() with { Code = "" }));
         await Assert.ThrowsAsync<ValidationAppException>(() => svc.CreateAsync(NewDto() with { ContactName = "" }));
+    }
+
+    [Fact]
+    public async Task Khong_gan_ho_so_khach_thi_tu_choi()
+    {
+        // Khách định danh bằng SĐT và form đã tra sẵn, nên "chưa gắn" luôn là thiếu sót chứ không
+        // phải chuyện bất khả kháng. Để trống thì cơ hội chỉ còn một cái tên gõ tay: tới lúc chốt
+        // đơn không nối được vào khách nào, và báo cáo theo khách hụt đúng phần chưa gắn.
+        var svc = NewService(out _, out _, out _, out _);
+
+        var loi = await Assert.ThrowsAsync<ValidationAppException>(() =>
+            svc.CreateAsync(NewDto() with { CustomerId = null }));
+        Assert.Contains("hồ sơ khách", loi.Message, StringComparison.Ordinal);
     }
 
     [Fact]

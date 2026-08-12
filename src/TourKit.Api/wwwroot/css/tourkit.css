@@ -528,3 +528,61 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
 }
 /* Văn bản AI sinh ra (tóm tắt, tin nhắn nháp) — giữ khoảng thở giữa các dòng cho dễ đọc. */
 .tk-ai-text { line-height: 1.6; white-space: normal; }
+
+/* ---- Chỉ báo ĐANG TẢI dùng chung (DataTables + Tabulator) -------------------------------------
+   Bản mặc định của DataTables là ba chấm nảy trong một khung trần, còn Tabulator là dòng chữ trơn —
+   hai kiểu khác nhau trong cùng một sản phẩm, và cả hai đều trông như trang chưa làm xong.
+   Thay bằng MỘT viên thuốc nổi giữa bảng: vòng xoay theo màu thương hiệu + chữ.
+   Màu lấy từ token của theme (--bs-primary) chứ không ghi cứng mã màu — đổi theme là nó theo. */
+.tk-load {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .5rem .875rem; border-radius: 999px;
+  background: var(--bs-card-bg, #fff);
+  border: 1px solid var(--bs-border-color);
+  box-shadow: 0 .25rem .75rem rgba(var(--bs-primary-rgb), .12);
+  font-size: .8125rem; font-weight: 500; color: var(--bs-body-color);
+  white-space: nowrap;
+}
+.tk-load-spin {
+  width: 1rem; height: 1rem; border-radius: 50%;
+  border: 2px solid rgba(var(--bs-primary-rgb), .25);
+  border-top-color: var(--bs-primary);
+  animation: tk-load-quay .6s linear infinite;
+}
+.tk-load-loi { color: var(--bs-danger); border-color: rgba(var(--bs-danger-rgb), .35); }
+@keyframes tk-load-quay { to { transform: rotate(360deg); } }
+
+/* Người tắt hiệu ứng chuyển động thì đừng quay — vẫn thấy rõ là đang tải nhờ viên thuốc và chữ. */
+@media (prefers-reduced-motion: reduce) {
+  .tk-load-spin { animation: none; border-top-color: rgba(var(--bs-primary-rgb), .25); }
+}
+
+/* Khung mặc định của DataTables: bỏ ba chấm nảy, thu khung về đúng cỡ viên thuốc. */
+div.dataTables_processing {
+  width: auto; margin-left: 0; padding: 0;
+  transform: translate(-50%, -50%); margin-top: 0;
+  background: transparent; border: 0; box-shadow: none;
+}
+div.dataTables_processing > div:last-child { display: none; }
+
+/* ---- Dòng trạng thái của ô SĐT tự tra khách ---------------------------------------------------
+   Ba trạng thái phải phân biệt được NGAY bằng màu: chưa gõ đủ số (không hiện gì), đã có hồ sơ
+   (xanh), chưa có ai dùng số này (vàng + nút tạo nhanh). Dùng token theme, không ghi cứng mã màu. */
+.tk-khach-bao:empty { display: none; }
+.tk-khach-co { color: var(--bs-success); }
+.tk-khach-chua { color: var(--bs-warning); }
+.tk-khach-chua .btn { vertical-align: baseline; }
+
+/* Danh sách gợi ý khách theo số đang gõ — thả xuống ngay dưới ô, cùng ngôn ngữ hình ảnh với select2. */
+.tk-khach { position: relative; }
+.tk-khach-goi {
+  position: absolute; z-index: 1056; left: 0; right: 0; top: .125rem;
+  background: var(--bs-card-bg, #fff); border: 1px solid var(--bs-border-color);
+  border-radius: .375rem; box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .12);
+  max-height: 15rem; overflow-y: auto; padding: .25rem;
+}
+.tk-khach-mot {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  padding: .375rem .5rem; border-radius: .25rem; font-size: .8125rem; color: var(--bs-body-color);
+}
+.tk-khach-mot:hover, .tk-khach-mot:focus-visible { background: rgba(var(--bs-primary-rgb), .08); }

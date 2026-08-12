@@ -2,13 +2,27 @@
 @model TourKit.Api.Pages.OpportunityReport.IndexModel
 @{ ViewData["Title"] = "Báo cáo phễu cơ hội"; }
 
+@* Trang BÁO CÁO có khuôn riêng, khác màn danh sách: thẻ thống kê dạng card + bảng bọc trong
+   .card > .card-datatable, chạy tk.tableClient. Bản đầu tôi mượn .tk-surface/.tk-stat-strip của màn
+   danh sách nên trang trông trần trụi — hai bộ class đó chỉ có nghĩa bên trong mặt lưới. *@
 @section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
 }
 
 @{
   string N(decimal v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture);
   string I(int v) => v.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture);
+
+  // Hai thẻ TIỀN đứng trước: "còn bao nhiêu tiền đang chạy" mới là câu người bán hỏi mỗi sáng,
+  // đếm số cơ hội chỉ trả lời "bận tới mức nào".
+  (string Label, string Value, string Icon, string Color, string Sub)[] statCards =
+  {
+    ("Cơ hội trong kỳ", I(Model.TongCoHoi), "ti ti-target", "secondary", "đã phân công cho nhân viên"),
+    ("Đã chốt", I(Model.TongChot), "ti ti-circle-check", "success", "sinh ra đơn hàng thật"),
+    ("Tỉ lệ chốt chung", Model.TyLeChotChung.ToString("0.#") + "%", "ti ti-percentage", "primary", "tính trên tổng, không lấy trung bình"),
+    ("Giá trị đã mất", N(Model.TongGiaTriMat), "ti ti-cash-off", "danger", "cơ hội bị huỷ trong kỳ"),
+  };
 }
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
@@ -26,52 +40,57 @@
   </form>
 </div>
 
-<div class="tk-surface">
-  <div class="tk-stat-strip">
-    <div class="tk-stat">
-      <span class="tk-stat-ic bg-label-secondary"><i class="ti ti-target"></i></span>
-      <div class="lh-sm"><div class="tk-stat-value">@I(Model.TongCoHoi)</div><small class="tk-stat-label">Cơ hội trong kỳ</small></div>
+<div class="row g-4 mb-4">
+  @foreach (var s in statCards)
+  {
+    <div class="col-sm-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar flex-shrink-0 me-3">
+              <span class="avatar-initial rounded-3 bg-label-@s.Color"><i class="@s.Icon ti-md"></i></span>
+            </div>
+            <div>
+              <span class="d-block text-muted small">@s.Label</span>
+              <h4 class="mb-0">@s.Value</h4>
+            </div>
+          </div>
+          <div class="text-muted small mt-2">@s.Sub</div>
+        </div>
+      </div>
     </div>
-    <div class="tk-stat">
-      <span class="tk-stat-ic bg-label-success"><i class="ti ti-circle-check"></i></span>
-      <div class="lh-sm"><div class="tk-stat-value">@I(Model.TongChot)</div><small class="tk-stat-label">Đã chốt</small></div>
-    </div>
-    <div class="tk-stat">
-      <span class="tk-stat-ic bg-label-primary"><i class="ti ti-percentage"></i></span>
-      <div class="lh-sm"><div class="tk-stat-value">@Model.TyLeChotChung.ToString("0.#")%</div><small class="tk-stat-label">Tỉ lệ chốt chung</small></div>
-    </div>
-    <div class="tk-stat">
-      <span class="tk-stat-ic bg-label-danger"><i class="ti ti-cash-off"></i></span>
-      <div class="lh-sm"><div class="tk-stat-value">@N(Model.TongGiaTriMat)</div><small class="tk-stat-label">Giá trị đã mất</small></div>
-    </div>
-  </div>
+  }
+</div>
 
-  <h6 class="px-3 pt-3 mb-2">Hiệu suất theo nhân viên</h6>
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="ti ti-users me-2"></i>Hiệu suất theo nhân viên</h5>
+  </div>
   @if (Model.TheoNhanVien.Count == 0)
   {
-    <p class="text-muted px-3 pb-3 mb-0">Kỳ này chưa có cơ hội nào được phân công.</p>
+    <div class="card-body text-muted">Kỳ này chưa có cơ hội nào được phân công.</div>
   }
   else
   {
-    <div class="table-responsive">
-      <table class="table table-sm align-middle mb-0">
+    <div class="card-datatable table-responsive">
+      <table id="tbl-nv" class="table table-hover">
         <thead>
-          <tr>
-            <th>Nhân viên</th>
-            <th class="text-end">Tổng</th>
-            <th class="text-end">Đang mở</th>
-            <th class="text-end">Đã chốt</th>
-            <th class="text-end">Đã huỷ</th>
-            <th class="text-end">Tỉ lệ chốt</th>
-            <th class="text-end">Giá trị đang mở</th>
-            <th class="text-end">Giá trị đã chốt</th>
+          <tr class="text-nowrap">
+            <th style="min-width:180px">Nhân viên</th>
+            <th class="text-end" style="width:90px">Tổng</th>
+            <th class="text-end" style="width:110px">Đang mở</th>
+            <th class="text-end" style="width:100px">Đã chốt</th>
+            <th class="text-end" style="width:100px">Đã huỷ</th>
+            <th class="text-end" style="width:110px">Tỉ lệ chốt</th>
+            <th class="text-end" style="width:160px">Giá trị đang mở</th>
+            <th class="text-end" style="width:160px">Giá trị đã chốt</th>
           </tr>
         </thead>
         <tbody>
           @foreach (var r in Model.TheoNhanVien)
           {
             <tr>
-              <td>@r.UserName</td>
+              <td class="fw-medium">@r.UserName</td>
               <td class="text-end">@I(r.Tong)</td>
               <td class="text-end">@I(r.DangMo)</td>
               <td class="text-end fw-medium text-success">@I(r.DaChot)</td>
@@ -85,23 +104,29 @@
       </table>
     </div>
   }
+</div>
 
-  <h6 class="px-3 pt-4 mb-2">Lý do mất khách</h6>
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="ti ti-circle-x me-2"></i>Lý do mất khách</h5>
+    @* Sắp theo GIÁ TRỊ chứ không theo số lượng: mất 10 cơ hội nhỏ và mất 1 cơ hội lớn là hai vấn đề
+       khác nhau, xếp theo số đếm thì cái thứ hai chìm xuống cuối bảng. Nói rõ để người đọc không
+       tưởng bảng đang sắp sai. *@
+    <span class="text-muted small">xếp theo giá trị đã mất</span>
+  </div>
   @if (Model.LyDoHuy.Count == 0)
   {
-    <p class="text-muted px-3 pb-3 mb-0">Kỳ này chưa có cơ hội nào bị huỷ.</p>
+    <div class="card-body text-muted">Kỳ này chưa có cơ hội nào bị huỷ.</div>
   }
   else
   {
-    <div class="table-responsive pb-2">
-      <table class="table table-sm align-middle mb-0">
+    <div class="card-datatable table-responsive">
+      <table id="tbl-huy" class="table table-hover">
         <thead>
-          <tr>
-            <th>Lý do</th>
-            <th class="text-end">Số cơ hội</th>
-            @* Sắp theo GIÁ TRỊ chứ không theo số lượng: mất 10 cơ hội nhỏ và mất 1 cơ hội lớn là
-               hai vấn đề khác nhau, xếp theo số đếm thì cái thứ hai chìm xuống cuối bảng. *@
-            <th class="text-end">Giá trị đã mất</th>
+          <tr class="text-nowrap">
+            <th style="min-width:240px">Lý do</th>
+            <th class="text-end" style="width:140px">Số cơ hội</th>
+            <th class="text-end" style="width:180px">Giá trị đã mất</th>
           </tr>
         </thead>
         <tbody>
@@ -120,6 +145,7 @@
 </div>
 
 @section VendorScripts {
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
 }
 
@@ -129,6 +155,10 @@
       if (window.flatpickr) {
         flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true });
       }
+      // Bảng đã render sẵn ở server nên dùng bản client — được ô tìm, chọn số dòng và "Hiện X–Y
+      // trên Z" tiếng Việt mà không phải thêm handler nào.
+      if ($('#tbl-nv').length) { tk.tableClient('#tbl-nv'); }
+      if ($('#tbl-huy').length) { tk.tableClient('#tbl-huy'); }
     });
   </script>
 }

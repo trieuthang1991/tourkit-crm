@@ -16,6 +16,7 @@ internal static class LuatCoHoi
 {
     public static void ApDung<T>(AbstractValidator<T> v,
         Func<T, string> ma, Func<T, string> ten, Func<T, string> tenKhach, Func<T, string?> email,
+        Func<T, Guid?> khach,
         Func<T, int> nl, Func<T, int> te, Func<T, int> tn, Func<T, int> eb,
         Func<T, decimal> gNl, Func<T, decimal> gTe, Func<T, decimal> gTn, Func<T, decimal> gEb)
     {
@@ -23,6 +24,13 @@ internal static class LuatCoHoi
         v.RuleFor(x => ten(x)).NotEmpty().WithMessage("Bắt buộc nhập tên cơ hội").MaximumLength(300);
         v.RuleFor(x => tenKhach(x)).NotEmpty().WithMessage("Bắt buộc nhập tên khách").MaximumLength(200);
         v.RuleFor(x => email(x)).EmailAddress().When(x => !string.IsNullOrWhiteSpace(email(x)));
+
+        // BẮT BUỘC gắn hồ sơ khách. Khách định danh bằng SĐT, và form đã tra sẵn: gõ số ra hồ sơ thì
+        // gắn luôn, chưa có thì tạo nhanh một cú bấm. Cho phép để trống thì cơ hội chỉ còn một cái
+        // tên gõ tay — tới lúc chốt đơn không nối được vào khách nào, và mọi báo cáo theo khách đều
+        // hụt đúng những cơ hội chưa gắn mà không ai biết thiếu bao nhiêu.
+        v.RuleFor(x => khach(x)).NotNull()
+            .WithMessage("Bắt buộc gắn hồ sơ khách — gõ số điện thoại để tra, chưa có thì tạo nhanh.");
 
         v.RuleFor(x => nl(x)).GreaterThanOrEqualTo(0).WithMessage("Số khách người lớn không được âm");
         v.RuleFor(x => te(x)).GreaterThanOrEqualTo(0).WithMessage("Số trẻ em không được âm");
@@ -39,7 +47,7 @@ internal static class LuatCoHoi
 public sealed class CreateSalesOpportunityValidator : AbstractValidator<CreateSalesOpportunityDto>
 {
     public CreateSalesOpportunityValidator() => LuatCoHoi.ApDung(this,
-        x => x.Code, x => x.Title, x => x.ContactName, x => x.ContactEmail,
+        x => x.Code, x => x.Title, x => x.ContactName, x => x.ContactEmail, x => x.CustomerId,
         x => x.AdultQty, x => x.ChildQty, x => x.ChildSmallQty, x => x.BabyQty,
         x => x.PriceAdult, x => x.PriceChild, x => x.PriceChildSmall, x => x.PriceBaby);
 }
@@ -47,7 +55,7 @@ public sealed class CreateSalesOpportunityValidator : AbstractValidator<CreateSa
 public sealed class UpdateSalesOpportunityValidator : AbstractValidator<UpdateSalesOpportunityDto>
 {
     public UpdateSalesOpportunityValidator() => LuatCoHoi.ApDung(this,
-        x => x.Code, x => x.Title, x => x.ContactName, x => x.ContactEmail,
+        x => x.Code, x => x.Title, x => x.ContactName, x => x.ContactEmail, x => x.CustomerId,
         x => x.AdultQty, x => x.ChildQty, x => x.ChildSmallQty, x => x.BabyQty,
         x => x.PriceAdult, x => x.PriceChild, x => x.PriceChildSmall, x => x.PriceBaby);
 }
