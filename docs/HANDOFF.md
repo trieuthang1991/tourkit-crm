@@ -73,6 +73,10 @@ Mockup tĩnh + menu: `D:/MiGroup/tourkitapp/tourkit/UI/*.html`, `.../CMS/KojiCRM
 ### ⚠️ QUAN TRỌNG: đã PIVOT frontend — có 2 frontend song song
 - **Razor Pages `src/TourKit.Api/Pages/` = frontend CANONICAL** (server-render, theme Vuexy, ~18 màn: Customers/Orders/Providers/Vé máy bay/Invoices/Leads/Phiếu thu-chi…). **Mọi công việc GẦN ĐÂY dồn vào đây.** Route tiếng Việt (vd `/dang-nhap`). Quy tắc EF/UI của app này ở `CLAUDE.md` (mục "EF Core / truy vấn dữ liệu": `tk.table` server-paging, `TkDate.Day()`, cache `UserDirectory`…).
 - **React `web/` = BỊ BỎ LẠI** (bản cũ; theme AntD + bộ handoff CSS). Là "gánh nặng chết" — **cần chủ dự án quyết gỡ**. KHÔNG tự xoá.
+- **2026-08-12 — CHỦ DỰ ÁN HUỶ hướng chuyển Razor → React.** `docs/frontend-migration-plan.md` đã xoá
+  (còn trong lịch sử git nếu cần tra). **Razor Pages là frontend DUY NHẤT, không có kế hoạch thay.**
+  Đừng đề xuất lại: kế hoạch đó dựng trên AG Grid, mà sau này chốt là **không dùng thư viện trả phí**
+  (React → SVAR DataGrid, Razor → Tabulator), nên nó đã sai nền tảng ngay cả trước khi bị huỷ.
 - Các mô tả React ở mục 2 (Ant Design/ResourcePage/CustomersPage.tsx) chỉ áp cho `web/` cũ; app THẬT giờ là Razor Pages.
 
 ### Đã làm phiên này (bám giao diện hệ cũ)
@@ -88,7 +92,9 @@ Mockup tĩnh + menu: `D:/MiGroup/tourkitapp/tourkit/UI/*.html`, `.../CMS/KojiCRM
 ## 4. VIỆC CÒN LẠI (ưu tiên cho AI kế nhiệm)
 
 > **3 QUYẾT ĐỊNH CHẶN CỨNG — chỉ chủ dự án cấp được (đừng làm bừa):**
-> - **(A) Chốt 1 frontend**: gỡ React `web/`, giữ Razor Pages? (kiến trúc — không tự xoá).
+> - ~~**(A) Chốt 1 frontend**~~ — **ĐÃ CHỐT 2026-08-12: giữ Razor Pages, huỷ hướng chuyển sang React.**
+>   Còn MỘT nửa chưa trả lời: có xoá hẳn thư mục `web/` không. Không migrate nữa thì nó là mã chết,
+>   nhưng xoá ~90 trang là việc một chiều nên **vẫn chờ chủ dự án**, KHÔNG tự xoá.
 > - **(B) API Gateway NCC ngoài** (SMS/Zalo/Bank/OCR): cần **API key thật + tên NCC**.
 > - **(C) Module HRM** (hồ sơ NV: ngày vào làm/thâm niên): cần **đặc tả nghiệp vụ** (hoặc bám HRM hệ cũ staging).
 >
