@@ -1,7 +1,7 @@
 # CodeGraph — tra cứu mã nguồn
 
 Chỉ mục nằm ở `.codegraph/` (gitignore, ~102 MB). Làm tươi bằng `codegraph sync` — mất ~4 giây,
-nên chạy thoải mái sau khi sửa nhiều file. Chỉ mục phủ **cả `web/`**, không riêng `src/`.
+nên chạy thoải mái sau khi sửa nhiều file.
 
 ## Dùng khi nào
 
