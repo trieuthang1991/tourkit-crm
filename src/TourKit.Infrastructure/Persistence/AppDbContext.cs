@@ -31,6 +31,11 @@ public class AppDbContext : DbContext
     public DbSet<TourAssignee> TourAssignees => Set<TourAssignee>();
     public DbSet<Lead> Leads => Set<Lead>();
     public DbSet<LeadCampaign> LeadCampaigns => Set<LeadCampaign>();
+
+    // Cơ hội bán hàng — phễu chốt đơn, KHÁC Lead (số khách thô được chia cho sale).
+    public DbSet<SalesOpportunity> SalesOpportunities => Set<SalesOpportunity>();
+    public DbSet<SalesOpportunityAssignee> SalesOpportunityAssignees => Set<SalesOpportunityAssignee>();
+    public DbSet<OpportunityStage> OpportunityStages => Set<OpportunityStage>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<TourCustomer> TourCustomers => Set<TourCustomer>();
     public DbSet<CancelSeat> CancelSeats => Set<CancelSeat>();

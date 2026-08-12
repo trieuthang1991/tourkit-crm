@@ -130,11 +130,28 @@ public sealed class ProvisioningService : IProvisioningService
                 ExpiresAt = null,
             };
 
+        // Cột phễu Cơ hội phải có NGAY từ lúc tạo công ty, khác các danh mục khác vốn để trống cũng
+        // không sao. Hai cột "Huỷ" và "Chốt đơn" là chỗ LUẬT bám vào: thiếu chúng thì mọi thao tác
+        // chuyển cột đều bị từ chối với câu "Cột phễu không tồn tại" — màn Cơ hội hỏng hoàn toàn mà
+        // nhìn vào không đoán ra là do thiếu dữ liệu gieo sẵn.
+        var cotPhieu = OpportunityStageCode.MacDinh
+            .Select(c => new OpportunityStage
+            {
+                TenantId = tenant.Id,
+                Code = c.Code,
+                Name = c.Name,
+                IsSystem = c.IsSystem,
+                SortOrder = c.Code,
+                Status = 1,
+            })
+            .ToList();
+
         _db.Tenants.Add(tenant);
         _db.Users.Add(user);
         _db.Roles.Add(role);
         _db.RolePermissions.AddRange(rolePermissions);
         _db.UserRoles.Add(userRole);
+        _db.OpportunityStages.AddRange(cotPhieu);
         if (subscription is not null)
         {
             _db.Subscriptions.Add(subscription);
