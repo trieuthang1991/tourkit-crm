@@ -97,4 +97,36 @@ public abstract class TkListPageModel : PageModel
             }),
         });
     }
+
+    /// <summary>
+    /// Tra chuyến khởi hành cho ô chọn gọi server (<c>?handler=DepartureLookup</c>).
+    ///
+    /// Cùng lý do đặt ở lớp cơ sở như <see cref="OnGetProviderLookupAsync"/>: ô chọn chuyến có ở 4 màn
+    /// (phân công HDV, điều xe, xe chờ điều, báo giá).
+    ///
+    /// Khác NCC ở một điểm đáng nói: nhà cung cấp, xe, đại lý là DANH MỤC — đông tới mấy rồi cũng
+    /// dừng lại. Chuyến đi thì mỗi tháng một dày thêm và không bao giờ giảm, nên đây là ô duy nhất
+    /// chắc chắn sẽ vượt trần nếu cứ nạp sẵn. Vượt trần lại hỏng IM LẶNG: ô vẫn hiện, chỉ thiếu lựa
+    /// chọn, người dùng kết luận nhầm là chưa có chuyến đó.
+    ///
+    /// Nhãn ghép "MÃ — Tên (dd/MM/yyyy)": nhiều chuyến trùng tên tuyến, chỉ khác ngày đi.
+    /// </summary>
+    public async Task<IActionResult> OnGetDepartureLookupAsync(string? q)
+    {
+        var svc = HttpContext.RequestServices
+            .GetRequiredService<TourKit.Application.Booking.IDepartureService>();
+
+        var ds = await svc.LookupAsync(q, 20);
+
+        return new JsonResult(new
+        {
+            results = ds.Select(d => new
+            {
+                id = d.Id,
+                text = d.DepartureDate is { } ngay
+                    ? $"{d.Code} — {d.Title} ({ngay:dd/MM/yyyy})"
+                    : $"{d.Code} — {d.Title}",
+            }),
+        });
+    }
 }

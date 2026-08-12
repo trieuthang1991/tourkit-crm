@@ -22,18 +22,17 @@ public class IndexModel : TkListPageModel
     private const int PendingStatus = 1; // Created = chờ đưa vào vận hành (chưa Active)
 
     private readonly IVehicleAssignmentService _svc;
-    private readonly IDepartureService _departures;
     private readonly IVehicleService _vehicles;
 
-    public IndexModel(IVehicleAssignmentService svc, IDepartureService departures, IVehicleService vehicles)
+    public IndexModel(IVehicleAssignmentService svc, IVehicleService vehicles)
     {
         _svc = svc;
-        _departures = departures;
         _vehicles = vehicles;
     }
 
     public VehicleAssignmentStatsDto Stats { get; private set; } = new(0, 0, 0, 0);
-    public IReadOnlyList<(Guid Id, string Label)> Departures { get; private set; } = [];
+
+    // Chuyến nay do ô chọn tự gọi ?handler=DepartureLookup; xe vẫn nạp sẵn vì đội xe có biên.
     public IReadOnlyList<(Guid Id, string Label)> Vehicles { get; private set; } = [];
 
     public static string StatusLabel(int s) => s switch
@@ -54,8 +53,6 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Departures = (await _departures.ListAsync(1, TranDanhMuc.Chuyen)).Items
-            .Select(d => (d.Id, $"{d.Code} — {d.Title}")).ToList();
         Vehicles = (await _vehicles.ListAsync(1, TranDanhMuc.Xe)).Items
             .Select(v => (v.Id, $"{v.Name} ({v.SeatType} chỗ)")).ToList();
     }

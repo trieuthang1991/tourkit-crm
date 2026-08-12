@@ -60,7 +60,8 @@
         <select id="f-vehicleId" class="form-select tk-s2f" data-placeholder="Xe"><option value=""></option>@foreach (var v in Model.Vehicles) { <option value="@v.Id">@v.Label</option> }</select>
       </div>
       <div class="col-md-4">
-        <select id="f-departureId" class="form-select tk-s2f" data-placeholder="Chuyến"><option value=""></option>@foreach (var d in Model.Departures) { <option value="@d.Id">@d.Label</option> }</select>
+        @* Xe nhúng sẵn (đội xe có biên), chuyến thì gọi server — xem chú thích ở khối script. *@
+        <select id="f-departureId" class="form-select" data-placeholder="Chuyến"></select>
       </div>
       @* tk.dateRanges() ẩn CẢ CỘT chứa f-dateTo → KHÔNG để nút chung cột đó. *@
       <div class="col-md-2"><input type="text" id="f-dateFrom" class="form-control tk-datef" placeholder="Ngày đón từ" autocomplete="off" /></div>
@@ -92,10 +93,7 @@
       <input type="hidden" name="Id" />
       <div class="mb-3">
         <label class="form-label">Chuyến <span class="text-danger">*</span></label>
-        <select name="Input.TourDepartureId" class="form-select tk-s2" data-placeholder="Chọn chuyến">
-          <option value="">— Chọn chuyến —</option>
-          @foreach (var d in Model.Departures) { <option value="@d.Id">@d.Label</option> }
-        </select>
+        <select name="Input.TourDepartureId" class="form-select" data-placeholder="Gõ mã hoặc tên chuyến"></select>
       </div>
       <div class="mb-3">
         <label class="form-label">Xe <span class="text-danger">*</span></label>
@@ -152,9 +150,23 @@
       var g = tk.g, esc = g.esc;
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
+      // Chuyến gọi SERVER, xe thì không: đội xe là danh mục có biên, còn số chuyến chỉ tăng theo thời
+      // gian. Nạp sẵn chuyến là chắc chắn có ngày vượt trần, mà vượt trần thì ô vẫn hiện bình thường,
+      // chỉ thiếu chuyến — người dùng tưởng chưa nhập.
+      tk.s2ajax('#f-departureId', { url: '?handler=DepartureLookup', placeholder: 'Chuyến' });
+      tk.s2ajax('#frm [name="Input.TourDepartureId"]', {
+        url: '?handler=DepartureLookup', parent: '#oc', placeholder: 'Gõ mã hoặc tên chuyến'
+      });
+
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'phân xe',
         rules: { 'Input.TourDepartureId': { required: true }, 'Input.VehicleId': { required: true } },
-        messages: { 'Input.TourDepartureId': { required: 'Bắt buộc chọn chuyến' }, 'Input.VehicleId': { required: 'Bắt buộc chọn xe' } } });
+        messages: { 'Input.TourDepartureId': { required: 'Bắt buộc chọn chuyến' }, 'Input.VehicleId': { required: 'Bắt buộc chọn xe' } },
+        // Ô gọi server rỗng lúc mở form: không dựng lại lựa chọn đang lưu thì bấm Lưu là ghi null đè
+        // lên khoá ngoại, mất phân xe mà không có gì báo.
+        fill: function ($form, data) {
+          var nhan = data ? ((data.departureCode || '') + ' — ' + (data.departureTitle || '')) : '';
+          tk.s2set($form.find('[name="Input.TourDepartureId"]'), data && data.tourDepartureId, nhan);
+        } });
 
       function delRow(r) {
         tk.confirmDelete({ title: 'Xoá phân xe?', text: 'Phân xe ' + r.vehicleName + ' — ' + r.departureCode + ' sẽ bị xoá.' }).then(function (ok) {

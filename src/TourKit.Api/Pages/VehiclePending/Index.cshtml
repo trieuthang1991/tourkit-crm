@@ -62,7 +62,8 @@
         <select id="f-vehicleId" class="form-select tk-s2f" data-placeholder="Xe"><option value=""></option>@foreach (var v in Model.Vehicles) { <option value="@v.Id">@v.Label</option> }</select>
       </div>
       <div class="col-md-3">
-        <select id="f-departureId" class="form-select tk-s2f" data-placeholder="Chuyến"><option value=""></option>@foreach (var d in Model.Departures) { <option value="@d.Id">@d.Label</option> }</select>
+        @* Xe nhúng sẵn (đội xe có biên), chuyến gọi server — xem chú thích ở khối script. *@
+        <select id="f-departureId" class="form-select" data-placeholder="Chuyến"></select>
       </div>
       <div class="col-md-2">
         <select id="f-status" class="form-select">
@@ -162,6 +163,11 @@
     $(function () {
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
       if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      // Chuyến gọi SERVER: số chuyến chỉ tăng theo thời gian, nạp sẵn thì sớm muộn cũng vượt trần —
+      // và vượt trần là hỏng im lặng, ô vẫn hiện nhưng thiếu chuyến. Màn này chỉ có ô LỌC, không có
+      // form sửa, nên không cần tk.s2set.
+      tk.s2ajax('#f-departureId', { url: '?handler=DepartureLookup', placeholder: 'Chuyến' });
 
       var g = tk.g, esc = g.esc;
 

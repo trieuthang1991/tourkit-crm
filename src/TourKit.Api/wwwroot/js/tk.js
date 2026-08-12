@@ -90,7 +90,10 @@
   // vượt trần là hỏng IM LẶNG (ô vẫn hiện bình thường, chỉ thiếu lựa chọn, người dùng tưởng dữ liệu
   // chưa có). Xem TranDanhMuc và TranDanhMucTests.
   //
-  // opts: { url, placeholder, parent (offcanvas), min (số ký tự tối thiểu), extra() }
+  // opts: { url, placeholder, parent (offcanvas), min (số ký tự tối thiểu), extra }
+  // extra nhận CẢ object tĩnh ({ type: 4 }) lẫn hàm (() => ({ providerId: $('#x').val() })). Bản đầu
+  // chỉ nhận hàm, và truyền nhầm object thì không có gì báo lúc dựng trang — nó ném lỗi ở giữa lần
+  // gõ đầu tiên, dropdown đứng im như thể server không trả về gì.
   tk.s2ajax = function (el, opts) {
     opts = opts || {};
     var $el = $(el);
@@ -109,7 +112,7 @@
         delay: 250,                     // gõ nhanh không bắn một request mỗi phím
         data: function (p) {
           var d = { q: p.term };
-          if (opts.extra) { $.extend(d, opts.extra()); }
+          if (opts.extra) { $.extend(d, typeof opts.extra === 'function' ? opts.extra() : opts.extra); }
           return d;
         },
         processResults: function (d) { return d; }

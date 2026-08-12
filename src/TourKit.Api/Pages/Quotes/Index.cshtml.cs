@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
-using TourKit.Application.Booking;
 using TourKit.Application.Sales;
 using TourKit.Application.Sales.Dtos;
 
@@ -18,17 +17,14 @@ public class IndexModel : TkListPageModel
 {
     private readonly IQuoteService _svc;
     private readonly IQuoteConversionService _conversion;
-    private readonly IDepartureService _departures;
 
-    public IndexModel(IQuoteService svc, IQuoteConversionService conversion, IDepartureService departures)
+    public IndexModel(IQuoteService svc, IQuoteConversionService conversion)
     {
         _svc = svc;
         _conversion = conversion;
-        _departures = departures;
     }
 
     public QuoteStatsDto Stats { get; private set; } = new(0, 0, 0, 0, 0, 0, 0);
-    public IReadOnlyList<(Guid Id, string Text)> Departures { get; private set; } = [];
 
     [BindProperty(SupportsGet = true, Name = "type")] public int? QuoteType { get; set; }
 
@@ -76,12 +72,8 @@ public class IndexModel : TkListPageModel
         _ => "secondary",
     };
 
-    public async Task OnGetAsync()
-    {
-        Stats = await _svc.GetStatsAsync(EffectiveType);
-        Departures = (await _departures.ListAsync(1, TranDanhMuc.Chuyen))
-            .Items.Select(d => (d.Id, Text: $"{d.Code} — {d.Title}")).ToList();
-    }
+    // Chuyến KHÔNG nạp sẵn nữa — ô ghép chuyến ở modal chuyển đơn tự gọi ?handler=DepartureLookup.
+    public async Task OnGetAsync() => Stats = await _svc.GetStatsAsync(EffectiveType);
 
     /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí QuoteListFilter hỗ trợ.</summary>
     private QuoteListFilter BuildFilter(string? keyword)

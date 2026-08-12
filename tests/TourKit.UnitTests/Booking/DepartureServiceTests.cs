@@ -422,4 +422,70 @@ public sealed class DepartureServiceTests
         await Assert.ThrowsAsync<ValidationAppException>(() =>
             service.UpdateAsync(d.Id, new UpdateDepartureDto("A", "", null, null, 5)));
     }
+
+    // ---- LookupAsync: nguồn cho ô chọn chuyến GỌI SERVER ở 4 màn (phân công HDV, điều xe, xe chờ, báo giá) ----
+
+    private static async Task<FakeRepository<TourDeparture>> KhoChuyen(params (string Ma, string Ten, int LechNgay)[] ds)
+    {
+        var repo = new FakeRepository<TourDeparture>();
+        var moc = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        foreach (var (ma, ten, lech) in ds)
+        {
+            await repo.AddAsync(new TourDeparture
+            {
+                Code = ma, Title = ten, TotalSlots = 10, DepartureDate = moc.AddDays(lech),
+            });
+        }
+        await repo.SaveChangesAsync();
+        return repo;
+    }
+
+    [Fact]
+    public async Task LookupAsync_tim_duoc_theo_ca_ma_lan_ten()
+    {
+        // Người dùng gõ tuỳ hứng: có người nhớ mã chuyến, có người chỉ nhớ tên tuyến.
+        var repo = await KhoChuyen(("DL-01", "Đà Lạt 3 ngày", 0), ("PQ-02", "Phú Quốc 4 ngày", 1));
+        var service = NewService(departureRepo: repo);
+
+        var theoMa = await service.LookupAsync("PQ");
+        Assert.Equal("PQ-02", Assert.Single(theoMa).Code);
+
+        var theoTen = await service.LookupAsync("Đà Lạt");
+        Assert.Equal("DL-01", Assert.Single(theoTen).Code);
+    }
+
+    [Fact]
+    public async Task LookupAsync_khong_phan_biet_hoa_thuong()
+    {
+        // Ô gợi ý mà bắt gõ đúng hoa/thường thì coi như không tìm được. Đây cũng là chỗ dễ vỡ khi
+        // đẩy phép lọc xuống SQL: bản dùng StringComparison chạy ngon trong test nhưng ném lỗi thật.
+        var repo = await KhoChuyen(("DL-01", "Đà Lạt 3 ngày", 0));
+        var service = NewService(departureRepo: repo);
+
+        Assert.Single(await service.LookupAsync("dl-01"));
+        Assert.Single(await service.LookupAsync("DL-01"));
+    }
+
+    [Fact]
+    public async Task LookupAsync_khong_go_gi_thi_tra_chuyen_gan_day_truoc()
+    {
+        var repo = await KhoChuyen(("CU-01", "Chuyến cũ", -30), ("MOI-01", "Chuyến mới", 30));
+        var service = NewService(departureRepo: repo);
+
+        var ds = await service.LookupAsync(null);
+
+        Assert.Equal("MOI-01", ds[0].Code);
+    }
+
+    [Fact]
+    public async Task LookupAsync_chan_tran_du_trinh_duyet_doi_so_lon()
+    {
+        // Trần phải nằm ở SERVER. Tin số do trình duyệt gửi lên thì ai sửa take=100000 trên URL là
+        // biến ô gợi ý thành đường tải cả bảng chuyến.
+        var nhieu = Enumerable.Range(1, 80).Select(i => ($"DEP-{i:00}", $"Chuyến {i}", i)).ToArray();
+        var service = NewService(departureRepo: await KhoChuyen(nhieu));
+
+        Assert.Equal(50, (await service.LookupAsync(null, 100_000)).Count);
+        Assert.Equal(20, (await service.LookupAsync(null, 0)).Count);
+    }
 }

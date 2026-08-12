@@ -107,10 +107,8 @@
         <input type="hidden" id="cv-id" />
         <div class="mb-3">
           <label class="form-label">Ghép chuyến khởi hành sẵn có</label>
-          <select id="cv-departure" class="form-select tk-s2m" data-placeholder="Chọn chuyến khởi hành">
-            <option value=""></option>
-            @foreach (var d in Model.Departures) { <option value="@d.Id">@d.Text</option> }
-          </select>
+          @* Không nhúng sẵn option: ô gọi server, xem chú thích ở khối script. *@
+          <select id="cv-departure" class="form-select" data-placeholder="Gõ mã hoặc tên chuyến"></select>
         </div>
         <div class="mb-1">
           <label class="form-label">Hoặc tour lẻ FIT — ngày khởi hành</label>
@@ -158,7 +156,12 @@
 
     $(function () {
       if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
-      $('#cv-departure').select2({ width: '100%', allowClear: true, placeholder: 'Chọn chuyến khởi hành', dropdownParent: $('#convert-modal') });
+      // Ô chọn chuyến GỌI SERVER. Số chuyến chỉ tăng theo thời gian, nạp sẵn thì sớm muộn cũng vượt
+      // trần — mà vượt trần là hỏng im lặng: ô vẫn hiện, chỉ thiếu chuyến, người dùng tưởng chưa có.
+      // dropdownParent phải trỏ vào modal, không thì danh sách bị modal che mất.
+      tk.s2ajax('#cv-departure', {
+        url: '?handler=DepartureLookup', parent: '#convert-modal', placeholder: 'Gõ mã hoặc tên chuyến'
+      });
 
       var g = tk.g, esc = g.esc, money = g.money;
 

@@ -6,6 +6,17 @@ namespace TourKit.Application.Booking;
 public interface IDepartureService
 {
     Task<PagedResult<DepartureDto>> ListAsync(int page, int size, DepartureListFilter? filter = null);
+
+    /// <summary>
+    /// Gợi ý chuyến cho ô chọn gọi server.
+    ///
+    /// Tách riêng khỏi <see cref="ListAsync"/> chứ KHÔNG gọi lại nó: ListAsync nạp cả bảng chuyến về
+    /// bộ nhớ rồi mới lọc, và với mỗi chuyến ở trang hiện tại còn nạp thêm đơn hàng cùng chỗ ngồi để
+    /// tính Giữ/Bán/Còn. Dùng nó cho ô chọn nghĩa là mỗi lần người dùng gõ một ký tự lại quét cả bảng
+    /// — đắt hơn cả cách nạp sẵn mà ta đang thay thế. Bản này đẩy lọc/sắp/cắt xuống SQL.
+    /// </summary>
+    Task<IReadOnlyList<DepartureLookupDto>> LookupAsync(string? q, int take = 20);
+
     Task<DepartureStatsDto> GetStatsAsync();
     Task<DepartureFilterOptionsDto> GetFilterOptionsAsync();
     Task<DepartureDto> GetAsync(Guid id);

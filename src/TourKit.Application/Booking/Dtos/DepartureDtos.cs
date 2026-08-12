@@ -20,6 +20,15 @@ public sealed record DepartureListFilter(
     DateTimeOffset? EndFrom = null, DateTimeOffset? EndTo = null,
     string? Sort = null);   // dateAsc | dateDesc(mặc định) | slots | code
 
+/// <summary>
+/// Một dòng gợi ý cho Ô CHỌN CHUYẾN gọi server. Cố tình nghèo nàn: chỉ đủ dựng nhãn.
+///
+/// Không tái dùng <see cref="DepartureDto"/> vì bản đầy đủ kèm giá và tách chỗ Giữ/Bán/Còn — muốn có
+/// mấy số đó thì phải nạp thêm đơn hàng và chỗ ngồi của từng chuyến. Người dùng gõ một ký tự trong ô
+/// chọn không đáng phải trả cái giá ấy.
+/// </summary>
+public sealed record DepartureLookupDto(Guid Id, string Code, string Title, DateTimeOffset? DepartureDate);
+
 /// <summary>Thẻ thống kê đầu màn Chuyến đi: tổng chuyến + sắp khởi hành + đã đóng + tổng chỗ.</summary>
 public sealed record DepartureStatsDto(int Total, int Upcoming, int Closed, int TotalSlots);
 

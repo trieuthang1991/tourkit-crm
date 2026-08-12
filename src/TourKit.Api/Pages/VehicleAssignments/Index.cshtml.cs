@@ -17,18 +17,19 @@ namespace TourKit.Api.Pages.VehicleAssignments;
 public class IndexModel : TkListPageModel
 {
     private readonly IVehicleAssignmentService _svc;
-    private readonly IDepartureService _departures;
     private readonly IVehicleService _vehicles;
 
-    public IndexModel(IVehicleAssignmentService svc, IDepartureService departures, IVehicleService vehicles)
+    public IndexModel(IVehicleAssignmentService svc, IVehicleService vehicles)
     {
         _svc = svc;
-        _departures = departures;
         _vehicles = vehicles;
     }
 
     public VehicleAssignmentStatsDto Stats { get; private set; } = new(0, 0, 0, 0);
-    public IReadOnlyList<(Guid Id, string Label)> Departures { get; private set; } = [];
+
+    // Xe VẪN nạp sẵn: đội xe là danh mục có biên (mua thêm từng chiếc), khác hẳn chuyến đi vốn dày
+    // thêm mỗi tháng và không bao giờ giảm. Đổi cả hai chỉ vì "cho đồng bộ" là thêm một cú gọi mạng
+    // cho thứ không cần.
     public IReadOnlyList<(Guid Id, string Label)> Vehicles { get; private set; } = [];
 
     public bool CanManage => User.HasClaim("perm", "vehicle.manage");
@@ -67,8 +68,6 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
-        Departures = (await _departures.ListAsync(1, TranDanhMuc.Chuyen)).Items
-            .Select(d => (d.Id, $"{d.Code} — {d.Title}")).ToList();
         Vehicles = (await _vehicles.ListAsync(1, TranDanhMuc.Xe)).Items
             .Select(v => (v.Id, $"{v.Name} ({v.SeatType} chỗ)")).ToList();
     }

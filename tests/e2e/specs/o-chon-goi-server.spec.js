@@ -167,3 +167,89 @@ test.describe('Mọi màn có ô chọn NCC đều gọi server', () => {
     });
   }
 });
+
+/**
+ * Ô chọn CHUYẾN ĐI — 4 màn.
+ *
+ * Khác nhà cung cấp ở một điểm quyết định: NCC, xe, đại lý là DANH MỤC, đông tới mấy rồi cũng dừng
+ * lại. Chuyến đi thì mỗi tháng một dày thêm và không bao giờ giảm, nên đây là ô duy nhất CHẮC CHẮN
+ * sẽ vượt trần nếu cứ nạp sẵn — và vượt trần thì ô vẫn hiện bình thường, chỉ thiếu chuyến, người
+ * dùng kết luận nhầm là chưa nhập.
+ */
+const MAN_CHUYEN = [
+  { duong: '/dieu-hdv', loc: '#f-departureId' },
+  { duong: '/dieu-xe', loc: '#f-departureId' },
+  { duong: '/lich-xe-cho', loc: '#f-departureId' },
+];
+
+test.describe('Ô chọn chuyến gọi server', () => {
+  for (const m of MAN_CHUYEN) {
+    test(`${m.duong} — ô lọc chuyến không nhúng sẵn danh mục`, async ({ trang: page }) => {
+      const res = await page.goto(m.duong);
+      test.skip(!res || res.status() >= 400, `Không mở được ${m.duong}.`);
+
+      const o = page.locator(m.loc);
+      await expect(o, `không tìm thấy ô lọc chuyến ${m.loc}`).toHaveCount(1);
+      await expect(o.locator('option'),
+        'ô lọc chuyến vẫn nhúng sẵn option — màn này chưa chuyển sang gọi server').toHaveCount(0);
+    });
+  }
+
+  test('Màn báo giá: ô ghép chuyến trong modal cũng không nhúng sẵn', async ({ trang: page }) => {
+    await page.goto('/bao-gia');
+    await expect(page.locator('#cv-departure')).toHaveCount(1);
+    await expect(page.locator('#cv-departure option')).toHaveCount(0);
+  });
+
+  test('Gõ từ khoá thì server trả chuyến khớp, có trần 20 dòng', async ({ trang: page }) => {
+    await page.goto('/dieu-hdv');
+
+    const res = await page.request.get('/dieu-hdv?handler=DepartureLookup&q=');
+    expect(res.ok(), 'endpoint tra cứu chuyến không trả về được').toBeTruthy();
+
+    const ds = (await res.json()).results;
+    expect(ds.length, 'không có chuyến nào để thử').toBeGreaterThan(0);
+    expect(ds.length, 'trần 20 dòng mỗi lượt — đây là ô gợi ý, không phải danh sách để đọc')
+      .toBeLessThanOrEqual(20);
+
+    // Gõ đúng phần MÃ chuyến (nhãn dạng "MÃ — Tên (dd/MM/yyyy)").
+    const ma = String(ds[0].text).split(' — ')[0].slice(0, 4);
+    const loc = await page.request.get('/dieu-hdv?handler=DepartureLookup&q=' + encodeURIComponent(ma));
+    expect((await loc.json()).results.length, `gõ "${ma}" mà không ra chuyến nào`).toBeGreaterThan(0);
+  });
+
+  /**
+   * Đúng cái bẫy đã làm mất dữ liệu ở form sửa chuyến đi và ô tỉnh thành: ô gọi server rỗng lúc mở
+   * form, bấm Lưu là ghi null đè lên khoá ngoại. Màn này có HAI ô như vậy (chuyến và HDV) nên kiểm
+   * cả hai — quên tk.s2set một ô là mất đúng ô đó.
+   */
+  test('Mở sửa phân công cũ thì ô chuyến và ô HDV đều hiện sẵn tên', async ({ trang: page }) => {
+    await page.goto('/dieu-hdv');
+
+    const dong = page.locator('.tabulator-row:not(.tabulator-calcs)');
+    await dong.first().waitFor({ state: 'visible', timeout: 20_000 });
+
+    await dong.first().locator('.tabulator-cell[tabulator-field="__act"]').click();
+    const muc = page.locator('.tabulator-menu-item').filter({ hasText: /^Sửa/ }).first();
+    await muc.waitFor({ state: 'visible', timeout: 10_000 });
+    await muc.click();
+    await expect(page.locator('#oc')).toHaveClass(/show/, { timeout: 15_000 });
+
+    for (const [ten, nhanO] of [['Input.TourDepartureId', 'chuyến'], ['Input.ProviderId', 'HDV']]) {
+      const $sel = page.locator(`#frm [name="${ten}"]`);
+      const gt = await $sel.inputValue();
+      expect(gt, `phân công không có ${nhanO} — dữ liệu mẫu sai, không phải lỗi ô chọn`).toBeTruthy();
+
+      const nhan = (await $sel.locator('option:checked').innerText()).trim();
+      expect(nhan, `ô ${nhanO} hiện id thay vì tên — người dùng không đọc được`).not.toBe(gt);
+      expect(nhan.length, `ô ${nhanO} rỗng khi mở sửa — lần Lưu kế tiếp sẽ xoá mất liên kết`)
+        .toBeGreaterThan(0);
+    }
+  });
+
+  test('Chưa đăng nhập thì không tra cứu chuyến được', async ({ page }) => {
+    const res = await page.request.get('/dieu-hdv?handler=DepartureLookup&q=a', { maxRedirects: 0 });
+    expect([401, 403, 302].includes(res.status()),
+      `endpoint tra cứu chuyến trả ${res.status()} cho người chưa đăng nhập`).toBeTruthy();
+  });
+});

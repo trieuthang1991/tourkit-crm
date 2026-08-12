@@ -83,6 +83,30 @@ public sealed class DepartureService(
         return new PagedResult<DepartureDto>(pageItems, filtered.Count, page, size);
     }
 
+    public async Task<IReadOnlyList<DepartureLookupDto>> LookupAsync(string? q, int take = 20)
+    {
+        var kw = string.IsNullOrWhiteSpace(q) ? null : q.Trim().ToLowerInvariant();
+
+        // Chặn trần ngay tại tầng dịch vụ, không tin số do trình duyệt gửi lên: đây là ô gợi ý, ai đó
+        // sửa take=100000 trên URL thì không được biến nó thành đường tải cả bảng chuyến.
+        var n = take switch { <= 0 => 20, > 50 => 50, _ => take };
+
+        // Chuyến gần đây trước: người dùng hầu như luôn phân công cho chuyến sắp/mới khởi hành.
+        //
+        // Ba analyzer dưới đây đòi đúng những dạng KHÔNG dịch được sang SQL, nên phải tắt tại chỗ:
+        // - CA1862 muốn Contains(x, StringComparison) — EF không dịch được, ném lỗi lúc chạy;
+        // - CA1304/CA1311 muốn ToLowerInvariant() — EF chỉ dịch ToLower() thành lower() của SQL.
+        // Đây là biểu thức GỬI XUỐNG DB, không phải so chuỗi trong bộ nhớ, nên lời khuyên về văn hoá
+        // không áp dụng: phép hạ chữ diễn ra ở Postgres chứ không ở .NET. Chỉ tắt đúng dòng này.
+#pragma warning disable CA1304, CA1311, CA1862
+        var (items, _) = await departureRepo.PageAsync(1, n,
+            d => d.DepartureDate, descending: true,
+            d => kw == null || d.Code.ToLower().Contains(kw) || d.Title.ToLower().Contains(kw));
+#pragma warning restore CA1304, CA1311, CA1862
+
+        return items.Select(d => new DepartureLookupDto(d.Id, d.Code, d.Title, d.DepartureDate)).ToList();
+    }
+
     public async Task<DepartureStatsDto> GetStatsAsync()
     {
         // Đếm/cộng ở SQL. Các tiêu chí ở đây không cùng một bậc nên phải tách COUNT có điều kiện.

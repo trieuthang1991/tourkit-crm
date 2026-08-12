@@ -7,8 +7,6 @@ using TourKit.Api.Web;
 using TourKit.Application.Booking;
 using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Operations;
-using TourKit.Application.Providers;
-using TourKit.Application.Providers.Dtos;
 using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Pages.GuideAssignments;
@@ -21,25 +19,15 @@ namespace TourKit.Api.Pages.GuideAssignments;
 public class IndexModel : TkListPageModel
 {
     private readonly IGuideAssignmentService _svc;
-    private readonly IDepartureService _departures;
-    private readonly IProviderService _providers;
     private readonly IGuideTransactionService _tx;
 
-    public IndexModel(
-        IGuideAssignmentService svc,
-        IDepartureService departures,
-        IProviderService providers,
-        IGuideTransactionService tx)
+    public IndexModel(IGuideAssignmentService svc, IGuideTransactionService tx)
     {
         _svc = svc;
-        _departures = departures;
-        _providers = providers;
         _tx = tx;
     }
 
     public GuideAssignmentStatsDto Stats { get; private set; } = new(0, 0, 0, 0);
-    public IReadOnlyList<(Guid Id, string Label)> Departures { get; private set; } = [];
-    public IReadOnlyList<(Guid Id, string Name)> Guides { get; private set; } = [];
 
     public bool CanManage => User.HasClaim("perm", "guide.manage");
 
@@ -73,14 +61,8 @@ public class IndexModel : TkListPageModel
         _ => "info",
     };
 
-    public async Task OnGetAsync()
-    {
-        Stats = await _svc.GetStatsAsync();
-        Departures = (await _departures.ListAsync(1, TranDanhMuc.Chuyen)).Items
-            .Select(d => (d.Id, $"{d.Code} — {d.Title}")).ToList();
-        Guides = (await _providers.ListAsync(1, 1000, new ProviderListFilter(Type: (int)ProviderType.Guide))).Items
-            .Select(p => (p.Id, p.Name)).ToList();
-    }
+    // Chuyến và HDV KHÔNG nạp sẵn nữa — hai ô chọn tự gọi ?handler=DepartureLookup / ProviderLookup.
+    public async Task OnGetAsync() => Stats = await _svc.GetStatsAsync();
 
     /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí GuideAssignmentListFilter hỗ trợ.</summary>
     private GuideAssignmentListFilter BuildFilter(string? keyword = null)
