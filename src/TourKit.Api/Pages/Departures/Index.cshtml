@@ -158,6 +158,32 @@
           var sua = !!data;
           $('#frm [name="Input.TemplateId"]').prop('disabled', sua).trigger('change.select2');
           $('#frm [data-role="ghi-chu-mau"]').toggle(sua);
+        },
+
+        // Đổi ngày khởi hành của chuyến ĐÃ CÓ KHÁCH: chủ dự án chốt CẢNH BÁO nhưng VẪN CHO SỬA —
+        // dời ngày là chuyện bình thường trong nghề, chặn cứng thì người điều hành phải lách bằng
+        // cách tạo chuyến mới rồi chuyển khách sang, vừa mất lịch sử vừa dễ sai hơn.
+        //
+        // Cảnh báo phải hiện TRƯỚC khi lưu. Báo sau khi đã ghi thì không còn là cảnh báo, chỉ là
+        // thông báo — người dùng không còn lựa chọn nào ngoài việc sửa ngược lại.
+        beforeSave: function ($f, cu) {
+          if (!cu) { return true; }                       // thêm mới, chưa có khách nào
+
+          var daDat = (Number(cu.seatHeld) || 0) + (Number(cu.seatSold) || 0);
+          if (daDat <= 0) { return true; }
+
+          // So ngày ở dạng ISO yyyy-MM-dd — đúng thứ flatpickr gửi đi và cũng là thứ lưới trả về.
+          // Lấy nhầm ô altInput (d/m/Y) thì hai vế không bao giờ bằng nhau và cảnh báo hiện cả khi
+          // người dùng không đụng gì tới ngày.
+          var moi = $f.find('[name="Input.DepartureDate"]').val() || '';
+          if (moi === (cu.departureDate || '')) { return true; }
+
+          return tk.confirmWarn({
+            title: 'Chuyến này đã có khách đặt',
+            text: 'Đã giữ/bán ' + daDat + ' chỗ. Đổi ngày khởi hành thì lịch của khách đã đặt lệch theo, '
+                + 'và phân công HDV/xe (nếu có) vẫn giữ ngày cũ — cần sửa lại riêng. Vẫn đổi chứ?',
+            confirm: 'Vẫn đổi ngày'
+          });
         }
       });
 

@@ -35,6 +35,23 @@
     }).then(function (r) { return r.isConfirmed; });
   };
 
+  /**
+   * Hỏi lại trước một thao tác ĐƯỢC PHÉP nhưng có hệ quả người dùng nên biết.
+   *
+   * Khác confirmDelete: nút chính màu chủ đạo chứ không phải màu đỏ, và chữ mặc định không nói
+   * "không thể hoàn tác". Dùng màu đỏ cho việc hợp lệ khiến người dùng quen tay bấm bừa, tới lúc
+   * gặp hộp xoá thật thì cũng bấm bừa nốt.
+   */
+  tk.confirmWarn = function (opts) {
+    opts = opts || {};
+    if (!window.Swal) { return Promise.resolve(window.confirm(opts.text || 'Tiếp tục?')); }
+    return Swal.fire({
+      title: opts.title || 'Xác nhận', text: opts.text || '', icon: 'warning',
+      showCancelButton: true, confirmButtonText: opts.confirm || 'Tiếp tục', cancelButtonText: 'Huỷ',
+      customClass: { confirmButton: 'btn btn-primary me-2', cancelButton: 'btn btn-label-secondary' }, buttonsStyling: false
+    }).then(function (r) { return r.isConfirmed; });
+  };
+
   // ---- Format VN ----
   tk.money = function (n) { return (Number(n) || 0).toLocaleString('vi-VN'); };
   // ---- Ô nhập TIỀN ----
@@ -610,7 +627,13 @@
       return el.defaultValue || '';
     }
 
+    // Bản ghi đang mở, giữ lại để beforeSave so được GIÁ TRỊ CŨ với giá trị người dùng vừa gõ.
+    // Không giữ thì hook chỉ thấy trạng thái mới và không biết người dùng có đổi gì hay không —
+    // sinh ra cảnh báo cả khi mở form rồi bấm Lưu mà không sửa gì. null = đang thêm mới.
+    var dangMo = null;
+
     function open(data) {
+      dangMo = data || null;
       if ($.fn.validate) { $form.validate().resetForm(); }
       // Điền: mọi [name] có dạng "Input.X"/"Id" → data[camelCase]
       $form.find('[name]').each(function () {
@@ -629,10 +652,8 @@
       bootstrap.Offcanvas.getOrCreateInstance(ocEl).show();
     }
 
-    $form.on('submit', function (e) {
-      e.preventDefault();
-      if ($.fn.validate && !$form.valid()) { return; }
-      tk.post($form.attr('data-action') || opts.saveUrl, new FormData(this)).then(function (res) {
+    function gui(formEl) {
+      tk.post($form.attr('data-action') || opts.saveUrl, new FormData(formEl)).then(function (res) {
         if (res && res.isSuccess) {
           bootstrap.Offcanvas.getInstance(ocEl).hide();
           var dt = opts.table && $.fn.DataTable.isDataTable(opts.table) ? $(opts.table).DataTable() : null;
@@ -642,6 +663,25 @@
           else if (window.tkGridReload) { window.tkGridReload(); tk.toast(res.message || 'Đã lưu.'); }
           else { location.reload(); }   // client-side: re-render dòng từ server
         } else { tk.error((res && (res.message || res.detail || res.title)) || 'Lưu thất bại.'); }
+      });
+    }
+
+    /**
+     * beforeSave($form, banGhiCu) — chặn cuối trước khi gửi.
+     *
+     * Trả về false (hoặc Promise trả false) thì DỪNG, giữ nguyên form đang mở để người dùng sửa
+     * tiếp. Trả về bất cứ thứ gì khác thì lưu. Nhận cả Promise nên hook hỏi lại người dùng bằng hộp
+     * xác nhận được — đó là lý do có hook này.
+     *
+     * banGhiCu là dòng lúc mở form (null khi thêm mới), để hook so được cũ với mới.
+     */
+    $form.on('submit', function (e) {
+      e.preventDefault();
+      if ($.fn.validate && !$form.valid()) { return; }
+      var formEl = this;
+      if (!opts.beforeSave) { gui(formEl); return; }
+      Promise.resolve(opts.beforeSave($form, dangMo)).then(function (ok) {
+        if (ok !== false) { gui(formEl); }
       });
     });
 
