@@ -331,6 +331,21 @@ public class SalesOpportunityServiceTests
     }
 
     [Fact]
+    public async Task Loc_tu_khoa_tim_theo_ma_ten_khach_va_sdt()
+    {
+        var svc = NewService(out _, out _, out _, out _);
+        await svc.CreateAsync(NewDto("CH-DN-01") with { Title = "Đà Nẵng 4N3Đ", ContactName = "Chị Lan", ContactPhone = "0911111111" });
+        await svc.CreateAsync(NewDto("CH-PQ-02") with { Title = "Phú Quốc 3N2Đ", ContactName = "Anh Bình", ContactPhone = "0922222222" });
+
+        Assert.Single((await svc.ListAsync(1, 20, new SalesOpportunityListFilter(Q: "CH-DN"))).Items);
+        Assert.Single((await svc.ListAsync(1, 20, new SalesOpportunityListFilter(Q: "Phú Quốc"))).Items);
+        Assert.Single((await svc.ListAsync(1, 20, new SalesOpportunityListFilter(Q: "0922"))).Items);
+
+        // Chuỗi vô nghĩa phải ra RỖNG — đây đúng là bài mà bộ e2e canh trên màn thật.
+        Assert.Empty((await svc.ListAsync(1, 20, new SalesOpportunityListFilter(Q: "zzqqxx-khong-ton-tai"))).Items);
+    }
+
+    [Fact]
     public async Task Cot_phe_mac_dinh_sap_theo_thu_tu_va_danh_dau_cot_he_thong()
     {
         var svc = NewService(out _, out _, out _, out _);

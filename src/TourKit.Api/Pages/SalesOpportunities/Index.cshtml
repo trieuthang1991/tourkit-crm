@@ -1,0 +1,570 @@
+@page
+@model TourKit.Api.Pages.SalesOpportunities.IndexModel
+@{ ViewData["Title"] = "Cơ hội bán hàng"; }
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  <link rel="stylesheet" href="~/vendor/libs/jkanban/jkanban.css" />
+  <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
+}
+
+@section PageStyles {
+  <link rel="stylesheet" href="~/vendor/css/pages/app-kanban.css" />
+}
+
+@{
+  // Thẻ thống kê: hai thẻ TIỀN đứng trước, vì "còn bao nhiêu tiền đang chạy" mới là câu người bán
+  // hỏi mỗi sáng — đếm số cơ hội chỉ trả lời "bận tới mức nào".
+  (string Label, string Value, string Icon, string Color)[] statCards =
+  {
+    ("Giá trị đang mở", Model.Stats.GiaTriDangMo.ToString("#,##0"), "ti ti-cash", "primary"),
+    ("Tổng giá trị", Model.Stats.TongGiaTri.ToString("#,##0"), "ti ti-coins", "info"),
+    ("Tổng cơ hội", Model.Stats.Total.ToString("#,##0"), "ti ti-target", "secondary"),
+    ("Đã chốt", Model.Stats.DaChot.ToString("#,##0"), "ti ti-circle-check", "success"),
+    ("Đã huỷ", Model.Stats.DaHuy.ToString("#,##0"), "ti ti-circle-x", "danger"),
+  };
+}
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">CRM <span class="mx-1">/</span> <span class="text-body">Cơ hội bán hàng</span></div>
+    <h4 class="mb-0">Cơ hội bán hàng</h4>
+  </div>
+  <div class="d-flex gap-2">
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-label-secondary active" id="view-list" title="Dạng bảng"><i class="ti ti-list"></i></button>
+      <button type="button" class="btn btn-label-secondary" id="view-kanban" title="Dạng Kanban"><i class="ti ti-layout-kanban"></i></button>
+    </div>
+    <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất file</a>
+    @if (Model.CanManage)
+    {
+      <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm cơ hội</button>
+    }
+  </div>
+</div>
+
+<div class="tk-surface">
+
+  <div class="tk-stat-strip">
+    @foreach (var s in statCards)
+    {
+      <div class="tk-stat">
+        <span class="tk-stat-ic bg-label-@s.Color"><i class="@s.Icon"></i></span>
+        <div class="lh-sm">
+          <div class="tk-stat-value" data-stat="@s.Label">@s.Value</div>
+          <small class="tk-stat-label">@s.Label</small>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="tk-toolbar">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-3"><input type="text" id="f-q" class="form-control" placeholder="Tìm mã, tên cơ hội, khách, SĐT" /></div>
+      <div class="col-md-2">
+        <select id="f-stageCode" class="form-select tk-s2f" data-placeholder="Cột phễu">
+          <option value=""></option>
+          @foreach (var s in Model.Stages) { <option value="@s.Code">@s.Name</option> }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-assigneeUserId" class="form-select tk-s2f" data-placeholder="Người phụ trách">
+          <option value=""></option>
+          @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-customerSourceId" class="form-select tk-s2f" data-placeholder="Nguồn khách">
+          <option value=""></option>
+          @foreach (var s in Model.Sources) { <option value="@s.Id">@s.Name</option> }
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill text-nowrap" id="btn-search"><i class="ti ti-search me-1"></i>Tìm</button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-adv" title="Lọc nâng cao"><i class="ti ti-adjustments"></i></button>
+        <button type="button" class="btn btn-icon btn-label-secondary" id="btn-reset" title="Đặt lại bộ lọc"><i class="ti ti-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="row g-2 align-items-center mt-1 d-none" id="adv">
+      <div class="col-md-2">
+        <select id="f-marketTypeId" class="form-select tk-s2f" data-placeholder="Thị trường">
+          <option value=""></option>
+          @foreach (var m in Model.Markets) { <option value="@m.Id">@m.Name</option> }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-branchId" class="form-select tk-s2f" data-placeholder="Chi nhánh">
+          <option value=""></option>
+          @foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="f-fromWebsite" class="form-select">
+          <option value="">Mọi nguồn tiếp nhận</option>
+          <option value="true">Từ website</option>
+          <option value="false">Nhập tay</option>
+        </select>
+      </div>
+      <div class="col-md-2"><input type="text" id="f-createdFrom" class="form-control tk-datef" placeholder="Tạo từ ngày" autocomplete="off" /></div>
+      <div class="col-md-2"><input type="text" id="f-createdTo" class="form-control tk-datef" placeholder="đến ngày" autocomplete="off" /></div>
+    </div>
+  </div>
+
+  <div id="pane-list">
+    <div id="grid-opp"></div>
+  </div>
+
+  <div id="pane-kanban" class="app-kanban d-none">
+    <div class="kanban-wrapper"></div>
+  </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@* Offcanvas CRUD — rộng vì form có 4 bậc khách × (số lượng + giá) *@
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:900px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">cơ hội</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body tk-oc">
+    <form id="frm" data-action="?handler=Save" onsubmit="return false">
+      <div class="tk-oc-fields">
+        <input type="hidden" name="Id" />
+
+        <div class="row">
+          <div class="col-md-4 mb-3"><label class="form-label">Mã cơ hội <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="VD: CH-2608-01" /></div>
+          <div class="col-md-8 mb-3"><label class="form-label">Tên cơ hội <span class="text-danger">*</span></label><input type="text" name="Input.Title" class="form-control" placeholder="Chị Lan hỏi Đà Nẵng 4N3Đ tháng 9" /></div>
+        </div>
+
+        <h6 class="text-muted small text-uppercase mt-2 mb-2">Khách hỏi</h6>
+        <div class="row">
+          <div class="col-md-4 mb-3"><label class="form-label">Tên khách <span class="text-danger">*</span></label><input type="text" name="Input.ContactName" class="form-control" placeholder="Nguyễn Thị Lan" /></div>
+          <div class="col-md-3 mb-3"><label class="form-label">Điện thoại</label><input type="text" name="Input.ContactPhone" class="form-control" placeholder="09xxxxxxxx" /></div>
+          <div class="col-md-5 mb-3"><label class="form-label">Email</label><input type="text" name="Input.ContactEmail" class="form-control" placeholder="ten@congty.vn" /></div>
+        </div>
+        <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.ContactAddress" class="form-control" placeholder="Số nhà, đường, phường/xã" /></div>
+
+        <h6 class="text-muted small text-uppercase mt-2 mb-2">Nhu cầu</h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Mẫu tour đang hỏi</label>
+            <select name="Input.TemplateId" class="form-select tk-s2" data-placeholder="Chọn mẫu tour">
+              <option value="">— Chưa rõ tuyến —</option>
+              @foreach (var t in Model.Templates) { <option value="@t.Id">@t.Label</option> }
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Chuyến đã nhắm</label>
+            <select name="Input.TourDepartureId" class="form-select" data-placeholder="Gõ mã hoặc tên chuyến"></select>
+          </div>
+        </div>
+
+        @* Bốn bậc khách — khớp ĐÚNG bốn bậc của đơn hàng để lúc chốt không rơi mất bậc nào.
+           Dựng bằng lưới div chứ KHÔNG dùng <table>: bộ soát màn danh sách đếm dòng bằng
+           "table tbody tr", nên một bảng nằm trong form sẽ bị tính thành dòng dữ liệu và làm bài
+           kiểm thử lọc không bao giờ về 0. *@
+        <div class="tk-bac-khach mb-3">
+          <div class="row g-2 fw-medium text-muted small">
+            <div class="col-4">Bậc khách</div>
+            <div class="col-4">Số lượng</div>
+            <div class="col-4">Đơn giá</div>
+          </div>
+          <div class="row g-2 align-items-center mt-1">
+            <div class="col-4">Người lớn</div>
+            <div class="col-4"><input type="number" name="Input.AdultQty" class="form-control" placeholder="0" min="0" value="0" /></div>
+            <div class="col-4"><input type="text" data-tien-auto name="Input.PriceAdult" class="form-control" placeholder="0" value="0" /></div>
+          </div>
+          <div class="row g-2 align-items-center mt-1">
+            <div class="col-4">Trẻ em</div>
+            <div class="col-4"><input type="number" name="Input.ChildQty" class="form-control" placeholder="0" min="0" value="0" /></div>
+            <div class="col-4"><input type="text" data-tien-auto name="Input.PriceChild" class="form-control" placeholder="0" value="0" /></div>
+          </div>
+          <div class="row g-2 align-items-center mt-1">
+            <div class="col-4">Trẻ nhỏ</div>
+            <div class="col-4"><input type="number" name="Input.ChildSmallQty" class="form-control" placeholder="0" min="0" value="0" /></div>
+            <div class="col-4"><input type="text" data-tien-auto name="Input.PriceChildSmall" class="form-control" placeholder="0" value="0" /></div>
+          </div>
+          <div class="row g-2 align-items-center mt-1">
+            <div class="col-4">Em bé</div>
+            <div class="col-4"><input type="number" name="Input.BabyQty" class="form-control" placeholder="0" min="0" value="0" /></div>
+            <div class="col-4"><input type="text" data-tien-auto name="Input.PriceBaby" class="form-control" placeholder="0" value="0" /></div>
+          </div>
+          <div class="row g-2 align-items-center mt-2 pt-2 border-top fw-medium">
+            <div class="col-8 text-end">Giá trị dự kiến</div>
+            <div class="col-4"><span id="tong-gia-tri">0</span> đ</div>
+          </div>
+        </div>
+
+        <div class="mb-3"><label class="form-label">Nội dung yêu cầu</label><textarea name="Input.Content" class="form-control tk-rte-field" rows="4" placeholder="Khách cần gì: ngày đi dự kiến, khách sạn mấy sao, yêu cầu riêng…"></textarea></div>
+
+        <h6 class="text-muted small text-uppercase mt-2 mb-2">Phân công &amp; nguồn</h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Người phụ trách</label>
+            <select name="Input.AssigneeIds" class="form-select tk-s2-tags" multiple data-placeholder="Chọn người phụ trách">
+              @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Người theo dõi</label>
+            <select name="Input.FollowerIds" class="form-select tk-s2-tags" multiple data-placeholder="Chọn người theo dõi">
+              @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Nguồn khách</label>
+            <select name="Input.CustomerSourceId" class="form-select tk-s2" data-placeholder="Chọn nguồn khách">
+              <option value="">— Chưa rõ —</option>
+              @foreach (var s in Model.Sources) { <option value="@s.Id">@s.Name</option> }
+            </select>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Thị trường</label>
+            <select name="Input.MarketTypeId" class="form-select tk-s2" data-placeholder="Chọn thị trường">
+              <option value="">— Chưa rõ —</option>
+              @foreach (var m in Model.Markets) { <option value="@m.Id">@m.Name</option> }
+            </select>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Chi nhánh</label>
+            <select name="Input.BranchId" class="form-select tk-s2" data-placeholder="Chọn chi nhánh">
+              <option value="">— Không thuộc chi nhánh —</option>
+              @foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
+            </select>
+          </div>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="Input.FromWebsite" value="true" id="chk-web" />
+          <label class="form-check-label" for="chk-web">Yêu cầu đến từ website</label>
+        </div>
+      </div>
+
+      <div class="tk-oc-actions">
+        <button type="submit" class="btn btn-primary me-2">Lưu</button>
+        <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+@* Hộp chọn lý do huỷ — hệ cũ cũng chặn ở đúng bước này *@
+<div class="modal fade" id="huy-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Huỷ cơ hội</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p class="text-muted small">Lý do huỷ là nguồn của báo cáo thống kê lý do mất khách — bỏ trống thì báo cáo đó vô dụng.</p>
+        <input type="hidden" id="huy-id" />
+        <div class="mb-3">
+          <label class="form-label">Lý do <span class="text-danger">*</span></label>
+          <select id="huy-reason" class="form-select" data-placeholder="Chọn lý do huỷ">
+            <option value="">— Chọn lý do —</option>
+            @foreach (var r in Model.CancelReasons) { <option value="@r.Id">@r.Name</option> }
+          </select>
+        </div>
+        <div class="mb-1">
+          <label class="form-label">Ghi chú thêm</label>
+          <textarea id="huy-note" class="form-control" rows="3" placeholder="Khách chốt bên nào, chênh bao nhiêu, có quay lại không…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-danger" id="huy-ok">Xác nhận huỷ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
+  <script src="~/vendor/libs/select2/select2.js"></script>
+  <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/jquery-validation/jquery.validate.min.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
+  <script src="~/vendor/libs/jkanban/jkanban.js"></script>
+}
+
+@section PageScripts {
+  <script src="~/js/tk-grid.js" asp-append-version="true"></script>
+  <script>
+    var oc, grid;
+
+    // Cột phễu do SERVER cấu hình, không ghi cứng ở đây — thêm một bước bán hàng trong danh mục là
+    // kanban có thêm cột, không phải sửa mã nguồn.
+    var STAGES = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Stages.Select(s => new { code = s.Code, name = s.Name, color = s.Color })));
+    var HUY = @TourKit.Shared.Entities.OpportunityStageCode.Huy;
+    var CHOT = @TourKit.Shared.Entities.OpportunityStageCode.ChotDon;
+    var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
+
+    var KB_SIZE = 15;
+    var kanban = null, kbPage = {}, kbCards = {};
+
+    function filterValues() { return grid ? grid.filters() : {}; }
+
+    function kbQuery(stage, page) {
+      var d = filterValues();
+      var p = new URLSearchParams();
+      Object.keys(d).forEach(function (k) { if (k !== 'stageCode') { p.set(k, d[k]); } });
+      p.set('stageCode', stage); p.set('page', page); p.set('size', KB_SIZE);
+      return '?handler=KanbanColumn&' + p.toString();
+    }
+
+    function kbCardHtml(c) {
+      var sub = [c.contactPhone, c.soKhach + ' khách'].filter(Boolean).map(tk.escape).join(' · ');
+      return '<div class="fw-medium kanban-text">' + tk.escape(c.title) + '</div>' +
+        (sub ? '<div class="small text-muted">' + sub + '</div>' : '') +
+        '<div class="small fw-medium mt-1">' + tk.money(c.estimatedValue) + ' đ</div>';
+    }
+
+    function kbBoardEl(stage) { return document.querySelector('.kanban-board[data-id="st-' + stage + '"]'); }
+
+    function kbSyncMore(stage, hasMore, total) {
+      var board = kbBoardEl(stage); if (!board) { return; }
+      var head = board.querySelector('.kanban-title-board');
+      if (head && head.dataset.base) { head.textContent = head.dataset.base + ' (' + total + ')'; }
+      var btn = board.querySelector('.kb-more');
+      if (!hasMore) { if (btn) { btn.remove(); } return; }
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-label-primary w-100 kb-more mt-2';
+        btn.textContent = 'Tải thêm';
+        btn.addEventListener('click', function () { kbLoadMore(stage); });
+        board.appendChild(btn);
+      }
+    }
+
+    function kbLoadMore(stage) {
+      var next = (kbPage[stage] || 1) + 1;
+      $.getJSON(kbQuery(stage, next), function (res) {
+        kbPage[stage] = next;
+        res.cards.forEach(function (c) {
+          kbCards[c.id] = c;
+          kanban.addElement('st-' + stage, { id: c.id, title: kbCardHtml(c) });
+        });
+        kbSyncMore(stage, res.hasMore, res.total);
+      });
+    }
+
+    /** Gửi lệnh chuyển cột. Tách riêng vì cả kéo–thả lẫn hộp lý do huỷ đều dùng. */
+    function chuyenCot(id, stage, reasonId, note) {
+      var fd = new FormData();
+      fd.append('id', id); fd.append('stageCode', stage);
+      if (reasonId) { fd.append('cancelReasonId', reasonId); }
+      if (note) { fd.append('cancelNote', note); }
+      return tk.post('?handler=Move', fd);
+    }
+
+    function kbRender() {
+      $('.kanban-wrapper').empty();
+      kbPage = {}; kbCards = {};
+      var reqs = STAGES.map(function (s) { return $.getJSON(kbQuery(s.code, 1)); });
+      $.when.apply($, reqs).done(function () {
+        var results = STAGES.length === 1 ? [arguments] : Array.prototype.slice.call(arguments);
+        var boards = STAGES.map(function (s, i) {
+          var res = results[i][0];
+          kbPage[s.code] = 1;
+          res.cards.forEach(function (c) { kbCards[c.id] = c; });
+          return {
+            id: 'st-' + s.code,
+            title: tk.escape(s.name) + ' (' + res.total + ')',
+            item: res.cards.map(function (c) { return { id: c.id, title: kbCardHtml(c) }; })
+          };
+        });
+
+        kanban = new jKanban({
+          element: '.kanban-wrapper', gutter: '12px', widthBoard: '260px',
+          dragItems: CAN_MANAGE, dragBoards: false, boards: boards,
+          dropEl: function (el, target) {
+            var id = el.getAttribute('data-eid');
+            var toStage = parseInt(target.parentElement.getAttribute('data-id').replace('st-', ''), 10);
+
+            // Kéo sang Huỷ thì phải hỏi lý do TRƯỚC khi ghi. Ghi rồi mới hỏi sẽ để lại khoảng giữa
+            // có cơ hội đã huỷ mà chưa có lý do — đúng thứ báo cáo cần.
+            if (toStage === HUY) { moHopHuy(id); return; }
+
+            chuyenCot(id, toStage).then(function (r) {
+              if (r && r.isSuccess) { tk.toast(r.message); if (grid) { grid.reload(); } }
+              else { tk.error((r && r.message) || 'Không chuyển cột được.'); kbRender(); }
+            });
+          },
+          click: function (el) {
+            var c = kbCards[el.getAttribute('data-eid')];
+            if (c) { oc.open(c); }
+          }
+        });
+
+        STAGES.forEach(function (s, i) {
+          var board = kbBoardEl(s.code);
+          var head = board && board.querySelector('.kanban-title-board');
+          if (head) { head.dataset.base = s.name; }
+          kbSyncMore(s.code, results[i][0].hasMore, results[i][0].total);
+        });
+      });
+    }
+
+    /** Thẻ thống kê chạy theo BỘ LỌC: lọc xuống một chi nhánh mà thẻ vẫn hiện số toàn công ty thì
+     *  hai con số trên cùng màn hình đá nhau. */
+    function capNhatThe(st) {
+      if (!st) { return; }
+      $('[data-stat="Giá trị đang mở"]').text(tk.money(st.giaTriDangMo));
+      $('[data-stat="Tổng giá trị"]').text(tk.money(st.tongGiaTri));
+      $('[data-stat="Tổng cơ hội"]').text(tk.money(st.total));
+      $('[data-stat="Đã chốt"]').text(tk.money(st.daChot));
+      $('[data-stat="Đã huỷ"]').text(tk.money(st.daHuy));
+    }
+
+    function moHopHuy(id) {
+      $('#huy-id').val(id);
+      $('#huy-reason').val('');
+      $('#huy-note').val('');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('huy-modal')).show();
+    }
+
+    /** Cộng lại giá trị dự kiến khi người dùng gõ — đúng công thức server dùng. */
+    function tinhTong() {
+      var $f = $('#frm');
+      function so(ten) { return Number($f.find('[name="Input.' + ten + '"]').val()) || 0; }
+      // Ô tiền giữ số thô ở ô ẩn (tk.tienAuto), nên đọc theo name sẽ ra đúng số.
+      var t = so('AdultQty') * so('PriceAdult') + so('ChildQty') * so('PriceChild')
+            + so('ChildSmallQty') * so('PriceChildSmall') + so('BabyQty') * so('PriceBaby');
+      $('#tong-gia-tri').text(tk.money(t));
+    }
+
+    $(function () {
+      var g = tk.g, esc = g.esc;
+
+      $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
+      if (window.flatpickr) { flatpickr('.tk-datef', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true }); }
+
+      oc = tk.form({
+        offcanvas: '#oc', form: '#frm', table: null, saveUrl: '?handler=Save', title: 'cơ hội',
+        rules: {
+          'Input.Code': { required: true },
+          'Input.Title': { required: true },
+          'Input.ContactName': { required: true }
+        },
+        messages: {
+          'Input.Code': { required: 'Bắt buộc nhập mã cơ hội' },
+          'Input.Title': { required: 'Bắt buộc nhập tên cơ hội' },
+          'Input.ContactName': { required: 'Bắt buộc nhập tên khách' }
+        },
+        fill: function ($form, data) {
+          // Hai ô chọn nhiều người: tk.form điền theo name nhưng select nhiều lựa chọn cần mảng.
+          $form.find('[name="Input.AssigneeIds"]').val((data && data.assigneeIds) || []).trigger('change');
+          $form.find('[name="Input.FollowerIds"]').val((data && data.followerIds) || []).trigger('change');
+          tk.s2set($form.find('[name="Input.TourDepartureId"]'), data && data.tourDepartureId, data && data.departureLabel);
+          setTimeout(tinhTong, 0);
+        }
+      });
+
+      // Ô chọn mẫu tour và chuyến GỌI SERVER: cả hai đều là danh mục tăng theo thời gian.
+      tk.s2ajax('#frm [name="Input.TourDepartureId"]', {
+        url: '?handler=DepartureLookup', parent: '#oc', placeholder: 'Gõ mã hoặc tên chuyến'
+      });
+
+      // Nghe CẢ ô ẩn lẫn ô tiền nhìn thấy. tk.tienAuto chuyển name sang ô ẩn, nên ô người dùng gõ
+      // vào KHÔNG khớp 'input[name^="Input."]' — chỉ nghe theo name thì gõ giá xong tổng vẫn đứng im
+      // cho tới khi chạm vào một ô khác. Đúng lỗi mà bài e2e bắt được.
+      $('#frm').on('input change', 'input[name^="Input."], input.tk-tien', tinhTong);
+
+      grid = tk.grid('#grid-opp', {
+        filters: ['q', 'stageCode', 'assigneeUserId', 'customerSourceId', 'marketTypeId', 'branchId', 'fromWebsite', 'createdFrom', 'createdTo'],
+        // wireFilters tự nối #btn-search / #f-q / #btn-reset / #btn-adv / #btn-export — tự viết lại
+        // mấy nút đó là dựng bản thứ hai của cùng một hành vi, rồi hai bản trôi lệch nhau.
+        wireFilters: true,
+        actions: actionsFor,
+        totalLabel: 'Tổng trang',
+        onData: function (res) { capNhatThe(res && res.stats); },
+        columns: [
+          {
+            title: 'Mã / Tên cơ hội', field: 'title', widthGrow: 3, minWidth: 220,
+            formatter: 'tkStack', formatterParams: { sub: 'code' }
+          },
+          {
+            title: 'Khách', field: 'contactName', widthGrow: 2, minWidth: 180,
+            formatter: 'tkMedia', formatterParams: { sub: 'contactPhone' }
+          },
+          {
+            title: 'Số khách', field: 'soKhach', hozAlign: 'right', width: 100,
+            formatter: function (c) { return '<span class="tk-num">' + tk.money(c.getValue()) + '</span>'; }
+          },
+          {
+            title: 'Giá trị dự kiến', field: 'estimatedValue', hozAlign: 'right', width: 160,
+            bottomCalc: 'sum',
+            bottomCalcFormatter: function (c) { return '<span class="fw-medium">' + g.money(c.getValue()) + '</span>'; },
+            formatter: function (c) { return g.moneyCell(c.getValue()); }
+          },
+          {
+            title: 'Cột phễu', field: 'stageName', width: 150,
+            formatter: 'tkBadge', formatterParams: { color: 'stageTone' }
+          },
+          { title: 'Ngày tạo', field: 'createdAtText', width: 110 }
+        ]
+      });
+
+      function actionsFor(r) {
+        if (!CAN_MANAGE) { return []; }
+        var items = [{ label: '<i class="ti ti-edit me-2"></i>Sửa cơ hội', action: function () { oc.open(r); } }];
+
+        // Không mời người dùng làm việc chắc chắn bị từ chối: cơ hội đã chốt thì khoá hết.
+        if (!r.convertedOrderId) {
+          if (r.stageCode !== HUY) {
+            items.push({ label: '<i class="ti ti-circle-x me-2"></i>Huỷ cơ hội', action: function () { moHopHuy(r.id); } });
+          }
+          items.push({ separator: true });
+          items.push({ label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá cơ hội</span>', action: function () { xoa(r); } });
+        }
+        return items;
+      }
+
+      function xoa(r) {
+        tk.confirmDelete({ title: 'Xoá cơ hội?', text: 'Cơ hội ' + r.code + ' sẽ bị xoá.' }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData(); fd.append('id', r.id);
+          tk.post('?handler=Delete', fd).then(function (res) {
+            if (res && res.isSuccess) { grid.reload(); tk.toast(res.message || 'Đã xoá.'); }
+            else { tk.error((res && res.message) || 'Xoá thất bại.'); }
+          });
+        });
+      }
+
+      $('#huy-ok').on('click', function () {
+        var reason = $('#huy-reason').val();
+        if (!reason) { tk.error('Phải chọn lý do huỷ.'); return; }
+        chuyenCot($('#huy-id').val(), HUY, reason, $('#huy-note').val()).then(function (r) {
+          if (r && r.isSuccess) {
+            bootstrap.Modal.getInstance(document.getElementById('huy-modal')).hide();
+            tk.toast(r.message);
+            if (grid) { grid.reload(); }
+            if (!$('#pane-kanban').hasClass('d-none')) { kbRender(); }
+          } else {
+            tk.error((r && r.message) || 'Không huỷ được.');
+          }
+        });
+      });
+
+
+      $('#view-list').on('click', function () {
+        $('#pane-list').removeClass('d-none'); $('#pane-kanban').addClass('d-none');
+        $('#view-list').addClass('active'); $('#view-kanban').removeClass('active');
+      });
+      $('#view-kanban').on('click', function () {
+        $('#pane-kanban').removeClass('d-none'); $('#pane-list').addClass('d-none');
+        $('#view-kanban').addClass('active'); $('#view-list').removeClass('active');
+        kbRender();
+      });
+
+      // Đường dẫn sâu /co-hoi?mo={id} — mở đúng cơ hội đó, kể cả khi nó không ở trang đầu.
+      var mo = new URLSearchParams(location.search).get('mo');
+      if (mo) {
+        $.getJSON('?handler=One&id=' + encodeURIComponent(mo), function (r) { if (r) { oc.open(r); } });
+      }
+    });
+  </script>
+}

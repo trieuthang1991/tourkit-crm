@@ -102,18 +102,18 @@ test.describe('@ai Trợ lý AI trên bản ghi', () => {
       .toBeLessThanOrEqual(1);
   });
 
-  test('Chấm điểm được cả cơ hội bán hàng', async ({ trang }) => {
-    await trang.goto('/co-hoi');
+  test('Chấm điểm được cả khách tiềm năng', async ({ trang }) => {
+    await trang.goto('/khach-tiem-nang');
 
     // Kích vào dòng lưới KHÔNG mở gì — đó là quy ước của mọi lưới trong hệ thống này. Mở một cơ hội
     // bằng đường dẫn sâu ?mo={id}, đúng cách mà thông báo "@ nhắc bạn" dẫn người dùng tới.
     const id = await trang.evaluate(async () => {
-      const r = await fetch('/co-hoi?handler=Data&draw=1&start=0&length=1');
+      const r = await fetch('/khach-tiem-nang?handler=Data&draw=1&start=0&length=1');
       return (await r.json())?.data?.[0]?.id;
     });
     expect(id, 'không có cơ hội nào trong dữ liệu').toBeTruthy();
 
-    await trang.goto(`/co-hoi?mo=${id}`);
+    await trang.goto(`/khach-tiem-nang?mo=${id}`);
 
     // Thẻ AI nằm trong panel sửa, chỉ hiện khi mở đúng một cơ hội đã có id.
     const the = trang.locator('#lead-review');

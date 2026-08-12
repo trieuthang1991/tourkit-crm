@@ -12,6 +12,7 @@ const MAN_CHINH = [
   ['Bàn làm việc', '/ban-lam-viec'],
   ['Khách hàng', '/khach-hang'],
   ['Cơ hội bán hàng', '/co-hoi'],
+  ['Khách tiềm năng', '/khach-tiem-nang'],
   ['Đơn hàng', '/don-hang'],
   ['Báo giá', '/bao-gia'],
   ['Chuyến đi', '/chuyen-di'],

@@ -57,6 +57,18 @@ public static class DemoDataSeeder
             }
         }
 
+        // 2c) Bù CỘT PHỄU Cơ hội cho tenant đã provision TRƯỚC khi có tính năng này. Cùng lý do với
+        // backfill quyền ở trên: thiếu cột thì mọi thao tác chuyển cột bị từ chối, màn Cơ hội hỏng
+        // hoàn toàn mà nhìn vào không đoán ra là do thiếu dữ liệu gieo sẵn.
+        if (!await db.Set<OpportunityStage>().AnyAsync())
+        {
+            foreach (var (code, name, sys) in OpportunityStageCode.MacDinh)
+            {
+                db.Add(new OpportunityStage { Code = code, Name = name, IsSystem = sys, SortOrder = code, Status = 1 });
+            }
+            await db.SaveChangesAsync();
+        }
+
         var now = DateTimeOffset.UtcNow;
 
         // --- Get-or-create helpers (theo mã/tên tự nhiên) ---
@@ -783,6 +795,62 @@ public static class DemoDataSeeder
             await db.SaveChangesAsync();
         }
 
+        // 7z) Cơ hội bán hàng — phễu chốt đơn. Rải đủ các cột để kanban và thẻ "giá trị đang mở"
+        // có gì mà nhìn; cơ hội đã huỷ KÈM lý do, vì huỷ mà thiếu lý do là trạng thái luật không cho.
+        //
+        // ĐẶT TRƯỚC mục 8 có chủ đích: mục 8 THOÁT SỚM khi đã có đơn OD_0001, nên mọi thứ viết sau
+        // nó không bao giờ chạy trên máy đã có dữ liệu — thêm vào cuối file là thêm vào chỗ chết.
+        //
+        // Guard riêng vì mã cơ hội có ràng buộc duy nhất: thêm lại ở lần khởi động sau sẽ ném
+        // DbUpdateException và chặn luôn cả ứng dụng.
+        if (!await db.Set<SalesOpportunity>().AnyAsync())
+        {
+            var lyDoHuy = await db.Set<TransferReason>().OrderBy(r => r.SortOrder).FirstOrDefaultAsync();
+
+            SalesOpportunity MkCoHoi(
+                string ma, string ten, string khach, string sdt, int stage,
+                int nl, int te, decimal gNl, decimal gTe, Guid branchId, Guid nguoiTao)
+                => new()
+            {
+                    Code = ma, Title = ten,
+                    ContactName = khach, ContactPhone = sdt,
+                    StageCode = stage,
+                    AdultQty = nl, ChildQty = te,
+                    PriceAdult = gNl, PriceChild = gTe,
+                    BranchId = branchId, CreatedByUserId = nguoiTao,
+                    CancelReasonId = stage == OpportunityStageCode.Huy ? lyDoHuy?.Id : null,
+                    CancelNote = stage == OpportunityStageCode.Huy ? "Khách chốt bên khác, chênh khoảng 8%." : null,
+                };
+
+            var coHoi = new[]
+        {
+                MkCoHoi("CH-2608-01", "Chị Lan hỏi Đà Nẵng 4N3Đ tháng 9", "Nguyễn Thị Lan", "0913000001",
+                    OpportunityStageCode.TaoMoi, 2, 1, 6_500_000m, 4_500_000m, brHn.Id, uSalesHn.Id),
+                MkCoHoi("CH-2608-02", "Đoàn công ty ABC đi Phú Quốc", "Trần Văn Bình", "0913000002",
+                    OpportunityStageCode.ChoXuLy, 24, 0, 7_200_000m, 0m, brHcm.Id, uSalesHcm.Id),
+                MkCoHoi("CH-2608-03", "Gia đình anh Cường đi Nhật", "Lê Quốc Cường", "0913000003",
+                    OpportunityStageCode.DangXuLy, 4, 2, 32_000_000m, 24_000_000m, brHn.Id, uSalesHn.Id),
+                MkCoHoi("CH-2608-04", "Chị Mai hỏi Hàn Quốc mùa thu", "Phạm Thị Mai", "0913000004",
+                    OpportunityStageCode.DaXuLy, 2, 0, 18_500_000m, 0m, brHcm.Id, uSalesHcm.Id),
+                MkCoHoi("CH-2608-05", "Anh Dũng hỏi Sapa cuối tuần", "Hoàng Tiến Dũng", "0913000005",
+                    OpportunityStageCode.Huy, 6, 2, 3_200_000m, 2_400_000m, brHn.Id, uSalesHn.Id),
+            };
+            db.AddRange(coHoi);
+            await db.SaveChangesAsync();
+
+            // Người phụ trách để ở BẢNG RIÊNG (không phải cột chuỗi id như hệ cũ) nên gán sau khi cơ hội
+            // đã có khoá chính.
+            db.AddRange(
+                new SalesOpportunityAssignee { OpportunityId = coHoi[0].Id, UserId = uSalesHn.Id },
+                new SalesOpportunityAssignee { OpportunityId = coHoi[1].Id, UserId = uSalesHcm.Id },
+                new SalesOpportunityAssignee { OpportunityId = coHoi[2].Id, UserId = uSalesHn.Id },
+                new SalesOpportunityAssignee { OpportunityId = coHoi[2].Id, UserId = uOps.Id, IsFollower = true },
+                new SalesOpportunityAssignee { OpportunityId = coHoi[3].Id, UserId = uSalesHcm.Id },
+                new SalesOpportunityAssignee { OpportunityId = coHoi[4].Id, UserId = uSalesHn.Id });
+
+            await db.SaveChangesAsync();
+        }
+
         // 8) Đơn/chi phí/phiếu/lead — chỉ seed khi CHƯA có đơn mốc OD_0001 --------
         if (await db.Set<Order>().AnyAsync(o => o.Code == "OD_0001"))
         {
@@ -849,7 +917,7 @@ public static class DemoDataSeeder
             }
         }
         db.AddRange(seededLeads);
-
         await db.SaveChangesAsync();
+
     }
 }

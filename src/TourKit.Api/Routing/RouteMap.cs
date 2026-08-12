@@ -40,7 +40,10 @@ public static class RouteMap
 
         // --- CRM ---
         ("/LeadCampaigns/Index", "chia-so-sale"),
-        ("/Leads/Index", "co-hoi"),
+        // Cơ hội bán hàng = phễu chốt đơn (SalesOpportunity), bám /booking-ticket của hệ cũ.
+        // Lead giữ đúng vai "khách tiềm năng" được chia cho sale — hệ cũ để ở menu riêng.
+        ("/SalesOpportunities/Index", "co-hoi"),
+        ("/Leads/Index", "khach-tiem-nang"),
         // Màn Khách hàng CHÍNH THỨC = bản Tabulator (giao diện phẳng, action theo nghiệp vụ).
         // Bản DataTables cũ lùi về route phụ để đối chiếu, sẽ xoá khi dùng thực tế thấy ổn.
         ("/CustomersTabulator/Index", "khach-hang"),

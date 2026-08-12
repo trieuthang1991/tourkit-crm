@@ -114,6 +114,23 @@ export default [
     "route": "/co-hoi",
     "fields": [
       {
+        "ten": "Input.Code",
+        "nhan": "Mã cơ hội"
+      },
+      {
+        "ten": "Input.Title",
+        "nhan": "Tên cơ hội"
+      },
+      {
+        "ten": "Input.ContactName",
+        "nhan": "Tên khách"
+      }
+    ]
+  },
+  {
+    "route": "/khach-tiem-nang",
+    "fields": [
+      {
         "ten": "Input.FullName",
         "nhan": "Họ tên"
       }

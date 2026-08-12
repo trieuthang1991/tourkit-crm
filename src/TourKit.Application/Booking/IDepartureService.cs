@@ -17,6 +17,15 @@ public interface IDepartureService
     /// </summary>
     Task<IReadOnlyList<DepartureLookupDto>> LookupAsync(string? q, int take = 20);
 
+    /// <summary>
+    /// Lấy nhãn của một TẬP chuyến theo id, bằng MỘT câu truy vấn.
+    ///
+    /// Dùng khi màn khác cần hiện tên chuyến cho cả một trang dữ liệu (vd cột "Chuyến" ở lưới Cơ
+    /// hội). Gọi <see cref="GetAsync"/> trong vòng lặp thì mỗi dòng một câu SQL — 20 dòng là 20 câu,
+    /// và không ai nhận ra vì màn vẫn chạy, chỉ chậm dần theo kích thước trang.
+    /// </summary>
+    Task<IReadOnlyList<DepartureLookupDto>> ByIdsAsync(IReadOnlyList<Guid> ids);
+
     Task<DepartureStatsDto> GetStatsAsync();
     Task<DepartureFilterOptionsDto> GetFilterOptionsAsync();
     Task<DepartureDto> GetAsync(Guid id);

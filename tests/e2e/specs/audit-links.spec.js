@@ -12,7 +12,7 @@ import { test, expect } from '../fixtures.js';
  * cần dữ liệu thật và được các bài khác chạm tới.
  */
 const MAN = [
-  '/tong-quan', '/ban-lam-viec', '/khach-hang', '/co-hoi', '/don-hang', '/bao-gia',
+  '/tong-quan', '/ban-lam-viec', '/khach-hang', '/co-hoi', '/khach-tiem-nang', '/don-hang', '/bao-gia',
   '/chuyen-di', '/quy-ve', '/nha-cung-cap', '/bang-gia-ncc', '/cong-viec', '/lich-hen',
   '/phieu-thu', '/phieu-chi', '/hoa-don', '/cong-no-khach', '/cong-no-ncc', '/dong-tien',
   '/bao-cao-tong-hop', '/bao-cao-nhan-vien', '/thu-chi-theo-tour', '/cau-hinh',

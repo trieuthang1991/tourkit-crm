@@ -42,6 +42,11 @@ public static class Permissions
     public const string LeadDelete = "lead.delete";
     public const string LeadConvert = "lead.convert";
 
+    // Cơ hội bán hàng — quyền RIÊNG, không dùng chung với lead.*: hai màn khác nhau về nghiệp vụ
+    // (lead là số khách thô, cơ hội là nhu cầu có tiền) nên thường cũng khác nhau về người được xem.
+    public const string OpportunityView = "opportunity.view";
+    public const string OpportunityManage = "opportunity.manage";
+
     public const string DepartureView = "departure.view";
     public const string DepartureCreate = "departure.create";
     public const string DepartureClose = "departure.close";
@@ -134,6 +139,7 @@ public static class Permissions
         (TourUpdate, "Catalog"), (TourDelete, "Catalog"),
         (LeadView, "CRM"), (LeadCreate, "CRM"), (LeadUpdate, "CRM"),
         (LeadDelete, "CRM"), (LeadConvert, "CRM"),
+        (OpportunityView, "CRM"), (OpportunityManage, "CRM"),
         (DepartureView, "Booking"), (DepartureCreate, "Booking"),
         (DepartureClose, "Booking"),
         (BookingView, "Booking"), (BookingCreate, "Booking"),

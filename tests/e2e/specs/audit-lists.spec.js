@@ -11,7 +11,8 @@ import { test, expect } from '../fixtures.js';
  */
 const MAN = [
   { ten: 'Khách hàng', duong: '/khach-hang', luoi: '#grid-customers' },
-  { ten: 'Cơ hội bán hàng', duong: '/co-hoi', luoi: '#grid-leads' },
+  { ten: 'Cơ hội bán hàng', duong: '/co-hoi', luoi: '#grid-opp' },
+  { ten: 'Khách tiềm năng', duong: '/khach-tiem-nang', luoi: '#grid-leads' },
   { ten: 'Nhà cung cấp', duong: '/nha-cung-cap', luoi: '#grid-providers' },
   { ten: 'Đơn hàng', duong: '/don-hang' },
   { ten: 'Báo giá', duong: '/bao-gia' },

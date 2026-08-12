@@ -107,6 +107,17 @@ public sealed class DepartureService(
         return items.Select(d => new DepartureLookupDto(d.Id, d.Code, d.Title, d.DepartureDate)).ToList();
     }
 
+    public async Task<IReadOnlyList<DepartureLookupDto>> ByIdsAsync(IReadOnlyList<Guid> ids)
+    {
+        if (ids.Count == 0)
+        {
+            return [];   // Contains trên danh sách rỗng vẫn bắn một câu SQL chắc chắn không có kết quả.
+        }
+
+        var ds = await departureRepo.ListAsync(d => ids.Contains(d.Id));
+        return ds.Select(d => new DepartureLookupDto(d.Id, d.Code, d.Title, d.DepartureDate)).ToList();
+    }
+
     public async Task<DepartureStatsDto> GetStatsAsync()
     {
         // Đếm/cộng ở SQL. Các tiêu chí ở đây không cùng một bậc nên phải tách COUNT có điều kiện.
