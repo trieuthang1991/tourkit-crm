@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "ag-mcp": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "ag-mcp"]
-    }
-  }
-}
