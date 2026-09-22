@@ -198,7 +198,12 @@ public sealed class NhapDichVuService
                     .Replace(",", ".", StringComparison.Ordinal)
                     .Replace(" ", "", StringComparison.Ordinal);
 
-        if (!decimal.TryParse(sach, NumberStyles.Any, CultureInfo.InvariantCulture, out var n))
+        // Bỏ ĐƠN VỊ/chữ dính kèm ("1.200.000 VND", "đ", "/đêm"…): chỉ giữ chữ số, dấu thập phân, dấu
+        // trừ. Báo giá thật — nhất là bản AI bóc từ PDF/Word — gần như luôn kèm đơn vị; còn giá trị rác
+        // kiểu "khong-phai-so" thì lọc xong KHÔNG còn chữ số nên vẫn báo lỗi như cũ.
+        sach = new string(sach.Where(c => char.IsAsciiDigit(c) || c is '.' or '-').ToArray());
+
+        if (sach.Length == 0 || !decimal.TryParse(sach, NumberStyles.Any, CultureInfo.InvariantCulture, out var n))
         {
             loi.Add($"{tieuDe} không phải số: \"{v}\"");
             return null;
@@ -220,7 +225,10 @@ public sealed class NhapDichVuService
             return null;
         }
 
-        if (!int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) || n < 1)
+        // Bỏ đơn vị dính kèm ("2 khách", "4 pax"): lấy CỤM chữ số đầu tiên rồi mới kiểm.
+        var so = new string(v.SkipWhile(c => !char.IsAsciiDigit(c)).TakeWhile(char.IsAsciiDigit).ToArray());
+
+        if (so.Length == 0 || !int.TryParse(so, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) || n < 1)
         {
             loi.Add($"{MauNhapDichVu.SoKhach} phải là số nguyên từ 1: \"{v}\"");
             return null;
