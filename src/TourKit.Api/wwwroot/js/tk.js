@@ -44,6 +44,70 @@
     };
   })();
 
+  // ---- Popup XUẤT FILE dùng chung -----------------------------------------------------------------
+  // Bấm "Xuất file" mở popup chọn SỐ DÒNG xuất theo bộ lọc đang áp — để xuất được NHIỀU HƠN số đang
+  // hiển thị trên trang. Modal dựng MỘT lần rồi dùng lại (như tk.panel).
+  // opts: { url:'?handler=Export', filters:{...}, filteredTotal:Number|null, pageSize:Number, max:Number }
+  tk.exportDialog = function (opts) {
+    if (!window.bootstrap) { return; }
+    opts = opts || {};
+    var max = opts.max || 5000;
+    var pageSize = opts.pageSize || 20;
+    var total = (opts.filteredTotal != null && opts.filteredTotal >= 0) ? Number(opts.filteredTotal) : null;
+    function vn(n) { return Number(n).toLocaleString('vi-VN'); }
+
+    var el = document.getElementById('tk-export-modal');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'tk-export-modal';
+      el.className = 'modal fade';
+      el.tabIndex = -1;
+      el.innerHTML =
+        '<div class="modal-dialog modal-dialog-centered">' +
+          '<div class="modal-content">' +
+            '<div class="modal-header"><h5 class="modal-title"><i class="ti ti-file-export me-2"></i>Xuất file</h5>' +
+              '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>' +
+            '<div class="modal-body">' +
+              '<p class="mb-3" id="tk-export-note"></p>' +
+              '<label class="form-label" for="tk-export-count">Số dòng xuất</label>' +
+              '<select class="form-select" id="tk-export-count"></select>' +
+              '<div class="form-text">Xuất theo bộ lọc đang áp — có thể nhiều hơn số hiển thị trên trang. Tối đa <span id="tk-export-max"></span> dòng.</div>' +
+            '</div>' +
+            '<div class="modal-footer">' +
+              '<button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Huỷ</button>' +
+              '<button type="button" class="btn btn-primary" id="tk-export-go"><i class="ti ti-download me-1"></i>Xuất</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(el);
+    }
+
+    el.querySelector('#tk-export-note').innerHTML = total != null
+      ? 'Bộ lọc hiện tại khớp <b>' + vn(total) + '</b> dòng.'
+      : 'Xuất toàn bộ theo bộ lọc đang áp.';
+    el.querySelector('#tk-export-max').textContent = vn(max);
+
+    var allN = Math.min(total != null ? total : max, max);
+    // "Tất cả theo lọc" luôn là lựa chọn CHÍNH (mặc định); thêm các mốc NHỎ HƠN tổng để xuất bớt nếu muốn.
+    var opList = [{ v: allN, t: total != null ? ('Tất cả theo lọc (' + vn(allN) + ' dòng)') : ('Tất cả (tối đa ' + vn(max) + ' dòng)') }];
+    [pageSize, 500, 1000, 2000, 5000].forEach(function (n) {
+      if (n > 0 && n < allN) { opList.push({ v: n, t: n === pageSize ? ('Trang hiện tại (' + n + ' dòng)') : (vn(n) + ' dòng') }); }
+    });
+    var sel = el.querySelector('#tk-export-count');
+    sel.innerHTML = opList.map(function (o) { return '<option value="' + o.v + '">' + o.t + '</option>'; }).join('');
+    sel.value = String(allN);   // mặc định: tất cả theo lọc
+
+    el.querySelector('#tk-export-go').onclick = function () {
+      var f = opts.filters || {};
+      var qs = Object.keys(f).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(f[k]); }).join('&');
+      var url = (opts.url || '?handler=Export') + (qs ? '&' + qs : '') + '&limit=' + encodeURIComponent(sel.value);
+      try { bootstrap.Modal.getInstance(el).hide(); } catch (e) {}
+      window.location = url;
+    };
+
+    bootstrap.Modal.getOrCreateInstance(el).show();
+  };
+
   // ---- Thông báo (SweetAlert2) — KHÔNG dùng alert/confirm trình duyệt ----
   tk.toast = function (msg) {
     if (window.Swal) { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: msg, showConfirmButton: false, timer: 2200, timerProgressBar: true }); }

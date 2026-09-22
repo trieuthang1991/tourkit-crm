@@ -450,12 +450,17 @@ public class IndexModel : TkListPageModel
             new Dictionary<string, object?> { ["pageSum"] = pageSum });
     }
 
-    /// <summary>Xuất CSV theo đúng bộ lọc đang áp (giới hạn 5000 dòng để không sập).</summary>
+    /// <summary>
+    /// Xuất CSV theo đúng bộ lọc đang áp. Số dòng do người dùng chọn ở popup (tham số <c>limit</c>),
+    /// kẹp trần cứng để không sập; mặc định 5000 nếu không truyền.
+    /// </summary>
     public async Task<IActionResult> OnGetExportAsync()
     {
-        const int max = 5000;
-        var keyword = Request.Query["search"].ToString() is { Length: > 0 } s ? s : null;
-        var result = await _svc.ListAsync(1, max, BuildFilter(keyword));
+        const int hardMax = 20000;
+        string? Kw(string k) => Request.Query[k].ToString() is { Length: > 0 } v ? v : null;
+        var keyword = Kw("q") ?? Kw("search");   // popup gửi q; giữ 'search' cho tương thích link cũ
+        var want = int.TryParse(Request.Query["limit"], out var n) && n > 0 ? Math.Min(n, hardMax) : 5000;
+        var result = await _svc.ListAsync(1, want, BuildFilter(keyword));
 
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("Mã,Tên,Loại,Người liên hệ,SĐT,Email,Địa chỉ,Tỉnh thành,Tổng mua,Đã trả,Còn nợ,Đánh giá,Trạng thái");

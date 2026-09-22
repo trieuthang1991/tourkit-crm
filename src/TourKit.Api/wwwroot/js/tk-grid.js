@@ -127,6 +127,7 @@
 
     var filterKeys = opts.filters || [];
     var selectable = opts.selectable !== false;
+    var lastFiltered = null;   // số dòng KHỚP bộ lọc ở lượt tải gần nhất — cho popup xuất file chọn số lượng
 
     function val(id) { var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }
 
@@ -235,6 +236,7 @@
       // Handler cũ của repo trả contract DataTables (draw/recordsTotal/recordsFiltered/data).
       // Tự suy ra last_page ở đây → chuyển một màn sang lưới mới KHÔNG phải sửa handler.
       ajaxResponse: function (url, params, response) {
+        if (response && response.recordsFiltered != null) { lastFiltered = response.recordsFiltered; }
         if (response && response.last_page == null && response.recordsFiltered != null) {
           var size = Number(params && params.size) || opts.pageSize || 20;
           response.last_page = Math.max(1, Math.ceil(response.recordsFiltered / size));
@@ -292,7 +294,7 @@
     fitHeight(el, table);
     if (opts.wireFilters !== false) { wireFilterBar(reload, filterKeys, collectFilters, opts); }
 
-    return { table: table, reload: reload, filters: collectFilters };
+    return { table: table, reload: reload, filters: collectFilters, filteredTotal: function () { return lastFiltered; } };
   };
 
   // ===== Thanh tác vụ hàng loạt (#bulkbar) — chỉ hoạt động nếu trang có sẵn khối này =====

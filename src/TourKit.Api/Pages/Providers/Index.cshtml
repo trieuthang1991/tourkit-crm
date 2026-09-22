@@ -806,12 +806,14 @@
       // Bộ lọc thị trường dạng cây multi-checkbox — tải lại lưới khi đóng panel nếu có đổi lựa chọn.
       tk.marketFilter({ mount: '#mktf-providers', hidden: '#f-marketTypeIds', onChange: function () { grid.reload(); } });
 
-      // Xuất TOÀN BỘ theo bộ lọc đang áp — handler Export nhận keyword ở tham số `search`.
+      // "Xuất file" mở POPUP CHUNG (tk.exportDialog): chọn số dòng xuất theo bộ lọc đang áp — xuất
+      // được nhiều hơn số hiển thị trên trang. grid.filters() đã kèm từ khoá (q).
       $('#btn-export').off('click').on('click', function (e) {
         e.preventDefault();
-        var p = new URLSearchParams(grid.filters());
-        var q = $('#f-q').val(); if (q) { p.set('search', q); }
-        location.href = '?handler=Export&' + p.toString();
+        tk.exportDialog({
+          url: '?handler=Export', filters: grid.filters(), filteredTotal: grid.filteredTotal(),
+          pageSize: grid.table.getPageSize(), max: 20000
+        });
       });
     });
   </script>
