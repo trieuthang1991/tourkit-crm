@@ -115,7 +115,9 @@ a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
    mặc định Tabulator vẽ checkbox thô của trình duyệt, lạc khỏi giao diện. */
 .tk-grid input[type="checkbox"] {
   appearance: none; -webkit-appearance: none;
-  width: 1.15em; height: 1.15em; margin: 0; vertical-align: middle; cursor: pointer;
+  /* rem (cố định theo root) chứ KHÔNG em: header có font nhỏ hơn body nên 1.15em làm ô chọn-tất-cả
+     ở header nhỏ hơn ô ở các dòng — dùng rem cho cả hai bằng nhau. */
+  width: 1.15rem; height: 1.15rem; margin: 0; vertical-align: middle; cursor: pointer;
   background-color: var(--bs-body-bg, #fff); background-repeat: no-repeat; background-position: center;
   background-size: contain; border: 1px solid var(--bs-border-color); border-radius: .25em;
   transition: background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
@@ -206,3 +208,49 @@ body > .select2-container { width: auto !important; }
 
 /* Dòng đang chọn: nền nhấn nhẹ theo brand thay vì màu mặc định của Tabulator. */
 .tk-grid .tabulator-row.tabulator-selected { background: rgba(var(--bs-primary-rgb), .07) !important; }
+
+/* ===== Thanh lọc đồng nhất (class .tk-filter-row do tk.filterBar gắn cho hàng chứa #btn-search) =====
+   Mọi control — ô tìm, select, select2, các nút Tìm/Đặt lại/Lọc — cao BẰNG NHAU 38px và canh giữa,
+   không còn cái thò cái thụt (funnel btn-sm 28px, nút Tìm 39px…). */
+.tk-filter-row { align-items: center; }
+.tk-filter-row .form-control,
+.tk-filter-row .form-select,
+.tk-filter-row .select2-selection--single,
+.tk-filter-row .btn {
+  height: 38px;
+  min-height: 38px;
+}
+.tk-filter-row .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.tk-filter-row .btn-icon { width: 38px; padding-left: 0; padding-right: 0; flex: 0 0 auto; }
+/* select2 canh chiều cao khớp: chữ đã chọn + mũi tên nằm giữa ô 38px */
+.tk-filter-row .select2-selection--single .select2-selection__rendered { line-height: 36px; }
+.tk-filter-row .select2-selection--single .select2-selection__arrow { height: 36px; }
+
+/* Nút Tìm tự co còn ICON khi hàng quá hẹp (tk.filterBar bật .tk-icon-only theo bề rộng nhóm). */
+#btn-search.tk-icon-only .tk-btn-label { display: none; }
+#btn-search.tk-icon-only > i { margin: 0 !important; }
+
+/* ===== Ô chọn thị trường cha–con (2 select2 Cha→Con do tk.marketCascade dựng) ===== */
+/* Ô chọn "Dịch vụ" ở dòng bảng giá là select2 nhưng cạnh nó là các ô form-control-sm → select2 mặc định
+   cao 38px làm lệch hàng. Ép về cỡ SM cho thẳng với ô bên cạnh. */
+.tk-dong-dv .select2-container--default .select2-selection--single { height: 31px; }
+.tk-dong-dv .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 29px; font-size: .8125rem; padding-left: .5rem; }
+.tk-dong-dv .select2-container--default .select2-selection--single .select2-selection__arrow { height: 29px; }
+.tk-dong-dv .select2-container--default .select2-selection--single .select2-selection__clear { line-height: 27px; }
+
+/* 2 ô Cha/Con: KHÔNG co cụt — mỗi ô giữ tối thiểu ~132px, hết chỗ thì TỰ XUỐNG DÒNG (Cha trên, Con dưới)
+   thay vì bóp còn "T..."/"N...". Cột lọc hẹp thì thành 2 hàng đọc được. */
+.tk-market-cascade { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.tk-market-cascade > .select2-container { flex: 1 1 132px; min-width: 118px; }
+/* Trong thanh lọc: cao 38px cho khớp các control khác (đồng nhất). */
+.tk-filter-row .tk-market-cascade .select2-selection--single { height: 38px; }
+.tk-filter-row .tk-market-cascade .select2-selection--single .select2-selection__rendered { line-height: 36px; }
+.tk-filter-row .tk-market-cascade .select2-selection--single .select2-selection__arrow { height: 36px; }
+/* Rất hẹp: xếp dọc Cha trên, Con dưới cho khỏi vỡ. */
+@media (max-width: 575.98px) { .tk-market-cascade { flex-direction: column; align-items: stretch; } }
