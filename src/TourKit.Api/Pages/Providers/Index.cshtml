@@ -258,11 +258,16 @@
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h6 class="mb-0"><i class="ti ti-package me-2"></i>Sản phẩm / Dịch vụ</h6>
           <div class="d-flex gap-2">
-            @* Nhập từ tệp theo mẫu. Mẫu tải theo ĐÚNG loại NCC đang chọn vì cột riêng khác nhau. *@
-            <a class="btn btn-sm btn-label-secondary" id="btn-tai-mau" href="#" title="Tải tệp mẫu"><i class="ti ti-download me-1"></i>Mẫu</a>
-            <button type="button" class="btn btn-sm btn-label-secondary" id="btn-nhap-tep"
-                    title="Excel/CSV theo mẫu, hoặc PDF/Word báo giá — tệp tài liệu sẽ được AI đọc thành bảng"><i class="ti ti-file-import me-1"></i>Nhập tệp</button>
-            <input type="file" id="tep-nhap" class="d-none" accept=".csv,.xlsx,.pdf,.doc,.docx" />
+            @* Hai đường nhập TÁCH RIÊNG: Excel/CSV theo mẫu (đọc chính xác, tất định) và Bóc AI cho
+               PDF/Word báo giá (AI đọc thành bảng). Cả hai đều qua bước xem trước trước khi vào form. *@
+            <a class="btn btn-sm btn-label-secondary" id="btn-tai-mau" href="#" title="Tải tệp mẫu Excel/CSV theo đúng loại NCC"><i class="ti ti-download me-1"></i>Mẫu</a>
+            <button type="button" class="btn btn-sm btn-label-secondary" id="btn-nhap-excel"
+                    title="Nhập Excel/CSV theo mẫu — đọc chính xác, không qua AI"><i class="ti ti-file-spreadsheet me-1"></i>Excel/CSV</button>
+            <input type="file" id="tep-excel" class="d-none" accept=".csv,.xlsx" />
+            <div class="vr mx-1 opacity-25"></div>
+            <button type="button" class="btn btn-sm btn-label-info" id="btn-nhap-ai"
+                    title="Bóc PDF/Word báo giá bằng AI thành bảng — có bước xem trước"><i class="tk-ico-ai me-1"></i>Bóc AI</button>
+            <input type="file" id="tep-ai" class="d-none" accept=".pdf,.doc,.docx" />
             <button type="button" class="btn btn-sm btn-label-primary" id="btn-them-dv"><i class="ti ti-plus me-1"></i>Thêm dòng</button>
           </div>
         </div>
@@ -615,14 +620,11 @@
         window.location = '?handler=MauNhap&loaiNcc=' + encodeURIComponent($('#frm [name="Input.Type"]').val());
       });
 
-      $('#btn-nhap-tep').on('click', function () { $('#tep-nhap').val('').trigger('click'); });
-
-      $('#tep-nhap').on('change', function () {
-        var tep = this.files && this.files[0];
+      // Hai đường nhập TÁCH RIÊNG nhưng CHUNG một handler server (XemTruocNhap tự nhận biết tệp tài
+      // liệu để bóc bằng AI, còn CSV/XLSX đọc tất định). Bóc chỉ cần LOẠI NCC đang chọn → chạy cả khi TẠO.
+      function docNhapTep(tep) {
         if (!tep) { return; }
-
         var fd = new FormData();
-        // Bóc chỉ cần LOẠI NCC đang chọn trên form (không cần NCC đã lưu) → chạy được cả khi TẠO.
         fd.append('loaiNcc', $('#frm [name="Input.Type"]').val() || '');
         fd.append('file', tep);
 
@@ -633,7 +635,11 @@
             veXemTruoc(res.data);
           })
           .catch(function () { tk.error('Không đọc được tệp.'); });
-      });
+      }
+
+      $('#btn-nhap-excel').on('click', function () { $('#tep-excel').val('').trigger('click'); });
+      $('#btn-nhap-ai').on('click', function () { $('#tep-ai').val('').trigger('click'); });
+      $('#tep-excel, #tep-ai').on('change', function () { docNhapTep(this.files && this.files[0]); });
 
       function veXemTruoc(d) {
         dongCho = (d.nhan || []).map(function (x) {

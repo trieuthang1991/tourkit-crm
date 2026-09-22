@@ -584,6 +584,17 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
 }
 .tk-boot-done { opacity: 0; pointer-events: none; }
 
+/* ---- Icon AI dùng chung -----------------------------------------------------------------------
+   Một icon "AI" (chùm sao lấp lánh) để nhận diện MỌI chỗ có AI (nút bóc tài liệu, gợi ý, chấm điểm…).
+   Dựng bằng MASK theo currentColor nên hoà màu với chữ ở bất kỳ ngữ cảnh nào (nút info/primary, menu,
+   nhãn) và co giãn theo cỡ chữ như icon Tabler. Dùng: <i class="tk-ico-ai"></i>. */
+.tk-ico-ai {
+  display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em;
+  background-color: currentColor;
+  -webkit-mask: url('/svg/tk-ai.svg') center / contain no-repeat;
+          mask: url('/svg/tk-ai.svg') center / contain no-repeat;
+}
+
 /* Khung mặc định của DataTables: bỏ ba chấm nảy, thu khung về đúng cỡ viên thuốc. */
 div.dataTables_processing {
   width: auto; margin-left: 0; padding: 0;
