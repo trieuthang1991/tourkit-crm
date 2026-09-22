@@ -50,7 +50,9 @@ public sealed record CustomerListFilter(
     decimal? RevenueFrom = null, decimal? RevenueTo = null,
     int? BirthdayMonth = null,
     // Chip "Chăm sóc khách hàng": mua (first=1 đơn, repeat=>1 đơn) + chưa liên hệ (nc7/nc15/nc30/nc90).
-    string? PurchaseBucket = null, string? NotContactedBucket = null);
+    string? PurchaseBucket = null, string? NotContactedBucket = null,
+    // Lọc theo NHIỀU loại khách (select2 multi → IN). CustomerType ở trên giữ cho 1 giá trị.
+    IReadOnlyList<int>? CustomerTypes = null);
 
 /// <summary>Phễu khách hàng + chăm sóc (chip lọc nhanh đầu màn, bám hệ cũ).</summary>
 public sealed record FunnelSegmentDto(string Name, int Count);

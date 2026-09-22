@@ -31,6 +31,7 @@ public sealed class CustomerService(
         // Predicate CỘT thật (dịch xuống SQL). Field mềm jsonb + aggregate lọc ở bộ nhớ (slow-path).
         Expression<Func<Customer, bool>> predicate = c =>
             (f.CustomerType == null || c.CustomerType == f.CustomerType) &&
+            (f.CustomerTypes == null || f.CustomerTypes.Count == 0 || f.CustomerTypes.Contains(c.CustomerType)) &&
             (kw == null ||
                 (phoneMode
                     ? (c.PhoneNormalized != null && c.PhoneNormalized.Contains(kwPhone))

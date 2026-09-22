@@ -129,7 +129,15 @@
     var selectable = opts.selectable !== false;
     var lastFiltered = null;   // số dòng KHỚP bộ lọc ở lượt tải gần nhất — cho popup xuất file chọn số lượng
 
-    function val(id) { var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }
+    function val(id) {
+      var e = document.getElementById(id);
+      if (!e) { return ''; }
+      // <select multiple> (select2 multi): e.value chỉ trả 1 giá trị → gom TẤT CẢ mục chọn, nối phẩy.
+      if (e.multiple && e.selectedOptions) {
+        return Array.from(e.selectedOptions).map(function (o) { return o.value; }).filter(Boolean).join(',');
+      }
+      return String(e.value || '').trim();
+    }
 
     function collectFilters() {
       var d = {};

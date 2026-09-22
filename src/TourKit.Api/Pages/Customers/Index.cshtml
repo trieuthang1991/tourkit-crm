@@ -72,15 +72,17 @@
 @* Thanh lọc — 4 lọc nhanh + panel nâng cao; TẤT CẢ tiêu chí đẩy xuống CustomerListFilter *@
 <div class="card mb-4">
   <div class="card-body">
-    @* Tab theo loại khách (bám staging: Cá nhân/Doanh nghiệp/Đối tác/CTV) — điều khiển f-customerType *@
-    <ul class="nav nav-tabs mb-3" id="type-tabs">
-      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả</a></li>
-      @foreach (var t in Model.CustomerTypes)
-      {
-        <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="@t.Code">@t.Name</a></li>
-      }
-    </ul>
-    <input type="hidden" id="f-customerType" value="" />
+    @* Loại khách: SELECT2 MULTI. Danh mục loại khách có thể rất dài → render hết thành tab chiếm cả
+       màn hình; chọn NHIỀU loại rồi lọc IN ở server cho gọn. *@
+    <div class="mb-3" style="max-width:520px">
+      <label class="form-label small text-muted mb-1">Loại khách</label>
+      <select id="f-customerType" class="form-select tk-s2f" multiple data-placeholder="Tất cả loại khách">
+        @foreach (var t in Model.CustomerTypes)
+        {
+          <option value="@t.Code">@t.Name</option>
+        }
+      </select>
+    </div>
 
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Nhập tên, SĐT, mã, email…" /></div>
@@ -197,7 +199,8 @@
       'purchaseBucket', 'notContactedBucket'];
 
     function collectFilters(d) {
-      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (v) { d[k] = v; } });
+      // select2 multiple trả về MẢNG → nối bằng dấu phẩy để server tách thành danh sách (lọc IN).
+      FILTERS.forEach(function (k) { var v = $('#f-' + k).val(); if (Array.isArray(v)) { v = v.join(','); } if (v) { d[k] = v; } });
       var q = $('#f-q').val(); if (q) { d['search[value]'] = q; }
     }
 
@@ -276,13 +279,8 @@
       $('.tk-s2f').on('change', function () { dt.ajax.reload(); });
       $('.tk-datef').on('change', function () { dt.ajax.reload(); });
 
-      // Tab loại khách → set f-customerType + tải lại.
-      $('#type-tabs').on('click', '.nav-link', function () {
-        $('#type-tabs .nav-link').removeClass('active');
-        $(this).addClass('active');
-        $('#f-customerType').val(this.getAttribute('data-type') || '');
-        dt.ajax.reload();
-      });
+      // Loại khách (select2 multi) → tải lại khi đổi lựa chọn.
+      $('#f-customerType').on('change', function () { dt.ajax.reload(); });
 
       // Lọc nâng cao: tk.advFilter tự chèn nút icon lọc vào nhóm nút Tìm/Đặt lại (khuôn chuẩn).
       tk.advFilter();
@@ -300,7 +298,6 @@
         $('#f-q').val('');
         FILTERS.forEach(function (k) { var $e = $('#f-' + k); $e.val(''); if ($e.hasClass('tk-s2f')) { $e.trigger('change.select2'); } });
         $('.tk-datef').each(function () { if (this._flatpickr) { this._flatpickr.clear(); } });
-        $('#type-tabs .nav-link').removeClass('active').first().addClass('active');
         syncChips();
         dt.ajax.reload();
       });

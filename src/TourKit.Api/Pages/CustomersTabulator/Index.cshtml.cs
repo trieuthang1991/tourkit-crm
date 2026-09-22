@@ -62,6 +62,15 @@ public class IndexModel : PageModel
         var q = Request.Query;
         string? S(string k) => string.IsNullOrWhiteSpace(q[k]) ? null : q[k].ToString().Trim();
         int? I(string k) => int.TryParse(q[k], NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : null;
+        // select2 multi loại khách gửi các mã nối bằng dấu phẩy → tách thành danh sách int (lọc IN).
+        IReadOnlyList<int>? Is(string k)
+        {
+            var raw = q[k].ToString();
+            if (string.IsNullOrWhiteSpace(raw)) { return null; }
+            var list = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(s => int.TryParse(s, out _)).Select(int.Parse).Distinct().ToList();
+            return list.Count > 0 ? list : null;
+        }
         decimal? M(string k) => decimal.TryParse(q[k], NumberStyles.Number, CultureInfo.InvariantCulture, out var d) ? d : null;
         DateTimeOffset? D(string k) =>
             DateTimeOffset.TryParse(q[k], CultureInfo.InvariantCulture, out var d) ? d.ToUniversalTime() : null;
@@ -79,7 +88,8 @@ public class IndexModel : PageModel
             CareFrom: D("careFrom"), CareTo: DEnd("careTo"),
             RevenueFrom: M("revenueFrom"), RevenueTo: M("revenueTo"),
             BirthdayMonth: I("birthdayMonth"),
-            PurchaseBucket: S("purchaseBucket"), NotContactedBucket: S("notContactedBucket"));
+            PurchaseBucket: S("purchaseBucket"), NotContactedBucket: S("notContactedBucket"),
+            CustomerTypes: Is("customerType"));
     }
 
     /// <summary>Nguồn dữ liệu cho Tabulator (remote pagination): nhận page/size/q, trả {last_page,data,pageSum}.</summary>

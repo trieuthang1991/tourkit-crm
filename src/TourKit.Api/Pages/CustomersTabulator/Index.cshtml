@@ -66,14 +66,16 @@
 
   @* Bộ lọc *@
   <div class="tk-pad">
-    <ul class="nav nav-tabs mb-3" id="type-tabs">
-      <li class="nav-item"><a href="javascript:void(0)" class="nav-link active" data-type="">Tất cả</a></li>
-      @foreach (var t in Model.CustomerTypes)
-      {
-        <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-type="@t.Code">@t.Name</a></li>
-      }
-    </ul>
-    <input type="hidden" id="f-customerType" value="" />
+    @* Loại khách: SELECT2 MULTI. Danh mục loại khách có thể rất dài → render hết thành tab chiếm cả
+       màn hình; chọn NHIỀU loại rồi lọc IN ở server cho gọn. *@
+    <div class="mb-3" style="max-width:520px">
+      <select id="f-customerType" class="form-select tk-s2f" multiple data-placeholder="Tất cả loại khách">
+        @foreach (var t in Model.CustomerTypes)
+        {
+          <option value="@t.Code">@t.Name</option>
+        }
+      </select>
+    </div>
     <div class="row g-2 align-items-center">
       <div class="col-md-5"><input type="text" id="f-q" class="form-control" placeholder="Nhập tên, SĐT, mã, email…" /></div>
       <div class="col-md-3">
@@ -218,6 +220,12 @@
         items.push({ separator: true });
         items.push({ label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xoá khách</span>', action: function () { delRow(d); } });
         return items;
+      }
+
+      // select2 cho ô lọc "Loại khách" (multi): danh mục dài → có tìm kiếm + gọn 1 ô thay vì tab tràn.
+      // tk.grid tự nối .tk-s2f change → reload nên chọn xong lưới tự tải lại.
+      if (window.jQuery && $.fn.select2) {
+        $('#f-customerType').select2({ width: '100%', placeholder: $('#f-customerType').data('placeholder') || 'Tất cả loại khách' });
       }
 
       var grid = tk.grid('#grid-customers', {
