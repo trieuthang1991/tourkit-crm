@@ -532,30 +532,57 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
 /* ---- Chỉ báo ĐANG TẢI dùng chung (DataTables + Tabulator) -------------------------------------
    Bản mặc định của DataTables là ba chấm nảy trong một khung trần, còn Tabulator là dòng chữ trơn —
    hai kiểu khác nhau trong cùng một sản phẩm, và cả hai đều trông như trang chưa làm xong.
-   Thay bằng MỘT viên thuốc nổi giữa bảng: vòng xoay theo màu thương hiệu + chữ.
-   Màu lấy từ token của theme (--bs-primary) chứ không ghi cứng mã màu — đổi theme là nó theo. */
+   Thay bằng LINH VẬT robot bay của TourKit (/svg/tourkit-flying-robot-loader.svg): một thẻ nổi giữa
+   bảng, robot bồng bềnh lên–xuống + chữ. Lỗi tải thì rơi về viên thuốc ĐỎ gọn (không dùng linh vật).
+   Màu chữ/viền lấy từ token theme (--bs-primary) — đổi theme là theo. Dùng CHUNG một chỗ nên đổi ở
+   đây là đổi cho mọi bảng/lưới. */
 .tk-load {
-  display: inline-flex; align-items: center; gap: .5rem;
-  padding: .5rem .875rem; border-radius: 999px;
+  display: inline-flex; flex-direction: column; align-items: center; gap: .4rem;
+  padding: 1rem 1.35rem; border-radius: 1rem;
   background: var(--bs-card-bg, #fff);
   border: 1px solid var(--bs-border-color);
-  box-shadow: 0 .25rem .75rem rgba(var(--bs-primary-rgb), .12);
-  font-size: .8125rem; font-weight: 500; color: var(--bs-body-color);
+  box-shadow: 0 .5rem 1.5rem rgba(var(--bs-primary-rgb), .18);
+  font-size: .8125rem; font-weight: 600; color: var(--bs-primary);
   white-space: nowrap;
 }
 .tk-load-spin {
-  width: 1rem; height: 1rem; border-radius: 50%;
-  border: 2px solid rgba(var(--bs-primary-rgb), .25);
-  border-top-color: var(--bs-primary);
-  animation: tk-load-quay .6s linear infinite;
+  display: block; width: 64px; height: 64px; border: 0; border-radius: 0;
+  background: url('/svg/tourkit-flying-robot-loader.svg') center / contain no-repeat;
+  animation: tk-load-bay 1.7s ease-in-out infinite;
 }
-.tk-load-loi { color: var(--bs-danger); border-color: rgba(var(--bs-danger-rgb), .35); }
-@keyframes tk-load-quay { to { transform: rotate(360deg); } }
+@keyframes tk-load-bay {
+  0%, 100% { transform: translateY(-5px) rotate(-3deg); }
+  50%      { transform: translateY(5px)  rotate(3deg); }
+}
+/* Lỗi tải: viên thuốc ĐỎ nằm ngang, gọn — ghi đè bố cục cột + linh vật của .tk-load. */
+.tk-load-loi {
+  flex-direction: row; gap: .5rem; padding: .5rem .875rem; border-radius: 999px;
+  color: var(--bs-danger); border-color: rgba(var(--bs-danger-rgb), .35); box-shadow: none;
+}
 
-/* Người tắt hiệu ứng chuyển động thì đừng quay — vẫn thấy rõ là đang tải nhờ viên thuốc và chữ. */
+/* Người tắt hiệu ứng chuyển động: linh vật đứng yên — vẫn rõ là đang tải nhờ thẻ + chữ. */
 @media (prefers-reduced-motion: reduce) {
-  .tk-load-spin { animation: none; border-top-color: rgba(var(--bs-primary-rgb), .25); }
+  .tk-load-spin { animation: none; }
+  .tk-boot { transition: none; }
 }
+
+/* Lớp phủ ĐANG XỬ LÝ (lưu form / thao tác chờ máy chủ): mờ nền + thẻ linh vật giữa màn.
+   z-index 1050 nằm TRÊN offcanvas (1045) để phủ cả form, nhưng DƯỚI SweetAlert2 (~1060) để hộp
+   báo lỗi vẫn hiện đè lên khi lưu hỏng. */
+.tk-overlay {
+  position: fixed; inset: 0; z-index: 1050;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .18); backdrop-filter: blur(2px);
+}
+.tk-overlay.is-on { display: flex; }
+
+/* Màn chờ TOÀN TRANG lúc mới vào — nền đặc theo theme, tan mượt (fade) khi trang tải xong. */
+.tk-boot {
+  position: fixed; inset: 0; z-index: 3000;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bs-body-bg, #fff); transition: opacity .4s ease;
+}
+.tk-boot-done { opacity: 0; pointer-events: none; }
 
 /* Khung mặc định của DataTables: bỏ ba chấm nảy, thu khung về đúng cỡ viên thuốc. */
 div.dataTables_processing {

@@ -9,6 +9,57 @@
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
+  <style>
+    /* Chi phí & dịch vụ — mỗi dòng 1 THẺ, 3 cột: TRÁI = lưới ô nhập (cố định bề rộng, không xô lệch);
+       GIỮA = mô tả textarea 3 dòng; CUỐI = Thành tiền (bề rộng cố định, nổi bật). */
+    .tk-cost-list { display: flex; flex-direction: column; gap: .75rem; }
+    .tk-cost-item {
+      position: relative; display: flex; flex-wrap: wrap; align-items: flex-start;
+      gap: .6rem 1rem; padding: .85rem 2.4rem .85rem .85rem;
+      border: 1px solid var(--bs-border-color); border-radius: .5rem;
+      background: var(--bs-body-bg); transition: border-color .15s ease;
+    }
+    .tk-cost-item:hover { border-color: rgba(var(--bs-primary-rgb), .45); }
+    /* CỘT TRÁI — các ô xếp lưới, mỗi ô bề rộng CỐ ĐỊNH nên các dòng thẳng cột. */
+    .tk-cost-fields { flex: 1 1 360px; display: flex; flex-wrap: wrap; gap: .5rem .7rem; align-content: flex-start; }
+    .tk-cost-fields .f { display: flex; flex-direction: column; flex: 0 0 auto; }
+    .tk-cost-fields .f > label {
+      font-size: .68rem; font-weight: 500; color: var(--bs-secondary-color);
+      margin-bottom: 2px; white-space: nowrap;
+    }
+    .tk-cost-fields input[type=number] { font-variant-numeric: tabular-nums; }
+    .tk-cost-fields .f-type { flex-basis: 132px; } .tk-cost-fields .f-scope { flex-basis: 132px; }
+    .tk-cost-fields .f-qty { width: 60px; } .tk-cost-fields .f-margin { width: 64px; }
+    .tk-cost-fields .f-vat { width: 64px; } .tk-cost-fields .f-rate { width: 72px; }
+    .tk-cost-fields .f-cost { width: 106px; } .tk-cost-fields .f-price { width: 106px; } .tk-cost-fields .f-sur { width: 100px; }
+    /* CỘT GIỮA — mô tả textarea 3 dòng, rộng cố định. */
+    .tk-cost-desc { flex: 0 0 236px; display: flex; flex-direction: column; }
+    .tk-cost-desc > label {
+      font-size: .68rem; font-weight: 500; color: var(--bs-secondary-color); margin-bottom: 2px;
+    }
+    .tk-cost-desc textarea.l-desc { resize: vertical; min-height: 76px; line-height: 1.35; }
+    /* CỘT CUỐI — Thành tiền TÁCH RIÊNG thành KHỐI KẾT QUẢ nổi bật: ô nền nhấn màu chính, số to,
+       cao bằng cả thẻ để tách hẳn khỏi lưới ô nhập bên trái. */
+    .tk-cost-total {
+      flex: 0 0 156px; align-self: stretch;
+      display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px;
+      padding: .5rem .75rem; border-radius: .5rem;
+      background: rgba(var(--bs-primary-rgb), .08); border: 1px solid rgba(var(--bs-primary-rgb), .18);
+    }
+    .tk-cost-total > label {
+      font-size: .64rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--bs-primary); margin-bottom: 0; white-space: nowrap;
+    }
+    .tk-cost-total .l-total {
+      display: flex; align-items: center; justify-content: flex-end;
+      font-weight: 700; font-size: 1.3rem; line-height: 1.2;
+      color: var(--bs-primary); font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+    .tk-cost-total .l-total::after {
+      content: " đ"; font-size: .72rem; font-weight: 600; opacity: .7; margin-left: 1px;
+    }
+    .tk-cost-del { position: absolute; top: .35rem; right: .4rem; }
+  </style>
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -76,22 +127,15 @@
     </div>
   </div>
 
-  @* Bảng chi phí FULL-WIDTH — 11 cột giờ đủ chỗ, không còn cuộn ngang bóp ô. *@
+  @* Chi phí & dịch vụ — mỗi dòng là 1 THẺ: các ô cố định bề rộng, hết chỗ TỰ XUỐNG DÒNG
+     (bỏ bảng 11 cột kéo ngang dài ngoằng / cuộn ngang). *@
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">Chi phí &amp; dịch vụ</h5>
       <button type="button" class="btn btn-sm btn-primary" id="add-line"><i class="ti ti-plus me-1"></i> Thêm dòng</button>
     </div>
-    <div class="table-responsive">
-      <table class="table table-sm align-middle mb-0" id="lines">
-        <thead><tr>
-          <th style="min-width:200px">Mô tả</th><th style="min-width:130px">Loại</th><th style="min-width:130px">Phạm vi</th>
-          <th class="text-end" style="min-width:80px">SL</th><th class="text-end" style="min-width:130px">Giá vốn</th><th class="text-end" style="min-width:90px">%LN</th>
-          <th class="text-end" style="min-width:130px">Đơn giá bán</th><th class="text-end" style="min-width:80px">VAT%</th><th class="text-end" style="min-width:110px">Phụ thu</th><th class="text-end" style="min-width:90px">Tỉ giá</th>
-          <th class="text-end" style="min-width:130px">Thành tiền</th><th style="width:44px"></th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
+    <div class="card-body">
+      <div id="lines" class="tk-cost-list"></div>
     </div>
   </div>
 
@@ -148,19 +192,22 @@
       d = d || {};
       var opts = TYPES.map(function(t,i){ return '<option value="'+i+'"'+(i==(d.serviceType||0)?' selected':'')+'>'+t+'</option>'; }).join('');
       var sc = d.scope || 0;
-      return $('<tr>').html(
-        '<td><input class="form-control form-control-sm l-desc" value="'+ (d.description? tk.escape(d.description):'') +'" placeholder="Dịch vụ..."></td>'+
-        '<td><select class="form-select form-select-sm l-type">'+opts+'</select></td>'+
-        '<td><select class="form-select form-select-sm l-scope"><option value="0"'+(sc==0?' selected':'')+'>Theo đoàn</option><option value="1"'+(sc==1?' selected':'')+'>Theo khách</option></select></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-qty" placeholder="0" value="'+(d.quantity||1)+'" min="0"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-cost" placeholder="0" value="'+(d.unitCost||0)+'" min="0"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-margin" placeholder="0" value="'+(d.marginPercent||0)+'"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-price" placeholder="0" value="'+(d.unitPrice||0)+'" min="0"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-vat" placeholder="0" value="'+(d.vatPercent||0)+'"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-sur" placeholder="0" value="'+(d.surcharge||0)+'"></td>'+
-        '<td><input type="number" class="form-control form-control-sm text-end l-rate" placeholder="1" value="'+(d.exchangeRate||1)+'"></td>'+
-        '<td class="text-end l-total">0</td>'+
-        '<td class="text-center"><button type="button" class="btn btn-icon btn-sm text-danger l-del"><i class="ti ti-x"></i></button></td>'
+      return $('<div class="tk-cost-item">').html(
+        '<div class="tk-cost-fields">'+
+          '<div class="f f-type"><label>Loại</label><select class="form-select form-select-sm l-type">'+opts+'</select></div>'+
+          '<div class="f f-scope"><label>Phạm vi</label><select class="form-select form-select-sm l-scope"><option value="0"'+(sc==0?' selected':'')+'>Theo đoàn</option><option value="1"'+(sc==1?' selected':'')+'>Theo khách</option></select></div>'+
+          '<div class="f f-qty"><label>SL</label><input type="number" class="form-control form-control-sm text-end l-qty" placeholder="0" value="'+(d.quantity||1)+'" min="0"></div>'+
+          '<div class="f f-cost"><label>Giá vốn</label><input type="number" class="form-control form-control-sm text-end l-cost" placeholder="0" value="'+(d.unitCost||0)+'" min="0"></div>'+
+          '<div class="f f-margin"><label>%LN</label><input type="number" class="form-control form-control-sm text-end l-margin" placeholder="0" value="'+(d.marginPercent||0)+'"></div>'+
+          '<div class="f f-price"><label>Đơn giá bán</label><input type="number" class="form-control form-control-sm text-end l-price" placeholder="0" value="'+(d.unitPrice||0)+'" min="0"></div>'+
+          '<div class="f f-vat"><label>VAT%</label><input type="number" class="form-control form-control-sm text-end l-vat" placeholder="0" value="'+(d.vatPercent||0)+'"></div>'+
+          '<div class="f f-sur"><label>Phụ thu</label><input type="number" class="form-control form-control-sm text-end l-sur" placeholder="0" value="'+(d.surcharge||0)+'"></div>'+
+          '<div class="f f-rate"><label>Tỉ giá</label><input type="number" class="form-control form-control-sm text-end l-rate" placeholder="1" value="'+(d.exchangeRate||1)+'"></div>'+
+        '</div>'+
+        '<div class="tk-cost-desc"><label>Mô tả dịch vụ</label>'+
+          '<textarea rows="3" class="form-control form-control-sm l-desc" placeholder="Tên dịch vụ / chi phí...">'+ (d.description? tk.escape(d.description):'') +'</textarea></div>'+
+        '<div class="tk-cost-total"><label>Thành tiền</label><span class="l-total">0</span></div>'+
+        '<button type="button" class="btn btn-icon btn-sm text-danger l-del tk-cost-del" title="Xoá dòng"><i class="ti ti-x"></i></button>'
       );
     }
 
@@ -169,7 +216,7 @@
 
     function recompute(){
       var perPaxCost=0, perPaxSell=0, groupCost=0, groupSell=0;
-      $('#lines tbody tr').each(function(){
+      $('#lines .tk-cost-item').each(function(){
         var r=$(this), qty=num(r.find('.l-qty').val());
         var cost=qty*num(r.find('.l-cost').val())*rate(r);
         var sell=qty*sellUnit(r)*rate(r)*(1+num(r.find('.l-vat').val())/100)+num(r.find('.l-sur').val());
@@ -187,7 +234,7 @@
     }
 
     function collect(){
-      return $('#lines tbody tr').map(function(){
+      return $('#lines .tk-cost-item').map(function(){
         var r=$(this);
         return { description: r.find('.l-desc').val()||'—', serviceType: parseInt(r.find('.l-type').val()), scope: parseInt(r.find('.l-scope').val()),
           quantity: num(r.find('.l-qty').val()), unitCost: num(r.find('.l-cost').val()), marginPercent: num(r.find('.l-margin').val()),
@@ -208,11 +255,11 @@
       if (window.flatpickr) { flatpickr('#ValidUntil', { dateFormat:'Y-m-d', altInput:true, altFormat:'d/m/Y', allowInput:true }); }
 
       var seed = SEED.length ? SEED : [{}];
-      seed.forEach(function(d){ $('#lines tbody').append(lineRow(d)); });
+      seed.forEach(function(d){ $('#lines').append(lineRow(d)); });
 
-      $('#add-line').on('click', function(){ $('#lines tbody').append(lineRow()); recompute(); });
-      $('#lines').on('click', '.l-del', function(){ if ($('#lines tbody tr').length>1){ $(this).closest('tr').remove(); } recompute(); });
-      $('#lines').on('input change', 'input,select', recompute);
+      $('#add-line').on('click', function(){ $('#lines').append(lineRow()); recompute(); });
+      $('#lines').on('click', '.l-del', function(){ if ($('#lines .tk-cost-item').length>1){ $(this).closest('.tk-cost-item').remove(); } recompute(); });
+      $('#lines').on('input change', 'input,select,textarea', recompute);
       $('.js-pax').on('input change', recompute);
 
       // prefill status/quoteType selects

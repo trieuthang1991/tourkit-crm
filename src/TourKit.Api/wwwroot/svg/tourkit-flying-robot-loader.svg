@@ -1,0 +1,65 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">TourKit flying robot loading mascot</title>
+  <desc id="desc">A friendly rounded robot floating with blue and purple rocket trails.</desc>
+  <defs>
+    <linearGradient id="body" x1="145" y1="120" x2="375" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FBFF"/>
+      <stop offset="0.55" stop-color="#CFE8FF"/>
+      <stop offset="1" stop-color="#8BB9E9"/>
+    </linearGradient>
+    <linearGradient id="visor" x1="183" y1="151" x2="330" y2="247" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6F7BFF"/>
+      <stop offset="0.5" stop-color="#9E63FF"/>
+      <stop offset="1" stop-color="#D25BFF"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#BDF7FF"/>
+      <stop offset="0.45" stop-color="#43D9FF"/>
+      <stop offset="1" stop-color="#7E5CFF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#4C53B8" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <g opacity="0.8" filter="url(#glow)">
+    <circle cx="100" cy="185" r="7" fill="#67E8FF"/>
+    <circle cx="405" cy="153" r="5" fill="#C07BFF"/>
+    <circle cx="414" cy="314" r="8" fill="#67E8FF"/>
+    <path d="M91 267C66 282 59 306 72 327" stroke="#65DFFF" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 16"/>
+    <path d="M424 219C448 231 456 253 449 272" stroke="#B06BFF" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 16"/>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <path d="M197 366C187 411 186 442 202 470C210 484 228 479 238 458L256 411L274 458C284 479 302 484 310 470C326 442 325 411 315 366H197Z" fill="url(#flame)"/>
+    <path d="M213 370C207 404 211 422 222 438C230 449 239 440 244 423L256 389L268 423C273 440 282 449 290 438C301 422 305 404 299 370H213Z" fill="#61E5FF" opacity="0.62" filter="url(#glow)"/>
+
+    <path d="M180 278L132 310C116 321 122 345 141 348L194 352L180 278Z" fill="url(#body)" stroke="#7BA8DD" stroke-width="7"/>
+    <path d="M332 278L380 310C396 321 390 345 371 348L318 352L332 278Z" fill="url(#body)" stroke="#7BA8DD" stroke-width="7"/>
+    <circle cx="126" cy="330" r="12" fill="#64E3FF" filter="url(#glow)"/>
+    <circle cx="386" cy="330" r="12" fill="#A66AFF" filter="url(#glow)"/>
+
+    <rect x="151" y="97" width="210" height="273" rx="92" transform="rotate(4 151 97)" fill="url(#body)" stroke="#6E9ED6" stroke-width="8"/>
+    <path d="M226 101L229 77C230 66 241 58 252 61L276 67C286 70 291 81 288 91L283 111" stroke="#78A9DD" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="260" cy="71" r="9" fill="#FFCB6B" filter="url(#glow)"/>
+
+    <rect x="181" y="145" width="150" height="108" rx="49" transform="rotate(4 181 145)" fill="#252C62" stroke="#6D73D8" stroke-width="7"/>
+    <rect x="191" y="155" width="130" height="88" rx="40" transform="rotate(4 191 155)" fill="url(#visor)"/>
+    <path d="M214 192C224 179 239 174 253 178" stroke="#E9E4FF" stroke-width="7" stroke-linecap="round" opacity="0.8"/>
+    <circle cx="228" cy="207" r="10" fill="#F8FBFF"/>
+    <circle cx="289" cy="211" r="10" fill="#F8FBFF"/>
+    <circle cx="228" cy="207" r="4" fill="#4B4AC7"/>
+    <circle cx="289" cy="211" r="4" fill="#4B4AC7"/>
+
+    <path d="M223 282C239 294 266 296 284 287" stroke="#5579B5" stroke-width="8" stroke-linecap="round"/>
+    <path d="M224 285C243 300 266 301 286 290" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+    <circle cx="178" cy="287" r="9" fill="#6BEBFF"/>
+    <circle cx="337" cy="296" r="9" fill="#B178FF"/>
+  </g>
+
+  <path d="M151 405C190 428 323 436 367 401" stroke="#79E9FF" stroke-width="4" stroke-linecap="round" opacity="0.35" stroke-dasharray="2 14"/>
+</svg>
