@@ -1,5 +1,6 @@
 @page
 @model TourKit.Api.Pages.Auth.LoginModel
+@inject Microsoft.Extensions.Hosting.IHostEnvironment Env
 @{
   Layout = "Layouts/_BlankLayout";
   ViewData["Title"] = "Đăng nhập";
@@ -15,6 +16,20 @@
      mà form này không có, và nó gọi FormValidation — thư viện chưa từng được nạp. Kết quả là mỗi lần
      mở trang, trình duyệt ném "FormValidation is not defined" và script ngừng giữa chừng, trong khi
      không kiểm tra được ô nào. Form đã có <span asp-validation-for> và máy chủ vẫn kiểm tra đầy đủ. *@
+
+  @if (Env.EnvironmentName == "Development")
+  {
+    <script>
+      // Nút "Điền" của hộp demo (chỉ có ở dev) — điền sẵn email/mật khẩu để đỡ phải gõ/nhớ.
+      document.getElementById('btn-demo-fill')?.addEventListener('click', function () {
+        var e = document.querySelector('[name="Input.Email"]');
+        var p = document.querySelector('[name="Input.Password"]');
+        if (e) { e.value = 'admin@@demo.vn'; }
+        if (p) { p.value = 'Demo@@12345'; }
+        (p || e)?.focus();
+      });
+    </script>
+  }
 }
 
 @* ************** Content ************** *@
@@ -60,6 +75,19 @@
         @if (TempData["LoginError"] is string loginErr)
         {
           <div class="alert alert-danger" role="alert">@loginErr</div>
+        }
+
+        @* Gợi ý tài khoản demo — CHỈ ở môi trường Development (đừng bao giờ bày credential ở production). *@
+        @if (Env.EnvironmentName == "Development")
+        {
+          <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-4" role="note" style="font-size:.85rem">
+            <i class="ti ti-flask-2 mt-1"></i>
+            <div class="flex-grow-1">
+              <div class="fw-semibold mb-1">Tài khoản demo <span class="text-muted fw-normal">(chỉ môi trường dev)</span></div>
+              <div>Email <code>admin@@demo.vn</code> · Mật khẩu <code>Demo@@12345</code></div>
+            </div>
+            <button type="button" class="btn btn-sm btn-label-info flex-shrink-0" id="btn-demo-fill">Điền</button>
+          </div>
         }
 
         <form id="formAuthentication" class="mb-3" method="post">
