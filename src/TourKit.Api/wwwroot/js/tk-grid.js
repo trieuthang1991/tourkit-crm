@@ -161,9 +161,12 @@
     if (selectable) {
       columns.push({
         // Ô chọn để làm tác vụ hàng loạt; tiêu đề là ô chọn-tất-cả của trang.
+        // TẮT nút "chỉnh cột" (headerMenu/popup của columnDefaults) riêng ở cột này — nếu không nó
+        // đè lên ô tích chọn-tất-cả làm ô này biến mất. Nút chỉnh cột đã có ở cột hành động (__act).
         title: '', field: '__sel', width: 44, hozAlign: 'center', headerHozAlign: 'center',
         titleFormatter: 'rowSelection', formatter: 'rowSelection',
-        headerSort: false, cellClick: function (e) { e.stopPropagation(); }
+        headerSort: false, headerMenu: false, headerPopup: false,
+        cellClick: function (e) { e.stopPropagation(); }
       });
     }
     var dataCols = (opts.columns || []).slice();
