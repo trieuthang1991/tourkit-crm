@@ -172,7 +172,7 @@ public class IndexModel : TkListPageModel
         {
             string C(string? v) => "\"" + (v ?? "").Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
             sb.Append(C(t.TicketCode)).Append(',').Append(C(t.OrderCode)).Append(',').Append(C(t.ProviderName)).Append(',')
-              .Append(t.Status.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .Append(C(TicketFundStatusText.Label(t.Status))).Append(',')
               .Append(C(t.IsClosed ? "Đã đóng" : "Đang mở")).AppendLine();
         }
 

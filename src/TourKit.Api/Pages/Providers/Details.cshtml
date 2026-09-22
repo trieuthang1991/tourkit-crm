@@ -1,0 +1,236 @@
+@page "{id:guid}"
+@model TourKit.Api.Pages.Providers.DetailsModel
+@using TourKit.Api.Pages.Providers
+@{
+    ViewData["Title"] = "Hồ sơ nhà cung cấp";
+    var p = Model.Provider;
+    var pr = Model.Profile;
+}
+
+@section PageStyles {
+  <link rel="stylesheet" href="~/vendor/css/pages/page-user-view.css" />
+}
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">
+      <a asp-page="Index" class="text-muted text-decoration-none">Nhà cung cấp</a>
+      <span class="mx-1">/</span> <span class="text-body">@p.Name</span>
+    </div>
+    <h4 class="mb-0">@p.Name</h4>
+  </div>
+  <div class="d-flex gap-2">
+    <a asp-page="Index" class="btn btn-label-secondary"><i class="ti ti-arrow-left me-1"></i> Danh sách</a>
+    @* Sửa nằm ở offcanvas trong màn danh sách — đưa về đó chứ không nhân bản form ở trang chỉ-đọc này. *@
+    <a asp-page="Index" class="btn btn-primary"><i class="ti ti-edit me-1"></i> Sửa</a>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Sidebar hồ sơ (trái) -->
+  <div class="col-xl-4 col-lg-5 col-md-5 order-1 order-md-0">
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="user-avatar-section">
+          <div class="d-flex align-items-center flex-column">
+            <div class="avatar avatar-xl mb-3 mt-4">
+              <span class="avatar-initial rounded-circle bg-label-primary" style="font-size:1.75rem">@DetailsModel.Initials(p.Name)</span>
+            </div>
+            <div class="user-info text-center">
+              <h4 class="mb-2">@p.Name</h4>
+              <span class="badge bg-label-secondary mt-1">@IndexModel.TypeLabel(p.Type)</span>
+              <span class="badge bg-label-@(p.Status == 1 ? "success" : "secondary") mt-1">@IndexModel.StatusLabel(p.Status)</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="mt-4 small text-uppercase text-muted">Thông tin</p>
+        <div class="info-container">
+          <ul class="list-unstyled">
+            <li class="mb-2"><span class="fw-semibold me-1">Mã:</span><span>@p.Code</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Loại:</span><span>@IndexModel.TypeLabel(p.Type)</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Người liên hệ:</span><span>@(string.IsNullOrWhiteSpace(p.ContactPerson) ? "—" : p.ContactPerson)</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">SĐT:</span><span>@(string.IsNullOrWhiteSpace(p.Phone) ? "—" : p.Phone)</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Email:</span><span>@(string.IsNullOrWhiteSpace(p.Email) ? "—" : p.Email)</span></li>
+            @if (!string.IsNullOrWhiteSpace(pr.Website))
+            {
+              <li class="mb-2 pt-1"><span class="fw-semibold me-1">Website:</span><a href="@pr.Website" target="_blank" rel="noopener">@pr.Website</a></li>
+            }
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Địa chỉ:</span><span>@(string.IsNullOrWhiteSpace(p.Address) ? "—" : p.Address)</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Tỉnh/Thành:</span><span>@(string.IsNullOrWhiteSpace(p.Province) ? "—" : p.Province)</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Thị trường:</span><span>@(Model.MarketTypeName ?? "—")</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Chi nhánh:</span><span>@(Model.BranchName ?? "—")</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Đánh giá:</span><span>@p.Rate</span></li>
+            @if (!string.IsNullOrWhiteSpace(p.TaxCode))
+            {
+              <li class="mb-2 pt-1"><span class="fw-semibold me-1">Mã số thuế:</span><span>@p.TaxCode</span></li>
+            }
+          </ul>
+
+          <p class="mt-3 small text-uppercase text-muted">Thanh toán</p>
+          <ul class="list-unstyled">
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Ngân hàng:</span><span>@(string.IsNullOrWhiteSpace(p.BankName) ? "—" : p.BankName)</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Số TK:</span><span>@(string.IsNullOrWhiteSpace(p.BankAccount) ? "—" : p.BankAccount)</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Tên TK:</span><span>@(string.IsNullOrWhiteSpace(pr.BankAccountName) ? "—" : pr.BankAccountName)</span></li>
+            <li class="mb-2 pt-1"><span class="fw-semibold me-1">Điều khoản TT:</span><span>@(string.IsNullOrWhiteSpace(pr.PaymentTerm) ? "—" : pr.PaymentTerm)</span></li>
+          </ul>
+
+          @if (!string.IsNullOrWhiteSpace(pr.Note))
+          {
+            <p class="mt-3 small text-uppercase text-muted">Ghi chú</p>
+            <p class="mb-0">@pr.Note</p>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nội dung (phải) -->
+  <div class="col-xl-8 col-lg-7 col-md-7 order-0 order-md-1">
+
+    @* Ba thẻ CÔNG NỢ NCC — thẻ card rõ ràng, canh giữa, KHÔNG dồn cục (dải tk-stat-strip vốn dành cho
+       màn lưới full-width nên trong cột hẹp bị xếp dọc chật). Số dùng tabular cho thẳng. *@
+    <div class="row g-3 mb-4">
+      <div class="col-sm-4">
+        <div class="card h-100">
+          <div class="card-body d-flex align-items-center gap-3 py-3">
+            <span class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-primary"><i class="ti ti-shopping-cart"></i></span></span>
+            <div class="lh-sm">
+              <h5 class="mb-0 fw-semibold" style="font-variant-numeric:tabular-nums">@DetailsModel.Tien(p.TotalCost)</h5>
+              <small class="text-muted">Tổng mua</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="card h-100">
+          <div class="card-body d-flex align-items-center gap-3 py-3">
+            <span class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-success"><i class="ti ti-cash"></i></span></span>
+            <div class="lh-sm">
+              <h5 class="mb-0 fw-semibold" style="font-variant-numeric:tabular-nums">@DetailsModel.Tien(p.Paid)</h5>
+              <small class="text-muted">Đã trả</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="card h-100">
+          <div class="card-body d-flex align-items-center gap-3 py-3">
+            <span class="avatar flex-shrink-0"><span class="avatar-initial rounded bg-label-@(p.Outstanding > 0 ? "danger" : "secondary")"><i class="ti ti-report-money"></i></span></span>
+            <div class="lh-sm">
+              <h5 class="mb-0 fw-semibold @(p.Outstanding > 0 ? "text-danger" : "")" style="font-variant-numeric:tabular-nums">@DetailsModel.Tien(p.Outstanding)</h5>
+              <small class="text-muted">Còn nợ</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="nav nav-pills flex-column flex-md-row mb-4" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pane-bang-gia" type="button" role="tab"><i class="ti ti-list-details ti-xs me-1"></i>Bảng giá & dịch vụ</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pane-quy-ve" type="button" role="tab"><i class="ti ti-ticket ti-xs me-1"></i>Quỹ vé</button></li>
+    </ul>
+
+    <div class="tab-content p-0">
+      <div class="tab-pane fade show active" id="pane-bang-gia" role="tabpanel">
+        <div class="card">
+          <h5 class="card-header d-flex align-items-center"><i class="ti ti-list-details me-2"></i>Bảng giá & dịch vụ</h5>
+          <div class="card-body">
+            @if (Model.PriceLines.Count == 0)
+            {
+              <p class="text-muted mb-0">Chưa có dịch vụ / bảng giá nào cho nhà cung cấp này.</p>
+            }
+            else
+            {
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead><tr class="text-nowrap">
+                    <th style="width:44px">#</th>
+                    <th style="min-width:240px">Dịch vụ / tên gói</th>
+                    <th class="text-end" style="width:140px">Giá hợp đồng</th>
+                    <th class="text-end" style="width:140px">Giá công bố</th>
+                    <th style="width:90px">Tiền tệ</th>
+                    <th class="text-end" style="width:90px">Số khách</th>
+                  </tr></thead>
+                  <tbody>
+                    @{ var stt = 0; }
+                    @foreach (var line in Model.PriceLines)
+                    {
+                      stt++;
+                      <tr>
+                        <td class="text-center text-muted">@stt</td>
+                        <td class="fw-medium">@(string.IsNullOrWhiteSpace(line.PriceName) ? "—" : line.PriceName)</td>
+                        <td class="text-end">@DetailsModel.Tien(line.ContractPrice)</td>
+                        <td class="text-end">@DetailsModel.Tien(line.PublicPrice)</td>
+                        <td><span class="badge bg-label-secondary">@(string.IsNullOrWhiteSpace(line.CurrencyCode) ? "VND" : line.CurrencyCode)</span></td>
+                        <td class="text-end">@line.AmountOfPeople</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="pane-quy-ve" role="tabpanel">
+        <div class="card">
+          <h5 class="card-header d-flex align-items-center"><i class="ti ti-ticket me-2"></i>Quỹ vé ứng</h5>
+          <div class="card-body">
+            @if (Model.TicketFunds.Count == 0)
+            {
+              <p class="text-muted mb-0">Chưa có quỹ vé ứng nào gắn với nhà cung cấp này.</p>
+            }
+            else
+            {
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead><tr class="text-nowrap">
+                    <th style="width:44px">#</th>
+                    <th style="width:140px">Mã đơn</th>
+                    <th style="min-width:160px">Mã vé</th>
+                    <th style="width:130px">Trạng thái</th>
+                    <th style="width:130px">Đóng quỹ</th>
+                  </tr></thead>
+                  <tbody>
+                    @{ var sttv = 0; }
+                    @foreach (var t in Model.TicketFunds)
+                    {
+                      sttv++;
+                      <tr>
+                        <td class="text-center text-muted">@sttv</td>
+                        <td>
+                          @if (t.OrderId != Guid.Empty)
+                          {
+                            <a href="/don-hang/@t.OrderId" class="fw-medium">@(string.IsNullOrWhiteSpace(t.OrderCode) ? "Mở đơn" : t.OrderCode)</a>
+                          }
+                          else
+                          {
+                            <span class="text-muted">—</span>
+                          }
+                        </td>
+                        <td class="fw-medium">@(string.IsNullOrWhiteSpace(t.TicketCode) ? "—" : t.TicketCode)</td>
+                        <td><span class="badge @TourKit.Api.Web.TicketFundStatusText.BadgeClass(t.Status)">@TourKit.Api.Web.TicketFundStatusText.Label(t.Status)</span></td>
+                        <td>
+                          @if (t.IsClosed)
+                          {
+                            <span class="badge bg-label-secondary">Đã đóng</span>
+                          }
+                          else
+                          {
+                            <span class="badge bg-label-success">Đang mở</span>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>@* /tab-content *@
+  </div>
+</div>

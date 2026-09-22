@@ -71,7 +71,15 @@
 
     @* Lọc nâng cao — MỌI tiêu chí đẩy xuống server (TicketFundListFilter) *@
     <div class="row g-2 mt-1 pt-3 border-top d-none" id="adv">
-      <div class="col-md-3"><input type="number" id="f-status" class="form-control" placeholder="Trạng thái (mã số)" /></div>
+      <div class="col-md-3">
+        <select id="f-status" class="form-select">
+          <option value="">Trạng thái (tất cả)</option>
+          @foreach (var o in TourKit.Api.Web.TicketFundStatusText.Options)
+          {
+            <option value="@o.Value">@o.Label</option>
+          }
+        </select>
+      </div>
     </div>
   </div>
 
@@ -112,7 +120,15 @@
         <div class="form-text">Chọn nhà cung cấp trước để lọc danh sách giá.</div>
       </div>
       <div class="mb-3"><label class="form-label">Mã vé</label><input type="text" name="Input.TicketCode" class="form-control" placeholder="Nhập mã vé" /></div>
-      <div class="mb-3"><label class="form-label">Trạng thái (mã số)</label><input type="number" name="Input.Status" class="form-control" placeholder="0" value="0" /></div>
+      <div class="mb-3">
+        <label class="form-label">Trạng thái</label>
+        <select name="Input.Status" class="form-select">
+          @foreach (var o in TourKit.Api.Web.TicketFundStatusText.Options)
+          {
+            <option value="@o.Value">@o.Label</option>
+          }
+        </select>
+      </div>
       <div class="form-check form-switch mb-4">
         <input class="form-check-input" type="checkbox" name="Input.IsClosed" value="true" id="chk-closed" />
         <label class="form-check-label" for="chk-closed">Đã đóng quỹ</label>
@@ -140,6 +156,8 @@
     $(function () {
       var g = tk.g, esc = g.esc, money = g.money;
       var CAN_MANAGE = @(Model.CanManage ? "true" : "false");
+      // Bản đồ trạng thái quỹ vé (nguồn: enum TicketFundStatus phía server) — nhãn + màu badge.
+      var TF_STATUS = @Html.Raw(TourKit.Api.Web.TicketFundStatusText.MapJson);
 
       $('.tk-s2f').each(function () { $(this).select2({ width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Tất cả' }); });
 
@@ -258,8 +276,12 @@
             }
           },
           {
-            title: 'Trạng thái', field: 'status', width: 130, hozAlign: 'center',
-            formatter: function (c) { return '<span class="badge bg-label-secondary">' + esc(c.getValue()) + '</span>'; }
+            title: 'Trạng thái', field: 'status', width: 140, hozAlign: 'center',
+            formatter: function (c) {
+              var m = TF_STATUS[c.getValue()];
+              return m ? '<span class="badge ' + m.c + '">' + m.t + '</span>'
+                       : '<span class="badge bg-label-secondary">' + esc(c.getValue()) + '</span>';
+            }
           },
           {
             title: 'Đóng quỹ', field: 'isClosed', width: 150,
