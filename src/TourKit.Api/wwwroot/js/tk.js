@@ -17,6 +17,33 @@
       .catch(function () { return { isSuccess: false, message: 'Lỗi kết nối, thử lại.' }; });
   };
 
+  // ---- Lớp phủ ĐANG XỬ LÝ (linh vật robot bay) — cho lúc lưu form / thao tác chờ máy chủ ----
+  // Dùng lại thẻ .tk-load (mascot) trên nền mờ toàn màn. Đếm tham chiếu để nhiều lời gọi lồng nhau
+  // không tắt sớm. show(text) đổi được dòng chữ; mỗi show phải có đúng một hide (nên gọi ở .finally).
+  tk.overlay = (function () {
+    var el = null, dem = 0;
+    function ensure() {
+      if (el) { return el; }
+      el = document.createElement('div');
+      el.className = 'tk-overlay';
+      el.innerHTML = '<span class="tk-load"><span class="tk-load-spin"></span><span class="tk-load-txt">Đang xử lý…</span></span>';
+      document.body.appendChild(el);
+      return el;
+    }
+    return {
+      show: function (text) {
+        var o = ensure();
+        var t = o.querySelector('.tk-load-txt');
+        if (t) { t.textContent = text || 'Đang xử lý…'; }
+        dem++; o.classList.add('is-on');
+      },
+      hide: function () {
+        dem = Math.max(0, dem - 1);
+        if (dem === 0 && el) { el.classList.remove('is-on'); }
+      }
+    };
+  })();
+
   // ---- Thông báo (SweetAlert2) — KHÔNG dùng alert/confirm trình duyệt ----
   tk.toast = function (msg) {
     if (window.Swal) { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: msg, showConfirmButton: false, timer: 2200, timerProgressBar: true }); }
@@ -124,18 +151,24 @@
       allowClear: true,
       placeholder: opts.placeholder || $el.data('placeholder') || 'Gõ để tìm…',
       dropdownParent: opts.parent ? $(opts.parent) : undefined,
-      // minimumInputLength 1: gõ một ký tự là đã lọc được, nhưng vẫn tránh cú gọi rỗng lúc vừa mở.
-      minimumInputLength: opts.min == null ? 1 : opts.min,
+      // minimumInputLength 0: MỞ ra là đã nạp sẵn TRANG ĐẦU (như ô có <option> sẵn) — không bắt gõ mới ra.
+      // Gõ thì lọc như cũ. Có thể ép lại bằng opts.min nếu màn nào muốn buộc gõ.
+      minimumInputLength: opts.min == null ? 0 : opts.min,
       ajax: {
         url: opts.url,
         dataType: 'json',
         delay: 250,                     // gõ nhanh không bắn một request mỗi phím
+        cache: true,
         data: function (p) {
-          var d = { q: p.term };
+          var d = { q: p.term, page: p.page || 1 };   // gửi kèm trang để cuộn phân trang
           if (opts.extra) { $.extend(d, typeof opts.extra === 'function' ? opts.extra() : opts.extra); }
           return d;
         },
-        processResults: function (d) { return d; }
+        // Endpoint trả {results, pagination:{more}} → cuộn vô hạn; trả {results} thường → hiện trang đầu (an toàn).
+        processResults: function (d) {
+          if (d && d.pagination) { return d; }
+          return { results: (d && d.results) || [], pagination: { more: false } };
+        }
       }
     });
   };
@@ -276,7 +309,7 @@
       // Nút icon nhỏ, gọn — chỉ icon phễu + badge đếm nổi ở góc khi có lọc đang bật (giữ tín hiệu
       // "đang lọc" mà không chiếm chỗ), tooltip "Lọc nâng cao". Đặt cạnh nút Tìm/Đặt lại nếu có
       // nhóm nút (#btn-search), không thì đứng riêng trên panel.
-      $btn = $('<button type="button" class="btn btn-icon btn-sm btn-label-secondary position-relative" id="btn-adv" title="Lọc nâng cao" data-bs-toggle="tooltip">' +
+      $btn = $('<button type="button" class="btn btn-icon btn-label-secondary position-relative" id="btn-adv" title="Lọc nâng cao" data-bs-toggle="tooltip">' +
         '<i class="ti ti-filter"></i>' +
         '<span class="badge rounded-pill bg-primary position-absolute top-0 start-100 translate-middle d-none" id="adv-count" style="font-size:.6rem;padding:.2em .4em">0</span>' +
         '</button>');
@@ -310,6 +343,218 @@
 
     refresh();
     if (count() > 0) { toggle(true); }
+  };
+
+  // ---- Thanh lọc: đồng nhất chiều cao + nút Tìm tự co còn icon khi hàng quá hẹp ----
+  // Chạy TỰ ĐỘNG mọi trang (không cần sửa từng màn): gắn class .tk-filter-row cho hàng chứa #btn-search
+  // (CSS ép mọi control cao 38px, canh giữa — hết thò thụt), bọc nhãn "Tìm" vào <span> để ẩn được, rồi
+  // theo dõi bề rộng nhóm nút: hẹp quá thì bỏ nhãn, chừa icon (bám yêu cầu "ngắn thì mỗi icon").
+  tk.filterBar = function () {
+    var btn = document.getElementById('btn-search');
+    if (!btn) { return; }
+
+    var row = btn.closest('.row');
+    if (row) { row.classList.add('tk-filter-row'); }
+
+    if (!btn.querySelector('.tk-btn-label')) {
+      var ic = btn.querySelector('i');
+      var label = (btn.textContent || '').trim();
+      btn.innerHTML = (ic ? ic.outerHTML : '') + '<span class="tk-btn-label">' + label + '</span>';
+    }
+
+    var group = btn.parentElement;
+    if (!group || !window.ResizeObserver) { return; }
+    // < ~150px: nhóm (Tìm + Đặt lại + Lọc) không đủ chỗ cho chữ → nút Tìm còn mỗi icon.
+    var ro = new ResizeObserver(function () {
+      btn.classList.toggle('tk-icon-only', group.clientWidth < 150);
+    });
+    ro.observe(group);
+  };
+
+  // ---- Ô chọn THỊ TRƯỜNG cha–con (cascading) dùng chung ----
+  // Biến MỌI <select.tk-market> thành 2 ô select2 Cha→Con: chọn nhóm cha, ô con lọc theo cha. Giá trị
+  // hiệu lực (con nếu chọn, không thì cha) ghi ngược vào ô GỐC (ẩn) nên filter/form KHÔNG phải đổi logic.
+  // Cây nạp 1 lần từ ?handler=MarketTree (cache theo phiên). Chạy SAU cùng (setTimeout) để không đụng
+  // select2 mà trang/tk.form vừa gắn. Bám yêu cầu owner: gọn, có tìm, phân cấp — thay danh sách phẳng dài.
+  tk._marketTree = null;
+
+  // Nạp cây thị trường 1 lần/lần-tải-trang (?handler=MarketTree đã cache server-side qua MarketDirectory).
+  function getMarketTree(cb) {
+    if (tk._marketTree) { return cb(tk._marketTree); }
+    fetch(location.pathname + '?handler=MarketTree', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (d) { tk._marketTree = d || []; cb(tk._marketTree); })
+      .catch(function () { cb([]); });
+  }
+
+  // Bộ lọc THỊ TRƯỜNG dạng CÂY multi-checkbox cho MÀN DANH SÁCH (khác FORM: form là 1 select cha–con).
+  // Check được NHIỀU; check cha → check hết con; check vài con → cha hiện "một phần" (indeterminate).
+  // Ghi TẬP id đã chọn (cả cha lẫn con đang tick) vào ô hidden (nối bằng dấu phẩy) để tk.grid gửi kèm
+  // → backend lọc IN. opts: { mount:'#id', hidden:'#f-marketTypeIds', onChange:fn(tải lại khi đóng panel) }
+  tk.marketFilter = function (opts) {
+    if (!window.jQuery) { return; }
+    var $mount = jQuery(opts.mount), $hidden = jQuery(opts.hidden);
+    if (!$mount.length || !$hidden.length) { return; }
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+
+    getMarketTree(function (tree) {
+      var roots = [], kids = {};
+      tree.forEach(function (m) {
+        if (m.parentId) { (kids[m.parentId] = kids[m.parentId] || []).push(m); } else { roots.push(m); }
+      });
+      var cmp = function (a, b) { return (a.sort - b.sort) || String(a.name).localeCompare(b.name); };
+      roots.sort(cmp); Object.keys(kids).forEach(function (k) { kids[k].sort(cmp); });
+
+      var html = '<div class="dropdown tk-mktf w-100">' +
+        '<button type="button" class="btn btn-label-secondary w-100 d-flex align-items-center justify-content-between dropdown-toggle" ' +
+        'data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">' +
+        '<span class="tk-mktf-lbl text-truncate">Thị trường</span></button>' +
+        '<div class="dropdown-menu p-2 tk-mktf-menu" style="max-height:320px;overflow:auto;min-width:250px">';
+      roots.forEach(function (p) {
+        html += '<div class="form-check mb-1">' +
+          '<input class="form-check-input tk-mktf-p" type="checkbox" value="' + p.id + '" id="mktf-' + p.id + '">' +
+          '<label class="form-check-label fw-medium" for="mktf-' + p.id + '">' + esc(p.name) + '</label></div>';
+        (kids[p.id] || []).forEach(function (c) {
+          html += '<div class="form-check mb-1 ms-3">' +
+            '<input class="form-check-input tk-mktf-c" type="checkbox" value="' + c.id + '" data-parent="' + p.id + '" id="mktf-' + c.id + '">' +
+            '<label class="form-check-label" for="mktf-' + c.id + '">' + esc(c.name) + '</label></div>';
+        });
+      });
+      html += '</div></div>';
+      $mount.html(html);
+
+      var $menu = $mount.find('.tk-mktf-menu'), $lbl = $mount.find('.tk-mktf-lbl');
+
+      function apply() {
+        var ids = [];
+        $menu.find('input:checked').each(function () { ids.push(this.value); });
+        $hidden.val(ids.join(','));
+        // Nhãn đếm: cha tick đủ tính 1; con tick lẻ (cha chưa đủ) tính từng cái — không đếm trùng.
+        var n = 0;
+        $menu.find('.tk-mktf-p').each(function () {
+          if (this.checked) { n++; }
+          else { n += $menu.find('.tk-mktf-c[data-parent="' + this.value + '"]:checked').length; }
+        });
+        $lbl.text(n ? ('Thị trường (' + n + ')') : 'Thị trường');
+      }
+      function syncParent(pid) {
+        var $p = $menu.find('#mktf-' + pid), $cs = $menu.find('.tk-mktf-c[data-parent="' + pid + '"]');
+        var total = $cs.length, on = $cs.filter(':checked').length;
+        if (!total) { return; }
+        $p.prop('checked', on === total).prop('indeterminate', on > 0 && on < total);
+      }
+
+      $menu.on('change', '.tk-mktf-p', function () {
+        this.indeterminate = false;
+        $menu.find('.tk-mktf-c[data-parent="' + this.value + '"]').prop('checked', this.checked);
+        apply();
+      });
+      $menu.on('change', '.tk-mktf-c', function () { syncParent(this.getAttribute('data-parent')); apply(); });
+      $menu.on('click', function (e) { e.stopPropagation(); });
+
+      if (opts.onChange) {
+        var last = '';
+        $mount.find('.dropdown').on('hidden.bs.dropdown', function () {
+          var cur = $hidden.val() || '';
+          if (cur !== last) { last = cur; opts.onChange(); }
+        });
+      }
+
+      function clearAll() {
+        $menu.find('input').prop('checked', false).prop('indeterminate', false);
+        $hidden.val(''); $lbl.text('Thị trường');
+      }
+      // Nút "Đặt lại" của thanh lọc chuẩn chỉ xoá VALUE ô hidden — phải xoá cả cây (tick) ở đây.
+      var rst = document.getElementById('btn-reset');
+      if (rst) { rst.addEventListener('click', clearAll); }
+    });
+  };
+
+  tk.marketCascade = function () {
+    // ĐÃ GỠ: owner chốt "chỉ 1 dòng search market là đủ" (bỏ qua phân Inbound/Outbound ở giao diện tìm).
+    // Không dựng cascade cha–con nữa → ô thị trường giữ select2 tìm kiếm 1 ô (đơn giản + hết bị bóp cụt).
+    // DATA thị trường vẫn giữ nguyên (kể cả Inbound/Outbound). Để hàm no-op cho gọn, khỏi gỡ class tk-market khắp nơi.
+    return;
+    // eslint-disable-next-line no-unreachable
+    var list = document.querySelectorAll('select.tk-market:not([data-cascaded])');
+    if (!list.length || !window.jQuery) { return; }
+
+    getTree(function (tree) {
+      var byId = {}, roots = [], kids = {};
+      tree.forEach(function (m) { byId[m.id] = m; });
+      tree.forEach(function (m) {
+        if (m.parentId) { (kids[m.parentId] = kids[m.parentId] || []).push(m); }
+        else { roots.push(m); }
+      });
+      var cmp = function (a, b) { return (a.sort - b.sort) || String(a.name).localeCompare(b.name); };
+      roots.sort(cmp);
+      Object.keys(kids).forEach(function (k) { kids[k].sort(cmp); });
+      list.forEach(function (orig) { build(orig, byId, roots, kids); });
+    });
+
+    function getTree(cb) {
+      // Cache theo LẦN TẢI TRANG (biến RAM) — đủ để nhiều ô trên cùng trang khỏi tải lại; KHÔNG dùng
+      // sessionStorage vì danh mục có thể đổi, cache dính gây hiện cây cũ tới khi đóng tab.
+      if (tk._marketTree) { return cb(tk._marketTree); }
+      fetch(location.pathname + '?handler=MarketTree', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (d) { tk._marketTree = d || []; cb(tk._marketTree); })
+        .catch(function () { cb([]); });
+    }
+
+    function build(orig, byId, roots, kids) {
+      orig.setAttribute('data-cascaded', '1');
+      var $orig = $(orig);
+      var ph = $orig.data('placeholder') || 'Thị trường';
+      var inOc = $orig.closest('.offcanvas');
+      var busy = false;
+
+      // Ô gốc đã bị trang/tk.form select2-hoá → gỡ bỏ, ẩn đi, GIỮ làm nơi chứa giá trị (filter/form đọc ô này).
+      try { if ($orig.hasClass('select2-hidden-accessible')) { $orig.select2('destroy'); } } catch (e) {}
+      $orig.addClass('d-none');
+
+      var $cha = $('<select class="form-select"><option value=""></option></select>');
+      var $con = $('<select class="form-select"></select>');
+      roots.forEach(function (r) { $cha.append(new Option(r.name, r.id)); });
+      $orig.after($('<div class="tk-market-cascade"></div>').append($cha, $con));
+
+      function fillCon(chaVal) {
+        $con.empty();
+        var ks = (chaVal && kids[chaVal]) || [];
+        if (!chaVal || ks.length === 0) { $con.append(new Option('—', '')).prop('disabled', true); }
+        else {
+          $con.prop('disabled', false).append(new Option('Cả nhóm', '')); // '' = dùng chính cha
+          ks.forEach(function (k) { $con.append(new Option(k.name, k.id)); });
+        }
+      }
+      function setFromOrig() { // ô gốc → Cha/Con (mở form sửa / reset / vào trang kèm tham số)
+        var v = orig.value, n = v && byId[v];
+        if (n && n.parentId) { $cha.val(n.parentId); fillCon(n.parentId); $con.val(v); }
+        else if (n) { $cha.val(v); fillCon(v); }
+        else { $cha.val(''); fillCon(''); }
+      }
+      function pull() { if (busy) { return; } busy = true; setFromOrig(); $cha.trigger('change.select2'); $con.trigger('change.select2'); busy = false; }
+      function sync() { // Cha/Con → giá trị hiệu lực về ô gốc + kích change (filter reload / form value)
+        if (busy) { return; } busy = true;
+        var eff = $con.val() || $cha.val() || '';
+        if (orig.value !== eff) { orig.value = eff; $orig.trigger('change'); }
+        busy = false;
+      }
+
+      setFromOrig(); // dựng trạng thái ban đầu TRƯỚC khi select2-hoá
+      var s2 = { width: '100%', allowClear: true };
+      if (inOc.length) { s2.dropdownParent = inOc; }
+      $cha.select2($.extend({}, s2, { placeholder: ph }));
+      $con.select2($.extend({}, s2, { placeholder: 'Nhóm con' }));
+
+      $orig.on('change', pull);
+      $cha.on('change', function () { if (busy) { return; } fillCon($cha.val()); $con.trigger('change.select2'); sync(); });
+      $con.on('change', function () { if (busy) { return; } sync(); });
+    }
   };
 
   // opts: { url, columns, extraData(d), pageLength }
@@ -664,6 +909,7 @@
     }
 
     function gui(formEl) {
+      tk.overlay.show('Đang lưu…');
       tk.post($form.attr('data-action') || opts.saveUrl, new FormData(formEl)).then(function (res) {
         if (res && res.isSuccess) {
           bootstrap.Offcanvas.getInstance(ocEl).hide();
@@ -674,7 +920,7 @@
           else if (window.tkGridReload) { window.tkGridReload(); tk.toast(res.message || 'Đã lưu.'); }
           else { location.reload(); }   // client-side: re-render dòng từ server
         } else { tk.error((res && (res.message || res.detail || res.title)) || 'Lưu thất bại.'); }
-      });
+      }).finally(function () { tk.overlay.hide(); });
     }
 
     /**
@@ -860,5 +1106,5 @@
 
   // Gộp date-range TỰ ĐỘNG trên mọi trang. Đăng ký ở đây (tk.js nạp trước) nên callback này chạy
   // TRƯỚC $(function) của từng trang → vô hiệu ô gốc xong mới tới lúc trang flatpickr('.tk-datef').
-  $(function () { tk.dateRanges(); tk.bell(); });
+  $(function () { tk.dateRanges(); tk.filterBar(); tk.bell(); setTimeout(tk.marketCascade, 0); });
 })();

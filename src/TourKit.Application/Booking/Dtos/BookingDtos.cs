@@ -55,7 +55,10 @@ public sealed record OrderListFilter(
     int? CustomerType = null, string? CustomerSource = null,
     // Lọc theo ĐÚNG MỘT khách — cho tab "Đơn hàng" ở màn chi tiết khách hàng. Cùng lý do như
     // DepartureId: đẩy xuống DB thay vì tải cả bảng đơn về rồi lọc trong bộ nhớ.
-    Guid? CustomerId = null);
+    Guid? CustomerId = null,
+    // Lọc theo NHIỀU thị trường (cây multi-checkbox màn danh sách). Mỗi id vẫn gồm cả con cháu như
+    // MarketTypeId đơn (legacy). MarketTypeId ở trên giữ cho tương thích 1 giá trị / chip cũ.
+    IReadOnlyList<Guid>? MarketTypeIds = null);
 
 /// <summary>NCC xuất hiện trong đơn (dùng cho Select lọc theo nhà cung cấp).</summary>
 public sealed record OrderFilterProviderDto(Guid Id, string Name);

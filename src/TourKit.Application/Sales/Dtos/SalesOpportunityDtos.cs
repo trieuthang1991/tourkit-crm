@@ -41,7 +41,9 @@ public sealed record SalesOpportunityListFilter(
     bool? FromWebsite = null,
     bool? IsConfirmed = null,
     DateTimeOffset? CreatedFrom = null,
-    DateTimeOffset? CreatedTo = null);
+    DateTimeOffset? CreatedTo = null,
+    // Lọc theo NHIỀU thị trường (cây multi-checkbox màn danh sách → IN). MarketTypeId ở trên giữ cho 1 giá trị.
+    IReadOnlyList<Guid>? MarketTypeIds = null);
 
 /// <summary>
 /// Thẻ thống kê đầu màn. <paramref name="TheoCot"/> đếm theo TỪNG cột phễu (khoá = StageCode) chứ

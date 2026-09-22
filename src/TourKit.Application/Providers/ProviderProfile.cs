@@ -45,6 +45,10 @@ public sealed record ProviderProfile
     public string? Note { get; init; }              // "Ghi chú"
     public string? BankAccountName { get; init; }   // "Tên TK" — khác BankAccount (số TK) và BankName
 
+    /// <summary>"Điều khoản thanh toán" — LƯU DẠNG TEXT: ô gợi ý theo danh mục mẫu, chọn hoặc gõ tự do
+    /// rồi lưu chuỗi (không FK). Danh mục PaymentTerm chỉ đóng vai gợi ý/mẫu, không ràng buộc.</summary>
+    public string? PaymentTerm { get; init; }
+
     /// <summary>"Thông tin liên hệ" — hệ cũ cho khai NHIỀU người trên mọi loại NCC.</summary>
     public IReadOnlyList<ProviderContact> Contacts { get; init; } = [];
 
@@ -109,7 +113,7 @@ public sealed record ProviderProfile
     /// <summary>Serialize; null nếu rỗng hoàn toàn (không lưu JSON thừa).</summary>
     public string? ToJsonOrNull()
     {
-        var empty = Website is null && Note is null && BankAccountName is null &&
+        var empty = Website is null && Note is null && BankAccountName is null && PaymentTerm is null &&
             BuiltYear is null && Country is null && VehicleOwnership is null &&
             HotelClass is null && ProjectName is null &&
             VehicleTypes.Count == 0 && Contacts.Count == 0;

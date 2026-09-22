@@ -18,6 +18,10 @@ public interface IProviderService
     /// </summary>
     Task<int> ThemDichVuAsync(Guid providerId, IReadOnlyList<ProviderServiceLineDto> lines);
     Task<ProviderDto> CreateAsync(CreateProviderDto dto);
+
+    /// <summary>Tạo NCC KÈM bảng giá ngay từ form TẠO (trước đây form tạo bỏ mất panel dịch vụ, NCC mới
+    /// luôn 0 dòng giá). Tạo NCC trước rồi nối các dòng giá của nó — cùng đường với nhập tệp (<see cref="ThemDichVuAsync"/>).</summary>
+    Task<ProviderDto> CreateWithServicesAsync(CreateProviderDto dto, IReadOnlyList<ProviderServiceLineDto> services);
     Task UpdateAsync(Guid id, UpdateProviderDto dto);
 
     /// <summary>

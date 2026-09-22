@@ -83,6 +83,7 @@ builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<AmbientTe
 // --- Cache (thư viện TourKit.Caching): có cấu hình Redis thì dùng Redis, không thì bộ nhớ tiến trình ---
 builder.Services.AddTourKitCaching(builder.Read<RedisOptions>(RedisOptions.SectionName));
 builder.Services.AddScoped<TourKit.Api.Services.UserDirectory>();
+builder.Services.AddScoped<TourKit.Api.Services.MarketDirectory>();
 
 // --- DB provider theo cấu hình ---
 var database = builder.Read<DatabaseOptions>(DatabaseOptions.SectionName);

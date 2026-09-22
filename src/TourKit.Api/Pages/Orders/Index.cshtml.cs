@@ -9,6 +9,8 @@ using TourKit.Application.Booking;
 using TourKit.Application.Common;
 using TourKit.Application.Booking.Dtos;
 using TourKit.Application.Catalog;
+using TourKit.Application.Crm;
+using TourKit.Application.Crm.Dtos;
 using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Pages.Orders;
@@ -28,13 +30,14 @@ public class IndexModel : TkListPageModel
     private readonly ICustomerSourceService _sources;
     private readonly TourKit.Application.Finance.IReceiptService _receipts;
     private readonly TourKit.Application.Finance.IPaymentService _payments;
+    private readonly ICustomerCareService _cares;
     private readonly ICurrentUser _current;
 
     public IndexModel(IBookingService svc, UserDirectory users, IBranchService branches,
         IDepartmentService departments, IMarketTypeService markets, ITourGroupService groups,
         ICustomerSourceService sources,
         TourKit.Application.Finance.IReceiptService receipts, TourKit.Application.Finance.IPaymentService payments,
-        ICurrentUser current)
+        ICustomerCareService cares, ICurrentUser current)
     {
         _svc = svc;
         _users = users;
@@ -45,6 +48,7 @@ public class IndexModel : TkListPageModel
         _sources = sources;
         _receipts = receipts;
         _payments = payments;
+        _cares = cares;
         _current = current;
     }
 
@@ -71,6 +75,13 @@ public class IndexModel : TkListPageModel
     public async Task<IActionResult> OnPostReopenAsync(Guid id)
     {
         try { await _svc.ReopenOrderAsync(id); return new JsonResult(Result.Success("Đã mở lại đơn.")); }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    /// <summary>Xoá đơn (xoá mềm) ngay trên dòng — bám staging "Xóa đơn hàng này" (tk-delete-order).</summary>
+    public async Task<IActionResult> OnPostDeleteOrderAsync(Guid id)
+    {
+        try { await _svc.DeleteOrderAsync(id); return new JsonResult(Result.Success("Đã xoá đơn hàng.")); }
         catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
     }
 
@@ -106,6 +117,27 @@ public class IndexModel : TkListPageModel
             await _payments.CreateAsync(id, new TourKit.Application.Finance.Dtos.CreatePaymentDto(
                 null, null, amount, string.IsNullOrWhiteSpace(method) ? "cash" : method, null, receiver, note));
             return new JsonResult(Result.Success("Đã tạo phiếu chi."));
+        }
+        catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
+    }
+
+    /// <summary>
+    /// Tạo lịch nhắc hẹn (CSKH) cho khách của đơn — bám staging "Tạo lịch nhắc hẹn" (addCSKHBtn) trên
+    /// menu dòng: ghi một bản <see cref="TourKit.Shared.Entities.CustomerCare"/> có ngày nhắc, để
+    /// CareReminderJob email người phụ trách khi tới hạn. Người phụ trách bỏ trống = người đang đăng nhập.
+    /// </summary>
+    public async Task<IActionResult> OnPostCreateCareAsync(Guid customerId, string? title, string? detail,
+        DateTimeOffset? remindAt, Guid? assignedToUserId)
+    {
+        if (customerId == Guid.Empty) { return new JsonResult(Result.Error("Không xác định được khách hàng của đơn.")); }
+        if (string.IsNullOrWhiteSpace(title)) { return new JsonResult(Result.Error("Bắt buộc nhập tiêu đề nhắc hẹn.")); }
+        try
+        {
+            // RemindAt là NGÀY nghiệp vụ (không giờ) → neo offset 0 kẻo lùi 1 ngày ở giờ VN. Status 0 = "Mới".
+            await _cares.CreateAsync(new CreateCustomerCareDto(
+                customerId, title.Trim(), string.IsNullOrWhiteSpace(detail) ? null : detail.Trim(),
+                TkDate.Day(remindAt), assignedToUserId ?? _current.UserId, 0));
+            return new JsonResult(Result.Success("Đã tạo lịch nhắc hẹn."));
         }
         catch (AppException ex) { return new JsonResult(Result.Error(ex.Message)); }
     }
@@ -241,6 +273,15 @@ public class IndexModel : TkListPageModel
         DateTimeOffset? D(string k) => DateTimeOffset.TryParse(q[k], CultureInfo.InvariantCulture, out var d) ? d.ToUniversalTime() : null;
         string? S(string k) => string.IsNullOrWhiteSpace(q[k]) ? null : q[k].ToString();
         bool? B(string k) => bool.TryParse(q[k], out var b) ? b : null;
+        // Cây multi-checkbox thị trường gửi tập id nối phẩy → tách thành danh sách (mỗi id gồm con cháu).
+        IReadOnlyList<Guid>? Gs(string k)
+        {
+            var raw = q[k].ToString();
+            if (string.IsNullOrWhiteSpace(raw)) { return null; }
+            var list = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(s => Guid.TryParse(s, out _)).Select(Guid.Parse).Distinct().ToList();
+            return list.Count > 0 ? list : null;
+        }
 
         return new OrderListFilter(
             Q: keyword,
@@ -258,7 +299,8 @@ public class IndexModel : TkListPageModel
             CollaboratorId: G("collaboratorId"),
             InvoiceStatus: I("invoiceStatus"),
             VisaStatus: I("visaStatus"),
-            CustomerType: I("customerType"), CustomerSource: S("customerSource"));
+            CustomerType: I("customerType"), CustomerSource: S("customerSource"),
+            MarketTypeIds: Gs("marketTypeIds"));
     }
 
     /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
@@ -278,6 +320,7 @@ public class IndexModel : TkListPageModel
         {
             id = o.Id,
             code = o.Code,
+            customerId = o.CustomerId,
             customerName = o.CustomerName ?? "—",
             tourTitle = o.TourTitle ?? "—",
             seatTotal = o.SeatTotal,

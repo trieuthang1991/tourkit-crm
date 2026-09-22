@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="~/vendor/libs/tabulator/tabulator_bootstrap5.min.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
   <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.css" />
   @* Giao diện lưới dùng CHUNG mọi màn danh sách — nạp sau tabulator để override thắng. *@
   <link rel="stylesheet" href="~/css/tk-grid.css" asp-append-version="true" />
 }
@@ -96,7 +97,8 @@
           }
         </select>
       </div>
-      <div class="col-md-3"><select id="f-marketTypeId" class="form-select tk-s2f" data-placeholder="Thị trường"><option value=""></option>@foreach (var m in Model.Markets) { <option value="@m.Id">@m.Name</option> }</select></div>
+      @* Bộ lọc thị trường = cây multi-checkbox (check nhiều, check cha→con) — xem tk.marketFilter. *@
+      <div class="col-md-3"><div id="mktf-orders"></div><input type="hidden" id="f-marketTypeIds" /></div>
       <div class="col-md-3"><select id="f-tourGroupId" class="form-select tk-s2f" data-placeholder="Nhóm tour"><option value=""></option>@foreach (var g in Model.Groups) { <option value="@g.Id">@g.Name</option> }</select></div>
       <div class="col-md-3"><select id="f-collaboratorId" class="form-select tk-s2f" data-placeholder="CTV"><option value=""></option>@foreach (var c in Model.Options.Collaborators) { <option value="@c.Id">@c.Name</option> }</select></div>
       @* Nguồn khách / Loại khách / Người tạo đã lên hàng lọc CHÍNH (bám staging) — không lặp ở đây. Nhóm KH: model chưa có. *@
@@ -106,18 +108,6 @@
       <div class="col-md-3"><select id="f-invoiceStatus" class="form-select tk-auto"><option value="">TT hoá đơn</option><option value="0">Chưa xuất</option><option value="1">Đã xuất</option></select></div>
     </div>
 
-    @* Chip lọc nhanh theo Thị trường (bám staging) — điều khiển #f-marketTypeId *@
-    @if (Model.Markets.Count > 0)
-    {
-      <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top">
-        <span class="text-muted small fw-medium" style="min-width:110px"><i class="ti ti-map-pin me-1"></i>Thị trường</span>
-        <button type="button" class="btn btn-sm btn-primary tk-chip" data-k="marketTypeId" data-v="">Tất cả</button>
-        @foreach (var m in Model.Markets)
-        {
-          <button type="button" class="btn btn-sm btn-label-secondary tk-chip" data-k="marketTypeId" data-v="@m.Id">@m.Name</button>
-        }
-      </div>
-    }
   </div>
 
   @* Thanh tác vụ hàng loạt — đơn hàng KHÔNG xoá hàng loạt (nghiệp vụ dùng huỷ/tất toán trên từng đơn). *@
@@ -174,10 +164,32 @@
   </div>
 </div>
 
+@* Offcanvas TẠO LỊCH NHẮC HẸN (bám staging addCSKHBtn) — ghi bản CSKH cho khách của đơn *@
+<div class="offcanvas offcanvas-end" tabindex="-1" id="oc-care" style="width:460px;max-width:100%">
+  <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">Tạo lịch nhắc hẹn</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body tk-oc">
+    <div class="tk-oc-fields">
+    <div class="mb-2 small text-muted" id="oc-care-ctx">Đơn: —</div>
+    <div class="mb-3"><label class="form-label">Tiêu đề <span class="text-danger">*</span></label><input type="text" id="oc-care-title" class="form-control" placeholder="Nội dung cần nhắc" /></div>
+    <div class="mb-3"><label class="form-label">Nội dung</label><textarea id="oc-care-detail" class="form-control" rows="2" placeholder="Chi tiết nhắc hẹn"></textarea></div>
+    <div class="row">
+      <div class="col-6 mb-3"><label class="form-label">Nhắc hẹn</label><input type="text" id="oc-care-remind" class="form-control" placeholder="dd/mm/yyyy" autocomplete="off" /></div>
+      <div class="col-6 mb-3"><label class="form-label">Người phụ trách</label>
+        <select id="oc-care-assignee" class="form-select"><option value="">— Tôi —</option>@foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }</select>
+      </div>
+    </div>
+    </div>
+    <div class="tk-oc-actions">
+      <button type="button" class="btn btn-primary" id="oc-care-save"><i class="ti ti-bell-plus me-1"></i> Lưu lịch nhắc</button>
+    </div>
+  </div>
+</div>
+
 @section VendorScripts {
   <script src="~/vendor/libs/tabulator/tabulator.min.js"></script>
   <script src="~/vendor/libs/select2/select2.js"></script>
   <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.js"></script>
 }
 
 @section PageScripts {
@@ -290,14 +302,61 @@
         });
       });
 
-      // Menu "Thao tác" bám staging (không tự chế): xem nhanh · chi tiết · phiếu thu · đề nghị TT · đổi trạng thái.
+      // ===== Tạo lịch nhắc hẹn (bám staging addCSKHBtn) — ghi CSKH cho khách của đơn =====
+      var ocCare = new bootstrap.Offcanvas('#oc-care');
+      var careCtx = { customerId: null };
+      var careFp = null;
+      function openCare(r) {
+        careCtx = { customerId: r.customerId };
+        $('#oc-care-ctx').text('Đơn: ' + r.code + ' · ' + (r.customerName || '—'));
+        $('#oc-care-title').val('Nhắc hẹn đơn ' + r.code);
+        $('#oc-care-detail').val('');
+        $('#oc-care-assignee').val('');
+        // flatpickr đơn (gửi ISO Y-m-d, hiện d/m/Y) — khởi tạo một lần rồi tái dùng.
+        if (window.flatpickr) {
+          if (!careFp) { careFp = flatpickr('#oc-care-remind', { altInput: true, altFormat: 'd/m/Y', dateFormat: 'Y-m-d', allowInput: true }); }
+          else { careFp.clear(); }
+        }
+        ocView.hide(); ocCare.show();
+      }
+      $('#oc-care-save').on('click', function () {
+        var title = ($('#oc-care-title').val() || '').trim();
+        if (!title) { tk.toast('Nhập tiêu đề nhắc hẹn.'); return; }
+        if (!careCtx.customerId) { tk.error('Không xác định được khách hàng của đơn.'); return; }
+        var fd = new FormData();
+        fd.append('customerId', careCtx.customerId);
+        fd.append('title', title);
+        fd.append('detail', $('#oc-care-detail').val());
+        fd.append('remindAt', $('#oc-care-remind').val());
+        fd.append('assignedToUserId', $('#oc-care-assignee').val());
+        tk.post('?handler=CreateCare', fd).then(function (res) {
+          if (res.isSuccess) { tk.toast(res.message || 'Đã tạo lịch nhắc hẹn.'); ocCare.hide(); }
+          else { tk.error(res.message || 'Không tạo được lịch nhắc.'); }
+        });
+      });
+
+      // ===== Xoá đơn (bám staging "Xóa đơn hàng này") — xác nhận rồi xoá mềm =====
+      function delOrder(r) {
+        tk.confirmDelete({ title: 'Xoá đơn hàng?', text: 'Đơn ' + r.code + ' · ' + (r.customerName || ''), confirm: 'Xoá đơn' }).then(function (ok) {
+          if (!ok) { return; }
+          var fd = new FormData(); fd.append('id', r.id);
+          tk.post('?handler=DeleteOrder', fd).then(function (res) {
+            if (res.isSuccess) { tk.toast(res.message || 'Đã xoá đơn hàng.'); grid.reload(); }
+            else { tk.error(res.message || 'Không xoá được đơn.'); }
+          });
+        });
+      }
+
+      // Menu "Thao tác" bám staging (không tự chế): xem nhanh · chi tiết · phiếu thu · đề nghị TT · nhắc hẹn · đổi trạng thái · xoá.
       function actionsFor(r) {
         var items = [
           { label: '<i class="ti ti-eye me-2"></i>Xem nhanh', action: function () { viewRow(r); } },
           { label: '<i class="ti ti-external-link me-2"></i>Trang chi tiết', action: function () { window.location = '/don-hang/' + r.id; } },
           { separator: true },
           { label: '<i class="ti ti-cash me-2"></i>Tạo phiếu thu tiền', action: function () { openPhieu('receipt', r.id, r.code, r.outstanding); } },
-          { label: '<i class="ti ti-file-invoice me-2"></i>Đề nghị thanh toán', action: function () { openPhieu('payment', r.id, r.code, 0); } }
+          { label: '<i class="ti ti-file-invoice me-2"></i>Đề nghị thanh toán', action: function () { openPhieu('payment', r.id, r.code, 0); } },
+          { separator: true },
+          { label: '<i class="ti ti-bell-plus me-2"></i>Tạo lịch nhắc hẹn', action: function () { openCare(r); } }
         ];
         // Đơn tour/visa có 7–11 bước trạng thái → để riêng ở ô "Trạng thái", không nhồi vào đây
         // cho menu dài lê thê. Chỉ đơn vòng đời thô (booking phòng/dịch vụ/xe) mới gắn kèm.
@@ -306,16 +365,21 @@
           var st = statusMenu(r);
           if (st.length) { items.push({ separator: true }); items = items.concat(st); }
         }
+        // Xoá đơn — mục danger CUỐI cùng (bám thứ tự staging).
+        items.push({ separator: true });
+        items.push({ label: '<span class="text-danger"><i class="ti ti-trash me-2"></i>Xóa đơn hàng này</span>', action: function () { delOrder(r); } });
         return items;
       }
+
+      // Bộ lọc thị trường dạng cây multi-checkbox (thay hàng chip cũ) — tải lại khi đóng panel nếu đổi.
+      tk.marketFilter({ mount: '#mktf-orders', hidden: '#f-marketTypeIds', onChange: function () { grid.reload(); } });
 
       var grid = tk.grid('#grid-orders', {
         // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
         filters: ['status', 'salesUserId', 'branchId', 'createdFrom', 'createdTo', 'departureFrom', 'departureTo',
-          'createdByUserId', 'departmentId', 'tourType', 'providerId', 'bookingType', 'marketTypeId', 'tourGroupId',
+          'createdByUserId', 'departmentId', 'tourType', 'providerId', 'bookingType', 'marketTypeIds', 'tourGroupId',
           'collaboratorId', 'paymentStatus', 'commissionSettled', 'operationalStatus', 'invoiceStatus', 'visaStatus',
           'customerType', 'customerSource'],
-        chipGroups: ['marketTypeId'],
         exportName: 'don-hang-da-chon.csv',
         actions: actionsFor,
         columns: [

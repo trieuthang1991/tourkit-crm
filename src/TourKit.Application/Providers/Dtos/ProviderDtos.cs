@@ -37,11 +37,16 @@ public sealed record ProviderServiceLineDto(
     // Trường riêng của dòng theo loại NCC. Xem ProviderServiceLineProfile.
     ProviderServiceLineProfile? Profile = null);
 
-/// <summary>Bộ lọc danh sách NCC (bám hệ cũ). Tất cả optional.</summary>
+/// <summary>
+/// Bộ lọc danh sách NCC (bám hệ cũ). Tất cả optional.
+/// <paramref name="MarketTypeId"/> giữ cho tương thích (API/1 giá trị); màn danh sách nay lọc theo
+/// NHIỀU thị trường qua <paramref name="MarketTypeIds"/> (cây multi-checkbox → IN clause).
+/// </summary>
 public sealed record ProviderListFilter(
     string? Q = null, int? Type = null, int? Status = null,
     string? Province = null, Guid? BranchId = null, Guid? MarketTypeId = null,
-    DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null);
+    DateTimeOffset? CreatedFrom = null, DateTimeOffset? CreatedTo = null,
+    IReadOnlyList<Guid>? MarketTypeIds = null);
 
 /// <summary>Thẻ thống kê đầu màn NCC: tổng + đang hoạt động + ngừng.</summary>
 public sealed record ProviderStatsDto(int Total, int Active, int Inactive);

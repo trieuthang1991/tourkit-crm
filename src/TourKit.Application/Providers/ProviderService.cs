@@ -25,6 +25,8 @@ public sealed class ProviderService(
             (f.Status == null || p.Status == f.Status) &&
             (f.BranchId == null || p.BranchId == f.BranchId) &&
             (f.MarketTypeId == null || p.MarketTypeId == f.MarketTypeId) &&
+            (f.MarketTypeIds == null || f.MarketTypeIds.Count == 0
+                || (p.MarketTypeId != null && f.MarketTypeIds.Contains(p.MarketTypeId.Value))) &&
             (prov == null || (p.Province != null && p.Province.Contains(prov))) &&
             (f.CreatedFrom == null || p.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || p.CreatedAt <= f.CreatedTo) &&
@@ -105,6 +107,17 @@ public sealed class ProviderService(
         await repo.SaveChangesAsync();
 
         return Map(entity);
+    }
+
+    /// <summary>Tạo NCC kèm bảng giá — xem <see cref="IProviderService.CreateWithServicesAsync"/>.</summary>
+    public async Task<ProviderDto> CreateWithServicesAsync(CreateProviderDto dto, IReadOnlyList<ProviderServiceLineDto> services)
+    {
+        var created = await CreateAsync(dto);
+        if (services.Count > 0)
+        {
+            await ThemDichVuAsync(created.Id, services);
+        }
+        return created;
     }
 
     /// <summary>Sửa NCC cùng bảng dịch vụ — xem <see cref="IProviderService.UpdateWithServicesAsync"/>.</summary>

@@ -91,10 +91,9 @@
 
     <div class="row g-2 align-items-center mt-1 d-none" id="adv">
       <div class="col-md-2">
-        <select id="f-marketTypeId" class="form-select tk-s2f" data-placeholder="Thị trường">
-          <option value=""></option>
-          @foreach (var m in Model.Markets) { <option value="@m.Id">@m.Name</option> }
-        </select>
+        @* Bộ lọc thị trường = cây multi-checkbox (check nhiều, check cha→con) — xem tk.marketFilter. *@
+        <div id="mktf-opp"></div>
+        <input type="hidden" id="f-marketTypeIds" />
       </div>
       <div class="col-md-2">
         <select id="f-branchId" class="form-select tk-s2f" data-placeholder="Chi nhánh">
@@ -230,7 +229,7 @@
           </div>
           <div class="col-md-6 mb-3">
             <label class="form-label">Thị trường</label>
-            <select name="Input.MarketTypeId" class="form-select tk-s2" data-placeholder="Chọn thị trường">
+            <select name="Input.MarketTypeId" class="form-select tk-s2 tk-market" data-placeholder="Chọn thị trường">
               <option value="">— Chưa rõ —</option>
               @foreach (var m in Model.Markets) { <option value="@m.Id">@m.Name</option> }
             </select>
@@ -475,8 +474,11 @@
       // cho tới khi chạm vào một ô khác. Đúng lỗi mà bài e2e bắt được.
       $('#frm').on('input change', 'input[name^="Input."], input.tk-tien', tinhTong);
 
+      // Bộ lọc thị trường dạng cây multi-checkbox — tải lại khi đóng panel nếu đổi lựa chọn.
+      tk.marketFilter({ mount: '#mktf-opp', hidden: '#f-marketTypeIds', onChange: function () { grid.reload(); } });
+
       grid = tk.grid('#grid-opp', {
-        filters: ['q', 'stageCode', 'assigneeUserId', 'customerSourceId', 'marketTypeId', 'branchId', 'fromWebsite', 'createdFrom', 'createdTo'],
+        filters: ['q', 'stageCode', 'assigneeUserId', 'customerSourceId', 'marketTypeIds', 'branchId', 'fromWebsite', 'createdFrom', 'createdTo'],
         // wireFilters tự nối #btn-search / #f-q / #btn-reset / #btn-adv / #btn-export — tự viết lại
         // mấy nút đó là dựng bản thứ hai của cùng một hành vi, rồi hai bản trôi lệch nhau.
         wireFilters: true,

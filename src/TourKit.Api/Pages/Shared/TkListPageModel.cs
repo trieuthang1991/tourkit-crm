@@ -77,14 +77,15 @@ public abstract class TkListPageModel : PageModel
     /// Quyền lấy từ chính trang đang mở: trang nào cũng đã có [Authorize] riêng, nên tới được đây
     /// nghĩa là người dùng đã qua cửa quyền của màn đó.
     /// </summary>
-    public async Task<IActionResult> OnGetProviderLookupAsync(string? q, int? type)
+    public async Task<IActionResult> OnGetProviderLookupAsync(string? q, int? type, int page = 1)
     {
         var svc = HttpContext.RequestServices
             .GetRequiredService<TourKit.Application.Providers.IProviderService>();
 
-        // 20 dòng mỗi lượt: đây là ô gợi ý, không phải danh sách để đọc — gõ thêm vài ký tự nhanh
-        // hơn cuộn qua trăm dòng.
-        var kq = await svc.ListAsync(1, 20, new TourKit.Application.Providers.Dtos.ProviderListFilter(Q: q, Type: type));
+        // Nạp theo TRANG: mở ra thấy ngay trang đầu, cuộn xuống tải tiếp (select2 gửi kèm ?page). Gõ thì lọc.
+        const int size = 20;
+        var trang = page < 1 ? 1 : page;
+        var kq = await svc.ListAsync(trang, size, new TourKit.Application.Providers.Dtos.ProviderListFilter(Q: q, Type: type));
 
         // Kèm mã vào nhãn: nhiều NCC trùng tên (chuỗi khách sạn ở các tỉnh khác nhau), chỉ hiện tên
         // thì người dùng chọn nhầm mà không có gì phân biệt.
@@ -95,6 +96,7 @@ public abstract class TkListPageModel : PageModel
                 id = p.Id,
                 text = string.IsNullOrWhiteSpace(p.Code) ? p.Name : $"{p.Name} ({p.Code})",
             }),
+            pagination = new { more = trang * size < kq.Total },
         });
     }
 
@@ -232,5 +234,30 @@ public abstract class TkListPageModel : PageModel
                     : $"{d.Code} — {d.Title}",
             }),
         });
+    }
+
+    /// <summary>
+    /// Cây THỊ TRƯỜNG cho ô chọn cha–con (<c>?handler=MarketTree</c>).
+    ///
+    /// Đặt ở LỚP CƠ SỞ vì ô chọn thị trường có mặt ở &gt;10 màn (đơn, NCC, khách, cơ hội, vé, phòng,
+    /// marketing…). Trả CẢ cây (id · tên · cha · thứ tự) để phía client tự dựng 2 ô Cha→Con, thay cho
+    /// danh sách phẳng dài dằng dặc. Nhẹ và ít thay đổi (danh mục), client cache lại theo phiên.
+    /// Cùng lý do là PAGE HANDLER (đi cookie) như các lookup khác, không phải <c>/api</c> (bị ép Bearer).
+    /// </summary>
+    public async Task<IActionResult> OnGetMarketTreeAsync()
+    {
+        // Qua MarketDirectory (cache, tách tenant) thay vì gọi thẳng service: handler này bị mọi màn
+        // danh sách gọi mỗi lần khởi tạo dropdown thị trường — danh mục nhỏ, đọc dày, nên cache.
+        var svc = HttpContext.RequestServices
+            .GetRequiredService<TourKit.Api.Services.MarketDirectory>();
+
+        var list = await svc.ListAsync();
+        return new JsonResult(list.Select(m => new
+        {
+            id = m.Id,
+            name = m.Name,
+            parentId = m.ParentId,
+            sort = m.SortOrder,
+        }));
     }
 }

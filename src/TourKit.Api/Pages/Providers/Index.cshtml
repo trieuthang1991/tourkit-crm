@@ -68,7 +68,10 @@
         <select id="f-branchId" class="form-select tk-s2f" data-placeholder="Chi nhánh"><option value=""></option>@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }</select>
       </div>
       <div class="col-md-2">
-        <select id="f-marketTypeId" class="form-select tk-s2f" data-placeholder="Thị trường"><option value=""></option>@foreach (var m in Model.MarketTypes) { <option value="@m.Id">@m.Name</option> }</select>
+        @* Bộ lọc thị trường = CÂY multi-checkbox (check nhiều, check cha→con). tk.marketFilter dựng
+           nút + panel; giá trị (tập id nối phẩy) ghi vào ô hidden để tk.grid gửi kèm → backend lọc IN. *@
+        <div id="mktf-providers"></div>
+        <input type="hidden" id="f-marketTypeIds" />
       </div>
       <div class="col-md-2 d-flex gap-2">
         <button type="button" class="btn btn-primary flex-fill" id="btn-search"><i class="ti ti-search me-1"></i> Tìm</button>
@@ -109,19 +112,28 @@
       <div class="tk-oc-fields">
       <input type="hidden" name="Id" />
 
-      @* Ba nhóm cạnh nhau khi màn đủ rộng. Nới panel mà vẫn để MỘT cột thì mỗi ô kéo dài hết
-         1360px, mắt phải quét ngang cả màn cho một ô ngắn — rộng hơn nhưng khó dùng hơn.
-         Gom bằng kẻ ngang + tiêu đề nhỏ, không lồng thẻ card: form trong panel mà bọc card nữa
-         thì thành hộp trong hộp. *@
-      <div class="row g-4">
+      @* Form nhiều thông tin → chia TAB cho gọn (bám gợi ý "nhiều thông tin chia theo tab").
+         Ô bắt buộc (Mã/Tên/Class Hotel/Tên dự án) đều nằm tab "Thông tin" mặc định mở; server vẫn
+         là chốt chặn cuối nếu bấm Lưu khi đang ở tab khác. *@
+      @* Thông tin CHUNG chia 3 tab cho gọn (bám ý: chỉ phần thông tin chung mới phân tab; Liên hệ và
+         Bảng giá để nguyên full-width bên dưới). Ô bắt buộc (Mã/Tên/Class Hotel/Tên dự án) đều nằm tab
+         "Thông tin chung" mặc định mở; server vẫn là chốt chặn cuối nếu bấm Lưu khi đang ở tab khác. *@
+      <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#oc-tab-chung" type="button" role="tab">Thông tin chung</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#oc-tab-diachi" type="button" role="tab">Địa chỉ &amp; liên hệ</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#oc-tab-thanhtoan" type="button" role="tab">Thanh toán &amp; phân loại</button></li>
+      </ul>
+      <div class="tab-content mb-3">
 
-        <div class="col-12 col-lg-6 col-xl-4">
-          <h6 class="text-muted small text-uppercase mb-3">Thông tin chung</h6>
-          <div class="row">
-            <div class="col-6 mb-3"><label class="form-label">Mã <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã NCC" /></div>
-            <div class="col-6 mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên NCC" /></div>
-          </div>
-          <div class="mb-3">
+      @* TAB 1 — Thông tin chung: kéo cả Trạng thái + Thị trường vào đây; "Loại" và các trường RIÊNG
+         theo loại đứng LIỀN NHAU (không đẩy xuống dưới). *@
+      <div class="tab-pane fade show active" id="oc-tab-chung" role="tabpanel">
+        <div class="row">
+          <div class="col-md-6 mb-3"><label class="form-label">Mã <span class="text-danger">*</span></label><input type="text" name="Input.Code" class="form-control" placeholder="Nhập mã NCC" /></div>
+          <div class="col-md-6 mb-3"><label class="form-label">Tên <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên NCC" /></div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
             <label class="form-label">Loại <span class="text-danger">*</span></label>
             <select name="Input.Type" class="form-select">
 @foreach (var t in TourKit.Api.Pages.Providers.IndexModel.TypeOptions)
@@ -130,109 +142,108 @@
 }
             </select>
           </div>
-          <div class="row">
-            <div class="col-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" placeholder="Nhập số điện thoại" /></div>
-            <div class="col-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" placeholder="Nhập email" /></div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+            <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
           </div>
-          <div class="mb-3"><label class="form-label">Website</label><input type="text" name="Input.Website" class="form-control" placeholder="Nhập link" /></div>
-        </div>
-
-        <div class="col-12 col-lg-6 col-xl-4">
-          <h6 class="text-muted small text-uppercase mb-3">Địa chỉ &amp; liên hệ</h6>
-          <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.Address" class="form-control" placeholder="Nhập địa chỉ" /></div>
-          <div class="row">
-            <div class="col-6 mb-3">
-              <label class="form-label">Tỉnh thành</label>
-              @* Chọn từ danh sách, không gõ tay: gõ tay thì "Hà Nội", "hà nội", "HN" thành ba giá trị
-                 khác nhau và bộ lọc/thống kê theo địa bàn hết tin được. *@
-              <select name="Input.Province" class="form-select tk-s2" data-placeholder="Chọn tỉnh thành">
-                <option value="">— Không —</option>
-@foreach (var t in TourKit.Shared.Domain.TinhThanh.TatCa) { <option value="@t">@t</option> }
-              </select>
-            </div>
-            <div class="col-6 mb-3"><label class="form-label">Mã số thuế</label><input type="text" name="Input.TaxCode" class="form-control" placeholder="Nhập MST" /></div>
-          </div>
-          <div class="mb-3"><label class="form-label">Người liên hệ chính</label><input type="text" name="Input.ContactPerson" class="form-control" placeholder="Nhập người liên hệ" /></div>
-          <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="3" placeholder="Nhập ghi chú"></textarea></div>
-        </div>
-
-        <div class="col-12 col-lg-6 col-xl-4">
-          <h6 class="text-muted small text-uppercase mb-3">Thanh toán &amp; phân loại</h6>
-          <div class="row">
-            <div class="col-6 mb-3"><label class="form-label">Ngân hàng</label><input type="text" name="Input.BankName" class="form-control" placeholder="Nhập ngân hàng" /></div>
-            <div class="col-6 mb-3"><label class="form-label">Số TK</label><input type="text" name="Input.BankAccount" class="form-control" placeholder="Nhập số tài khoản" /></div>
-          </div>
-          <div class="mb-3"><label class="form-label">Tên tài khoản</label><input type="text" name="Input.BankAccountName" class="form-control" placeholder="Nhập tên chủ tài khoản" /></div>
-          <div class="row">
-            <div class="col-6 mb-3">
-              <label class="form-label">Điều khoản thanh toán</label>
-              <select name="Input.PaymentTermId" class="form-select tk-s2" data-placeholder="Chọn điều khoản">
-                <option value="">— Không —</option>
-@foreach (var p in Model.PaymentTerms) { <option value="@p.Id">@p.Name</option> }
-              </select>
-            </div>
-            <div class="col-6 mb-3">
-              <label class="form-label">Chi nhánh</label>
-              <select name="Input.BranchId" class="form-select tk-s2" data-placeholder="Chọn chi nhánh">
-                <option value="">— Không —</option>
-@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
-              </select>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Nhóm/Thị trường</label>
-            <select name="Input.MarketTypeId" class="form-select tk-s2" data-placeholder="Chọn nhóm/thị trường">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Thị trường</label>
+            <select name="Input.MarketTypeId" class="form-select tk-s2 tk-market" data-placeholder="Chọn thị trường">
               <option value="">— Không —</option>
-@foreach (var m in Model.MarketTypes) { <option value="@m.Id">@m.Name</option> }
+@foreach (var m in TourKit.Api.Web.MarketOptions.Hierarchy(Model.MarketTypes)) { <option value="@m.Id">@m.Label</option> }
             </select>
           </div>
+        </div>
+
+        @* Trường RIÊNG theo LOẠI — đứng NGAY sau "Loại" (JS ẩn/hiện theo loại đang chọn). *@
+        <div class="tk-loai tk-loai-ks d-none">
           <div class="row">
-            <div class="col-6 mb-3"><label class="form-label">Đánh giá</label><input type="number" name="Input.Rate" class="form-control" placeholder="0" value="0" /></div>
-            <div class="col-6 mb-3">
-              <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
-              <select name="Input.Status" class="form-select"><option value="1">Hoạt động</option><option value="0">Ngừng</option></select>
+            <div class="col-md-4 mb-3"><label class="form-label">Năm xây dựng</label><input type="number" name="Input.BuiltYear" class="form-control" placeholder="VD 2015" /></div>
+            <div class="col-md-4 mb-3"><label class="form-label">Quốc gia</label><input type="text" name="Input.Country" class="form-control" placeholder="Nhập quốc gia" /></div>
+          </div>
+        </div>
+        <div class="tk-loai tk-loai-xe d-none">
+          <div class="mb-3">
+            <label class="form-label">Thông tin xe</label>
+            <select name="Input.VehicleOwnership" class="form-select">
+              <option value="">— Không —</option>
+              @foreach (var o in TourKit.Application.Providers.ProviderProfile.VehicleOwnerships) { <option value="@o">@o</option> }
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Loại xe</label>
+            <div class="d-flex flex-wrap gap-3" id="ds-loai-xe">
+              @foreach (var o in TourKit.Application.Providers.ProviderProfile.VehicleTypeOptions)
+              {
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="Input.VehicleTypes" value="@o" id="xe-@o.Replace(" ", "-")" />
+                  <label class="form-check-label" for="xe-@o.Replace(" ", "-")">@o</label>
+                </div>
+              }
             </div>
           </div>
         </div>
-
-      </div>
-
-
-      @* Trường riêng theo LOẠI nhà cung cấp — hệ cũ tách hẳn 4 màn sửa (Edit/EditHotel/
-         EditPlaneTicket/EditVoucher) dùng chung phần trên rồi mỗi màn thêm vài ô của riêng nó.
-         Ở đây gộp một form và chỉ hiện khối khớp loại đang chọn. Ô ẩn KHÔNG bị gửi lên vô nghĩa:
-         phía máy chủ (HoSoTuInput) loại bỏ trường không thuộc loại đang chọn. *@
-      <div class="tk-loai tk-loai-ks d-none">
-        <div class="row">
-          <div class="col-6 mb-3"><label class="form-label">Năm xây dựng</label><input type="number" name="Input.BuiltYear" class="form-control" placeholder="VD 2015" /></div>
-          <div class="col-6 mb-3"><label class="form-label">Quốc gia</label><input type="text" name="Input.Country" class="form-control" placeholder="Nhập quốc gia" /></div>
-        </div>
-      </div>
-      <div class="tk-loai tk-loai-xe d-none">
-        <div class="mb-3">
-          <label class="form-label">Thông tin xe</label>
-          <select name="Input.VehicleOwnership" class="form-select">
-            <option value="">— Không —</option>
-            @foreach (var o in TourKit.Application.Providers.ProviderProfile.VehicleOwnerships) { <option value="@o">@o</option> }
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Loại xe</label>
-          <div class="d-flex flex-wrap gap-3" id="ds-loai-xe">
-            @foreach (var o in TourKit.Application.Providers.ProviderProfile.VehicleTypeOptions)
-            {
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="Input.VehicleTypes" value="@o" id="xe-@o.Replace(" ", "-")" />
-                <label class="form-check-label" for="xe-@o.Replace(" ", "-")">@o</label>
-              </div>
-            }
+        <div class="tk-loai tk-loai-vc d-none">
+          <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label">Class Hotel <span class="text-danger">*</span></label><input type="text" name="Input.HotelClass" class="form-control" placeholder="VD 4 sao" /></div>
+            <div class="col-md-4 mb-3"><label class="form-label">Tên dự án <span class="text-danger">*</span></label><input type="text" name="Input.ProjectName" class="form-control" placeholder="Nhập tên dự án" /></div>
           </div>
         </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3"><label class="form-label">Số điện thoại</label><input type="text" name="Input.Phone" class="form-control" placeholder="Nhập số điện thoại" /></div>
+          <div class="col-md-6 mb-3"><label class="form-label">Email</label><input type="text" name="Input.Email" class="form-control" placeholder="Nhập email" /></div>
+        </div>
+        <div class="mb-3"><label class="form-label">Website</label><input type="text" name="Input.Website" class="form-control" placeholder="Nhập link" /></div>
       </div>
 
-      @* Khối "Thông tin liên hệ" lặp lại — hệ cũ có ở CẢ 4 màn sửa, dựng một dòng mỗi người.
-         Ô "Người liên hệ" ở trên vẫn giữ vì lưới và ô tìm kiếm dò theo cột đó ở SQL. *@
-      <div class="border-top pt-3 mt-2">
+      @* TAB 2 — Địa chỉ & liên hệ (nhiều khi chưa cần → tab riêng). *@
+      <div class="tab-pane fade" id="oc-tab-diachi" role="tabpanel">
+        <div class="mb-3"><label class="form-label">Địa chỉ</label><input type="text" name="Input.Address" class="form-control" placeholder="Nhập địa chỉ" /></div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Tỉnh thành</label>
+            @* Chọn từ danh sách, không gõ tay: gõ tay thì "Hà Nội", "hà nội", "HN" thành ba giá trị khác nhau. *@
+            <select name="Input.Province" class="form-select tk-s2" data-placeholder="Chọn tỉnh thành">
+              <option value="">— Không —</option>
+@foreach (var t in TourKit.Shared.Domain.TinhThanh.TatCa) { <option value="@t">@t</option> }
+            </select>
+          </div>
+          <div class="col-md-6 mb-3"><label class="form-label">Mã số thuế</label><input type="text" name="Input.TaxCode" class="form-control" placeholder="Nhập MST" /></div>
+        </div>
+        <div class="mb-3"><label class="form-label">Người liên hệ chính</label><input type="text" name="Input.ContactPerson" class="form-control" placeholder="Nhập người liên hệ" /></div>
+        <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="3" placeholder="Nhập ghi chú"></textarea></div>
+      </div>
+
+      @* TAB 3 — Thanh toán & phân loại (nhiều khi chưa cần → tab riêng; Trạng thái/Thị trường đã dời sang Thông tin chung). *@
+      <div class="tab-pane fade" id="oc-tab-thanhtoan" role="tabpanel">
+        <div class="row">
+          <div class="col-md-6 mb-3"><label class="form-label">Ngân hàng</label><input type="text" name="Input.BankName" class="form-control" placeholder="Nhập ngân hàng" /></div>
+          <div class="col-md-6 mb-3"><label class="form-label">Số TK</label><input type="text" name="Input.BankAccount" class="form-control" placeholder="Nhập số tài khoản" /></div>
+        </div>
+        <div class="mb-3"><label class="form-label">Tên tài khoản</label><input type="text" name="Input.BankAccountName" class="form-control" placeholder="Nhập tên chủ tài khoản" /></div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Điều khoản thanh toán</label>
+            @* Ô GỢI Ý: gõ tự do hoặc chọn mẫu từ danh mục, LƯU dạng text (không ràng buộc FK). *@
+            <input type="text" name="Input.PaymentTerm" class="form-control" list="dl-dieukhoan" autocomplete="off" placeholder="Gõ hoặc chọn mẫu — VD Công nợ 30 ngày" />
+            <datalist id="dl-dieukhoan">@foreach (var p in Model.PaymentTerms) { <option value="@p.Name"></option> }</datalist>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Chi nhánh</label>
+            <select name="Input.BranchId" class="form-select tk-s2" data-placeholder="Chọn chi nhánh">
+              <option value="">— Không —</option>
+@foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
+            </select>
+          </div>
+        </div>
+        <div class="mb-3"><label class="form-label">Đánh giá</label><input type="number" name="Input.Rate" class="form-control" placeholder="0" value="0" /></div>
+      </div>
+
+      </div>@* /tab-content *@
+
+      @* Thông tin liên hệ (nhiều người) — FULL-WIDTH dưới các tab, giữ như cũ. *@
+      <div class="border-top pt-3 mt-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h6 class="mb-0"><i class="ti ti-users me-2"></i>Thông tin liên hệ</h6>
           <button type="button" class="btn btn-sm btn-label-primary" id="btn-them-lh"><i class="ti ti-plus me-1"></i>Thêm người</button>
@@ -241,19 +252,9 @@
         <div class="text-muted small mt-2" id="lh-trong">Chưa có người liên hệ nào.</div>
       </div>
 
-      @* Hệ cũ (EditVoucher.aspx) đánh dấu * cho cả hai ô này. Bắt buộc CÓ ĐIỀU KIỆN — chỉ khi loại
-         là Voucher, vì với 6 loại còn lại khối này không hiện. Luật kiểm tra gắn ở dưới phần JS. *@
-      <div class="tk-loai tk-loai-vc d-none">
-        <div class="row">
-          <div class="col-6 mb-3"><label class="form-label">Class Hotel <span class="text-danger">*</span></label><input type="text" name="Input.HotelClass" class="form-control" placeholder="VD 4 sao" /></div>
-          <div class="col-6 mb-3"><label class="form-label">Tên dự án <span class="text-danger">*</span></label><input type="text" name="Input.ProjectName" class="form-control" placeholder="Nhập tên dự án" /></div>
-        </div>
-      </div>
-
-      @* Panel SẢN PHẨM/DỊCH VỤ — tái lập EditHotel.aspx của hệ cũ: thông tin NCC và bảng giá nằm
-         chung một form, bấm Lưu ghi cả hai trong một transaction (uspInsertHotel).
-         Chỉ hiện khi SỬA: form tạo mới chưa có đường ghi kèm dịch vụ. *@
-      <div id="pnl-dv" class="d-none border-top pt-3 mt-2">
+      @* Sản phẩm / Dịch vụ — FULL-WIDTH dưới các tab, giữ như cũ. Thông tin NCC + bảng giá ghi chung
+         một transaction (bám uspInsertHotel). Nay hiện cả khi TẠO (khai giá ngay). *@
+      <div id="pnl-dv" class="d-none border-top pt-3 mt-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h6 class="mb-0"><i class="ti ti-package me-2"></i>Sản phẩm / Dịch vụ</h6>
           <div class="d-flex gap-2">
@@ -272,7 +273,7 @@
             <strong class="small" id="xt-tom-tat"></strong>
             <div class="d-flex gap-2">
               <button type="button" class="btn btn-sm btn-label-secondary" id="btn-huy-nhap">Bỏ</button>
-              <button type="button" class="btn btn-sm btn-primary" id="btn-ghi-nhap">Ghi vào bảng giá</button>
+              <button type="button" class="btn btn-sm btn-primary" id="btn-ghi-nhap">Đưa vào bảng giá</button>
             </div>
           </div>
           <div id="xt-hong" class="small text-danger mb-2"></div>
@@ -331,6 +332,10 @@
         },
         // Mã NCC không đổi được khi sửa (UpdateProviderDto không nhận Code).
         fill: function ($form, data) {
+          // Mỗi lần mở form về tab "Thông tin" (nơi có mọi ô bắt buộc) — tránh mở lại đang ở tab khác.
+          var firstTab = document.querySelector('#oc .nav-tabs .nav-link');
+          if (firstTab && window.bootstrap) { bootstrap.Tab.getOrCreateInstance(firstTab).show(); }
+
           $form.find('[name="Input.Code"]').prop('readonly', !!(data && data.id));
           napDichVu(data && data.id ? data.id : null);
 
@@ -417,8 +422,28 @@
         danhSoLaiLh();
       });
 
+      // Tra khách trong KHO theo SĐT để điền nhanh Họ tên/Email của người liên hệ. Chỉ điền khi ô đang
+      // trống (không đè cái người dùng gõ) và CHỈ khi có khách khớp — không có thì lặng lẽ bỏ qua.
+      $('#ds-lh').on('change', '[name$=".Phone"]', function () {
+        var $row = $(this).closest('.tk-dong-lh');
+        var sdt = ($(this).val() || '').trim();
+        if (sdt.length < 6) { return; }
+        fetch('?handler=KhachTheoSdt&sdt=' + encodeURIComponent(sdt), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (res) {
+            var k = res && res.khop;
+            if (!k) { return; }
+            var $ten = $row.find('[name$=".FullName"]'), $email = $row.find('[name$=".Email"]');
+            if (!($ten.val() || '').trim()) { $ten.val(k.fullName || ''); }
+            if (!($email.val() || '').trim() && k.email) { $email.val(k.email); }
+            tk.toast('Đã lấy thông tin khách theo SĐT.');
+          })
+          .catch(function () {});
+      });
+
       // ---- Panel Sản phẩm / Dịch vụ ----
-      var dmDichVu = [];   // danh mục dịch vụ, nạp cùng lượt với bảng giá
+      // Nhúng sẵn danh mục dịch vụ để ô "Dịch vụ" dùng được NGAY khi TẠO (chưa có providerId) + làm select2.
+      var dmDichVu = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ServiceItems.Select(x => new { id = x.Id, name = x.Name })));
 
       // Tiền tệ CHỌN từ danh mục, không gõ tay: gõ tay thì "USD", "usd", "Đô", "$" thành bốn loại
       // tiền khác nhau, mà quy đổi về VND tra theo đúng mã này — sai mã là sai tiền, không phải sai
@@ -454,7 +479,7 @@
           '<input type="hidden" name="' + p + 'Id" value="' + (d.id || '') + '" />' +
           '<div class="row g-2 align-items-end">' +
             '<div class="col-md-4"><label class="form-label small mb-1">Dịch vụ</label>' +
-              '<select class="form-select form-select-sm" name="' + p + 'ServiceItemId">' + opt + '</select></div>' +
+              '<select class="form-select form-select-sm tk-dv-sel" data-placeholder="Tìm / chọn dịch vụ" name="' + p + 'ServiceItemId">' + opt + '</select></div>' +
             '<div class="col-md-5"><label class="form-label small mb-1">Tên gói giá</label>' +
               '<input type="text" class="form-control form-control-sm" name="' + p + 'PriceName" value="' + esc(d.priceName || '') + '" placeholder="VD: Phòng Deluxe 2 khách" /></div>' +
             '<div class="col-md-3"><label class="form-label small mb-1">Số khách</label>' + oSo(p + 'AmountOfPeople', d.amountOfPeople == null ? 1 : d.amountOfPeople, '1') + '</div>' +
@@ -473,15 +498,22 @@
       // mỗi gói giá một bộ giá trị. Dựng cả hai khối rồi ẩn/hiện, không dựng lại dòng khi đổi loại:
       // dựng lại là mất những gì người dùng đang gõ dở.
       function cotRieng(p, d) {
-        // Ô ngày dùng type="date" gốc của trình duyệt, KHÔNG gắn .tk-date. flatpickr chỉ chạy một lần
-        // lúc dựng form, còn dòng giá sinh ra sau đó nên sẽ không được gắn — mà nếu gắn sau thì
-        // altInput lại giấu ô gốc đi và kéo theo đúng cái bẫy đã làm luật kiểm tra bị bỏ qua trước
-        // đây. type="date" gửi thẳng yyyy-MM-dd, khớp DateOnly, không cần khởi tạo gì.
+        // Ngày dùng FLATPICKR (chuẩn hoá như mọi ô ngày): input text + class tk-fp-date, init sau khi
+        // dựng dòng (hàm fpDates). Các ô này KHÔNG bắt buộc nên altInput ẩn ô gốc không đụng luật kiểm tra.
         function o(nhan, ten, gt, loai, chuMo) {
+          if (loai === 'date') {
+            return '<div class="col-md-3"><label class="form-label small mb-1">' + nhan + '</label>' +
+              '<input type="text" class="form-control form-control-sm tk-fp-date" autocomplete="off"' +
+              ' name="' + ten + '" value="' + esc(gt == null ? '' : gt) + '" placeholder="dd/mm/yyyy" /></div>';
+          }
           return '<div class="col-md-3"><label class="form-label small mb-1">' + nhan + '</label>' +
             '<input type="' + (loai || 'text') + '" class="form-control form-control-sm"' +
             ' name="' + ten + '" value="' + esc(gt == null ? '' : gt) +
             '" placeholder="' + esc(chuMo || '') + '" /></div>';
+        }
+        // Ô TIỀN (dùng tk.oTien như Giá hợp đồng/Công bố) bọc trong cột + nhãn.
+        function oTien(nhan, ten, gt) {
+          return '<div class="col-md-3"><label class="form-label small mb-1">' + nhan + '</label>' + tk.oTien(ten, gt, '0') + '</div>';
         }
         function chon(nhan, ten, gt, ds) {
           return '<div class="col-md-3"><label class="form-label small mb-1">' + nhan + '</label>' +
@@ -494,8 +526,8 @@
             o('Giai đoạn từ', p + 'PeriodFrom', d.periodFrom, 'date') +
             o('Đến', p + 'PeriodTo', d.periodTo, 'date') +
             chon('Loại ngày', p + 'DayType', d.dayType, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TourKit.Application.Providers.ProviderServiceLineProfile.DayTypes))) +
-            o('Chi phí NET/ngày', p + 'NetCostPerDay', d.netCostPerDay, 'number') +
-            o('Giá bán/ngày', p + 'SellPricePerDay', d.sellPricePerDay, 'number') +
+            oTien('Chi phí NET/ngày', p + 'NetCostPerDay', d.netCostPerDay) +
+            oTien('Giá bán/ngày', p + 'SellPricePerDay', d.sellPricePerDay) +
           '</div></div>' +
           '<div class="col-12 tk-cot-ve d-none"><div class="row g-2 align-items-end">' +
             chon('Loại vé', p + 'TicketType', d.ticketType, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TourKit.Application.Providers.ProviderServiceLineProfile.TicketTypes))) +
@@ -520,24 +552,51 @@
 
       function napDichVu(providerId) {
         $('#ds-dv').empty();
-        $('#pnl-dv').toggleClass('d-none', !providerId);
-        if (!providerId) { return; }
+        $('#pnl-dv').removeClass('d-none');   // LUÔN hiện — cả khi TẠO (khai bảng giá ngay từ form tạo)
+        if (!providerId) {
+          // Tạo mới: chưa có dòng nào; danh mục dịch vụ đã nhúng sẵn (dmDichVu) → không cần AJAX.
+          danhSoLai();
+          hienTheoLoai($('#frm'));
+          return;
+        }
 
         fetch('?handler=Services&providerId=' + encodeURIComponent(providerId))
           .then(function (r) { return r.ok ? r.json() : null; })
           .catch(function () { return null; })
           .then(function (res) {
             var d = (res && res.isSuccess && res.data) || { lines: [], items: [] };
-            dmDichVu = d.items || [];
+            if (d.items && d.items.length) { dmDichVu = d.items; }
             $('#ds-dv').html((d.lines || []).map(dongDv).join(''));
             danhSoLai();
+            s2Dv();
+            fpDates();
             hienTheoLoai($('#frm'));
           });
       }
 
+      // Ô "Dịch vụ" dùng select2 tìm kiếm (dropdown gắn vào offcanvas để không bị cắt). Init cho dòng động.
+      function s2Dv($scope) {
+        ($scope || $('#ds-dv')).find('.tk-dv-sel').each(function () {
+          if ($(this).hasClass('select2-hidden-accessible')) { return; }
+          $(this).select2({ dropdownParent: $('#oc'), width: '100%', allowClear: true, placeholder: $(this).data('placeholder') || 'Chọn dịch vụ' });
+        });
+      }
+
+      // Ô ngày ở dòng giá dùng flatpickr (chuẩn hoá). Init cho dòng SINH ĐỘNG (flatpickr không delegated).
+      function fpDates($scope) {
+        if (!window.flatpickr) { return; }
+        ($scope || $('#ds-dv')).find('.tk-fp-date').each(function () {
+          if (this._flatpickr) { return; }
+          flatpickr(this, { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true });
+        });
+      }
+
       $('#btn-them-dv').on('click', function () {
-        $('#ds-dv').append(dongDv({}, $('#ds-dv .tk-dong-dv').length));
+        var $r = $(dongDv({}, $('#ds-dv .tk-dong-dv').length));
+        $('#ds-dv').append($r);
         danhSoLai();
+        s2Dv($r);
+        fpDates($r);
         hienTheoLoai($('#frm'));
       });
 
@@ -563,7 +622,8 @@
         if (!tep) { return; }
 
         var fd = new FormData();
-        fd.append('providerId', $('#frm [name="Id"]').val() || '');
+        // Bóc chỉ cần LOẠI NCC đang chọn trên form (không cần NCC đã lưu) → chạy được cả khi TẠO.
+        fd.append('loaiNcc', $('#frm [name="Input.Type"]').val() || '');
         fd.append('file', tep);
 
         fetch('?handler=XemTruocNhap', { method: 'POST', body: fd, headers: { RequestVerificationToken: tk.token() } })
@@ -608,26 +668,37 @@
 
       $('#btn-huy-nhap').on('click', function () { dongCho = []; $('#xem-truoc').addClass('d-none'); });
 
+      // Đưa các dòng đã bóc VÀO FORM (không ghi thẳng DB) → lưu cùng NCC lúc bấm "Lưu". Nhờ vậy dùng
+      // được cả khi TẠO (chưa có id) lẫn khi SỬA (nối vào các dòng đang có, UpdateWithServicesAsync đồng bộ).
       $('#btn-ghi-nhap').on('click', function () {
-        var id = $('#frm [name="Id"]').val();
-        if (!id || !dongCho.length) { return; }
+        if (!dongCho.length) { return; }
 
-        var $n = $(this).prop('disabled', true);
-        fetch('?handler=Nhap&providerId=' + encodeURIComponent(id), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', RequestVerificationToken: tk.token() },
-          body: JSON.stringify(dongCho)
-        })
-          .then(function (r) { return r.json(); })
-          .then(function (res) {
-            $n.prop('disabled', false);
-            if (!res.isSuccess) { tk.error(res.message || 'Nhập thất bại.'); return; }
-            tk.toast(res.message || 'Đã nhập.');
-            dongCho = [];
-            $('#xem-truoc').addClass('d-none');
-            napDichVu(id);   // nạp lại bảng giá để thấy ngay dòng vừa nhập
-          })
-          .catch(function () { $n.prop('disabled', false); tk.error('Nhập thất bại.'); });
+        var base = $('#ds-dv .tk-dong-dv').length;
+        var $moi = $();
+        dongCho.forEach(function (x, k) {
+          // veXemTruoc giữ PascalCase (khớp DTO); dongDv đọc camelCase → chuyển đúng khoá.
+          var $r = $(dongDv({
+            priceName: x.PriceName, amountOfPeople: x.AmountOfPeople,
+            contractPrice: x.ContractPrice, publicPrice: x.PublicPrice,
+            currencyCode: x.CurrencyCode, note: x.Note, status: 1,
+            periodFrom: x.PeriodFrom, periodTo: x.PeriodTo, dayType: x.DayType,
+            netCostPerDay: x.NetCostPerDay, sellPricePerDay: x.SellPricePerDay,
+            ticketType: x.TicketType, route: x.Route, departTime: x.DepartTime,
+            returnTime: x.ReturnTime, depositDeadline: x.DepositDeadline, baggage: x.Baggage
+          }, base + k));
+          $('#ds-dv').append($r);
+          $moi = $moi.add($r);
+        });
+
+        danhSoLai();
+        s2Dv($moi);
+        fpDates($moi);
+        hienTheoLoai($('#frm'));   // hiện đúng cột riêng (khách sạn/vé) theo loại đang chọn
+
+        var n = dongCho.length;
+        dongCho = [];
+        $('#xem-truoc').addClass('d-none');
+        tk.toast('Đã thêm ' + n + ' dòng vào bảng giá. Bấm "Lưu" để lưu cùng nhà cung cấp.');
       });
 
       function delRow(d) {
@@ -642,6 +713,7 @@
       // Menu hành động theo nghiệp vụ NCC: sửa · dịch vụ · công nợ · gọi/email (chỉ khi có) · xoá.
       function actionsFor(d) {
         var items = [
+          { label: '<i class="ti ti-user-search me-2"></i>Xem hồ sơ', action: function () { window.location = '/nha-cung-cap/' + d.id; } },
           { label: '<i class="ti ti-edit me-2"></i>Sửa thông tin', action: function () { oc.open(d); } },
           { label: '<i class="ti ti-list-details me-2"></i>Bảng giá dịch vụ', action: function () { window.location = '/bang-gia-ncc?providerId=' + encodeURIComponent(d.id); } },
           { label: '<i class="ti ti-report-money me-2"></i>Công nợ nhà cung cấp', action: function () { window.location = '/cong-no-ncc?providerId=' + encodeURIComponent(d.id); } }
@@ -655,7 +727,7 @@
 
       var grid = tk.grid('#grid-providers', {
         // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
-        filters: ['type', 'province', 'branchId', 'marketTypeId', 'createdFrom', 'createdTo', 'status'],
+        filters: ['type', 'province', 'branchId', 'marketTypeIds', 'createdFrom', 'createdTo', 'status'],
         exportName: 'nha-cung-cap-da-chon.csv',
         actions: actionsFor,
         columns: [
@@ -724,6 +796,9 @@
       // Ô "Tỉnh thành" là ô chữ tự do → tìm lại khi rời ô hoặc bấm Enter.
       $('#f-province').on('blur', function () { grid.reload(); })
         .on('keydown', function (e) { if (e.key === 'Enter') { grid.reload(); } });
+
+      // Bộ lọc thị trường dạng cây multi-checkbox — tải lại lưới khi đóng panel nếu có đổi lựa chọn.
+      tk.marketFilter({ mount: '#mktf-providers', hidden: '#f-marketTypeIds', onChange: function () { grid.reload(); } });
 
       // Xuất TOÀN BỘ theo bộ lọc đang áp — handler Export nhận keyword ở tham số `search`.
       $('#btn-export').off('click').on('click', function (e) {

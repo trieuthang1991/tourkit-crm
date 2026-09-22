@@ -125,6 +125,15 @@ public class IndexModel : TkListPageModel
         int? I(string k) => int.TryParse(q[k], out var n) ? n : null;
         Guid? G(string k) => Guid.TryParse(q[k], out var g) ? g : null;
         bool? B(string k) => bool.TryParse(q[k], out var b) ? b : null;
+        // Cây multi-checkbox thị trường gửi tập id nối phẩy → tách thành danh sách (lọc IN).
+        IReadOnlyList<Guid>? Gs(string k)
+        {
+            var raw = q[k].ToString();
+            if (string.IsNullOrWhiteSpace(raw)) { return null; }
+            var list = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(s => Guid.TryParse(s, out _)).Select(Guid.Parse).Distinct().ToList();
+            return list.Count > 0 ? list : null;
+        }
         DateTimeOffset? D(string k) =>
             DateTimeOffset.TryParse(q[k], CultureInfo.InvariantCulture, out var d) ? d.ToUniversalTime() : null;
 
@@ -136,6 +145,7 @@ public class IndexModel : TkListPageModel
             TemplateId: G("templateId"),
             CustomerSourceId: G("customerSourceId"),
             MarketTypeId: G("marketTypeId"),
+            MarketTypeIds: Gs("marketTypeIds"),
             BranchId: G("branchId"),
             CreatedByUserId: G("createdByUserId"),
             FromWebsite: B("fromWebsite"),

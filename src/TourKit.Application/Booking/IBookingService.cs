@@ -50,4 +50,7 @@ public interface IBookingService
 
     /// <summary>Mở lại đơn đã tất toán (sửa sai): Closed → Confirmed, xoá audit chốt.</summary>
     Task<OrderDto> ReopenOrderAsync(Guid orderId);
+
+    /// <summary>Xoá đơn (xoá MỀM — bám staging "Xóa đơn hàng này"). Đơn đã tất toán phải mở lại trước khi xoá.</summary>
+    Task DeleteOrderAsync(Guid orderId);
 }

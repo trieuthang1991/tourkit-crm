@@ -173,8 +173,14 @@ public sealed class BookingService(
         var f = filter ?? new OrderListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        // Thị trường phân cấp (cha-con): lọc theo 1 thị trường bao gồm cả con cháu (legacy). Rỗng nếu không lọc.
-        var marketIds = f.MarketTypeId is { } mkt ? await DescendantMarketIdsAsync(mkt) : new HashSet<Guid>();
+        // Thị trường phân cấp (cha-con): lọc theo MỘT hoặc NHIỀU thị trường, mỗi cái bao gồm cả con cháu
+        // (legacy). MarketTypeIds (cây multi-checkbox) ưu tiên; không có thì rơi về MarketTypeId đơn (chip cũ).
+        var chonThiTruong = new List<Guid>();
+        if (f.MarketTypeIds is { Count: > 0 } ms) { chonThiTruong.AddRange(ms); }
+        else if (f.MarketTypeId is { } one) { chonThiTruong.Add(one); }
+        var marketIds = new HashSet<Guid>();
+        foreach (var m in chonThiTruong) { marketIds.UnionWith(await DescendantMarketIdsAsync(m)); }
+        var locThiTruong = marketIds.Count > 0; // gate hằng số → EF dịch sạch, không đụng cột entity
 
         // Lọc theo THUỘC TÍNH KHÁCH HÀNG (Nguồn/Loại KH): lấy trước tập id khách khớp rồi lọc đơn theo CustomerId.
         HashSet<Guid>? custFilterIds = null;
@@ -193,7 +199,7 @@ public sealed class BookingService(
             (f.SalesUserId == null || o.SalesUserId == f.SalesUserId) &&
             (f.CreatedByUserId == null || o.CreatedByUserId == f.CreatedByUserId) &&
             (f.BranchId == null || o.BranchId == f.BranchId) &&
-            (f.MarketTypeId == null || (o.MarketTypeId != null && marketIds.Contains(o.MarketTypeId.Value))) &&
+            (!locThiTruong || (o.MarketTypeId != null && marketIds.Contains(o.MarketTypeId.Value))) &&
             (f.TourGroupId == null || o.TourGroupId == f.TourGroupId) &&
             (f.BookingType == null || o.BookingType == f.BookingType) &&
             (f.CommissionSettled == null || o.IsCommissionSettled == f.CommissionSettled) &&
@@ -609,6 +615,19 @@ public sealed class BookingService(
         orderRepo.Update(order);
         await orderRepo.SaveChangesAsync();
         return MapOrder(order);
+    }
+
+    /// <summary>Xoá đơn (xoá MỀM — bám staging "Xóa đơn hàng này"). Đơn đã tất toán phải mở lại trước khi xoá.</summary>
+    public async Task DeleteOrderAsync(Guid orderId)
+    {
+        var order = await orderRepo.GetByIdAsync(orderId) ?? throw new NotFoundException();
+        if (order.Status == OrderStatus.Closed)
+        {
+            throw new ValidationAppException("Đơn đã tất toán — mở lại trước khi xoá.");
+        }
+        // Xoá mềm: IsDeleted = true, bộ lọc toàn cục tự ẩn (bám convention repo — không xoá cứng dữ liệu tài chính).
+        orderRepo.Remove(order);
+        await orderRepo.SaveChangesAsync();
     }
 
     /// <summary>

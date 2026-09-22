@@ -25,12 +25,12 @@ public class IndexModel : TkListPageModel
     private readonly IServiceItemService _serviceItems;
     private readonly IPaymentTermService _paymentTerms;
     private readonly IBranchService _branches;
-    private readonly IMarketTypeService _marketTypes;
+    private readonly TourKit.Api.Services.MarketDirectory _marketTypes;
     private readonly ICurrencyService _currencies;
     private readonly TourKit.Api.Ai.AiBangGia _aiBangGia;
 
     public IndexModel(IProviderService svc, IProviderServiceService providerServices, IServiceItemService serviceItems,
-        IPaymentTermService paymentTerms, IBranchService branches, IMarketTypeService marketTypes,
+        IPaymentTermService paymentTerms, IBranchService branches, TourKit.Api.Services.MarketDirectory marketTypes,
         ICurrencyService currencies,
         TourKit.Api.Ai.AiBangGia aiBangGia)
     {
@@ -51,6 +51,10 @@ public class IndexModel : TkListPageModel
 
     /// <summary>Danh mục tiền tệ cho ô chọn ở dòng bảng giá — mã tiền phải chọn, không gõ tay.</summary>
     public IReadOnlyList<CurrencyDto> Currencies { get; private set; } = [];
+
+    /// <summary>Danh mục dịch vụ (ServiceItem) — nhúng sẵn để ô "Dịch vụ" ở dòng bảng giá dùng được NGAY
+    /// cả khi TẠO NCC (chưa có providerId để gọi ?handler=Services) và làm select2 tìm kiếm.</summary>
+    public IReadOnlyList<(Guid Id, string Name)> ServiceItems { get; private set; } = [];
 
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
@@ -181,15 +185,18 @@ public class IndexModel : TkListPageModel
     /// Chủ dự án chốt luôn có bước xem trước: đọc sai một cột mà ghi thẳng thì bảng giá hỏng chỉ lộ ra
     /// khi có người phát hiện giá lệch, lúc đó đã dùng để báo giá cho khách rồi.
     /// </summary>
-    public async Task<IActionResult> OnPostXemTruocNhapAsync(Guid providerId, IFormFile? file)
+    public async Task<IActionResult> OnPostXemTruocNhapAsync(int loaiNcc, IFormFile? file)
     {
         if (file is null || file.Length == 0)
         {
             return new JsonResult(Result.Error("Chưa chọn tệp."));
         }
 
-        var ncc = await _svc.GetAsync(providerId);
-        var cot = MauNhapDichVu.Cot(ncc.Type).Select(c => c.TieuDe).ToList();
+        // Bóc từ tài liệu CHỈ cần LOẠI NCC để biết bộ cột — KHÔNG cần NCC đã tồn tại. Nhờ vậy dùng
+        // được ngay ở form TẠO (chưa có id): kết quả đổ thẳng vào các dòng bảng giá của form rồi lưu
+        // cùng nhà cung cấp (không ghi DB ở bước này — vẫn chỉ ĐỌC + KIỂM + xem trước).
+        var loai = Enum.IsDefined(typeof(ProviderType), loaiNcc) ? (ProviderType)loaiNcc : ProviderType.Other;
+        var cot = MauNhapDichVu.Cot(loai).Select(c => c.TieuDe).ToList();
 
         BangNhap bang;
         try
@@ -223,11 +230,11 @@ public class IndexModel : TkListPageModel
                 "Không đọc được tệp. Hãy dùng tệp .csv/.xlsx theo mẫu, hoặc .pdf/.docx là bản gốc (không phải ảnh scan)."));
         }
 
-        var kq = new NhapDichVuService().XemTruoc(bang, ncc.Type);
+        var kq = new NhapDichVuService().XemTruoc(bang, loai);
 
         return new JsonResult(Result.Success(null, new
         {
-            loaiNcc = TypeLabel(ncc.Type),
+            loaiNcc = TypeLabel(loai),
             nhan = kq.Nhan.Select(x => new
             {
                 soDong = x.SoDong,
@@ -300,6 +307,7 @@ public class IndexModel : TkListPageModel
         // ----- Trường mềm, lưu gộp vào Provider.ProfileJson (xem ProviderProfile) -----
 
         public string? Website { get; set; }          // "Link" bên hệ cũ
+        public string? PaymentTerm { get; set; }      // Điều khoản TT — lưu TEXT (ô gợi ý theo danh mục mẫu)
         public string? BankAccountName { get; set; }  // "Tên TK"
         public string? Note { get; set; }             // "Ghi chú"
         public int? BuiltYear { get; set; }           // Khách sạn
@@ -338,6 +346,7 @@ public class IndexModel : TkListPageModel
         Branches = await _branches.ListAsync();
         MarketTypes = await _marketTypes.ListAsync();
         Currencies = await _currencies.ListAsync();
+        ServiceItems = (await _serviceItems.ListAsync(1, LookupSize)).Items.Select(x => (x.Id, x.Name)).ToList();
     }
 
     /// <summary>Dựng bộ lọc từ query — ĐỦ 8 tiêu chí của ProviderListFilter (không lọc ở client).</summary>
@@ -347,6 +356,15 @@ public class IndexModel : TkListPageModel
         int? I(string k) => int.TryParse(q[k], NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : null;
         Guid? G(string k) => Guid.TryParse(q[k], out var g) ? g : null;
         string? S(string k) => string.IsNullOrWhiteSpace(q[k]) ? null : q[k].ToString().Trim();
+        // Cây multi-checkbox thị trường gửi tập id nối bằng dấu phẩy → tách thành danh sách (lọc IN).
+        IReadOnlyList<Guid>? Gs(string k)
+        {
+            var raw = q[k].ToString();
+            if (string.IsNullOrWhiteSpace(raw)) { return null; }
+            var list = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(s => Guid.TryParse(s, out _)).Select(Guid.Parse).Distinct().ToList();
+            return list.Count > 0 ? list : null;
+        }
         DateTimeOffset? D(string k) => DateTimeOffset.TryParse(q[k], CultureInfo.InvariantCulture, out var d) ? d.ToUniversalTime() : null;
         // Mốc "đến": người dùng chọn NGÀY → lấy hết ngày đó.
         DateTimeOffset? DEnd(string k) => D(k) is { } d ? (d.TimeOfDay == TimeSpan.Zero ? d.AddDays(1).AddTicks(-1) : d) : null;
@@ -362,6 +380,7 @@ public class IndexModel : TkListPageModel
             Province: S("province"),
             BranchId: G("branchId"),
             MarketTypeId: G("marketTypeId"),
+            MarketTypeIds: Gs("marketTypeIds"),
             CreatedFrom: D("createdFrom"),
             CreatedTo: DEnd("createdTo"));
     }
@@ -397,6 +416,7 @@ public class IndexModel : TkListPageModel
             // Trường mềm phải đi kèm dòng lưới, vì form sửa nạp từ chính dòng này. Thiếu ở đây là
             // mở sửa rồi bấm Lưu sẽ ghi null đè lên — đúng lỗi đã xảy ra ở màn chuyến đi.
             website = p.Profile?.Website,
+            paymentTerm = p.Profile?.PaymentTerm,
             bankAccountName = p.Profile?.BankAccountName,
             note = p.Profile?.Note,
             builtYear = p.Profile?.BuiltYear,
@@ -463,40 +483,44 @@ public class IndexModel : TkListPageModel
             return new JsonResult(Result.Error(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault() ?? "Dữ liệu không hợp lệ."));
         }
 
+        // Bảng dịch vụ đi kèm — gom một lần dùng cho CẢ tạo lẫn sửa (ghi NCC + bảng giá trong một
+        // đường, bám uspInsertHotel của hệ cũ; hỏng giữa chừng thì không để lại trạng thái nửa vời).
+        var lines = Services.Select(x => new ProviderServiceLineDto(
+            x.Id, x.ServiceItemId, x.PriceName, x.ContractPrice, x.PublicPrice,
+            x.CurrencyCode, x.AmountOfPeople, x.Note, x.Status,
+            new ProviderServiceLineProfile
+            {
+                PeriodFrom = x.PeriodFrom,
+                PeriodTo = x.PeriodTo,
+                DayType = Gon(x.DayType),
+                NetCostPerDay = x.NetCostPerDay,
+                SellPricePerDay = x.SellPricePerDay,
+                TicketType = Gon(x.TicketType),
+                Route = Gon(x.Route),
+                DepartTime = Gon(x.DepartTime),
+                ReturnTime = Gon(x.ReturnTime),
+                DepositDeadline = x.DepositDeadline,
+                Baggage = Gon(x.Baggage),
+            })).ToList();
+
         if (Id is Guid g && g != Guid.Empty)
         {
-            // Sửa: ghi NCC và bảng dịch vụ trong MỘT lần — bám uspInsertHotel của hệ cũ, hỏng giữa
-            // chừng thì không có gì được ghi. Tạo mới vẫn đi đường cũ vì form tạo chưa có panel dịch vụ.
             await _svc.UpdateWithServicesAsync(g, new UpdateProviderDto(
                 Input.Name, Input.Type, Input.Phone, Input.Email, Input.Address, Input.TaxCode, NguoiLienHeChinh(),
                 Input.BankAccount, Input.BankName, Input.PaymentTermId, Input.Rate, Input.Status,
                 Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId,
                 Profile: HoSoTuInput()),
-                Services.Select(x => new ProviderServiceLineDto(
-                    x.Id, x.ServiceItemId, x.PriceName, x.ContractPrice, x.PublicPrice,
-                    x.CurrencyCode, x.AmountOfPeople, x.Note, x.Status,
-                    new ProviderServiceLineProfile
-                    {
-                        PeriodFrom = x.PeriodFrom,
-                        PeriodTo = x.PeriodTo,
-                        DayType = Gon(x.DayType),
-                        NetCostPerDay = x.NetCostPerDay,
-                        SellPricePerDay = x.SellPricePerDay,
-                        TicketType = Gon(x.TicketType),
-                        Route = Gon(x.Route),
-                        DepartTime = Gon(x.DepartTime),
-                        ReturnTime = Gon(x.ReturnTime),
-                        DepositDeadline = x.DepositDeadline,
-                        Baggage = Gon(x.Baggage),
-                    })).ToList());
+                lines);
         }
         else
         {
-            await _svc.CreateAsync(new CreateProviderDto(
+            // Tạo NCC KÈM bảng giá ngay (trước đây form tạo bỏ mất panel dịch vụ → NCC mới luôn 0 dòng giá).
+            await _svc.CreateWithServicesAsync(new CreateProviderDto(
                 Input.Code, Input.Name, Input.Type, Input.Phone, Input.Email, Input.Address, Input.TaxCode, NguoiLienHeChinh(),
                 Input.BankAccount, Input.BankName, Input.PaymentTermId, Input.Rate, Input.Status,
                 Province: Input.Province, BranchId: Input.BranchId, MarketTypeId: Input.MarketTypeId,
-                Profile: HoSoTuInput()));
+                Profile: HoSoTuInput()),
+                lines);
         }
 
         return new JsonResult(Result.Success("Đã lưu nhà cung cấp."));
@@ -531,6 +555,7 @@ public class IndexModel : TkListPageModel
         return new ProviderProfile
         {
             Website = Gon(Input.Website),
+            PaymentTerm = Gon(Input.PaymentTerm),
             BankAccountName = Gon(Input.BankAccountName),
             Note = Gon(Input.Note),
             BuiltYear = ks ? Input.BuiltYear : null,
