@@ -967,7 +967,9 @@
       tk.tienSync($form);
       if (opts.fill) { opts.fill($form, data); }
       var lbl = ocEl.querySelector('.offcanvas-title');
-      if (lbl && opts.title) { lbl.textContent = (data ? ('Sửa ' + opts.title) : ('Thêm ' + opts.title)); }
+      // "Sửa" chỉ khi có ID (bản ghi đã tồn tại). Mở form với dữ liệu ĐIỀN SẴN nhưng KHÔNG id (vd AI
+      // bóc thông tin để tạo mới) vẫn là "Thêm" — bám đúng logic Mã-readonly ở trên (data && data.id).
+      if (lbl && opts.title) { lbl.textContent = ((data && data.id) ? ('Sửa ' + opts.title) : ('Thêm ' + opts.title)); }
       if (opts.afterOpen) { opts.afterOpen(data); }
       bootstrap.Offcanvas.getOrCreateInstance(ocEl).show();
     }

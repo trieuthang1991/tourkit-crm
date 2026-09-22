@@ -279,6 +279,93 @@ public class IndexModel : TkListPageModel
         return new JsonResult(Result.Success($"Đã nhập {soDong} dòng bảng giá."));
     }
 
+    /// <summary>
+    /// THÊM NCC BẰNG AI: đọc tệp (PDF/Word/txt) hoặc đoạn thông tin dán vào, để AI bóc ra các TRƯỜNG
+    /// của một nhà cung cấp. KHÔNG ghi gì — chỉ trả dữ liệu để đổ sẵn vào form tạo cho người dùng duyệt.
+    /// Dùng chung lớp bóc với đường bảng giá (AiBangGia), coi NCC như một bảng MỘT dòng.
+    /// </summary>
+    public async Task<IActionResult> OnPostAiPhanTichNccAsync(IFormFile? file, string? text)
+    {
+        string vanBan;
+        try
+        {
+            if (file is not null && file.Length > 0)
+            {
+                await using var s = file.OpenReadStream();
+                if (DocChuTuTaiLieu.LaTaiLieu(file.FileName))
+                {
+                    vanBan = DocChuTuTaiLieu.Doc(s, file.FileName);
+                }
+                else
+                {
+                    using var r = new StreamReader(s);
+                    vanBan = await r.ReadToEndAsync(HttpContext.RequestAborted);
+                }
+            }
+            else
+            {
+                vanBan = text ?? "";
+            }
+        }
+        catch (Exception ex) when (ex is InvalidDataException or FormatException or IOException)
+        {
+            return new JsonResult(Result.Error("Không đọc được tệp. Dùng .pdf/.docx bản gốc (không phải ảnh scan) hoặc dán thẳng thông tin."));
+        }
+
+        if (string.IsNullOrWhiteSpace(vanBan))
+        {
+            return new JsonResult(Result.Error("Chưa có nội dung để phân tích — chọn tệp hoặc dán thông tin nhà cung cấp."));
+        }
+
+        // Coi một NCC như BẢNG MỘT DÒNG: mỗi "cột" là một trường thông tin cần bóc.
+        string[] cot = ["Tên nhà cung cấp", "Loại hình", "Số điện thoại", "Email", "Địa chỉ", "Tỉnh thành", "Mã số thuế", "Website", "Quốc gia", "Người liên hệ"];
+        var (bang, loi) = await _aiBangGia.DocAsync(
+            vanBan, cot, TourKit.Api.Ai.AiRecordAccess.ReadUserId(User) ?? Guid.Empty, HttpContext.RequestAborted);
+        if (bang is null || bang.Dong.Count == 0)
+        {
+            return new JsonResult(Result.Error(loi ?? "AI không đọc được thông tin nhà cung cấp từ nội dung này."));
+        }
+
+        var dong = bang.Dong[0];
+        string? O(string tieuDe)
+        {
+            var i = Array.IndexOf(cot, tieuDe);
+            return i >= 0 && i < dong.Count && !string.IsNullOrWhiteSpace(dong[i]) ? dong[i].Trim() : null;
+        }
+
+        var loai = MapLoai(O("Loại hình"));
+        // Báo giá/hồ sơ thường KHÔNG ghi "loại hình" tường minh mà lộ ở TÊN ("Khách sạn ...", "Nhà hàng ...").
+        if (loai == ProviderType.Other) { loai = MapLoai(O("Tên nhà cung cấp")); }
+        return new JsonResult(Result.Success("AI đã bóc thông tin — kiểm tra rồi bấm Lưu.", new
+        {
+            name = O("Tên nhà cung cấp"),
+            type = (int)loai,
+            typeLabel = TypeLabel(loai),
+            phone = O("Số điện thoại"),
+            email = O("Email"),
+            address = O("Địa chỉ"),
+            province = O("Tỉnh thành"),
+            taxCode = O("Mã số thuế"),
+            website = O("Website"),
+            country = O("Quốc gia"),
+            contactPerson = O("Người liên hệ"),
+        }));
+    }
+
+    /// <summary>Khớp chuỗi "loại hình" AI đọc được về <see cref="ProviderType"/> (bỏ dấu, không phân biệt hoa/thường).</summary>
+    private static ProviderType MapLoai(string? s)
+    {
+        var k = TourKit.Shared.Text.VietnameseText.NormalizeSearch(s ?? "") ?? "";
+        if (k.Length == 0) { return ProviderType.Other; }
+        if (k.Contains("khach san") || k.Contains("hotel") || k.Contains("resort")) { return ProviderType.Hotel; }
+        if (k.Contains("van chuyen") || k.Contains("van tai") || k.Contains("xe") || k.Contains("vehicle") || k.Contains("transport")) { return ProviderType.Vehicle; }
+        if (k.Contains("nha hang") || k.Contains("restaurant") || k.Contains("an uong")) { return ProviderType.Restaurant; }
+        if (k.Contains("hdv") || k.Contains("huong dan") || k.Contains("guide")) { return ProviderType.Guide; }
+        if (k.Contains("hang khong") || k.Contains("airline") || k.Contains("ve may bay")) { return ProviderType.Airline; }
+        if (k.Contains("voucher")) { return ProviderType.Voucher; }
+        return ProviderType.Other;
+    }
+
     /// <summary>Trần số dòng nạp về form. Vượt mức này thì sửa hàng loạt ở màn Bảng giá NCC hợp lý hơn.</summary>
     private const int MaxLines = 200;
 

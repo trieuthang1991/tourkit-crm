@@ -28,6 +28,7 @@
   </div>
   <div class="d-flex gap-2">
     <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất file</a>
+    <button type="button" class="btn btn-label-info" id="btn-ai-ncc"><i class="tk-ico-ai me-1"></i> Thêm bằng AI</button>
     <button type="button" class="btn btn-primary" onclick="oc.open(null)"><i class="ti ti-plus me-1"></i> Thêm NCC</button>
   </div>
 </div>
@@ -295,6 +296,34 @@
       <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Huỷ</button>
       </div>
     </form>
+  </div>
+</div>
+
+@* Modal THÊM NCC BẰNG AI — tải tệp hoặc dán thông tin → AI bóc trường → mở form tạo điền sẵn. *@
+<div class="modal fade" id="ai-ncc-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="tk-ico-ai me-2"></i>Thêm nhà cung cấp bằng AI</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">Tải tệp (PDF/Word hồ sơ, danh thiếp…) hoặc dán thông tin — AI sẽ bóc ra các trường nhà cung cấp để bạn duyệt trước khi lưu.</p>
+        <div class="mb-3">
+          <label class="form-label">Tải tệp</label>
+          <input type="file" id="ai-ncc-file" class="form-control" accept=".pdf,.doc,.docx,.txt" />
+        </div>
+        <div class="text-center text-muted small mb-2">— hoặc —</div>
+        <div>
+          <label class="form-label">Dán thông tin</label>
+          <textarea id="ai-ncc-text" class="form-control" rows="5" placeholder="VD: Khách sạn ABC, 12 Trần Phú, Nha Trang. SĐT 0258 123 456, email info@@abc.vn, MST 4200 123 456, website abc.vn"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Huỷ</button>
+        <button type="button" class="btn btn-primary" id="ai-ncc-go"><i class="tk-ico-ai me-1"></i>Phân tích</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -814,6 +843,35 @@
           url: '?handler=Export', filters: grid.filters(), filteredTotal: grid.filteredTotal(),
           pageSize: grid.table.getPageSize(), max: 20000
         });
+      });
+
+      // ---- Thêm NCC bằng AI: tải tệp / dán thông tin → AI bóc trường → mở form tạo điền sẵn ----
+      var aiModal = document.getElementById('ai-ncc-modal');
+      $('#btn-ai-ncc').on('click', function () { bootstrap.Modal.getOrCreateInstance(aiModal).show(); });
+      $('#ai-ncc-go').on('click', function () {
+        var tep = document.getElementById('ai-ncc-file').files[0];
+        var txt = ($('#ai-ncc-text').val() || '').trim();
+        if (!tep && !txt) { tk.error('Chọn tệp hoặc dán thông tin nhà cung cấp.'); return; }
+
+        var fd = new FormData();
+        if (tep) { fd.append('file', tep); }
+        if (txt) { fd.append('text', txt); }
+
+        var $btn = $(this).prop('disabled', true);
+        tk.overlay.show('AI đang phân tích…');
+        fetch('?handler=AiPhanTichNcc', { method: 'POST', body: fd, headers: { RequestVerificationToken: tk.token() } })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.isSuccess) { tk.error(res.message || 'Không phân tích được.'); return; }
+            bootstrap.Modal.getInstance(aiModal).hide();
+            document.getElementById('ai-ncc-file').value = '';
+            $('#ai-ncc-text').val('');
+            // Mở form TẠO điền sẵn (dữ liệu không có id → tạo mới). Chờ modal đóng hẳn để không kẹt backdrop.
+            setTimeout(function () { oc.open(res.data); }, 200);
+            tk.toast(res.message || 'AI đã điền sẵn — kiểm tra rồi Lưu.');
+          })
+          .catch(function () { tk.error('Không phân tích được.'); })
+          .finally(function () { $btn.prop('disabled', false); tk.overlay.hide(); });
       });
     });
   </script>
