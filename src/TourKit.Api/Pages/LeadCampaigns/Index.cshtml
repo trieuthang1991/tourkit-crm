@@ -24,7 +24,7 @@
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
   <div>
     <div class="text-muted mb-1" style="font-size:.78rem">CRM <span class="mx-1">/</span> <span class="text-body">Chia số Sale</span></div>
-    <h4 class="mb-0">Chia số Sale</h4>
+    <h4 class="mb-0">Chia số Sale<partial name="_FlowHelp" model="@("chia-so-sale")" /></h4>
   </div>
   <div class="d-flex gap-2">
     <a id="btn-export" class="btn btn-label-secondary" href="#"><i class="ti ti-file-export me-1"></i> Xuất file</a>
@@ -79,6 +79,26 @@
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Tên chiến dịch <span class="text-danger">*</span></label><input type="text" name="Input.Name" class="form-control" placeholder="Nhập tên chiến dịch" /></div>
       <div class="mb-3"><label class="form-label">Ghi chú</label><textarea name="Input.Note" class="form-control" rows="3" placeholder="Nhập ghi chú"></textarea></div>
+
+      @* Cấu hình CHIA SỐ — phần làm cho màn này đúng với tên của nó. Lead về từ chiến dịch (form
+         thu lead gửi kèm MÃ) sẽ được giao tự động cho một người trong nhóm dưới đây. *@
+      <hr class="my-3" />
+      <div class="mb-3">
+        <label class="form-label">Cách chia số</label>
+        <select name="Input.AssignMode" class="form-select">
+          <option value="0">Không tự chia — để trống người phụ trách</option>
+          <option value="1">Xoay vòng — chia đều lần lượt</option>
+          <option value="2">Ngẫu nhiên — bốc trong nhóm</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Nhóm sale nhận số</label>
+        @* Thứ tự chọn CHÍNH LÀ thứ tự vòng chia — select2 giữ nguyên thứ tự người dùng bấm. *@
+        <select name="Input.Assignees" class="form-select tk-s2" multiple data-placeholder="Chọn nhân viên">
+          @foreach (var u in Model.Users) { <option value="@u.Id">@u.Name</option> }
+        </select>
+        <div class="form-text">Thứ tự chọn là thứ tự nhận số khi chạy chế độ xoay vòng.</div>
+      </div>
       </div>
       <div class="tk-oc-actions">
         <button type="submit" class="btn btn-primary me-2">Lưu</button>
@@ -114,7 +134,9 @@
         actions: function (r) {
           return [
             { label: '<i class="ti ti-edit me-2"></i>Sửa chiến dịch', action: function () { oc.open(r); } },
-            { label: '<i class="ti ti-target me-2"></i>Xem cơ hội của chiến dịch', action: function () { window.location = '/co-hoi?campaignId=' + encodeURIComponent(r.id); } }
+            @* Chiến dịch giữ KHÁCH TIỀM NĂNG, không giữ cơ hội — Cơ hội không có trường chiến dịch
+               nào cả. Link cũ trỏ sang /co-hoi nên không bao giờ ra kết quả. *@
+            { label: '<i class="ti ti-users me-2"></i>Xem khách tiềm năng của chiến dịch', action: function () { window.location = '/khach-tiem-nang?campaignId=' + encodeURIComponent(r.id); } }
           ];
         },
         columns: [
@@ -124,6 +146,37 @@
               var r = c.getData();
               return '<div class="tk-row-media">' + g.avatar(r.name) +
                 g.stack(r.name, r.createdByName ? ('Tạo bởi ' + r.createdByName) : null) + '</div>';
+            }
+          },
+          @* MÃ là thứ người dựng form thu lead phải cầm đi nhúng vào form. Cho chép bằng một cú bấm
+             — bắt họ bôi đen một chuỗi trong ô lưới là cách chắc chắn để thỉnh thoảng thiếu ký tự. *@
+          {
+            title: 'Mã nhúng', field: 'code', width: 160,
+            formatter: function (c) {
+              var ma = c.getValue();
+              if (!ma) { return '<span class="tk-cell-sub">—</span>'; }
+              return '<span class="tk-cell"><code class="tk-cell-main">' + esc(ma) + '</code>' +
+                '<button type="button" class="btn btn-sm btn-icon btn-label-secondary ms-1 cd-chep" ' +
+                'data-ma="' + esc(ma) + '" title="Chép mã"><i class="ti ti-copy"></i></button></span>';
+            },
+            cellClick: function (e, cell) {
+              var nut = e.target.closest('.cd-chep');
+              if (!nut) { return; }
+              e.stopPropagation();
+              navigator.clipboard.writeText(nut.dataset.ma).then(function () {
+                tk.toast('Đã chép mã ' + nut.dataset.ma + ' — dán vào form thu lead.');
+              });
+            }
+          },
+          {
+            title: 'Chia số', field: 'assignMode', width: 190,
+            formatter: function (c) {
+              var r = c.getData();
+              var badge = '<span class="badge bg-label-' + esc(r.assignModeColor) + '">' + esc(r.assignModeLabel) + '</span>';
+              var ai = (r.assigneeNames || []);
+              var phu = ai.length ? ai.length + ' người: ' + ai.slice(0, 2).join(', ') + (ai.length > 2 ? '…' : '')
+                                  : 'Chưa có ai trong nhóm';
+              return '<div class="tk-cell">' + badge + '<div class="tk-cell-sub mt-1">' + esc(phu) + '</div></div>';
             }
           },
           { title: 'Ngày tạo', field: 'createdAt', width: 130,

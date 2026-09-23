@@ -1,18 +1,24 @@
 using FluentValidation;
 using TourKit.Application.Common;
 using TourKit.Application.Crm.Dtos;
+using TourKit.Application.Customers;
+using TourKit.Application.Customers.Dtos;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Enums;
 
 namespace TourKit.Application.Crm;
 
 /// <summary>
-/// Lead (khách tiềm năng, phễu bán). Convert tạo <see cref="Customer"/> mới từ thông tin lead,
-/// đánh dấu lead Won + gắn ConvertedCustomerId — chỉ convert được 1 lần (convert lại → Conflict).
+/// Lead (khách tiềm năng, phễu bán). Convert đánh dấu lead Won + gắn ConvertedCustomerId — chỉ
+/// convert được 1 lần (convert lại → Conflict).
+///
+/// Hồ sơ <see cref="Customer"/> đi qua <c>ICustomerService</c>, KHÔNG dựng thẳng: số điện thoại đã
+/// có chủ thì NỐI vào hồ sơ sẵn có, chưa có mới tạo. Xem chú thích trong <c>ConvertAsync</c>.
 /// </summary>
 public sealed class LeadService(
     IRepository<Lead> repo,
-    IRepository<Customer> customerRepo,
+    ICustomerService customers,
+    ILeadCampaignService campaigns,
     IValidator<CreateLeadDto> createValidator,
     IValidator<UpdateLeadDto> updateValidator,
     TourKit.Shared.Security.ICurrentUserContext currentUser) : ILeadService
@@ -27,6 +33,7 @@ public sealed class LeadService(
             (f.AssignedToUserId == null || l.AssignedToUserId == f.AssignedToUserId) &&
             (f.BranchId == null || l.BranchId == f.BranchId) &&
             (f.CreatedByUserId == null || l.CreatedByUserId == f.CreatedByUserId) &&
+            (f.CampaignId == null || l.CampaignId == f.CampaignId) &&
             (src == null || (l.Source != null && l.Source.Contains(src))) &&
             (f.CreatedFrom == null || l.CreatedAt >= f.CreatedFrom) &&
             (f.CreatedTo == null || l.CreatedAt <= f.CreatedTo) &&
@@ -75,9 +82,25 @@ public sealed class LeadService(
         return Map(entity);
     }
 
+    public async Task<LeadDto?> FindByConvertedCustomerAsync(Guid customerId)
+    {
+        // Vị từ đi xuống SQL và chỉ về tối đa một dòng (mỗi lead chuyển đúng một lần) — không nạp
+        // bảng rồi lọc trong bộ nhớ.
+        var found = await repo.ListAsync(l => l.ConvertedCustomerId == customerId);
+        return found.Count == 0 ? null : Map(found[0]);
+    }
+
     public async Task<LeadDto> CreateAsync(CreateLeadDto dto)
     {
         await Validate(createValidator, dto);
+
+        // Form thu lead gửi MÃ chiến dịch (CD-2026-007), không gửi khoá — người dựng form chép được
+        // cái mã, chứ chép một GUID là cầm chắc sai một ký tự mà không ai phát hiện ra.
+        //
+        // Chiến dịch có bật chia số thì lấy luôn người phụ trách từ đó. Nhưng lời gọi đã CHỈ ĐỊNH
+        // người thì tôn trọng — chia tự động là để lấp chỗ trống, không phải để đè lên quyết định
+        // của người dùng.
+        var chiaSo = await campaigns.ChiaSoAsync(dto.CampaignCode);
 
         var entity = new Lead
         {
@@ -85,9 +108,12 @@ public sealed class LeadService(
             Phone = dto.Phone,
             Email = dto.Email,
             Source = dto.Source,
-            AssignedToUserId = dto.AssignedToUserId,
+            AssignedToUserId = dto.AssignedToUserId ?? chiaSo?.AssignedToUserId,
             BranchId = dto.BranchId,
             CreatedByUserId = currentUser.UserId,
+            Note = dto.Note,
+            AttributionJson = dto.Attribution?.ToJsonOrNull(),
+            CampaignId = dto.CampaignId ?? chiaSo?.CampaignId,
         };
         await repo.AddAsync(entity);
         await repo.SaveChangesAsync();
@@ -112,6 +138,15 @@ public sealed class LeadService(
         entity.Status = dto.Status;
         entity.AssignedToUserId = dto.AssignedToUserId;
         entity.BranchId = dto.BranchId;
+        entity.Note = dto.Note;
+
+        // Không gửi phần nguồn chi tiết thì GIỮ NGUYÊN cái đang có. Nguồn chi tiết do form thu lead
+        // ghi lúc khách để lại thông tin; một lần sửa tay trong CRM không được phép xoá dấu vết đó.
+        if (dto.Attribution is not null)
+        {
+            entity.AttributionJson = dto.Attribution.ToJsonOrNull();
+        }
+
         repo.Update(entity);
         await repo.SaveChangesAsync();
     }
@@ -128,7 +163,7 @@ public sealed class LeadService(
         await repo.SaveChangesAsync();
     }
 
-    public async Task<ConvertLeadResultDto> ConvertAsync(Guid id)
+    public async Task<ConvertLeadResultDto> ConvertAsync(Guid id, Guid? assignedToUserId = null)
     {
         var lead = await repo.GetByIdAsync(id);
         if (lead is null)
@@ -141,17 +176,42 @@ public sealed class LeadService(
             throw new ConflictException("Lead đã được convert.");
         }
 
-        var customer = new Customer { FullName = lead.FullName, Phone = lead.Phone };
-        await customerRepo.AddAsync(customer);
+        // Đi QUA CustomerService, không ghi thẳng kho.
+        //
+        // Bản trước dựng `new Customer{...}` rồi AddAsync, nên bỏ qua cả ba thứ chỉ có trong
+        // CustomerService: sinh mã KH_, dựng SearchName (tìm không dấu) và PhoneNormalized, và
+        // chặn trùng số điện thoại. Khách sinh ra vì vậy TÌM KHÔNG RA ở màn Data khách hàng, mà
+        // cũng không lọt vào màn Rà khách trùng — màn đó gom theo đúng cột PhoneNormalized đang
+        // trống. Tách hai bảng là để bảng khách hàng sạch hơn bảng lead; ghi tắt thế này thì chính
+        // đường chuyển đổi chọc thủng cái ranh giới ấy.
+        //
+        // Số đã thuộc về một khách sẵn có thì GẮN vào khách đó: lead này chính là người ấy. Ném lỗi
+        // thì người bán bị chặn mà không có lối đi tiếp, còn tạo thêm hồ sơ nữa thì đúng là thứ luật
+        // chặn trùng sinh ra để ngăn.
+        var sanCo = await customers.FindByPhoneAsync(lead.Phone);
+        var customerId = sanCo?.Id;
+
+        if (customerId is null)
+        {
+            // Mang theo nguồn và email — hai thứ đã biết về khách; bỏ lại là mất dữ liệu ngay tại
+            // bước chuyển đổi, rồi không còn đường nào lấy lại.
+            // Người phụ trách ĐI THEO sang khách hàng. Người bấm nút chọn ở hộp xác nhận, mặc định
+            // là người đang phụ trách lead — bàn giao là việc có chủ ý, không nên xảy ra âm thầm.
+            var phuTrach = assignedToUserId ?? lead.AssignedToUserId;
+
+            var moi = await customers.CreateAsync(new CreateCustomerDto(
+                lead.FullName, lead.Phone, Source: lead.Source, Email: lead.Email,
+                InitialNeed: lead.Note,     // nhu cầu khách nêu lúc còn là lead → "nhu cầu ban đầu"
+                AssignedTo: phuTrach is { } pt ? [pt.ToString()] : null));
+            customerId = moi.Id;
+        }
 
         lead.Status = LeadStatus.Won;
-        lead.ConvertedCustomerId = customer.Id;
+        lead.ConvertedCustomerId = customerId;
         repo.Update(lead);
-
-        await customerRepo.SaveChangesAsync();
         await repo.SaveChangesAsync();
 
-        return new ConvertLeadResultDto(customer.Id);
+        return new ConvertLeadResultDto(customerId.Value, sanCo is not null);
     }
 
     private static async Task Validate<T>(IValidator<T> validator, T dto)
@@ -164,5 +224,6 @@ public sealed class LeadService(
     }
 
     private static LeadDto Map(Lead l) => new(
-        l.Id, l.FullName, l.Phone, l.Email, l.Source, l.Status, l.AssignedToUserId, l.ConvertedCustomerId, l.BranchId);
+        l.Id, l.FullName, l.Phone, l.Email, l.Source, l.Status, l.AssignedToUserId, l.ConvertedCustomerId, l.BranchId,
+        l.Note, LeadAttribution.Parse(l.AttributionJson));
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -19,8 +20,25 @@ public class ReviewModel(
     AiReviewer reviewer,
     AiComposer composer,
     TourKit.Application.Ai.IAiInsightStore store,
+    RecordOrigins origins,
     ILogger<ReviewModel> logger) : PageModel
 {
+    /// <summary>
+    /// Tên trường trong <c>DetailJson</c> phải camelCase — chuỗi này do C# GHI nhưng do JAVASCRIPT ĐỌC
+    /// (<c>tk-ai.js</c>, hàm <c>breakdown</c> đọc <c>c.label/weight/score/note</c>).
+    ///
+    /// Không có options thì System.Text.Json giữ nguyên tên gốc (<c>Label</c>, <c>Weight</c>…), trong
+    /// khi phản hồi HTTP lại đi qua chính sách camelCase của ASP.NET. Hệ quả: bản VỪA chấm hiện đúng,
+    /// còn bản MỞ LẠI thì bảng tiêu chí trống nhãn và điểm 0 — trông như hỏng dữ liệu.
+    ///
+    /// Các chỗ khác trong repo lưu JSON PascalCase vẫn không sao vì chúng được C# đọc lại; chỉ riêng
+    /// chỗ này vượt biên sang JS nên mới lộ.
+    /// </summary>
+    private static readonly JsonSerializerOptions ChiTietJson = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
     /// <summary>Kết quả gần nhất của cả ba việc — màn hình gọi khi mở hồ sơ, để không phải chấm lại.</summary>
     public async Task<IActionResult> OnGetLatestAsync(string? entity, string? id, CancellationToken ct)
     {
@@ -31,7 +49,28 @@ public class ReviewModel(
         }
 
         var items = await store.LatestAsync(entity!, id!, ct);
-        return new JsonResult(Result.Success(null, new { items }));
+        return new JsonResult(Result.Success(null, new { items, goc = await GocAsync(entity!, id!, ct) }));
+    }
+
+    /// <summary>
+    /// Kết quả AI của bản ghi TIỀN THÂN (khách hàng ← khách tiềm năng), để lịch sử không đứt khi
+    /// chuyển đổi. Trả <c>null</c> khi không có gốc hoặc gốc không có kết quả nào.
+    ///
+    /// Soát quyền LẠI trên bản ghi gốc, không dựa vào việc đã qua cửa ở bản ghi hiện tại: khách
+    /// tiềm năng và khách hàng dùng hai quyền khác nhau (<c>lead.view</c> / <c>customer.view</c>),
+    /// nên người xem được khách hàng chưa chắc được phép đọc hồ sơ khách tiềm năng — mà nhận định
+    /// AI thì kể lại chính nội dung bản ghi lẫn trao đổi nội bộ của nó.
+    /// </summary>
+    private async Task<object?> GocAsync(string entity, string id, CancellationToken ct)
+    {
+        var origin = await origins.FindAsync(entity, id);
+        if (origin is null || AiRecordAccess.Check(User, origin.EntityName, origin.EntityId).Error is not null)
+        {
+            return null;
+        }
+
+        var items = await store.LatestAsync(origin.EntityName, origin.EntityId, ct);
+        return items.Count == 0 ? null : new { origin.Label, origin.Url, items };
     }
 
     /// <summary>Lịch sử một loại việc, mới nhất trước — để so điểm lần này với những lần trước.</summary>
@@ -148,7 +187,7 @@ public class ReviewModel(
             await store.SaveAsync(new TourKit.Application.Ai.SaveAiInsightDto(
                 entity!, id!, "Review", guard.UserId,
                 Score: review.Score, Band: review.Band, Summary: review.Summary,
-                DetailJson: System.Text.Json.JsonSerializer.Serialize(chiTiet)), ct);
+                DetailJson: JsonSerializer.Serialize(chiTiet, ChiTietJson)), ct);
 
             return new JsonResult(Result.Success(null, new
             {

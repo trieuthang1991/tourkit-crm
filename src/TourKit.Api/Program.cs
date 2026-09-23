@@ -39,6 +39,10 @@ builder.Host.UseSerilog((context, config) => config
 
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
+
+// Quan hệ "bản ghi này sinh ra từ bản ghi nào" — trợ lý AI và luồng trao đổi đều dùng để nối lại
+// lịch sử sau chuyển đổi, nên đăng ký ở đây chứ không nằm riêng trong phần AI.
+builder.Services.AddScoped<TourKit.Api.Web.RecordOrigins>();
 builder.Services.AddControllers();
 builder.Services.AddRazorPages(options =>
 {
@@ -166,6 +170,19 @@ builder.Services.AddScoped<TourKit.Application.Files.IFileStorage>(sp =>
 builder.Services.Scan(scan => scan.FromAssemblyOf<TourKit.Application.Customers.ICustomerService>()
     .AddClasses(c => c.Where(t => t.Name.EndsWith("Service", StringComparison.Ordinal)))
         .AsImplementedInterfaces().WithScopedLifetime());
+
+// Bọc CACHE quanh chiến dịch chia số. Đặt SAU khối tự quét ở trên để lần đăng ký này thắng —
+// khối kia đã nối ILeadCampaignService thẳng vào LeadCampaignService.
+//
+// Phần tra cấu hình chiến dịch chạy mỗi lần có một lead về từ form thu lead, mà cấu hình thì gần
+// như không đổi. Con đếm để xoay vòng vẫn đếm ở cơ sở dữ liệu, KHÔNG cache — xem chú thích trong
+// CachedLeadCampaignService.
+builder.Services.AddScoped<TourKit.Application.Crm.LeadCampaignService>();
+builder.Services.AddScoped<TourKit.Application.Crm.ILeadCampaignService>(sp =>
+    new TourKit.Api.Services.CachedLeadCampaignService(
+        sp.GetRequiredService<TourKit.Application.Crm.LeadCampaignService>(),
+        sp.GetRequiredService<TourKit.Caching.ITkCache>(),
+        sp.GetRequiredService<TourKit.Infrastructure.Tenancy.AmbientTenantContext>()));
 
 // --- Background jobs (Hangfire, conventions §8) — nền hạ tầng: storage in-memory (dev), server + job.
 // Tắt server dưới testhost để không nhiễu integration test (WebApplicationFactory). Job nghiệp vụ thật thêm sau.

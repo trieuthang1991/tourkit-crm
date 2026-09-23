@@ -44,6 +44,14 @@ public class IndexModel : TkListPageModel
     public IReadOnlyList<(Guid Id, string Name)> Users { get; private set; } = [];
     public IReadOnlyList<(Guid Id, string Name)> Branches { get; private set; } = [];
 
+    /// <summary>
+    /// Chiến dịch cần lọc sẵn khi vào từ màn Chia số Sale (<c>/khach-tiem-nang?campaignId=…</c>).
+    ///
+    /// Phải nạp vào một Ô LỌC ẨN chứ không đọc thẳng ở handler dữ liệu: lưới gọi URL tương đối
+    /// '?handler=Data' nên nó THAY THẾ toàn bộ query string — campaignId của trang không đi kèm.
+    /// </summary>
+    public Guid? LocCampaignId { get; private set; }
+
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public InputModel Input { get; set; } = new();
 
@@ -56,6 +64,16 @@ public class IndexModel : TkListPageModel
         public LeadStatus Status { get; set; } = LeadStatus.New;
         public Guid? AssignedToUserId { get; set; }
         public Guid? BranchId { get; set; }
+
+        /// <summary>Nhu cầu khách tự nêu, bằng lời của họ.</summary>
+        public string? Note { get; set; }
+
+        /// <summary>
+        /// Nguồn chi tiết dán nguyên dạng đường dẫn (<c>…?utm_source=zns&amp;utm_medium=sms</c>).
+        /// Tách ra thành các trường ở <see cref="LeadAttribution.TuChuoiTruyVan"/> — bắt người dùng
+        /// điền từng ô utm là cách chắc chắn nhất để không ai điền.
+        /// </summary>
+        public string? AttributionRaw { get; set; }
     }
 
     public static string StatusLabel(LeadStatus s) => s switch
@@ -80,6 +98,7 @@ public class IndexModel : TkListPageModel
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
+        LocCampaignId = Guid.TryParse(Request.Query["campaignId"], out var cd) ? cd : null;
 
         SourceCatalog = (await _sources.ListAsync()).Select(x => x.Name).ToList();
 
@@ -111,7 +130,8 @@ public class IndexModel : TkListPageModel
             CreatedFrom: D("createdFrom"),
             CreatedTo: D("createdTo"),
             BranchId: G("branchId"),
-            CreatedByUserId: G("createdByUserId"));
+            CreatedByUserId: G("createdByUserId"),
+            CampaignId: G("campaignId"));
     }
 
     /// <summary>Nguồn DataTables server-side: chỉ trả đúng 1 trang.</summary>
@@ -137,6 +157,7 @@ public class IndexModel : TkListPageModel
             assignedToUserId = l.AssignedToUserId,
             assigneeName = l.AssignedToUserId is Guid u && userNames.TryGetValue(u, out var un) ? un : null,
             branchId = l.BranchId,
+            note = l.Note,
             branchName = l.BranchId is Guid b && branchNames.TryGetValue(b, out var bn) ? bn : null,
             convertedCustomerId = l.ConvertedCustomerId,
         }).ToList();
@@ -179,6 +200,7 @@ public class IndexModel : TkListPageModel
             assignedToUserId = lead.AssignedToUserId,
             assigneeName = lead.AssignedToUserId is Guid u && userNames.TryGetValue(u, out var un) ? un : null,
             branchId = lead.BranchId,
+            note = lead.Note,
             branchName = lead.BranchId is Guid b && branchNames.TryGetValue(b, out var bn) ? bn : null,
             convertedCustomerId = lead.ConvertedCustomerId,
         });
@@ -214,9 +236,12 @@ public class IndexModel : TkListPageModel
         return new JsonResult(new { total = result.Total, page, size, hasMore = page * size < result.Total, cards });
     }
 
-    /// <summary>Kéo–thả đổi trạng thái trên Kanban (giữ nguyên các field khác).</summary>
-    public async Task<IActionResult> OnPostMoveAsync(Guid id, int status)
+    /// <summary>Kéo–thả đổi trạng thái trên Kanban (giữ nguyên các field khác). Tham số tên `to` vì
+    /// component chung tk.kanban gửi cột đích dưới tên đó; menu trên dòng lưới đi lối
+    /// <see cref="OnPostSetStatusAsync"/> riêng.</summary>
+    public async Task<IActionResult> OnPostMoveAsync(Guid id, int to)
     {
+        var status = to;
         if (!Enum.IsDefined(typeof(LeadStatus), status))
         {
             return new JsonResult(Result.Error("Trạng thái không hợp lệ."));
@@ -292,22 +317,38 @@ public class IndexModel : TkListPageModel
             return new JsonResult(Result.Error(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault() ?? "Dữ liệu không hợp lệ."));
         }
 
+        // Ô "Nguồn chi tiết" nhận nguyên đường dẫn chiến dịch rồi tách ra. Để TRỐNG thì truyền null
+        // chứ không phải một bản rỗng: bản rỗng sẽ GHI ĐÈ lên phần nguồn mà form thu lead đã ghi
+        // lúc khách để lại thông tin — mất dấu vết vì một lần sửa tên khách.
+        var nguonChiTiet = string.IsNullOrWhiteSpace(Input.AttributionRaw)
+            ? null
+            : LeadAttribution.TuChuoiTruyVan(Input.AttributionRaw);
+
         if (Id is Guid g && g != Guid.Empty)
         {
-            await _svc.UpdateAsync(g, new UpdateLeadDto(Input.FullName, Input.Phone, Input.Email, Input.Source, Input.Status, Input.AssignedToUserId, Input.BranchId));
+            await _svc.UpdateAsync(g, new UpdateLeadDto(
+                Input.FullName, Input.Phone, Input.Email, Input.Source, Input.Status,
+                Input.AssignedToUserId, Input.BranchId, Input.Note, nguonChiTiet));
         }
         else
         {
-            await _svc.CreateAsync(new CreateLeadDto(Input.FullName, Input.Phone, Input.Email, Input.Source, Input.AssignedToUserId, Input.BranchId));
+            await _svc.CreateAsync(new CreateLeadDto(
+                Input.FullName, Input.Phone, Input.Email, Input.Source,
+                Input.AssignedToUserId, Input.BranchId, Input.Note, nguonChiTiet));
         }
 
         return new JsonResult(Result.Success("Đã lưu khách tiềm năng."));
     }
 
-    public async Task<IActionResult> OnPostConvertAsync(Guid id)
+    public async Task<IActionResult> OnPostConvertAsync(Guid id, Guid? assignedToUserId)
     {
-        await _svc.ConvertAsync(id);
-        TempData["ok"] = "Đã chuyển lead thành khách hàng.";
+        var ketQua = await _svc.ConvertAsync(id, assignedToUserId);
+
+        // Nói rõ khi NỐI vào khách sẵn có thay vì tạo mới: người bấm nút đang đinh ninh vừa tạo ra
+        // một hồ sơ khách hàng, im lặng thì họ đi tìm một bản ghi không tồn tại.
+        TempData["ok"] = ketQua.DaGanVaoKhachSanCo
+            ? "Số điện thoại đã có hồ sơ khách hàng — đã nối vào hồ sơ đó, không tạo bản sao."
+            : "Đã chuyển thành khách hàng.";
         return RedirectToPage();
     }
 

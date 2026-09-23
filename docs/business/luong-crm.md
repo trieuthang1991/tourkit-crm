@@ -15,14 +15,14 @@ flowchart LR
   CH -- Chốt đơn --> DH[Đơn hàng]
   KH --> LH[Lịch hẹn]
   KH --> FB[Feedback]
-  CD[Chia số Sale] -. "CHƯA CÓ đường ghi" .-> KTN
-  WEB((Website)) -. "CHƯA CÓ cổng" .-> KTN
+  CD[Chia số Sale<br/>mã CD-2026-007] -- "gắn + chia số" --> KTN
+  WEB((Form thu lead)) -- "API có xác thực" --> KTN
 ```
 
-**1. Không có cổng website nào tự tạo dữ liệu.** Toàn bộ `AllowAnonymous` trong mã chỉ nằm ở khu
-đăng nhập, trang chủ, `/Ping` và đăng ký tài khoản. Khách để lại thông tin trên website **chưa có
-đường vào hệ thống** — phải có người nhập tay. Ô "Yêu cầu đến từ website" trên form Cơ hội chỉ là
-một **checkbox nhân viên tự tick**, tức một lời khai, không phải dấu vết hệ thống ghi lại.
+**1. Website vào được, nhưng qua API có xác thực — chưa có cổng công khai.** Không `AllowAnonymous`
+nào tạo lead. Form thu lead phải gọi `POST /api/v1/leads` (cần JWT + quyền `lead.create`), gửi kèm
+`campaignCode` để được gắn chiến dịch và chia số tự động. Ô "Yêu cầu đến từ website" trên form Cơ
+hội vẫn chỉ là một **checkbox nhân viên tự tick** — một lời khai, không phải dấu vết hệ thống ghi.
 
 **2. Khách tiềm năng KHÔNG chuyển thành Cơ hội.** `SalesOpportunity` không có trường nào trỏ về
 `Lead`, và `ILeadService` chỉ có `ConvertAsync` ra `Customer`. Đây là **hai phễu song song**, chỉ
@@ -41,22 +41,57 @@ có số khách và giá thì không tính được giá trị phễu.
 độ chăm sóc và tỷ lệ chốt.
 
 **Sinh ra từ đâu**
-- Form thêm trên trang — `LeadCampaignService.CreateAsync` (chỉ nhận Tên + Ghi chú, `Status` ép 0)
+- Form trên trang — `LeadCampaignService.CreateAsync`: nhận Tên, Ghi chú, **chế độ chia số** và
+  **nhóm sale**; mã `CD-YYYY-NNN` do hệ thống sinh, `Status` ép 0. Sửa được qua `UpdateAsync`.
 - API — `LeadCampaignsController.Create`
 - Dữ liệu mẫu — `DemoDataSeeder`
 
-**Đi tiếp đâu.** Chiến dịch không sinh bản ghi nào. Nó chỉ **đọc ngược** từ `Lead.CampaignId` để
-tính số liệu.
+**Đi tiếp đâu.** Chiến dịch không sinh bản ghi nào, nhưng nó **quyết định người phụ trách** của
+lead đi vào qua mã của nó. Số liệu trên màn đọc ngược từ `Lead.CampaignId`.
+
+**Cách nó chạy**
+
+Chiến dịch có một **mã nhúng** dạng `CD-2026-007` (tự sinh, duy nhất theo công ty). Người dựng form
+thu lead chép mã đó vào form. Lead gửi về kèm `campaignCode` thì hệ thống tra ra chiến dịch, gắn
+`Lead.CampaignId`, rồi **chia số** cho nhóm nhân viên theo chế độ đã đặt:
+
+| Chế độ | Cách chọn |
+|---|---|
+| Xoay vòng | Lần lượt theo thứ tự nhóm, hết vòng quay lại. Chia đều tuyệt đối |
+| Ngẫu nhiên | Bốc trong nhóm |
+| Không tự chia | Để trống người phụ trách |
+
+```mermaid
+flowchart LR
+  F[Form thu lead<br/>mang mã CD-2026-007] --> A[Tra chiến dịch theo mã]
+  A --> B{Chế độ chia?}
+  B -- Xoay vòng --> C[Người thứ n trong nhóm]
+  B -- Ngẫu nhiên --> D[Bốc trong nhóm]
+  B -- Không tự chia --> E[Để trống]
+  C --> L[Lead có người phụ trách]
+  D --> L
+  E --> L
+```
 
 **Chỗ hay gây khó hiểu**
 
-- **Trên dữ liệu thật, mọi chiến dịch sẽ hiện Tổng lead = 0.** Đây là điều quan trọng nhất của
-  trang này: **không có đường nào trong ứng dụng gán `Lead.CampaignId`**. DTO tạo/sửa khách tiềm
-  năng không có trường đó, form cũng không có ô chọn chiến dịch. Chỉ `DemoDataSeeder` gán khi gieo
-  dữ liệu mẫu. Nghĩa là tính năng "chia số" hiện **chưa nối được với khách tiềm năng**.
+- **Mã nhúng là thứ đi ra ngoài, không phải khoá.** Form thu lead gửi `campaignCode`, không gửi
+  GUID — chép một GUID là cầm chắc sai một ký tự mà không ai phát hiện, lead vẫn vào nhưng rơi vào
+  hư không. **Mã không sửa được sau khi tạo**: nó đã nằm trong form đang chạy.
 
-- **Cột "Người tạo" luôn rỗng với chiến dịch tạo qua giao diện** — `CreateAsync` chỉ gán
-  Tên/Ghi chú/Trạng thái, không gán `CreatedByUserId`.
+- **Không có ô chọn chiến dịch trên form CRM, và đó là cố ý.** Chiến dịch do người dựng form gán
+  sẵn cho cả đợt, không phải thứ nhân viên bán hàng ngồi chọn cho từng số. Một ô phải điền tay cho
+  mỗi bản ghi là một ô mãi mãi rỗng.
+
+- **Con đếm vòng chia đếm ở CSDL mỗi lần, KHÔNG cache.** Cache dù vài giây thì mọi lead trong
+  khoảng đó đọc cùng một con đếm nên cùng về một người — vòng chia đứng im mà nhìn bên ngoài vẫn
+  tưởng đang xoay. Phần *cấu hình* chiến dịch thì có cache (60 giây, xoá ngay khi sửa).
+
+- **Mã sai không chặn lead.** Lead vẫn được tạo, chỉ là không gắn chiến dịch — ném lỗi ở đây nghĩa
+  là form thu lead trả lỗi cho khách vì một cái mã gõ nhầm trong nội bộ.
+
+- **Cột "Người tạo" luôn rỗng với chiến dịch tạo qua giao diện** — `CreateAsync` không gán
+  `CreatedByUserId`. *CHƯA SỬA.*
 
 - `Status` là số thô, chỉ 0 (đang chạy) và 1 (hoàn thành), không phải enum.
 
@@ -73,8 +108,10 @@ tính số liệu.
 **Sinh ra từ đâu**
 - Form trên trang — `LeadService.CreateAsync`
 - API — `LeadsController.Create` (quyền `lead.create`)
+- **Form thu lead** — `POST /api/v1/leads` kèm `campaignCode`: tự gắn chiến dịch và tự chia người
+  phụ trách. Đây là đường mà website đi vào.
 - Dữ liệu mẫu — `DemoDataSeeder`, `PerfDataSeeder`
-- *CHƯA CÓ* cổng website, *CHƯA CÓ* nhập từ tệp.
+- *CHƯA CÓ* nhập từ tệp.
 
 **Đi tiếp đâu**
 - Chuyển thành khách hàng — `LeadService.ConvertAsync`: tạo `Customer`, đặt trạng thái `Won`, ghi
@@ -96,15 +133,23 @@ tính số liệu.
   tạo khách hàng nào. Cột "Đã chuyển KH" đọc `ConvertedCustomerId`, và hai thẻ số ở đầu trang đếm
   hai thứ khác nhau.
 
-- **Khách sinh ra từ chuyển đổi bị thiếu dữ liệu định danh.** `ConvertAsync` ghi **thẳng vào kho**
-  chứ không đi qua `CustomerService.CreateAsync`. Ba thứ nằm trong `CustomerService` vì vậy **không
-  chạy**: sinh mã `KH_xxxxx`, dựng `SearchName` (bỏ dấu) và `PhoneNormalized`, và **chặn trùng số
-  điện thoại**. Hệ quả dây chuyền:
-  - Khách đó **không tìm ra** bằng ô tìm không dấu hay tìm theo số ở màn Khách hàng.
-  - Khách đó **không bao giờ lọt vào** màn Rà khách trùng, vì màn đó nhóm theo `PhoneNormalized`.
+- **Chuyển đổi đi QUA `CustomerService`** nên khách sinh ra có đủ mã `KH_`, `SearchName` (tìm không
+  dấu) và `PhoneNormalized` — tìm ra được, và lọt vào màn Rà khách trùng như mọi khách khác.
+  Số điện thoại đã có chủ thì **NỐI vào hồ sơ sẵn có**, không tạo bản sao, và màn hình nói rõ điều
+  đó. *(Bản trước ghi thẳng vào kho nên thiếu cả ba thứ trên — đã sửa.)*
 
-- **`Source` là chuỗi tự do, không phải khoá.** Ô NHẬP chỉ cho chọn từ danh mục; ô LỌC gộp danh mục
-  với giá trị thật đang có trong dữ liệu — cố ý, để dữ liệu cũ gõ tay không biến mất khỏi bộ lọc.
+- **Người phụ trách đi theo sang khách hàng.** Hộp xác nhận lúc chuyển đổi có ô chọn, mặc định là
+  người đang giữ lead — bàn giao phải do người bấm nút quyết định, không xảy ra âm thầm.
+
+- **Nguồn có HAI TẦNG, đừng lẫn.** `Source` là giá trị CHUẨN lấy từ danh mục /nguon-khach — đó là
+  chiều để gộp báo cáo, nên hữu hạn và không cho gõ tự do (gõ tay thì "Facebook", "facebook", "FB"
+  thành ba nguồn và báo cáo vỡ theo). Còn `AttributionJson` giữ phần CHI TIẾT tuỳ ý: `utm_source`,
+  `utm_medium`, `utm_campaign`, trang đích, referrer, cộng mọi tham số lạ trong `khac`. Dán nguyên
+  đường dẫn chiến dịch vào ô "Nguồn chi tiết" là hệ thống tự tách. Thêm một chiều mới chỉ là thêm
+  một khoá, không phải migration.
+
+- **`Note` giữ nhu cầu khách tự nêu.** Đây là trường quyết định tư vấn đúng hay sai, và là thứ phần
+  chấm điểm AI đọc đầu tiên. Lúc chuyển đổi nó đi theo sang "nhu cầu ban đầu" của khách hàng.
 
 - **Handler ghi không kiểm quyền.** Trang chỉ gác `lead.view`; Lưu / Chuyển đổi / Xoá / Đổi trạng
   thái đều **không** kiểm thêm, trong khi API có tách `lead.create`, `lead.update`, `lead.delete`,
@@ -269,9 +314,8 @@ từng khách. *CHƯA CÓ* thao tác merge.
   hoá, và nhóm theo email; hai kết quả nối lại. Cặp trùng cả số lẫn email sẽ xuất hiện ở **cả hai**
   nhóm.
 
-- **Khách chuyển từ khách tiềm năng KHÔNG BAO GIỜ lọt vào đây**, dù trùng số thật — vì nhóm theo
-  `PhoneNormalized`, mà đường chuyển đổi không ghi cột đó. Đây là hệ quả trực tiếp của lỗ ở
-  `ConvertAsync`; chữa gốc ở đó thì trang này mới đúng.
+- *(Trước đây khách chuyển từ lead không bao giờ lọt vào đây vì đường chuyển đổi không ghi
+  `PhoneNormalized`. Đã chữa ở gốc — xem mục Khách tiềm năng.)*
 
 - Nhóm theo số điện thoại về lý thuyết chỉ còn dữ liệu có từ trước khi luật chặn trùng được đưa
   xuống tầng dịch vụ. Nhóm theo **email thì không có luật chặn nào**, nên vẫn sinh mới bình thường.

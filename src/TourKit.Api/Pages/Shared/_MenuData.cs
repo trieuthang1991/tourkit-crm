@@ -28,8 +28,12 @@ public static class MenuData
         }),
         new("g-crm", "CRM", "ti ti-users", Children: new List<MenuNode>
         {
-            new("crm-share", "Chia số Sale", To: "/chia-so-sale", Perm: "lead.view"),
+            // Khách tiềm năng đứng TRƯỚC Chia số Sale, khác thứ tự hệ cũ — có chủ ý.
+            // Chia số Sale là màn CẤU HÌNH: tạo chiến dịch, lấy mã nhúng vào form thu lead, đặt nhóm
+            // sale nhận số. Việc đó làm mỗi đợt một lần. Còn danh sách khách tiềm năng thì mở hằng
+            // ngày. Để cái mỗi quý dùng một lần đứng trên cái dùng mỗi ngày là đặt sai trọng số.
             new("crm-lead", "Khách tiềm năng", To: "/khach-tiem-nang", Perm: "lead.view"),
+            new("crm-share", "Chia số Sale", To: "/chia-so-sale", Perm: "lead.view"),
             // Cơ hội bán hàng dùng quyền RIÊNG (opportunity.*): khác nghiệp vụ với khách tiềm năng
             // nên thường cũng khác người được xem — cơ hội có tiền, khách tiềm năng thì chưa.
             new("crm-opp", "Cơ hội bán hàng", To: "/co-hoi", Perm: "opportunity.view"),

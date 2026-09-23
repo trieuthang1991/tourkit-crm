@@ -199,12 +199,14 @@
             '<li class="text-muted small">Đang tải...</li>' +
           '</ul>' +
           '<div class="text-muted small mt-2 d-none" data-role="more"></div>' +
+          '<div class="mt-3 d-none" data-role="goc"></div>' +
         '</div>' +
       '</div>';
 
     var list = root.querySelector('[data-role="list"]');
     var count = root.querySelector('[data-role="count"]');
     var more = root.querySelector('[data-role="more"]');
+    var gocEl = root.querySelector('[data-role="goc"]');
     var form = root.querySelector('.tk-cmt-form');
     var input = form.querySelector('textarea');
     var picker = mentionPicker(input, root.querySelector('[data-role="at"]'), entity);
@@ -219,6 +221,37 @@
       var hidden = data.total - data.items.length;
       more.classList.toggle('d-none', hidden <= 0);
       more.textContent = hidden > 0 ? 'Còn ' + hidden + ' trao đổi cũ hơn không hiển thị.' : '';
+
+      veGoc(data.goc);
+    }
+
+    /**
+     * Trao đổi của bản ghi TIỀN THÂN (khách hàng ← khách tiềm năng).
+     *
+     * Hiện RIÊNG bên dưới và CHỈ ĐỂ ĐỌC, không trộn vào luồng trên: ô Gửi ghi sang bản ghi đang mở,
+     * nên trộn vào là mời người dùng trả lời tiếp một cuộc trao đổi mà câu trả lời sẽ rơi sang chỗ
+     * khác. Bỏ luôn nút xoá — xoá trao đổi của hồ sơ gốc từ màn này thì không ai ngờ tới.
+     */
+    function veGoc(goc) {
+      if (!goc || !goc.items || !goc.items.length) {
+        gocEl.classList.add('d-none');
+        gocEl.innerHTML = '';
+        return;
+      }
+
+      var chiDoc = goc.items.map(function (it) {
+        var b = {}; for (var k in it) { if (Object.prototype.hasOwnProperty.call(it, k)) { b[k] = it[k]; } }
+        b.canDelete = false;
+        return row(b);
+      }).join('');
+
+      gocEl.classList.remove('d-none');
+      gocEl.innerHTML =
+        '<div class="small text-muted mb-2 pt-3 border-top">' +
+          '<i class="ti ti-corner-down-right me-1"></i>Trao đổi từ ' + tk.escape(goc.label) +
+          ' · <a href="' + tk.escape(goc.url) + '">mở hồ sơ gốc</a>' +
+        '</div>' +
+        '<ul class="tk-cmt-list list-unstyled mb-0">' + chiDoc + '</ul>';
     }
 
     function load() {

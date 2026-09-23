@@ -85,6 +85,41 @@
             "Guide": "Điểm CAO khi không thấy rủi ro. Trừ điểm khi có công nợ quá hạn, phàn nàn chưa xử lý, hoặc dấu hiệu khách không hài lòng trong trao đổi."
           }
         ]
+      },
+      "SalesOpportunity": {
+        "//": "Khác bộ Lead ở chỗ cơ hội ĐÃ lượng hoá thành tiền và có tiến độ phễu đo được, nên trọng số dồn vào tiến độ và giá trị chứ không vào chất lượng liên hệ.",
+        "Criteria": [
+          {
+            "Key": "tien_do",
+            "Label": "Tiến độ chốt",
+            "Weight": 25,
+            "Guide": "Đã chọn mẫu tour, đã gắn ngày khởi hành cụ thể, đã xác nhận hay chưa. Chốt được cả ba thì điểm rất cao; còn ở giai đoạn đầu phễu và chưa chọn được gì thì thấp. Giai đoạn Huỷ thì gần 0."
+          },
+          {
+            "Key": "gia_tri",
+            "Label": "Giá trị cơ hội",
+            "Weight": 20,
+            "Guide": "Giá trị ước tính và số khách. Đoàn đông hoặc giá trị lớn thì điểm cao; giá trị bằng 0 hoặc chưa nhập thì điểm thấp vì chưa lượng hoá được."
+          },
+          {
+            "Key": "nhu_cau",
+            "Label": "Độ rõ của nhu cầu",
+            "Weight": 20,
+            "Guide": "Nhu cầu khách nêu có đủ điểm đến, thời gian, cơ cấu khách không. Tiêu đề chung chung và phần nhu cầu để trống thì điểm thấp."
+          },
+          {
+            "Key": "tuong_tac",
+            "Label": "Mức độ tương tác",
+            "Weight": 25,
+            "Guide": "Khách có phản hồi không, trao đổi gần đây hay đã lâu không có gì mới. Không có dòng trao đổi nào thì điểm rất thấp — cơ hội có tiền mà không ai chạm tới là cơ hội đang nguội đi."
+          },
+          {
+            "Key": "khong_vuong_mac",
+            "Label": "Không có trở ngại",
+            "Weight": 10,
+            "Guide": "Điểm CAO khi không thấy trở ngại. Trừ điểm khi trao đổi cho thấy khách chê giá, đã chọn bên khác, hoãn vô thời hạn, hoặc cơ hội đã có lý do huỷ."
+          }
+        ]
       }
     }
   }

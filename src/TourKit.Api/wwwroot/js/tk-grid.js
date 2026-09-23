@@ -562,15 +562,28 @@
       });
     }).observe(document.body, { childList: true, subtree: true });
 
-    // Submenu Tabulator mặc định mở bằng CLICK. Cho mở bằng HOVER (đúng thói quen menu desktop):
-    // rê vào mục có submenu mà CHƯA mở (chỉ đang có 1 menu) thì tự bấm để bung sang phải. Guard >1
-    // để không click lặp gây đóng khi submenu đã mở hoặc khi con trỏ đang ở trong submenu.
-    document.addEventListener('mouseover', function (e) {
+    // Submenu "Chuyển trạng thái" mở bằng CLICK.
+    //
+    // Trước đây có một đoạn ép mở bằng HOVER cho giống menu desktop. Bỏ đi: rê chuột ngang qua lưới
+    // là submenu bung ra giữa chừng, che mất dòng bên dưới đúng lúc người dùng đang đọc, và đổi
+    // trạng thái là thao tác GHI dữ liệu — nó phải do một cú bấm có chủ ý mở ra, không phải do con
+    // trỏ vô tình lướt qua.
+    //
+    // Tabulator chỉ biết MỞ: bấm lại vào mục đang mở thì nó dựng lại submenu y nguyên, nhìn như
+    // không có gì xảy ra. Bổ sung nhánh ĐÓNG cho thành bật/tắt — bấm ra bấm vào là cách người ta
+    // thoát khỏi một menu lỡ mở, không có nó thì phải bấm ra chỗ trống mới đóng được.
+    // Nghe ở pha CAPTURE để chặn trước handler của Tabulator.
+    document.addEventListener('click', function (e) {
       var item = e.target.closest && e.target.closest('.tabulator-menu-item-submenu');
       if (!item) { return; }
-      if (document.querySelectorAll('.tabulator-menu').length > 1) { return; }
-      item.click();
-    });
+
+      var menus = document.querySelectorAll('.tabulator-menu');
+      if (menus.length <= 1) { return; }          // chưa mở → để Tabulator mở như thường
+
+      e.stopPropagation();
+      e.preventDefault();
+      menus[menus.length - 1].remove();           // cái sau cùng chính là submenu đang mở
+    }, true);
   }
 
   function placeMenu(m) {

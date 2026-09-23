@@ -31,7 +31,7 @@
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
   <div>
     <div class="text-muted mb-1" style="font-size:.78rem">CRM <span class="mx-1">/</span> <span class="text-body">Cơ hội bán hàng</span></div>
-    <h4 class="mb-0">Cơ hội bán hàng</h4>
+    <h4 class="mb-0">Cơ hội bán hàng<partial name="_FlowHelp" model="@("opportunity")" /></h4>
   </div>
   <div class="d-flex gap-2">
     <div class="btn-group" role="group">
@@ -124,11 +124,14 @@
 
 @* Offcanvas CRUD. 680px là mức RỘNG NHẤT trong dải chung của app (520–680) — đủ cho lưới 3 cột
    số lượng/đơn giá mà không lạc lõng giữa các màn khác. *@
-<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:680px;max-width:100%">
+<div class="offcanvas offcanvas-end tk-oc-wide" tabindex="-1" id="oc">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">cơ hội</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
   <div class="offcanvas-body tk-oc">
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
-      <div class="tk-oc-fields">
+      @* Hai cột: TRÁI nhập liệu + trao đổi · PHẢI trợ lý AI. Dưới lg tự xếp dọc — xem
+         .tk-oc-split trong tourkit.css. *@
+      <div class="tk-oc-split">
+      <div class="tk-oc-col">
         <input type="hidden" name="Id" />
 
         <div class="row">
@@ -255,6 +258,12 @@
            có hẳn module BookingTicketComment, nhưng ở đây ActivityLog + EntityComment đã trả lời
            chung một câu hỏi cho mọi bản ghi: "đã xảy ra chuyện gì" và "vì sao". *@
         <div id="opp-comments" class="tk-oc-comments d-none" data-comments data-entity="SalesOpportunity"></div>
+      </div>
+      @* Cột phải: CHỈ trợ lý AI — thứ để đọc, không phải chỗ điền. Hồ sơ gửi model dựng ở
+         AiRecordSheet (nhánh "SalesOpportunity"). *@
+      <aside class="tk-oc-col tk-oc-aside">
+        <div id="opp-review" class="tk-oc-comments d-none" data-ai-review data-entity="SalesOpportunity"></div>
+      </aside>
       </div>
 
       <div class="tk-oc-actions">
@@ -447,16 +456,22 @@
         open: function (row) {
           ocForm.open(row);
           var box = document.getElementById('opp-comments');
+          var review = document.getElementById('opp-review');
           var id = row && row.id;
           box.classList.toggle('d-none', !id);
+          review.classList.toggle('d-none', !id);
           if (id) {
             box.dataset.entityId = id;
             tk.comments.mount(box);
+            review.dataset.entityId = id;
+            if (window.tkAiReview) { window.tkAiReview.init(); }
           } else {
             // Xoá hẳn id cũ, đừng chỉ ẩn: để sót thì lần mở sau (hoặc vòng quét lúc tải trang) sẽ
             // hiện trao đổi của cơ hội TRƯỚC ĐÓ trên form đang tạo mới.
             delete box.dataset.entityId;
             box.innerHTML = '';
+            delete review.dataset.entityId;
+            review.innerHTML = '';
           }
         }
       };

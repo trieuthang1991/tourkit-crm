@@ -127,6 +127,57 @@
   };
 
   /**
+   * Hỏi xác nhận KÈM ô chọn người phụ trách.
+   *
+   * Dùng ở những chỗ một bản ghi sinh ra bản ghi khác (khách tiềm năng → khách hàng, cơ hội → đơn
+   * hàng). Người phụ trách phải ĐI THEO, nhưng không nên tự động âm thầm: người bấm nút mới biết
+   * lần này có bàn giao cho ai khác không.
+   *
+   * Nên mặc định chọn sẵn người đang phụ trách bản ghi nguồn — đa số lần là giữ nguyên, và một hộp
+   * thoại bắt chọn lại từ đầu mỗi lần thì người ta sẽ bấm bừa cho xong.
+   *
+   * opts: { title, text, confirm, nguoi: [{id,name}], macDinh }
+   * Trả về { ok, nguoiId } — nguoiId rỗng nghĩa là cố ý không gán ai.
+   */
+  tk.confirmNguoiPhuTrach = function (opts) {
+    opts = opts || {};
+    var ds = opts.nguoi || [];
+
+    if (!window.Swal || !ds.length) {
+      // Không có SweetAlert hoặc không có ai để chọn: lùi về hỏi có/không, giữ nguyên mặc định.
+      var ok = window.confirm(opts.text || 'Tiếp tục?');
+      return Promise.resolve({ ok: ok, nguoiId: opts.macDinh || '' });
+    }
+
+    var chon = ds.map(function (u) {
+      var sel = String(u.id) === String(opts.macDinh || '') ? ' selected' : '';
+      return '<option value="' + tk.escape(u.id) + '"' + sel + '>' + tk.escape(u.name) + '</option>';
+    }).join('');
+
+    return Swal.fire({
+      title: opts.title || 'Xác nhận',
+      icon: 'question',
+      html:
+        (opts.text ? '<div class="mb-3">' + tk.escape(opts.text) + '</div>' : '') +
+        '<label class="form-label d-block text-start">Người phụ trách</label>' +
+        '<select id="tk-nguoi-pt" class="form-select">' +
+          '<option value="">— Không gán ai —</option>' + chon +
+        '</select>',
+      showCancelButton: true,
+      confirmButtonText: opts.confirm || 'Xác nhận',
+      cancelButtonText: 'Huỷ',
+      customClass: { confirmButton: 'btn btn-primary me-2', cancelButton: 'btn btn-label-secondary' },
+      buttonsStyling: false,
+      preConfirm: function () {
+        var el = document.getElementById('tk-nguoi-pt');
+        return el ? el.value : '';
+      }
+    }).then(function (r) {
+      return { ok: !!r.isConfirmed, nguoiId: r.isConfirmed ? (r.value || '') : '' };
+    });
+  };
+
+  /**
    * Hỏi lại trước một thao tác ĐƯỢC PHÉP nhưng có hệ quả người dùng nên biết.
    *
    * Khác confirmDelete: nút chính màu chủ đạo chứ không phải màu đỏ, và chữ mặc định không nói
@@ -822,6 +873,64 @@
     };
   };
 
+  // ---- Nút "?" cạnh tiêu đề: giới thiệu tính năng + đường tới tài liệu luồng nghiệp vụ ----
+  // Dùng POPOVER (không phải tooltip) vì bên trong có nút bấm được.
+  //
+  // Bẫy của popover mở bằng hover: chuột vừa rời icon là nó đóng — tức đóng mất ĐÚNG LÚC người dùng
+  // đang đưa chuột tới cái nút bên trong, và cái nút đó thành ra không bao giờ bấm được. Nên phải
+  // hoãn lúc đóng, rồi huỷ hẹn khi chuột đi vào trong popover.
+  // Trạng thái DÙNG CHUNG cho mọi nút "?": mỗi lúc chỉ một popover mở và một hẹn-đóng duy nhất.
+  var flowMo = null, flowHen = null;
+
+  function flowHuyHen() { if (flowHen) { clearTimeout(flowHen); flowHen = null; } }
+
+  function flowDongSau() {
+    flowHuyHen();
+    flowHen = setTimeout(function () {
+      if (flowMo) { flowMo.hide(); flowMo = null; }
+    }, 250);
+  }
+
+  tk.flowHelp = function (root) {
+    var nodes = (root || document).querySelectorAll('[data-tk-flow]');
+    if (!nodes.length || !window.bootstrap) { return; }
+
+    // Bắt sự kiện bằng UỶ QUYỀN trên document, không gắn vào khung popover sau khi nó hiện.
+    // Gắn sau khi hiện thì phải đợi sự kiện `shown` (chạy xong hiệu ứng mờ) — trong khoảng đó chuột
+    // đã kịp rời icon và hẹn-đóng chạy, popover biến mất ngay trước ngón tay người dùng.
+    if (!tk.flowHelp.daGan) {
+      tk.flowHelp.daGan = true;
+      document.addEventListener('mouseover', function (e) {
+        if (e.target && e.target.closest && e.target.closest('.popover.tk-flow-pop')) { flowHuyHen(); }
+      });
+      document.addEventListener('mouseout', function (e) {
+        if (e.target && e.target.closest && e.target.closest('.popover.tk-flow-pop')) { flowDongSau(); }
+      });
+    }
+
+    nodes.forEach(function (el) {
+      if (el.__tkFlow) { return; }
+      el.__tkFlow = true;
+
+      var pop = new bootstrap.Popover(el, {
+        html: true, container: 'body', placement: 'bottom',
+        trigger: 'manual', customClass: 'tk-flow-pop'
+      });
+
+      function mo() {
+        flowHuyHen();
+        if (flowMo && flowMo !== pop) { flowMo.hide(); }
+        flowMo = pop;
+        pop.show();
+      }
+
+      el.addEventListener('mouseenter', mo);
+      el.addEventListener('focus', mo);
+      el.addEventListener('mouseleave', flowDongSau);
+      el.addEventListener('blur', flowDongSau);
+    });
+  };
+
   // ---- Ô soạn thảo có ĐỊNH DẠNG cho trường lưu HTML ----
   // Dùng Quill — bộ soạn thảo ĐÃ đóng gói sẵn trong theme (vendor/libs/quill). Dự án KHÔNG có
   // TinyMCE; thêm nó là thêm một thư viện ngoài nữa cho cùng một việc.
@@ -918,6 +1027,12 @@
     // âm thầm XOÁ MẤT giá trị cũ — không báo lỗi, không ai biết. Giữ lại bằng một option tạm.
     function keepLegacyOption(el, v) {
       if (!el || el.tagName !== 'SELECT' || v == null || v === '') { return; }
+
+      // Ô NHIỀU LỰA CHỌN nhận vào một mảng. Không chặn ở đây thì String(mảng) ra "a,b" rồi thêm một
+      // mục rác "a,b (ngoài danh mục)" vào danh sách — và nó sẽ được chọn sẵn, tức lưu xuống một
+      // giá trị không có thật. Mảng thì từng phần tử vốn đã nằm trong danh mục rồi.
+      if (Array.isArray(v) || el.multiple) { return; }
+
       var val = String(v);
       for (var i = 0; i < el.options.length; i++) { if (el.options[i].value === val) { return; } }
       el.add(new Option(val + ' (ngoài danh mục)', val), el.options[1] || null);
@@ -1183,5 +1298,5 @@
 
   // Gộp date-range TỰ ĐỘNG trên mọi trang. Đăng ký ở đây (tk.js nạp trước) nên callback này chạy
   // TRƯỚC $(function) của từng trang → vô hiệu ô gốc xong mới tới lúc trang flatpickr('.tk-datef').
-  $(function () { tk.dateRanges(); tk.filterBar(); tk.bell(); setTimeout(tk.marketCascade, 0); });
+  $(function () { tk.dateRanges(); tk.filterBar(); tk.bell(); tk.flowHelp(); setTimeout(tk.marketCascade, 0); });
 })();

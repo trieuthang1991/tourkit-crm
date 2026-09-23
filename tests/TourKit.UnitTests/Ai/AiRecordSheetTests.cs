@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+using TourKit.Application.Sales.Dtos;
 using TourKit.Api.Ai;
 using TourKit.Application.Collaboration;
 using TourKit.Application.Crm.Dtos;
@@ -15,9 +17,22 @@ public class AiRecordSheetTests
 {
     private static readonly Guid Id = Guid.NewGuid();
 
+    /// <summary>
+    /// Dựng bộ dựng hồ sơ với các bản giả.
+    ///
+    /// <c>HttpContextAccessor</c> để rỗng là CÓ CHỦ Ý: không có người dùng thì coi như không có
+    /// quyền xem hồ sơ khách, nên phần nhận định đã lưu của khách không lọt vào hồ sơ cơ hội. Test
+    /// nào cần nhánh có quyền thì tự dựng context kèm claim.
+    /// </summary>
     private static AiRecordSheet Sheet(
-        LeadDto? lead = null, CustomerDto? customer = null, EntityCommentDto[]? comments = null) =>
-        new(new FakeLeadService(lead), new FakeCustomerService(customer), new FakeCommentService(comments ?? []));
+        LeadDto? lead = null, CustomerDto? customer = null, EntityCommentDto[]? comments = null,
+        SalesOpportunityDto? opportunity = null, OpportunityStageDto[]? stages = null) =>
+        new(new FakeLeadService(lead),
+            new FakeCustomerService(customer),
+            new FakeOpportunityService(opportunity, stages ?? []),
+            new FakeCommentService(comments ?? []),
+            new FakeInsightStore(),
+            new HttpContextAccessor());
 
     private static LeadDto Lead() =>
         new(Id, "Trần Văn A", "0900000001", null, "Facebook", LeadStatus.Contacted, null, null);
@@ -44,7 +59,10 @@ public class AiRecordSheetTests
         Assert.NotNull(text);
         Assert.Contains("Trần Văn A", text, StringComparison.Ordinal);
         Assert.Contains("Facebook", text, StringComparison.Ordinal);
-        Assert.Contains("Contacted", text, StringComparison.Ordinal);
+        // Nhãn tiếng Việt, KHÔNG phải tên enum: hồ sơ gửi AI dùng chung bộ nhãn với giao diện để
+        // model không nhả lại "Lost"/"Won" ra trước mặt người dùng (xem LeadStatusText).
+        Assert.Contains("Đã liên hệ", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Contacted", text, StringComparison.Ordinal);
         Assert.Contains("Có số điện thoại: có", text, StringComparison.Ordinal);
         Assert.Contains("Có email: không", text, StringComparison.Ordinal);
     }
@@ -138,7 +156,10 @@ public class AiRecordSheetTests
     public async Task Xin_dung_so_dong_trao_doi_toi_da()
     {
         var comments = new FakeCommentService([]);
-        var sheet = new AiRecordSheet(new FakeLeadService(Lead()), new FakeCustomerService(null), comments);
+        var sheet = new AiRecordSheet(
+            new FakeLeadService(Lead()), new FakeCustomerService(null),
+            new FakeOpportunityService(null), comments,
+            new FakeInsightStore(), new HttpContextAccessor());
 
         await sheet.BuildAsync("Lead", Id.ToString());
 

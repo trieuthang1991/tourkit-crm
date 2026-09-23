@@ -1,0 +1,49 @@
+@using TourKit.Api.Pages.Shared
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Cfg
+@model string
+
+@*
+    Nút "?" cạnh tiêu đề trang: rê chuột ra giới thiệu tính năng, kèm nút mở tài liệu luồng nghiệp vụ.
+
+    Gọi một dòng:  <partial name="_FlowHelp" model="lead" />
+
+    Dùng POPOVER chứ không phải tooltip — tooltip của Bootstrap không chứa được phần tử bấm được,
+    mà yêu cầu ở đây là trong đó phải có đường đi tới tài liệu.
+
+    Đường dẫn ghép từ cấu hình (FlowDocs:BaseUrl + Branch), KHÔNG ghi cứng nhánh trong mã: hôm nay
+    là nhánh dev, mai gộp main thì đổi một chỗ chứ không đi sửa 14 trang.
+*@
+
+@{
+    var doc = FlowDocs.Find(Model);
+}
+
+@if (doc is not null)
+{
+    var baseUrl = (Cfg["FlowDocs:BaseUrl"] ?? string.Empty).TrimEnd('/');
+    var branch = Cfg["FlowDocs:Branch"];
+
+    // Thiếu cấu hình thì vẫn hiện phần giới thiệu, chỉ bỏ nút đi — thà không có nút còn hơn dựng
+    // một đường dẫn gãy rồi để người dùng bấm vào và rơi ra trang 404.
+    var url = string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(branch)
+        ? null
+        : $"{baseUrl}/blob/{branch}/docs/business/{doc.Doc}.md#{doc.Anchor}";
+
+    var body = System.Net.WebUtility.HtmlEncode(doc.Summary);
+    if (url is not null)
+    {
+        // Thẻ <a> mang class nút: đi lọt bộ lọc HTML mặc định của Bootstrap. KHÔNG tắt sanitize —
+        // tắt là mở một lỗ XSS cho thứ chẳng cần đến nó.
+        body += "<div class='mt-2'><a class='btn btn-sm btn-primary' target='_blank' rel='noopener' href='"
+              + System.Net.WebUtility.HtmlEncode(url)
+              + "'>Xem chi tiết luồng nghiệp vụ</a></div>";
+    }
+
+    <button type="button" class="tk-flow-help" data-tk-flow
+            aria-label="Giới thiệu tính năng @doc.Title"
+            data-bs-title="@doc.Title"
+            data-bs-content="@body">
+        <i class="ti ti-help-circle"></i>
+    </button>
+}

@@ -298,6 +298,24 @@
 
   var NHAN = { Review: 'Đã chấm', Summary: 'Đã tóm tắt', Draft: 'Đã soạn tin' };
 
+  /**
+   * Đọc một tiêu chí bất kể hoa/thường.
+   *
+   * Bản lưu TRƯỚC bản vá được ghi bằng JsonSerializer không kèm options nên ra PascalCase
+   * (`Label`/`Weight`/`Score`/`Note`), trong khi chỗ đọc dùng camelCase → mọi bản chấm cũ hiện
+   * nhãn trống và điểm 0. Máy chủ đã ghi đúng từ nay, nhưng những dòng ĐÃ nằm trong DB thì không
+   * tự sửa được, nên chỗ đọc phải nhận cả hai kiểu.
+   */
+  function tieuChi(c) {
+    if (!c) { return {}; }
+    return {
+      label:  c.label  != null ? c.label  : c.Label,
+      weight: c.weight != null ? c.weight : c.Weight,
+      score:  c.score  != null ? c.score  : c.Score,
+      note:   c.note   != null ? c.note   : c.Note
+    };
+  }
+
   /** Dựng lại kết quả đã lưu (không gọi model). */
   function renderSaved(out, item) {
     var meta = metaLine(item, NHAN[item.kind] || 'Đã chạy');
@@ -305,7 +323,7 @@
       var d = { score: item.score, band: item.band, summary: item.summary, criteria: [], risks: [], nextActions: [] };
       try {
         var ct = JSON.parse(item.detailJson || '{}');
-        d.criteria = ct.criteria || [];
+        d.criteria = (ct.criteria || []).map(tieuChi);
         d.risks = ct.risks || [];
         d.nextActions = ct.nextActions || [];
       } catch (e) { /* lịch sử cũ có thể thiếu chi tiết — vẫn hiện được điểm và nhận định */ }
@@ -323,60 +341,151 @@
     // Ba việc AI làm được trên một bản ghi, gộp vào MỘT thẻ. Rải ba nút ở ba chỗ trên màn hình thì
     // người dùng phải nhớ cái nào ở đâu; gộp lại thì chỉ cần nhớ "chỗ này là AI".
     var actions = [
-      { key: 'Review',  label: 'Chấm điểm',   icon: 'ti-target',  wait: 'AI đang đọc hồ sơ và luồng trao đổi, thường mất khoảng 20 giây…' },
-      { key: 'Summary', label: 'Tóm tắt',     icon: 'ti-list',    wait: 'AI đang đọc diễn biến…' },
-      { key: 'Draft',   label: 'Soạn tin',    icon: 'ti-message', wait: 'AI đang soạn tin nhắn…' }
+      { key: 'Review',  label: 'Chấm điểm', lai: 'Chấm lại',     icon: 'ti-target',  wait: 'AI đang đọc hồ sơ và luồng trao đổi, thường mất khoảng 20 giây…', moi: 'Chưa chấm điểm lần nào. AI sẽ đọc hồ sơ và luồng trao đổi rồi cho điểm ưu tiên kèm lý do.' },
+      { key: 'Summary', label: 'Tóm tắt',   lai: 'Tóm tắt lại',  icon: 'ti-list',    wait: 'AI đang đọc diễn biến…', moi: 'Chưa có bản tóm tắt nào. AI sẽ rút gọn diễn biến của bản ghi này.' },
+      { key: 'Draft',   label: 'Soạn tin',  lai: 'Soạn lại',     icon: 'ti-message', wait: 'AI đang soạn tin nhắn…', moi: 'Chưa soạn tin nào. AI sẽ viết sẵn một tin nhắn gửi khách để bạn sửa lại rồi gửi.' }
     ].filter(function (a) { return available[a.key.toLowerCase()] !== false; });
 
     if (!actions.length) { return; }
 
-    var buttons = actions.map(function (a) {
-      return '<button type="button" class="btn btn-sm btn-label-primary" data-act="' + a.key + '">' +
-             '<i class="ti ' + a.icon + ' me-1"></i>' + esc(a.label) + '</button>';
+    // MỖI loại một tab, mỗi tab giữ kết quả riêng.
+    // Bản trước chỉ có MỘT khung: bấm "Tóm tắt" là ghi đè lên bản chấm điểm đang xem, đồng thời nút
+    // lịch sử lật sang loại vừa chạy — bản chấm điểm không còn đường nào quay lại từ giao diện, muốn
+    // xem phải chấm lại và trả thêm một lượt model. Trong khi handler Latest VỐN đã trả về cả ba
+    // loại, giao diện chỉ lấy cái mới nhất rồi vứt hai cái kia đi.
+    var tabs = actions.map(function (a, i) {
+      return '<li class="nav-item">' +
+             '<button type="button" class="nav-link' + (i ? '' : ' active') + '" data-tab="' + a.key + '">' +
+             '<i class="ti ' + a.icon + ' me-1"></i>' + esc(a.label) + '</button></li>';
     }).join('');
 
     el.innerHTML =
       '<div class="card tk-ai-review-card">' +
         '<div class="card-body">' +
-          '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2">' +
-            '<h6 class="mb-0"><i class="ti ti-sparkles me-2 text-primary"></i>Trợ lý AI</h6>' +
-            '<div class="d-flex gap-2">' + buttons + '</div>' +
-          '</div>' +
-          '<div data-role="out" class="mt-3 text-muted small">' +
-            'AI đọc hồ sơ và luồng trao đổi của bản ghi này. Kết quả được lưu lại để lần sau mở ra còn xem được.' +
-          '</div>' +
+          '<h6 class="mb-3"><i class="ti ti-sparkles me-2 text-primary"></i>Trợ lý AI</h6>' +
+          '<ul class="nav nav-tabs tk-ai-tabs" role="tablist">' + tabs + '</ul>' +
+          '<div data-role="out" class="mt-3"></div>' +
           '<div data-role="history" class="mt-3 d-none"></div>' +
         '</div>' +
       '</div>';
 
     var out = el.querySelector('[data-role="out"]');
     var lichSu = el.querySelector('[data-role="history"]');
-    var loaiDangXem = null;
+    var tabHienTai = actions[0].key;
+    var daLuu = {};        // kết quả ĐÃ LƯU của từng loại (từ handler Latest)
+    var ketQuaMoi = {};    // kết quả vừa chạy trong phiên này, giữ lại khi đổi tab
+    var goc = null;        // kết quả của BẢN GHI TIỀN THÂN (khách hàng ← khách tiềm năng)
 
-    // Hiện ngay kết quả đã lưu gần nhất. Đây là toàn bộ lý do lưu: mở hồ sơ ra là thấy, không phải
-    // bấm lại và trả tiền model thêm một lượt cho một câu trả lời đã có.
+    el.querySelectorAll('[data-tab]').forEach(function (b) {
+      b.addEventListener('click', function () { veTab(b.dataset.tab); });
+    });
+
+    veTab(tabHienTai);
+
+    // Hiện ngay kết quả đã lưu. Đây là toàn bộ lý do lưu: mở hồ sơ ra là thấy, không phải bấm lại
+    // và trả tiền model thêm một lượt cho một câu trả lời đã có.
     fetch(API + '?handler=Latest&entity=' + encodeURIComponent(entity) +
           '&id=' + encodeURIComponent(el.getAttribute('data-entity-id')))
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; })
       .then(function (res) {
-        var items = (res && res.isSuccess && res.data && res.data.items) || [];
-        if (!items.length) { return; }
+        var data = (res && res.isSuccess && res.data) || {};
+        var items = data.items || [];
 
-        // Cái mới nhất trong ba loại — thứ người dùng vừa làm dở lần trước.
+        // Gán TRƯỚC và KHÔNG thoát sớm khi rỗng: bản ghi này có thể chưa chấm lần nào mà bản ghi
+        // tiền thân thì có (khách vừa chuyển từ khách tiềm năng đã được chấm) — thoát sớm là đúng
+        // ca đó mất sạch phần lịch sử cần hiện nhất.
+        goc = data.goc || null;
+        items.forEach(function (it) { daLuu[it.kind] = it; });
+
+        // Mở đúng tab của việc người dùng làm gần nhất — nhưng các tab kia vẫn còn nguyên nội dung.
         items.sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
-        loaiDangXem = items[0].kind;
-        out.classList.remove('text-muted', 'small');
-        renderSaved(out, items[0]);
-        capNhatNutLichSu();
+        var uuTien = items.filter(function (it) {
+          return actions.some(function (a) { return a.key === it.kind; });
+        })[0];
+        veTab(uuTien ? uuTien.kind : tabHienTai);
       });
 
+    /** Vẽ một tab: ưu tiên kết quả vừa chạy, rồi tới bản đã lưu, cuối cùng là lời mời chạy. */
+    function veTab(kind) {
+      tabHienTai = kind;
+      el.querySelectorAll('[data-tab]').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.tab === kind);
+      });
+
+      var a = actions.filter(function (x) { return x.key === kind; })[0];
+      if (!a) { return; }
+
+      var moi = ketQuaMoi[kind];
+      var luu = daLuu[kind];
+
+      if (moi) {
+        if (kind === 'Review') { render(out, moi); }
+        else { renderText(out, moi.text, kind === 'Draft'); }
+      } else if (luu) {
+        renderSaved(out, luu);
+      } else {
+        out.innerHTML = '<div class="text-muted small">' + esc(a.moi) + '</div>';
+      }
+
+      out.insertAdjacentHTML('beforeend',
+        '<div class="mt-3"><button type="button" class="btn btn-sm btn-label-primary" data-act="' + kind + '">' +
+        '<i class="ti ' + a.icon + ' me-1"></i>' + esc(moi || luu ? a.lai : a.label) + '</button></div>');
+      out.querySelector('[data-act]').addEventListener('click', function () { chay(a); });
+
+      // Kết quả của BẢN GHI TIỀN THÂN (khách hàng ← khách tiềm năng). Chuyển đổi sinh bản ghi mới
+      // nên lịch sử ở lại bên gốc; hiện lại ở đây để nó không đứt đúng lúc khách thành khách hàng.
+      // Ghi rõ "từ <gốc>" và kèm đường mở hồ sơ gốc — người đọc phải biết mình đang xem đánh giá
+      // của GIAI ĐOẠN TRƯỚC, không phải đánh giá cho bản ghi đang mở.
+      var itemGoc = goc && (goc.items || []).filter(function (it) { return it.kind === kind; })[0];
+      if (itemGoc) {
+        out.insertAdjacentHTML('beforeend',
+          '<div class="mt-3 pt-3 border-top">' +
+            '<div class="small text-muted mb-2">' +
+              '<i class="ti ti-corner-down-right me-1"></i>Từ ' + esc(goc.label) + ' · ' +
+              '<a href="' + esc(goc.url) + '">mở hồ sơ gốc</a>' +
+            '</div><div data-role="goc-out"></div>' +
+          '</div>');
+        renderSaved(out.querySelector('[data-role="goc-out"]'), itemGoc);
+      }
+
+      capNhatNutLichSu();
+    }
+
+    function chay(a) {
+      out.innerHTML =
+        '<div class="d-flex align-items-center gap-2">' +
+          '<span class="tk-ai-dots"><span></span><span></span><span></span></span>' +
+          '<span class="text-muted small">' + esc(a.wait) + '</span>' +
+        '</div>';
+
+      var fd = new FormData();
+      fd.append('entity', entity);
+      fd.append('id', el.getAttribute('data-entity-id'));   // đọc lại: id đổi khi mở bản ghi khác
+
+      tk.post(API + '?handler=' + a.key, fd).then(function (res) {
+        if (!res || !res.isSuccess) {
+          out.innerHTML = '<span class="text-danger">' + esc((res && res.message) || 'Chưa làm được.') + '</span>';
+          out.insertAdjacentHTML('beforeend',
+            '<div class="mt-3"><button type="button" class="btn btn-sm btn-label-primary" data-act="' + a.key + '">' +
+            '<i class="ti ' + a.icon + ' me-1"></i>Thử lại</button></div>');
+          out.querySelector('[data-act]').addEventListener('click', function () { chay(a); });
+          return;
+        }
+        ketQuaMoi[a.key] = res.data || {};
+        veTab(a.key);
+      });
+    }
+
     function capNhatNutLichSu() {
-      if (!loaiDangXem) { return; }
+      if (!tabHienTai || !(ketQuaMoi[tabHienTai] || daLuu[tabHienTai])) {
+        lichSu.classList.add('d-none');
+        return;
+      }
       lichSu.classList.remove('d-none');
       lichSu.innerHTML =
         '<button type="button" class="btn btn-sm btn-label-secondary" data-role="mo-lich-su">' +
-        '<i class="ti ti-history me-1"></i>Các lần ' + esc((NHAN[loaiDangXem] || 'đã chạy').toLowerCase()) + ' trước</button>';
+        '<i class="ti ti-history me-1"></i>Các lần ' + esc((NHAN[tabHienTai] || 'đã chạy').toLowerCase()) + ' trước</button>';
       lichSu.querySelector('[data-role="mo-lich-su"]').addEventListener('click', moLichSu);
     }
 
@@ -384,7 +493,7 @@
       lichSu.innerHTML = '<div class="text-muted small">Đang tải lịch sử…</div>';
       fetch(API + '?handler=History&entity=' + encodeURIComponent(entity) +
             '&id=' + encodeURIComponent(el.getAttribute('data-entity-id')) +
-            '&kind=' + encodeURIComponent(loaiDangXem))
+            '&kind=' + encodeURIComponent(tabHienTai))
         .then(function (r) { return r.ok ? r.json() : null; })
         .catch(function () { return null; })
         .then(function (res) {
@@ -414,37 +523,6 @@
         });
     }
 
-    el.querySelectorAll('[data-act]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var act = actions.filter(function (a) { return a.key === btn.dataset.act; })[0];
-
-        el.querySelectorAll('[data-act]').forEach(function (b) { b.disabled = true; });
-        out.classList.remove('text-muted', 'small');
-        out.innerHTML =
-          '<div class="d-flex align-items-center gap-2">' +
-            '<span class="tk-ai-dots"><span></span><span></span><span></span></span>' +
-            '<span class="text-muted small">' + esc(act.wait) + '</span>' +
-          '</div>';
-
-        var fd = new FormData();
-        fd.append('entity', entity);
-        fd.append('id', el.getAttribute('data-entity-id'));   // đọc lại: id đổi khi mở bản ghi khác
-
-        tk.post(API + '?handler=' + act.key, fd).then(function (res) {
-          el.querySelectorAll('[data-act]').forEach(function (b) { b.disabled = false; });
-          if (!res || !res.isSuccess) {
-            out.innerHTML = '<span class="text-danger">' + esc((res && res.message) || 'Chưa làm được.') + '</span>';
-            return;
-          }
-          if (act.key === 'Review') { render(out, res.data || {}); }
-          else { renderText(out, (res.data || {}).text, act.key === 'Draft'); }
-
-          // Vừa chạy xong thì lịch sử dài thêm một dòng — đổi nút sang đúng loại vừa chạy.
-          loaiDangXem = act.key;
-          capNhatNutLichSu();
-        });
-      });
-    });
   }
 
   // Văn bản do model sinh ra: escape hết, chỉ giữ xuống dòng. Bản nháp tin nhắn kèm nút chép để

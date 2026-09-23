@@ -7,6 +7,7 @@ using TourKit.Api.Pages.Shared;
 using TourKit.Api.Web;
 using TourKit.Application.Crm;
 using TourKit.Application.Crm.Dtos;
+using TourKit.Shared.Enums;
 
 namespace TourKit.Api.Pages.LeadCampaigns;
 
@@ -36,7 +37,22 @@ public class IndexModel : TkListPageModel
     {
         [Required(ErrorMessage = "Bắt buộc nhập tên")] public string Name { get; set; } = "";
         public string? Note { get; set; }
+
+        /// <summary>Cách chia số — xem <see cref="LeadAssignMode"/>.</summary>
+        public int AssignMode { get; set; }
+
+        /// <summary>Nhóm nhân viên nhận số. THỨ TỰ ở đây chính là thứ tự vòng chia.</summary>
+        public List<Guid> Assignees { get; set; } = [];
     }
+
+    public static string AssignModeLabel(int m) => LeadAssignModeText.Vi((LeadAssignMode)m);
+
+    public static string AssignModeColor(int m) => m switch
+    {
+        (int)LeadAssignMode.XoayVong => "primary",
+        (int)LeadAssignMode.NgauNhien => "info",
+        _ => "secondary",
+    };
 
     public static string StatusLabel(int s) => s switch
     {
@@ -73,10 +89,22 @@ public class IndexModel : TkListPageModel
         var result = await _svc.ListAsync(dt.Page, dt.Size, BuildFilter(dt.Keyword));
         var stats = await _svc.GetStatsAsync();
 
+        // Tên nhân viên đọc qua danh bạ có CACHE, không tra thẳng bảng Users mỗi lần lật trang.
+        var userNames = await _users.NamesAsync();
+
         var items = result.Items.Select(c => new
         {
             id = c.Id,
+            code = c.Code,
             name = c.Name,
+            assignMode = c.AssignMode,
+            assignModeLabel = AssignModeLabel(c.AssignMode),
+            assignModeColor = AssignModeColor(c.AssignMode),
+            assignees = c.Assignees ?? [],
+            assigneeNames = (c.Assignees ?? [])
+                .Select(u => userNames.GetValueOrDefault(u))
+                .Where(n => !string.IsNullOrEmpty(n))
+                .ToList(),
             createdByName = c.CreatedByName,
             createdAt = c.CreatedAt.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
             totalLeads = c.TotalLeads,
@@ -140,8 +168,21 @@ public class IndexModel : TkListPageModel
             return new JsonResult(Result.Error(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault() ?? "Dữ liệu không hợp lệ."));
         }
 
-        await _svc.CreateAsync(new CreateLeadCampaignDto(Input.Name, Input.Note));
-        return new JsonResult(Result.Success("Đã lưu chiến dịch chia số."));
+        // Sửa được chứ không chỉ tạo mới: nhóm chia số là thứ thay đổi thường xuyên (có người nghỉ,
+        // có người mới vào), mà trước đây màn này không có đường sửa nào.
+        if (Id is Guid g && g != Guid.Empty)
+        {
+            await _svc.UpdateAsync(g, new UpdateLeadCampaignDto(
+                Input.Name, Input.Note, Input.AssignMode, Input.Assignees));
+            return new JsonResult(Result.Success("Đã lưu chiến dịch chia số."));
+        }
+
+        var moi = await _svc.CreateAsync(new CreateLeadCampaignDto(
+            Input.Name, Input.Note, Input.AssignMode, Input.Assignees));
+
+        // Nói luôn cái mã vừa sinh: đó là thứ người dựng form thu lead cần cầm đi, không nói ra thì
+        // họ phải mò tìm trong lưới.
+        return new JsonResult(Result.Success($"Đã tạo chiến dịch {moi.Code}."));
     }
 
     /// <summary>Đổi nhanh trạng thái Đang chạy/Hoàn thành từ menu trên dòng lưới.</summary>

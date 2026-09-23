@@ -21,6 +21,9 @@ public class IndexModel(ISalesOpportunityService svc, UserDirectory users) : Pag
     public IReadOnlyList<OpportunityByUserRowDto> TheoNhanVien { get; private set; } = [];
     public IReadOnlyList<OpportunityCancelReasonRowDto> LyDoHuy { get; private set; } = [];
 
+    /// <summary>Ngày NGƯỜI DÙNG chọn, giữ nguyên để đổ lại vào ô ngày. Cố tình KHÔNG quy về UTC:
+    /// view in ra bằng <c>ToString("yyyy-MM-dd")</c> nên mốc UTC sẽ hiện LÙI một ngày ở giờ VN
+    /// (chọn 08/09 mà ô ngày hiện 07/09). Mốc để truy vấn tính riêng trong <see cref="OnGetAsync"/>.</summary>
     public DateTimeOffset? Tu { get; private set; }
     public DateTimeOffset? Den { get; private set; }
 
@@ -35,12 +38,19 @@ public class IndexModel(ISalesOpportunityService svc, UserDirectory users) : Pag
     public async Task OnGetAsync(string? tu, string? den)
     {
         Tu = Parse(tu);
-        // Ngày "đến" tính hết ngày: người dùng chọn 31/08 là có ý gồm cả hôm đó, còn mốc thô sẽ cắt
-        // ở 00:00 và làm rơi mất mọi cơ hội tạo trong ngày cuối kỳ.
-        Den = Parse(den)?.AddDays(1).AddTicks(-1);
+        Den = Parse(den);
 
-        TheoNhanVien = await svc.ReportByUserAsync(Tu, Den);
-        LyDoHuy = await svc.ReportCancelReasonsAsync(Tu, Den);
+        // Mốc đem đi TRUY VẤN, tách khỏi mốc đem đi HIỂN THỊ ở trên.
+        // - Quy về UTC: Npgsql chỉ nhận offset 0 cho cột timestamptz, đưa thẳng giờ VN (+07:00)
+        //   xuống là ném ArgumentException và cả trang 500.
+        // - Ngày "đến" tính HẾT ngày: người dùng chọn 11/09 là có ý gồm cả hôm đó, còn mốc thô sẽ
+        //   cắt ở 00:00 và làm rơi mọi cơ hội tạo trong ngày cuối kỳ.
+        // Cộng ngày TRƯỚC rồi mới quy đổi, để biên vẫn bám ngày VN: 23:59:59 ngày 11 giờ VN.
+        var tuUtc = Tu?.ToUniversalTime();
+        var denUtc = Den?.AddDays(1).AddTicks(-1).ToUniversalTime();
+
+        TheoNhanVien = await svc.ReportByUserAsync(tuUtc, denUtc);
+        LyDoHuy = await svc.ReportCancelReasonsAsync(tuUtc, denUtc);
 
         // Tên người tra ở TẦNG NÀY, không ở tầng dịch vụ: danh bạ có cache 60 giây theo tenant, còn
         // service thì không biết gì về nó.
@@ -50,6 +60,14 @@ public class IndexModel(ISalesOpportunityService svc, UserDirectory users) : Pag
             .ToList();
     }
 
+    /// <summary>
+    /// Đọc ô ngày dạng "2026-09-08". Chuỗi KHÔNG kèm múi giờ nên .NET gắn offset MÁY CHỦ
+    /// (VN = +07:00) — giữ nguyên như vậy, phần quy đổi để nơi gọi tự lo.
+    ///
+    /// <c>CreatedAt</c> là MỐC THỜI GIAN THẬT (giờ tạo bản ghi, lưu UTC) chứ không phải ngày nghiệp
+    /// vụ, nên biên truy vấn phải quy về UTC — KHÔNG dùng
+    /// <see cref="Shared.TkDate.Day(DateTimeOffset)"/> ở đây.
+    /// </summary>
     private static DateTimeOffset? Parse(string? raw) =>
         DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, out var d) ? d : null;
 }

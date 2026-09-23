@@ -83,6 +83,78 @@ html.dark-style {
 .tk-oc-actions { box-shadow: 0 -.25rem .75rem rgba(var(--bs-primary-rgb), .06); }
 .tk-oc-actions .me-2:last-child { margin-right: 0 !important; }
 
+/* ===== Nút "?" cạnh tiêu đề trang — giới thiệu tính năng + đường tới tài liệu luồng nghiệp vụ =====
+   Là <button> chứ không phải <span> để tab tới được bằng bàn phím; bỏ hết vỏ nút mặc định đi vì nó
+   phải trông như một dấu hỏi mờ cạnh tiêu đề, không phải một nút bấm tranh chỗ với tiêu đề. */
+.tk-flow-help {
+  border: 0; background: none; padding: 0; margin-left: .375rem;
+  line-height: 1; vertical-align: middle;
+  color: var(--bs-secondary-color); opacity: .65;
+  transition: color .15s ease, opacity .15s ease;
+}
+.tk-flow-help:hover, .tk-flow-help:focus-visible { color: var(--bs-primary); opacity: 1; }
+.tk-flow-help i { font-size: 1rem; }
+/* Cỡ chữ tiêu đề h4 làm icon to quá — neo theo cỡ chữ thường cho cân. */
+h1 .tk-flow-help i, h2 .tk-flow-help i, h3 .tk-flow-help i, h4 .tk-flow-help i { font-size: .875rem; }
+
+.popover.tk-flow-pop { max-width: 22rem; }
+.popover.tk-flow-pop .popover-header { font-size: .875rem; font-weight: 600; }
+.popover.tk-flow-pop .popover-body { font-size: .8125rem; line-height: 1.5; }
+
+/* ===== Panel sửa RỘNG chia hai cột: trái NHẬP LIỆU · phải NGỮ CẢNH (trợ lý AI + trao đổi) =====
+   Dùng cho màn có khối phụ trợ dài. Nhồi tất cả vào một cột hẹp thì form bị đẩy dài ra và người
+   dùng phải cuộn qua hết thẻ AI lẫn luồng trao đổi mới xuống tới chỗ sửa — trong khi hai thứ đó
+   là để ĐỌC chứ không phải để điền.
+   Hai cột cuộn RIÊNG: đọc hết nhận định AI bên phải mà form bên trái vẫn đứng yên.
+   Đây là class riêng, KHÔNG đụng .tk-oc-fields vì 46 trang khác đang dùng khuôn một cột. */
+/* Ghép .offcanvas để thắng .offcanvas-end{width:400px} của Bootstrap — cùng 0,1,0 thì thứ tự nạp
+   quyết định, và tourkit.css nạp TRƯỚC bootstrap nên chỉ mình .tk-oc-wide sẽ thua. */
+.offcanvas.tk-oc-wide { width: 80%; max-width: 100%; }
+
+.tk-oc-split { display: flex; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.tk-oc-split > .tk-oc-col {
+  flex: 1 1 0; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 1.5rem;
+}
+/* Cột ngữ cảnh hẹp hơn và nền chìm — để mắt nhận ra ngay đây không phải chỗ điền. */
+.tk-oc-split > .tk-oc-aside {
+  flex: 0 0 40%;
+  border-left: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg, #f8f7fa);
+}
+/* Khối đứng đầu cột phải thì bỏ vạch ngăn trên: vạch đó sinh ra để tách nó khỏi form ở khuôn cũ. */
+.tk-oc-aside > .tk-oc-comments:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+
+/* Thẻ AI trong cột ngữ cảnh: bỏ vỏ thẻ đi. Cột đã có padding 1.5rem, .card-body lại thêm 1.5rem
+   nữa → lề đôi, nội dung mất 66px bề ngang trên tổng 437px. Cùng cách đã dùng cho .tk-cmt-card. */
+.tk-oc-aside .tk-ai-review-card { border: 0; box-shadow: none; background: transparent; }
+.tk-oc-aside .tk-ai-review-card > .card-body { padding: 0; }
+
+/* Tab của thẻ AI: mỗi loại việc một tab, chia đều bề ngang cột. */
+.tk-ai-tabs { flex-wrap: nowrap; gap: 0; }
+/* Khử khoảng âm của theme: core.css có `.card .nav.nav-tabs { margin: 0 -1.5rem }` để tab chạy
+   full-bleed theo padding 1.5rem của thẻ. Thẻ này đã bỏ padding nên khoảng âm đó đẩy tab lòi ra
+   48px và sinh thanh cuộn ngang cho cả cột. Phải viết đủ 4 lớp mới thắng được 0,3,0 của nó. */
+.card .nav.nav-tabs.tk-ai-tabs { margin-left: 0; margin-right: 0; }
+.tk-ai-tabs .nav-item { flex: 1 1 0; min-width: 0; }
+.tk-ai-tabs .nav-link {
+  width: 100%; padding: .5rem .25rem; border: 0; border-bottom: 2px solid transparent;
+  background: none; font-size: .8125rem; font-weight: 500; color: var(--bs-secondary-color);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tk-ai-tabs .nav-link:hover { color: var(--bs-primary); }
+.tk-ai-tabs .nav-link.active { color: var(--bs-primary); border-bottom-color: var(--bs-primary); background: none; }
+
+/* MOBILE — dưới lg không đủ chỗ cho hai cột: xếp dọc, panel chiếm trọn bề ngang, và trả việc cuộn
+   về MỘT khối chung (hai vùng cuộn lồng nhau trên màn cảm ứng là cái bẫy rất khó thao tác). */
+@media (max-width: 991.98px) {
+  .offcanvas.tk-oc-wide { width: 100%; }
+  .tk-oc-split { display: block; overflow-y: auto; overscroll-behavior: contain; }
+  .tk-oc-split > .tk-oc-col { overflow: visible; padding: 1.25rem; }
+  .tk-oc-split > .tk-oc-aside { flex: none; border-left: 0; border-top: 1px solid var(--bs-border-color); }
+}
+
 /* ===== Bàn làm việc ===== */
 
 /* Thẻ dashboard: MỘT khối liền, tiêu đề và nội dung KHÔNG bị kẻ ngang cắt đôi.

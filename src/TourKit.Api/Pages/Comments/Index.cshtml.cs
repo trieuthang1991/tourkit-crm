@@ -20,7 +20,8 @@ namespace TourKit.Api.Pages.Comments;
 /// </summary>
 [Authorize]
 public class IndexModel(
-    IEntityCommentService comments, UserDirectory directory, IFileUploadService files, IRbacStore rbac) : PageModel
+    IEntityCommentService comments, UserDirectory directory, IFileUploadService files, IRbacStore rbac,
+    RecordOrigins origins) : PageModel
 {
     private const long MaxImageBytes = 5 * 1024 * 1024;
 
@@ -34,6 +35,37 @@ public class IndexModel(
             return Denied(entityName);
         }
 
+        var (total, items) = await LuongAsync(entityName, entityId, take);
+
+        // Trao đổi của bản ghi TIỀN THÂN (khách hàng ← khách tiềm năng). Chuyển đổi sinh một bản ghi
+        // MỚI nên luồng cũ ở lại bên kia và trang khách hàng mở ra trắng trơn.
+        //
+        // Trả RIÊNG chứ không trộn vào danh sách chính: đây là cuộc trao đổi của GIAI ĐOẠN TRƯỚC.
+        // Gộp chung thì người đọc tưởng trả lời tiếp được vào đó, trong khi nút Gửi ghi sang bản ghi
+        // đang mở — hai luồng lẫn vào nhau và không gỡ ra được nữa.
+        //
+        // Soát quyền LẠI trên loại bản ghi gốc qua Resolve: khách tiềm năng và khách hàng dùng hai
+        // mã quyền khác nhau, qua được cửa bên này không có nghĩa là được đọc bên kia.
+        object? goc = null;
+        var origin = await origins.FindAsync(entityName, entityId);
+        if (origin is not null && Resolve(origin.EntityName) is not null)
+        {
+            var (tongGoc, itemsGoc) = await LuongAsync(origin.EntityName, origin.EntityId, take);
+            if (tongGoc > 0)
+            {
+                goc = new { origin.Label, origin.Url, total = tongGoc, items = itemsGoc };
+            }
+        }
+
+        return new JsonResult(new { label = entry.Label, total, items, goc });
+    }
+
+    /// <summary>
+    /// Dựng dữ liệu của MỘT luồng trao đổi. Tách riêng vì còn dùng lại nguyên vẹn cho bản ghi gốc —
+    /// viết hai lần thì hai bản sao sẽ lệch nhau đúng ở phần đính kèm và phần nhắc tên.
+    /// </summary>
+    private async Task<(int Total, object Items)> LuongAsync(string entityName, string entityId, int take)
+    {
         var items = await comments.ListAsync(entityName, entityId, take);
         var total = await comments.CountAsync(entityName, entityId);
 
@@ -43,31 +75,26 @@ public class IndexModel(
             ? await directory.NamesAsync()
             : new Dictionary<Guid, string>();
 
-        return new JsonResult(new
+        return (total, items.Select(c => new
         {
-            label = entry.Label,
-            total,
-            items = items.Select(c => new
+            id = c.Id,
+            author = c.AuthorName,
+            content = c.Content,
+            createdAt = c.CreatedAt,
+            canDelete = c.CanDelete,
+            mentions = c.MentionedUserIds
+                .Select(u => names.GetValueOrDefault(u))
+                .Where(n => !string.IsNullOrEmpty(n))
+                .ToList(),
+            attachments = c.Attachments.Select(a => new
             {
-                id = c.Id,
-                author = c.AuthorName,
-                content = c.Content,
-                createdAt = c.CreatedAt,
-                canDelete = c.CanDelete,
-                mentions = c.MentionedUserIds
-                    .Select(u => names.GetValueOrDefault(u))
-                    .Where(n => !string.IsNullOrEmpty(n))
-                    .ToList(),
-                attachments = c.Attachments.Select(a => new
-                {
-                    id = a.Id,
-                    name = a.FileName,
-                    // URL kèm entityName/entityId để endpoint ảnh kiểm lại được quyền của bản ghi cha.
-                    url = $"/binh-luan?handler=Image&entityName={Uri.EscapeDataString(entityName)}" +
-                          $"&entityId={Uri.EscapeDataString(entityId)}&id={a.Id}",
-                }).ToList(),
-            }),
-        });
+                id = a.Id,
+                name = a.FileName,
+                // URL kèm entityName/entityId để endpoint ảnh kiểm lại được quyền của bản ghi cha.
+                url = $"/binh-luan?handler=Image&entityName={Uri.EscapeDataString(entityName)}" +
+                      $"&entityId={Uri.EscapeDataString(entityId)}&id={a.Id}",
+            }).ToList(),
+        }).ToList());
     }
 
     /// <summary>

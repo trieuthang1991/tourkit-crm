@@ -33,7 +33,7 @@
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
   <div>
     <div class="text-muted mb-1" style="font-size:.78rem">CRM <span class="mx-1">/</span> <span class="text-body">Khách tiềm năng</span></div>
-    <h4 class="mb-0">Khách tiềm năng</h4>
+    <h4 class="mb-0">Khách tiềm năng<partial name="_FlowHelp" model="@("lead")" /></h4>
   </div>
   <div class="d-flex gap-2">
     @* Chuyển Bảng / Kanban — bám nút List/Kanban hệ cũ *@
@@ -90,6 +90,18 @@
       <div class="col-md-3"><input type="text" id="f-createdFrom" class="form-control tk-datef" placeholder="Ngày lập từ" /></div>
       <div class="col-md-3"><input type="text" id="f-createdTo" class="form-control tk-datef" placeholder="Ngày lập đến" /></div>
     </div>
+
+    @* Ô lọc ẨN cho chiến dịch — nạp sẵn khi vào từ màn Chia số Sale. Không có nó thì campaignId
+       trên đường dẫn bị '?handler=Data' của lưới nuốt mất (xem LocCampaignId trong PageModel). *@
+    <input type="hidden" id="f-campaignId" value="@(Model.LocCampaignId?.ToString())" />
+    @if (Model.LocCampaignId is not null)
+    {
+      <div class="alert alert-info d-flex align-items-center gap-2 mt-3 mb-0 py-2">
+        <i class="ti ti-filter"></i>
+        <span class="small">Đang lọc theo một chiến dịch chia số.</span>
+        <a href="/khach-tiem-nang" class="btn btn-sm btn-label-secondary ms-auto">Bỏ lọc</a>
+      </div>
+    }
   </div>
 
   <div id="bulkbar" class="d-none align-items-center gap-2 px-3 py-2" style="background:rgba(var(--bs-primary-rgb),.06)">
@@ -99,23 +111,28 @@
   </div>
 
   <div id="grid-leads"></div>
-</div>
 
-@* Kanban dùng jKanban của template (kéo–thả sẵn có). MỖI CỘT chỉ tải TOP N theo trạng thái
-   của nó + nút "Tải thêm" — KHÔNG get-all. *@
-<div id="pane-kanban" class="app-kanban d-none">
-  <div class="kanban-wrapper"></div>
+  @* Kanban dựng bằng component CHUNG tk.kanban (nó bọc jKanban bên trong) — CÙNG khuôn với màn
+     Cơ hội bán hàng. MỖI CỘT chỉ tải TOP N theo trạng thái của nó + nút "Tải thêm" — KHÔNG get-all.
+     Nằm TRONG .tk-surface như màn Cơ hội: CSS kanban được chỉnh cho mặt trắng đó, để lọt ra ngoài
+     thì bảng rơi xuống nền xám của trang và lệch hẳn với lưới nó vừa thay chỗ. *@
+  <div id="pane-kanban" class="app-kanban tk-pad d-none">
+    <div class="kanban-wrapper"></div>
+  </div>
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
-<form id="convert-form" method="post" asp-page-handler="Convert" class="d-none"><input type="hidden" name="id" /></form>
+<form id="convert-form" method="post" asp-page-handler="Convert" class="d-none"><input type="hidden" name="id" /><input type="hidden" name="assignedToUserId" /></form>
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
+<div class="offcanvas offcanvas-end tk-oc-wide" tabindex="-1" id="oc">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">cơ hội</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
   <div class="offcanvas-body tk-oc">
     @Html.AntiForgeryToken()
     <form id="frm" data-action="?handler=Save" onsubmit="return false">
-      <div class="tk-oc-fields">
+      @* Hai cột: TRÁI nhập liệu · PHẢI ngữ cảnh (trợ lý AI + trao đổi). Dưới lg tự xếp dọc —
+         xem .tk-oc-split trong tourkit.css. *@
+      <div class="tk-oc-split">
+      <div class="tk-oc-col">
       <input type="hidden" name="Id" />
       <div class="mb-3"><label class="form-label">Họ tên <span class="text-danger">*</span></label><input type="text" name="Input.FullName" class="form-control" placeholder="Nhập họ tên" /></div>
       <div class="row">
@@ -152,12 +169,37 @@
           @foreach (var b in Model.Branches) { <option value="@b.Id">@b.Name</option> }
         </select>
       </div>
-      @* Trao đổi nằm TRONG vùng cuộn .tk-oc-fields để thanh Lưu/Huỷ vẫn dính đáy.
+
+      @* Nhu cầu khách tự nêu. Trước đây KHÔNG có ô nào giữ thứ này, nên một khách tiềm năng chỉ
+         còn tên với số điện thoại: người gọi lại phải hỏi lại từ đầu, và phần chấm điểm AI luôn
+         kết luận "hồ sơ gần như trống" vì đúng là nó trống thật. *@
+      <div class="mb-3">
+        <label class="form-label">Nhu cầu khách nêu</label>
+        <textarea name="Input.Note" class="form-control" rows="3"
+                  placeholder="Khách cần gì: điểm đến, thời gian đi, số khách, ngân sách…"></textarea>
+      </div>
+
+      @* Nguồn CHI TIẾT. Ô "Nguồn" bên trên là giá trị CHUẨN lấy từ danh mục — chiều để gộp báo cáo,
+         nên không cho gõ tự do. Còn ở đây là phần mở rộng tuỳ ý: dán nguyên đường dẫn chiến dịch
+         (…?utm_source=zns&utm_medium=sms) là hệ thống tự tách, khỏi điền từng ô. *@
+      <div class="mb-3">
+        <label class="form-label">Nguồn chi tiết</label>
+        <input type="text" name="Input.AttributionRaw" class="form-control"
+               placeholder="Dán link có utm_source=… hoặc để trống" />
+        <div class="form-text">Dán nguyên đường dẫn chiến dịch; hệ thống tự tách utm_source, utm_medium, utm_campaign…</div>
+        <div id="lead-utm" class="small text-muted mt-2 d-none"></div>
+      </div>
+      @* Trao đổi nằm cùng cột SỬA: nó là việc người dùng GÕ VÀO, cùng loại thao tác với các ô trên,
+         khác hẳn thẻ AI bên phải vốn chỉ để đọc.
          An toàn khi ở trong <form> vì luồng bình luận không tự dựng <form> và nút Gửi là
-         type="button" — nó không kích hoạt form cha. Textarea không có name nên cũng không bị
+         type="button" — nó không kích hoạt form cha; textarea không có name nên cũng không bị
          gửi kèm khi lưu cơ hội. Id đổi theo từng cơ hội nên gắn lúc mở offcanvas (xem oc.open). *@
-      <div id="lead-review" class="tk-oc-comments d-none" data-ai-review data-entity="Lead"></div>
       <div id="lead-comments" class="tk-oc-comments d-none" data-comments data-entity="Lead"></div>
+      </div>
+      @* Cột phải: CHỈ trợ lý AI — thứ để đọc, không phải chỗ điền. *@
+      <aside class="tk-oc-col tk-oc-aside">
+        <div id="lead-review" class="tk-oc-comments d-none" data-ai-review data-entity="Lead"></div>
+      </aside>
       </div>
       <div class="tk-oc-actions">
         <button type="submit" class="btn btn-primary me-2">Lưu</button>
@@ -182,9 +224,13 @@
   <script>
     var oc, grid;
     // Toàn bộ tiêu chí lọc đẩy xuống SERVER (không lọc ở client, không get-all).
-    var FILTERS = ['status', 'source', 'assignedToUserId', 'createdByUserId', 'branchId', 'createdFrom', 'createdTo'];
+    // Danh bạ nhân viên cho hộp xác nhận chuyển đổi — đổ sẵn từ server, không gọi thêm một vòng ajax.
+    var NHAN_VIEN = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Users.Select(u => new { id = u.Id, name = u.Name })));
 
-    // ---- Kanban (jKanban của template) ----
+    var FILTERS = ['status', 'source', 'assignedToUserId', 'createdByUserId', 'branchId', 'createdFrom', 'createdTo', 'campaignId'];
+
+    // ---- Kanban (component CHUNG tk.kanban — CÙNG khuôn với màn Cơ hội bán hàng) ----
     // Mỗi cột = 1 trạng thái, chỉ tải TOP N của cột đó + nút "Tải thêm". KHÔNG get-all.
     var KB_STATUSES = [
       { id: 1, name: 'Mới', color: 'secondary' },
@@ -193,105 +239,35 @@
       { id: 4, name: 'Chốt', color: 'success' },
       { id: 5, name: 'Mất', color: 'danger' }
     ];
-    var KB_SIZE = 15;
-    var kanban = null, kbPage = {}, kbCards = {};
+    var kb = null;
 
-    function filterValues() { return grid ? grid.filters() : {}; }
-
-    function kbQuery(status, page) {
-      var d = filterValues();
-      var p = new URLSearchParams();
-      Object.keys(d).forEach(function (k) { if (k !== 'status') { p.set(k, d[k]); } });   // cột tự quyết trạng thái
-      p.set('status', status); p.set('page', page); p.set('size', KB_SIZE);
-      return '?handler=KanbanColumn&' + p.toString();
-    }
-
-    function kbCardHtml(c) {
-      var sub = [c.phone, c.assigneeName].filter(Boolean).map(tk.escape).join(' · ');
-      return '<div class="fw-medium kanban-text">' + tk.escape(c.fullName) + '</div>' +
-        (sub ? '<div class="small text-muted">' + sub + '</div>' : '') +
-        (c.convertedCustomerId ? '<span class="badge bg-label-success mt-1">Đã chuyển KH</span>' : '');
-    }
-
-    function kbBoardEl(status) {
-      return document.querySelector('.kanban-board[data-id="st-' + status + '"]');
-    }
-
-    // Gắn/cập nhật nút "Tải thêm" ở chân cột.
-    function kbSyncMore(status, hasMore, total) {
-      var board = kbBoardEl(status); if (!board) { return; }
-      var head = board.querySelector('.kanban-title-board');
-      if (head && head.dataset.base) { head.textContent = head.dataset.base + ' (' + total + ')'; }
-      var btn = board.querySelector('.kb-more');
-      if (!hasMore) { if (btn) { btn.remove(); } return; }
-      if (!btn) {
-        btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-sm btn-label-primary w-100 kb-more mt-2';
-        btn.textContent = 'Tải thêm';
-        btn.addEventListener('click', function () { kbLoadMore(status); });
-        board.appendChild(btn);
-      }
-    }
-
-    function kbLoadMore(status) {
-      var next = (kbPage[status] || 1) + 1;
-      $.getJSON(kbQuery(status, next), function (res) {
-        kbPage[status] = next;
-        res.cards.forEach(function (c) {
-          kbCards[c.id] = c;
-          kanban.addElement('st-' + status, { id: c.id, title: kbCardHtml(c) });
-        });
-        kbSyncMore(status, res.hasMore, res.total);
-      });
-    }
-
-    function kbRender() {
-      $('.kanban-wrapper').empty();
-      kbPage = {}; kbCards = {};
-      var reqs = KB_STATUSES.map(function (s) { return $.getJSON(kbQuery(s.id, 1)); });
-      $.when.apply($, reqs).done(function () {
-        var results = KB_STATUSES.length === 1 ? [arguments] : Array.prototype.slice.call(arguments);
-        var boards = KB_STATUSES.map(function (s, i) {
-          var res = results[i][0];
-          kbPage[s.id] = 1;
-          res.cards.forEach(function (c) { kbCards[c.id] = c; });
+    function kbBuild() {
+      kb = tk.kanban({
+        pane: '#pane-kanban',
+        columns: KB_STATUSES,
+        moveUrl: '?handler=Move',
+        url: function (colId, page, size) {
+          var d = grid ? grid.filters() : {};
+          var p = new URLSearchParams();
+          Object.keys(d).forEach(function (k) { if (k !== 'status') { p.set(k, d[k]); } });   // cột tự quyết trạng thái
+          p.set('status', colId); p.set('page', page); p.set('size', size);
+          return '?handler=KanbanColumn&' + p.toString();
+        },
+        // Thẻ cùng khuôn Cơ hội: tiêu đề = tên · dòng phụ = SĐT · chân thẻ = nguồn + avatar NV.
+        card: function (c) {
           return {
-            id: 'st-' + s.id,
-            title: tk.escape(s.name) + ' (' + res.total + ')',
-            class: 'bg-label-' + s.color,
-            item: res.cards.map(function (c) { return { id: c.id, title: kbCardHtml(c) }; })
+            title: c.fullName,
+            meta: c.phone || '',
+            foot: c.source || 'Chưa rõ nguồn',
+            footIcon: 'ti ti-tag',
+            who: c.assigneeName,
+            badges: c.convertedCustomerId ? [{ text: 'Đã chuyển KH', color: 'success' }] : []
           };
-        });
-
-        kanban = new jKanban({
-          element: '.kanban-wrapper', gutter: '12px', widthBoard: '260px',
-          dragItems: true, dragBoards: false, boards: boards,
-          // Kéo–thả sang cột khác → đổi trạng thái ở SERVER.
-          dropEl: function (el, target) {
-            var id = el.getAttribute('data-eid');
-            var toStatus = target.parentElement.getAttribute('data-id').replace('st-', '');
-            var fd = new FormData(); fd.append('id', id); fd.append('status', toStatus);
-            tk.post('?handler=Move', fd).then(function (r) {
-              if (r && r.isSuccess) { tk.toast(r.message); if (grid) { grid.reload(); } }
-              else { tk.error((r && r.message) || 'Không đổi được trạng thái.'); kbRender(); }
-            });
-          },
-          // Bấm thẻ → mở offcanvas sửa (dùng lại dữ liệu đã tải, không gọi thêm).
-          click: function (el) {
-            var c = kbCards[el.getAttribute('data-eid')];
-            if (c) { oc.open(c); }
-          }
-        });
-
-        // Ghi nhãn gốc để cập nhật số đếm + gắn nút "Tải thêm".
-        KB_STATUSES.forEach(function (s, i) {
-          var board = kbBoardEl(s.id);
-          var head = board && board.querySelector('.kanban-title-board');
-          if (head) { head.dataset.base = s.name; }
-          kbSyncMore(s.id, results[i][0].hasMore, results[i][0].total);
-        });
+        },
+        onCardClick: function (row) { oc.open(row); },
+        onMoved: function () { if (grid) { grid.reload(); } }
       });
+      kb.render();
     }
 
     $(function () {
@@ -350,14 +326,23 @@
           f.submit();
         });
       }
+      // Chuyển đổi hỏi luôn NGƯỜI PHỤ TRÁCH, mặc định là người đang giữ khách tiềm năng này.
+      // Người phụ trách phải đi theo sang hồ sơ khách hàng, nhưng bàn giao thì phải do người bấm
+      // nút quyết định — âm thầm gán thì đến lúc khách gọi lại không ai biết hỏi ai.
       function convertRow(r) {
-        tk.confirmDelete({ title: 'Chuyển thành khách hàng?', text: 'Hệ thống sẽ tạo khách hàng mới từ cơ hội này.', confirm: 'Chuyển' })
-          .then(function (ok) {
-            if (!ok) { return; }
-            var f = document.getElementById('convert-form');
-            f.querySelector('[name="id"]').value = r.id;
-            f.submit();
-          });
+        tk.confirmNguoiPhuTrach({
+          title: 'Chuyển thành khách hàng?',
+          text: 'Hệ thống sẽ tạo hồ sơ khách hàng từ khách tiềm năng này.',
+          confirm: 'Chuyển',
+          nguoi: NHAN_VIEN,
+          macDinh: r.assignedToUserId || ''
+        }).then(function (kq) {
+          if (!kq.ok) { return; }
+          var f = document.getElementById('convert-form');
+          f.querySelector('[name="id"]').value = r.id;
+          f.querySelector('[name="assignedToUserId"]').value = kq.nguoiId || '';
+          f.submit();
+        });
       }
 
       // Menu hành động theo nghiệp vụ Lead: sửa · chuyển thành khách (hoặc mở khách đã chuyển) · gọi/email · xoá.
@@ -428,7 +413,7 @@
 
       // Khung Kanban không dùng lưới nên tk.grid không tự làm tươi được — bắt cùng những
       // ô lọc đó để vẽ lại bảng kanban khi nó đang hiện.
-      function kbRefreshIfVisible() { if (!$('#pane-kanban').hasClass('d-none')) { kbRender(); } }
+      function kbRefreshIfVisible() { if (kb && !$('#pane-kanban').hasClass('d-none')) { kb.render(); } }
       $('#btn-search, #btn-reset').on('click', function () { setTimeout(kbRefreshIfVisible, 50); });
       $('#f-q').on('keydown', function (e) { if (e.key === 'Enter') { setTimeout(kbRefreshIfVisible, 50); } });
       $('#f-status, #f-source, #f-assignedToUserId, #f-createdByUserId, #f-branchId, #f-createdFrom, #f-createdTo')
@@ -444,7 +429,9 @@
       $('#view-kanban').on('click', function () {
         $('#grid-leads').addClass('d-none'); $('#pane-kanban').removeClass('d-none');
         $(this).addClass('active'); $('#view-list').removeClass('active');
-        if (!kanban) { kbRender(); }
+        // Vẽ lại mỗi lần mở: bộ lọc có thể đã đổi lúc đang ở khung Bảng, refit() giữ nguyên dữ
+        // liệu cũ nên kanban sẽ nói dối so với thanh lọc đang hiện.
+        if (!kb) { kbBuild(); } else { kb.render(); }
       });
 
       // "Xuất file" mở POPUP CHUNG (tk.exportDialog): chọn số dòng xuất theo bộ lọc đang áp.
