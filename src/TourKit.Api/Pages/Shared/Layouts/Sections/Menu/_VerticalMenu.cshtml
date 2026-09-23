@@ -58,6 +58,13 @@
     <a href="/tong-quan" class="app-brand-link">
       @await Html.PartialAsync("_BrandMark", "menu-text fw-bold ms-2")
     </a>
+    @* Nút thu gọn / mở rộng + ghim menu. Theme (main.js) tự bắt .layout-menu-toggle → Helpers.toggleCollapsed()
+       và nhớ trạng thái qua localStorage (enableMenuLocalStorage). Thu gọn = chỉ icon, rê chuột bung ra;
+       bấm lại để ghim mở. Icon .menu-toggle-icon tự đổi mũi tên theo trạng thái. *@
+    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto" title="Thu gọn / ghim menu">
+      <i class="ti menu-toggle-icon d-none d-xl-block ti-md align-middle"></i>
+      <i class="ti ti-x d-block d-xl-none ti-md align-middle"></i>
+    </a>
   </div>
 
   <div class="menu-inner-shadow"></div>
