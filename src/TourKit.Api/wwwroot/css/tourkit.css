@@ -532,32 +532,32 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
 /* ---- Chỉ báo ĐANG TẢI dùng chung (DataTables + Tabulator) -------------------------------------
    Bản mặc định của DataTables là ba chấm nảy trong một khung trần, còn Tabulator là dòng chữ trơn —
    hai kiểu khác nhau trong cùng một sản phẩm, và cả hai đều trông như trang chưa làm xong.
-   Thay bằng LINH VẬT robot bay của TourKit (/svg/tourkit-flying-robot-loader.svg): một thẻ nổi giữa
-   bảng, robot bồng bềnh lên–xuống + chữ. Lỗi tải thì rơi về viên thuốc ĐỎ gọn (không dùng linh vật).
-   Màu chữ/viền lấy từ token theme (--bs-primary) — đổi theme là theo. Dùng CHUNG một chỗ nên đổi ở
-   đây là đổi cho mọi bảng/lưới. */
+   Thay bằng LINH VẬT của TourKit (/img/branding/mascot.png): KHÔNG khung/viền — mascot thả tự nhiên
+   giữa bảng, bồng bềnh lên–xuống + chữ mờ bên dưới. Lỗi tải thì rơi về viên thuốc ĐỎ gọn (không dùng
+   linh vật). Dùng CHUNG một chỗ (overlay lưu form + Tabulator + DataTables) nên đổi ở đây là đổi hết. */
 .tk-load {
-  display: inline-flex; flex-direction: column; align-items: center; gap: .4rem;
-  padding: 1rem 1.35rem; border-radius: 1rem;
-  background: var(--bs-card-bg, #fff);
-  border: 1px solid var(--bs-border-color);
-  box-shadow: 0 .5rem 1.5rem rgba(var(--bs-primary-rgb), .18);
-  font-size: .8125rem; font-weight: 600; color: var(--bs-primary);
+  /* KHÔNG khung/viền/bóng — linh vật thả tự nhiên giữa bảng, chỉ mascot bồng bềnh + chữ mờ. */
+  display: inline-flex; flex-direction: column; align-items: center; gap: .3rem;
+  background: none; border: 0; box-shadow: none; padding: 0;
+  font-size: .8125rem; font-weight: 600; color: var(--bs-secondary-color);
   white-space: nowrap;
 }
 .tk-load-spin {
-  display: block; width: 64px; height: 64px; border: 0; border-radius: 0;
-  background: url('/svg/tourkit-flying-robot-loader.svg') center / contain no-repeat;
-  animation: tk-load-bay 1.7s ease-in-out infinite;
+  display: block; width: 96px; height: 96px; border: 0; border-radius: 0;
+  background: url('/img/branding/mascot.png') center / contain no-repeat;
+  animation: tk-load-bay 1.9s ease-in-out infinite;
 }
 @keyframes tk-load-bay {
-  0%, 100% { transform: translateY(-5px) rotate(-3deg); }
-  50%      { transform: translateY(5px)  rotate(3deg); }
+  0%, 100% { transform: translateY(-6px) rotate(-2.5deg); }
+  50%      { transform: translateY(6px)  rotate(2.5deg); }
 }
-/* Lỗi tải: viên thuốc ĐỎ nằm ngang, gọn — ghi đè bố cục cột + linh vật của .tk-load. */
+/* Lỗi tải: viên thuốc ĐỎ nằm ngang, gọn. Nền/viền RIÊNG vì .tk-load nay không còn khung. */
 .tk-load-loi {
   flex-direction: row; gap: .5rem; padding: .5rem .875rem; border-radius: 999px;
-  color: var(--bs-danger); border-color: rgba(var(--bs-danger-rgb), .35); box-shadow: none;
+  color: var(--bs-danger);
+  background: var(--bs-card-bg, #fff);
+  border: 1px solid rgba(var(--bs-danger-rgb), .35);
+  box-shadow: none;
 }
 
 /* Người tắt hiệu ứng chuyển động: linh vật đứng yên — vẫn rõ là đang tải nhờ thẻ + chữ. */
