@@ -116,7 +116,16 @@ public static class DemoDataSeeder
             return e;
         }
         var mtMienBac = await ChildMarketOf("Nội địa - Miền Bắc", mtDomestic.Id, 1);
-        var mtMienNam = await ChildMarketOf("Nội địa - Miền Nam", mtDomestic.Id, 2);
+        await ChildMarketOf("Nội địa - Miền Trung", mtDomestic.Id, 2);
+        var mtMienNam = await ChildMarketOf("Nội địa - Miền Nam", mtDomestic.Id, 3);
+        // Cây thị trường THẬT (2 bậc) — để ô chọn cha–con nhìn ra ngay đúng/sai, thay dữ liệu e2e khó hiểu.
+        await ChildMarketOf("Outbound - Đông Bắc Á", mtOutbound.Id, 1);
+        await ChildMarketOf("Outbound - Đông Nam Á", mtOutbound.Id, 2);
+        await ChildMarketOf("Outbound - Châu Âu", mtOutbound.Id, 3);
+        await ChildMarketOf("Outbound - Châu Mỹ", mtOutbound.Id, 4);
+        await ChildMarketOf("Outbound - Châu Úc", mtOutbound.Id, 5);
+        await ChildMarketOf("Inbound - Đông Bắc Á", mtInbound.Id, 1);
+        await ChildMarketOf("Inbound - Châu Âu & Mỹ", mtInbound.Id, 2);
         await db.SaveChangesAsync();
 
         // 4) Người dùng (NV phụ trách/tạo) — get-or-create theo email --------------
@@ -168,6 +177,15 @@ public static class DemoDataSeeder
         var p3 = await ProvOf("NCC_NH01", "Nhà hàng Sen Hồ Tây", ProviderType.Restaurant, "Hà Nội", brHn.Id, mtInbound.Id, 5);
         var p4 = await ProvOf("NCC_HDV1", "HDV Nguyễn Minh", ProviderType.Guide, "Đà Nẵng", brHcm.Id, mtInbound.Id, 5);
         var p5 = await ProvOf("NCC_HK01", "Vietnam Airlines", ProviderType.Airline, "Hà Nội", brHn.Id, mtOutbound.Id, 5);
+        // NCC bổ sung 1–2 mỗi loại (kể cả Voucher) — để "Bảng giá NCC" có nhiều NCC liên kết thật cùng loại,
+        // không còn tình trạng mỗi loại chỉ 1 nhà cung cấp. Giá đặt lẻ (không tròn) cho giống hợp đồng thật.
+        var p6 = await ProvOf("NCC_KS02", "Vinpearl Resort Nha Trang", ProviderType.Hotel, "Khánh Hòa", brHcm.Id, mtDomestic.Id, 5);
+        var p7 = await ProvOf("NCC_KS03", "Silk Path Grand Hotel", ProviderType.Hotel, "Hà Nội", brHn.Id, mtDomestic.Id, 4);
+        var p8 = await ProvOf("NCC_XE02", "Vận tải Phương Trang", ProviderType.Vehicle, "Hồ Chí Minh", brHcm.Id, mtDomestic.Id, 4);
+        var p9 = await ProvOf("NCC_NH02", "Nhà hàng Ngon 138", ProviderType.Restaurant, "Hồ Chí Minh", brHcm.Id, mtDomestic.Id, 4);
+        var p10 = await ProvOf("NCC_HDV2", "HDV Trần Hải", ProviderType.Guide, "Hà Nội", brHn.Id, mtDomestic.Id, 4);
+        var p11 = await ProvOf("NCC_HK02", "Vietjet Air", ProviderType.Airline, "Hồ Chí Minh", brHcm.Id, mtOutbound.Id, 4);
+        var p12 = await ProvOf("NCC_VC01", "Klook Vé tham quan", ProviderType.Voucher, "Hồ Chí Minh", brHcm.Id, mtDomestic.Id, 4);
         await db.SaveChangesAsync();
 
         // 6b) Danh mục dịch vụ + BẢNG GIÁ của từng NCC ----
@@ -188,6 +206,7 @@ public static class DemoDataSeeder
         var svAn = await SvcOf("DV_AN", "Suất ăn", 3);
         var svHdv = await SvcOf("DV_HDV", "Hướng dẫn viên", 4);
         var svVe = await SvcOf("DV_VE", "Vé máy bay", 5);
+        var svThamQuan = await SvcOf("DV_THAMQUAN", "Vé tham quan", 6); // dịch vụ voucher / vé điểm tham quan
         await db.SaveChangesAsync();
 
         async Task GiaOf(Provider ncc, ServiceItem dv, string tenGoi, decimal giaVon, decimal giaBan, int soKhach)
@@ -225,6 +244,29 @@ public static class DemoDataSeeder
 
         await GiaOf(p5, svVe, "Chặng nội địa khứ hồi", 1_900_000m, 2_400_000m, 1);
         await GiaOf(p5, svVe, "Chặng quốc tế khứ hồi", 6_500_000m, 8_200_000m, 1);
+
+        // Bảng giá cho các NCC bổ sung (giá lẻ, sát hợp đồng thật).
+        await GiaOf(p6, svPhong, "Deluxe Ocean View 2 khách", 1_850_000m, 2_450_000m, 2);
+        await GiaOf(p6, svPhong, "Villa 2 phòng ngủ", 4_650_000m, 5_900_000m, 4);
+        await GiaOf(p6, svAn, "Buffet hải sản tối", 385_000m, 520_000m, 1);
+
+        await GiaOf(p7, svPhong, "Superior City View 2 khách", 1_150_000m, 1_480_000m, 2);
+        await GiaOf(p7, svPhong, "Deluxe Balcony 2 khách", 1_450_000m, 1_850_000m, 2);
+
+        await GiaOf(p8, svXe, "Xe 16 chỗ Limousine / ngày", 2_150_000m, 2_750_000m, 16);
+        await GiaOf(p8, svXe, "Xe 45 chỗ đời mới / ngày", 3_850_000m, 4_750_000m, 45);
+
+        await GiaOf(p9, svAn, "Set menu 7 món miền Nam", 295_000m, 410_000m, 1);
+        await GiaOf(p9, svAn, "Set menu chay 6 món", 215_000m, 320_000m, 1);
+
+        await GiaOf(p10, svHdv, "HDV tiếng Việt / ngày", 850_000m, 1_150_000m, 1);
+        await GiaOf(p10, svHdv, "HDV tiếng Trung / ngày", 1_350_000m, 1_750_000m, 1);
+
+        await GiaOf(p11, svVe, "Chặng nội địa khứ hồi (tiết kiệm)", 1_450_000m, 1_850_000m, 1);
+        await GiaOf(p11, svVe, "Chặng Đông Nam Á khứ hồi", 3_250_000m, 4_150_000m, 1);
+
+        await GiaOf(p12, svThamQuan, "Vé Bà Nà Hills", 750_000m, 920_000m, 1);
+        await GiaOf(p12, svThamQuan, "Vé VinWonders Nha Trang", 685_000m, 850_000m, 1);
         await db.SaveChangesAsync();
 
         // 7) Mẫu tour + chuyến khởi hành (loại tour inbound/outbound/domestic) ----
@@ -343,13 +385,35 @@ public static class DemoDataSeeder
                 new Surcharge { Name = "Phụ thu phòng đơn", CalcType = 0, DefaultValue = 500_000m, SortOrder = 1, Status = 1 },
                 new Surcharge { Name = "Phụ thu cao điểm", CalcType = 1, DefaultValue = 10m, SortOrder = 2, Status = 1 });
         }
-        if (!await db.Set<PaymentTerm>().AnyAsync())
+        // Điều khoản thanh toán NCC — get-or-create theo TÊN (mirror MarketOf) để lấy được Id rồi gán
+        // vào từng NCC. Trước đây chỉ AddRange một lần: 0 NCC nào có điều khoản → cột "Điều khoản TT"
+        // trống trơn. Phải SaveChanges NGAY để có khoá chính trước khi gán PaymentTermId cho provider.
+        async Task<PaymentTerm> PtOf(string name, string? desc, int sort)
         {
-            db.AddRange(
-                new PaymentTerm { Name = "Thanh toán ngay", Description = "Thanh toán 100% khi đặt", SortOrder = 1, Status = 1 },
-                new PaymentTerm { Name = "Cọc 50%", Description = "Cọc 50%, còn lại trước khởi hành", SortOrder = 2, Status = 1 },
-                new PaymentTerm { Name = "Công nợ 30 ngày", Description = "Thanh toán trong 30 ngày", SortOrder = 3, Status = 1 });
+            var e = await db.Set<PaymentTerm>().FirstOrDefaultAsync(x => x.Name == name);
+            if (e is null) { e = new PaymentTerm { Name = name, Description = desc, SortOrder = sort, Status = 1 }; db.Add(e); }
+            return e;
         }
+        var ptNgay = await PtOf("Thanh toán ngay", "Thanh toán 100% khi đặt", 1);
+        await PtOf("Cọc 50%", "Cọc 50%, còn lại trước khởi hành", 2);
+        await PtOf("Công nợ 15 ngày", "Thanh toán trong 15 ngày", 3);
+        var ptCn30 = await PtOf("Công nợ 30 ngày", "Thanh toán trong 30 ngày", 4);
+        await db.SaveChangesAsync();
+        // Gán điều khoản cho MỌI NCC demo: đối tác lưu trú/HDV/nhà hàng cho nợ 30 ngày; hãng bay/xe/voucher
+        // thu ngay. Gán lại mỗi lần chạy cũng vô hại (idempotent — cùng Id).
+        p1.PaymentTermId = ptCn30.Id;
+        p2.PaymentTermId = ptNgay.Id;
+        p3.PaymentTermId = ptCn30.Id;
+        p4.PaymentTermId = ptCn30.Id;
+        p5.PaymentTermId = ptNgay.Id;
+        p6.PaymentTermId = ptCn30.Id;
+        p7.PaymentTermId = ptCn30.Id;
+        p8.PaymentTermId = ptNgay.Id;
+        p9.PaymentTermId = ptCn30.Id;
+        p10.PaymentTermId = ptCn30.Id;
+        p11.PaymentTermId = ptNgay.Id;
+        p12.PaymentTermId = ptNgay.Id;
+        await db.SaveChangesAsync();
         if (!await db.Set<PaymentAccount>().AnyAsync())
         {
             db.Add(new PaymentAccount { Name = "VCB - Công ty Demo Tour", BankName = "Vietcombank", AccountNumber = "0011000123456", AccountHolder = "CONG TY DEMO TOUR", Branch = "Hà Nội", TransferNote = "Thanh toan tour", IsDefault = true, SortOrder = 1, Status = 1 });
@@ -841,7 +905,9 @@ public static class DemoDataSeeder
             // MỌI cơ hội đều phải gắn hồ sơ khách (luật ở validator). Bộ gieo ghi thẳng qua DbContext
             // nên không đi qua validator — không gán ở đây thì dữ liệu mẫu vi phạm chính luật mà màn
             // hình đang bắt người dùng tuân theo.
-            foreach (var ch in coHoi) { ch.CustomerId = c1.Id; }
+            // Rải cơ hội cho NHIỀU khách (không dồn hết vào 1) để phễu/luồng nhìn ra nhiều mối thật.
+            var khachCoHoi = new[] { c1, c2, c3, c4, c5 };
+            for (var i = 0; i < coHoi.Length; i++) { coHoi[i].CustomerId = khachCoHoi[i % khachCoHoi.Length].Id; }
 
             // Gắn chuyến cho đúng cơ hội "sẵn sàng xuống đơn". Tra theo MÃ chứ không theo vị trí:
             // bản đầu dùng coHoi[^1] và khi chèn thêm một dòng ở giữa thì trường này rơi nhầm sang
@@ -904,6 +970,34 @@ public static class DemoDataSeeder
         var o4 = MkOrder("OD_0004", depHalong.Id, c4.Id, brHcm.Id, uSalesHcm.Id, uSalesHcm.Id, OrderStatus.Confirmed, 6_000_000m);
         var o5 = MkOrder("OD_0005", depThai.Id, c5.Id, brHn.Id, uSalesHn.Id, uSalesHn.Id, OrderStatus.Cancelled, 8_900_000m);
         db.AddRange(o1, o2, o3, o4, o5);
+        await db.SaveChangesAsync();
+
+        // 8b) LUỒNG CRM LIỀN MẠCH: Khách tiềm năng → Khách hàng → Cơ hội → Đơn → Feedback.
+        // Chỉ chạy cùng lô đơn (guard OD_0001 ở trên), nên dữ liệu luôn nối đúng khoá thật.
+        //
+        //  - Cơ hội "sẵn sàng xuống đơn" (CH-2608-06) → CHỐT thành đơn Hạ Long o1 (ConvertedOrderId).
+        //  - Vài lead ĐÃ CONVERT thành khách c1/c2/c3 (ConvertedCustomerId), số còn lại còn trong phễu.
+        //  - Feedback gắn ĐÚNG đơn đã xác nhận + tên/SĐT khớp khách của đơn (không tên tự do rời rạc).
+        var chChot = await db.Set<SalesOpportunity>().FirstOrDefaultAsync(x => x.Code == "CH-2608-06");
+        if (chChot is not null && chChot.ConvertedOrderId is null)
+        {
+            chChot.ConvertedOrderId = o1.Id;
+            db.Update(chChot);
+        }
+
+        db.AddRange(
+            new Lead { FullName = c1.FullName, Phone = c1.Phone, Source = "Facebook", Status = LeadStatus.Won, AssignedToUserId = uSalesHn.Id, CreatedByUserId = uSalesHn.Id, BranchId = brHn.Id, ConvertedCustomerId = c1.Id },
+            new Lead { FullName = c2.FullName, Phone = c2.Phone, Source = "Website", Status = LeadStatus.Won, AssignedToUserId = uSalesHcm.Id, CreatedByUserId = uSalesHcm.Id, BranchId = brHcm.Id, ConvertedCustomerId = c2.Id },
+            new Lead { FullName = c3.FullName, Phone = c3.Phone, Source = "Giới thiệu", Status = LeadStatus.Won, AssignedToUserId = uSalesHn.Id, CreatedByUserId = uOps.Id, BranchId = brHn.Id, ConvertedCustomerId = c3.Id },
+            new Lead { FullName = "Vũ Minh Khôi", Phone = "0912345601", Source = "Facebook", Status = LeadStatus.New, AssignedToUserId = uSalesHn.Id, CreatedByUserId = uSalesHn.Id, BranchId = brHn.Id },
+            new Lead { FullName = "Đặng Thu Hà", Phone = "0912345602", Source = "Zalo", Status = LeadStatus.Contacted, AssignedToUserId = uSalesHcm.Id, CreatedByUserId = uSalesHcm.Id, BranchId = brHcm.Id },
+            new Lead { FullName = "Bùi Quang Huy", Phone = "0912345603", Source = "Website", Status = LeadStatus.Qualified, AssignedToUserId = uSalesHn.Id, CreatedByUserId = uSalesHn.Id, BranchId = brHn.Id },
+            new Lead { FullName = "Lý Thị Ngọc", Phone = "0912345604", Source = "Giới thiệu", Status = LeadStatus.Lost, AssignedToUserId = uSalesHcm.Id, CreatedByUserId = uSalesHcm.Id, BranchId = brHcm.Id });
+
+        db.AddRange(
+            new TourRating { OrderId = o1.Id, TourDepartureId = depHalong.Id, CustomerName = c1.FullName, CustomerPhone = c1.Phone, Stars = 5, Comment = "Tour Hạ Long rất tốt, hướng dẫn viên nhiệt tình.", Status = 1, SalesUserId = uSalesHn.Id, OperatorUserId = uOps.Id },
+            new TourRating { OrderId = o2.Id, TourDepartureId = depThai.Id, CustomerName = c2.FullName, CustomerPhone = c2.Phone, Stars = 4, Comment = "Thái Lan vui, khách sạn ổn, ăn uống hơi vội.", Status = 1, SalesUserId = uSalesHcm.Id, OperatorUserId = uOps.Id },
+            new TourRating { OrderId = o4.Id, TourDepartureId = depHalong.Id, CustomerName = c4.FullName, CustomerPhone = c4.Phone, Stars = 5, Comment = "Sẽ đặt tiếp lần sau, cảm ơn team.", Status = 1, SalesUserId = uSalesHcm.Id, OperatorUserId = uOps.Id });
         await db.SaveChangesAsync();
 
         // 9) Dòng chi phí (NCC theo đơn) -----------------------------------------
