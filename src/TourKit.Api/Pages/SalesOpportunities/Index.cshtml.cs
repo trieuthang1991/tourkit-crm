@@ -393,7 +393,7 @@ public class IndexModel : TkListPageModel
     /// Việc đánh dấu cơ hội đã chốt nằm TRONG BookingService, sau khi đơn đã lưu — đúng thứ tự của
     /// hệ cũ. Ở đây chỉ kiểm những thứ người dùng phải bổ sung trước.
     /// </summary>
-    public async Task<IActionResult> OnPostChotDonAsync(Guid id)
+    public async Task<IActionResult> OnPostChotDonAsync(Guid id, Guid? salesUserId)
     {
         if (!CanManage)
         {
@@ -438,7 +438,12 @@ public class IndexModel : TkListPageModel
             // khách, chốt xong mà đơn mang giá khác là sai ngay tại lúc bàn giao.
             var don = await _booking.CreateBookingAsync(
                 chuyenId,
-                new CreateBookingDto(khachId, o.AdultQty, o.ChildQty, o.ChildSmallQty, o.BabyQty, OpportunityId: id),
+                new CreateBookingDto(
+                    khachId, o.AdultQty, o.ChildQty, o.ChildSmallQty, o.BabyQty,
+                    OpportunityId: id,
+                    // Người phụ trách đi theo sang đơn. Không chọn ở hộp xác nhận thì rơi về người
+                    // phụ trách CHÍNH của cơ hội (bỏ qua người chỉ theo dõi).
+                    SalesUserId: salesUserId ?? o.Assignees.FirstOrDefault(a => !a.IsFollower)?.UserId),
                 new SeatPrices(o.PriceAdult, o.PriceChild, o.PriceChildSmall, o.PriceBaby));
 
             return new JsonResult(Result.Success($"Đã chốt đơn {don.Code}.", new { orderId = don.Id }));

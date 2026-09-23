@@ -320,6 +320,10 @@
 
     // Cột phễu do SERVER cấu hình, không ghi cứng ở đây — thêm một bước bán hàng trong danh mục là
     // kanban có thêm cột, không phải sửa mã nguồn.
+    // Danh bạ nhân viên cho hộp xác nhận chốt đơn — đổ sẵn từ server, khỏi thêm một vòng ajax.
+    var NHAN_VIEN = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Users.Select(u => new { id = u.Id, name = u.Name })));
+
     var STAGES = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
         Model.Stages.Select(s => new { code = s.Code, name = s.Name, color = s.Color })));
     var HUY = @TourKit.Shared.Entities.OpportunityStageCode.Huy;
@@ -558,14 +562,19 @@
        * khoá sửa/xoá/chuyển cột, vì số liệu của nó đã đi vào đơn hàng.
        */
       function chotDon(r) {
-        tk.confirmWarn({
+        // Hỏi luôn NGƯỜI PHỤ TRÁCH đơn, mặc định là người phụ trách chính của cơ hội. Công bán
+        // hàng phải đi theo sang đơn; để đơn trống người bán thì lúc tính hoa hồng không truy ra ai.
+        tk.confirmNguoiPhuTrach({
           title: 'Chốt cơ hội thành đơn?',
           text: 'Sẽ tạo đơn thật cho ' + r.soKhach + ' khách, giá trị ' + tk.money(r.estimatedValue)
               + ' đ. Sau khi chốt, cơ hội này không sửa hay xoá được nữa.',
-          confirm: 'Chốt đơn'
-        }).then(function (ok) {
-          if (!ok) { return; }
+          confirm: 'Chốt đơn',
+          nguoi: NHAN_VIEN,
+          macDinh: (r.assigneeIds || [])[0] || ''
+        }).then(function (kq) {
+          if (!kq.ok) { return; }
           var fd = new FormData(); fd.append('id', r.id);
+          if (kq.nguoiId) { fd.append('salesUserId', kq.nguoiId); }
           tk.post('?handler=ChotDon', fd).then(function (res) {
             if (res && res.isSuccess) { grid.reload(); tk.toast(res.message); }
             else { tk.error((res && res.message) || 'Không chốt được đơn.'); }

@@ -8,7 +8,12 @@ namespace TourKit.UnitTests.Crm;
 public sealed class LeadCampaignServiceTests
 {
     private static LeadCampaignService NewService(FakeRepository<LeadCampaign> repo, FakeRepository<Lead> leadRepo)
-        => new(repo, leadRepo, new FakeRepository<User>());
+        => new(repo, leadRepo, new FakeRepository<User>(), new FakeCurrentUser());
+
+    private sealed class FakeCurrentUser : TourKit.Shared.Security.ICurrentUserContext
+    {
+        public Guid? UserId => null;
+    }
 
     [Fact]
     public async Task CreateAsync_rejects_empty_name()

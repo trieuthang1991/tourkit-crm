@@ -32,7 +32,7 @@ public class LeadServiceTests
             new CreateCustomerValidator(), new UpdateCustomerValidator());
 
         var campaigns = new LeadCampaignService(
-            new FakeRepository<LeadCampaign>(), repo, new FakeRepository<User>());
+            new FakeRepository<LeadCampaign>(), repo, new FakeRepository<User>(), new FakeCurrentUser());
 
         return new LeadService(
             repo, customers, campaigns,
@@ -53,7 +53,7 @@ public class LeadServiceTests
             customerRepo, new FakeRepository<Order>(), new FakeRepository<CustomerCare>(), new FakeRepository<User>(),
             new FakeCurrentUser(), new FakeCustomerQueries(),
             new CreateCustomerValidator(), new UpdateCustomerValidator());
-        var campaigns = new LeadCampaignService(campaignRepo, repo, new FakeRepository<User>());
+        var campaigns = new LeadCampaignService(campaignRepo, repo, new FakeRepository<User>(), new FakeCurrentUser());
 
         return new LeadService(
             repo, customers, campaigns,

@@ -14,7 +14,8 @@ namespace TourKit.Application.Crm;
 public sealed class LeadCampaignService(
     IRepository<LeadCampaign> repo,
     IRepository<Lead> leadRepo,
-    IRepository<User> userRepo) : ILeadCampaignService
+    IRepository<User> userRepo,
+    TourKit.Shared.Security.ICurrentUserContext currentUser) : ILeadCampaignService
 {
     public async Task<PagedResult<LeadCampaignDto>> ListAsync(int page, int size, LeadCampaignListFilter? filter = null)
     {
@@ -63,6 +64,9 @@ public sealed class LeadCampaignService(
             Note = dto.Note,
             Status = 0,
             Code = await SinhMaAsync(),
+            // Ghi NGƯỜI TẠO. Trước đây không gán nên cột "Người tạo" trên lưới luôn rỗng với mọi
+            // chiến dịch tạo qua giao diện — chỉ dữ liệu mẫu mới có, và không ai hiểu vì sao.
+            CreatedByUserId = currentUser.UserId,
             AssignMode = dto.AssignMode,
             AssigneesJson = NhomChiaSo.ToJsonOrNull(dto.Assignees),
         };
@@ -145,10 +149,6 @@ public sealed class LeadCampaignService(
         return dau + (lonNhat + 1).ToString("D3", CultureInfo.InvariantCulture);
     }
 
-    /// <summary>
-    /// Tra chiến dịch theo mã rồi chia số — đây là cửa mà form thu lead đi vào.
-    /// <c>null</c> khi mã không tra được: lead vẫn được tạo, chỉ là không gắn chiến dịch nào.
-    /// </summary>
     /// <summary>
     /// Tra CẤU HÌNH chia số theo mã. Tách riêng để tầng ngoài bọc cache được — xem
     /// <see cref="CauHinhChiaSoDto"/>.

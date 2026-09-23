@@ -11,9 +11,16 @@ namespace TourKit.Application.Booking.Dtos;
 /// và <c>Orders</c> xong MỚI quay lại đánh dấu phiếu đã chốt. Làm ngược lại — cho cơ hội tự sinh đơn —
 /// sẽ đẻ ra đường tạo đơn thứ hai, lệch luật sức chứa và giá với đường đang có.
 /// </summary>
+/// <summary>
+/// Tạo đơn từ một lần đặt chỗ.
+///
+/// <c>SalesUserId</c> là người phụ trách ĐI THEO từ cơ hội sang đơn. Người bấm nút chốt chọn ở hộp
+/// xác nhận, mặc định là người đang phụ trách cơ hội — không mang theo thì đúng lúc đơn có tiền lại
+/// không ai biết ai đã bán nó.
+/// </summary>
 public sealed record CreateBookingDto(
     Guid CustomerId, int AdultQty, int ChildQty, int ChildSmallQty, int BabyQty,
-    Guid? OpportunityId = null);
+    Guid? OpportunityId = null, Guid? SalesUserId = null);
 
 /// <summary>
 /// Giá chỗ truyền tường minh (thay vì lấy từ mẫu tour) — dùng cho chuyến RIÊNG FIT không template:

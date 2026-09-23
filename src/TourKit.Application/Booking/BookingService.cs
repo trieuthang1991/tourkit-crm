@@ -34,7 +34,7 @@ public sealed class BookingService(
     {
         var (order, _) = await BuildAsync(
             departureId, dto.CustomerId, dto.AdultQty, dto.ChildQty, dto.ChildSmallQty, dto.BabyQty,
-            isHold: false, priceOverride);
+            isHold: false, priceOverride, dto.SalesUserId);
 
         await ChotCoHoiAsync(dto.OpportunityId, order.Id);
 
@@ -682,7 +682,7 @@ public sealed class BookingService(
     /// </summary>
     private async Task<(Order Order, TourCustomer Seat)> BuildAsync(
         Guid departureId, Guid customerId, int adultQty, int childQty, int childSmallQty, int babyQty,
-        bool isHold, SeatPrices? priceOverride)
+        bool isHold, SeatPrices? priceOverride, Guid? salesUserId = null)
     {
         var departure = await departureRepo.GetByIdAsync(departureId);
         if (departure is null)
@@ -737,6 +737,9 @@ public sealed class BookingService(
             TourDepartureId = departureId,
             CustomerId = customerId,
             CreatedByUserId = currentUser.UserId,
+            // Người BÁN, khác người TẠO: đơn có thể do điều hành nhập hộ, nhưng công vẫn là của sale
+            // đã theo cơ hội từ đầu. Không truyền thì để trống chứ không lấy người đang đăng nhập.
+            SalesUserId = salesUserId,
             BookingType = 0,
             Status = isHold ? OrderStatus.Draft : OrderStatus.Confirmed,
         };
