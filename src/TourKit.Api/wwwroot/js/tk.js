@@ -294,16 +294,18 @@
     // bảng. Bản mặc định của DataTables là ba chấm nảy trong khung trần — trông như trang chưa làm
     // xong. Markup để Ở ĐÂY (một chỗ) thay vì mỗi màn tự khai.
     processing: '<span class="tk-load tk-load-sm"><span class="tk-load-spin"></span><span>Đang tải<span class="tk-dots"></span></span></span>',
-    search: 'Tìm:', lengthMenu: 'Hiện _MENU_ dòng',
+    // search: chỉ ô nhập (bỏ nhãn "Tìm:") + placeholder → dựng thành ô tìm CÓ ICON qua CSS (chuyên nghiệp hơn).
+    search: '_INPUT_', searchPlaceholder: 'Tìm…', lengthMenu: 'Số dòng _MENU_',
     info: 'Hiện _START_–_END_ trên _TOTAL_', infoEmpty: 'Không có dữ liệu', infoFiltered: '(lọc từ _MAX_)',
     zeroRecords: 'Không tìm thấy', emptyTable: 'Chưa có dữ liệu',
     paginate: { first: '«', last: '»', next: '›', previous: '‹' }
   };
+  // Bố cục GIỐNG lưới Tabulator: ô TÌM ở trên (phải), còn SỐ DÒNG + counter + PHÂN TRANG dồn xuống FOOTER dưới.
   // dom CÓ ô tìm (f) — dùng cho màn KHÔNG có thanh lọc riêng (ô tìm của DataTables là tra cứu duy nhất).
-  tk.dtDom = '<"row mx-2 mt-2"<"col-md-6 d-flex align-items-center"l><"col-md-6 d-flex align-items-center justify-content-md-end"f>>t<"row mx-2 my-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-md-end"p>>';
+  tk.dtDom = '<"tk-dt-hd px-2 pt-2 d-flex justify-content-end"f>t<"tk-dt-ft px-2 py-2 d-flex align-items-center flex-wrap gap-2"l<"tk-dt-info ms-1 text-muted small flex-grow-1"i><"ms-auto"p>>';
   // dom KHÔNG có ô tìm — dùng khi trang đã có thanh lọc với ô từ khoá (#f-q). Ô "Tìm:" của DataTables
   // lúc đó là ô CHẾT: extraData ghi đè search[value] bằng #f-q nên gõ vào nó không có tác dụng, chỉ gây rối.
-  tk.dtDomNoSearch = '<"row mx-2 mt-2"<"col-md-6 d-flex align-items-center"l>>t<"row mx-2 my-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-md-end"p>>';
+  tk.dtDomNoSearch = 't<"tk-dt-ft px-2 py-2 d-flex align-items-center flex-wrap gap-2"l<"tk-dt-info ms-1 text-muted small flex-grow-1"i><"ms-auto"p>>';
   // ---- Gộp cặp ngày "từ – đến" thành MỘT ô date-range ----
   // Trước đây mỗi khoảng ngày chiếm 2 cột (Ngày tạo từ | đến) trông rời rạc, kém chuyên nghiệp.
   // Helper tự tìm cặp #f-{k}From + #f-{k}To (đều là .tk-datef), gộp thành một ô flatpickr range,
