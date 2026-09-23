@@ -551,6 +551,15 @@ a.tk-rank-row:hover { color: var(--bs-body-color); background: rgba(var(--bs-pri
   0%, 100% { transform: translateY(-6px) rotate(-2.5deg); }
   50%      { transform: translateY(6px)  rotate(2.5deg); }
 }
+/* Biến thể cho lưới/bảng: ẢNH MÁY BAY nhỏ (ic-plane) bồng bềnh cạnh chữ — tách hẳn với loader của
+   PAGE (mascot LỚN giữa màn ở boot/overlay). "Viền đậm" trước đây là hộp 4px của Tabulator (đã gỡ ở
+   tk-grid.css), không phải ảnh này. */
+.tk-load-sm { flex-direction: row; gap: .5rem; }
+.tk-load-sm .tk-load-spin {
+  width: 56px; height: 42px;
+  background-image: url('/img/branding/mascot/ic-plane.png');
+}
+
 /* Lỗi tải: viên thuốc ĐỎ nằm ngang, gọn. Nền/viền RIÊNG vì .tk-load nay không còn khung. */
 .tk-load-loi {
   flex-direction: row; gap: .5rem; padding: .5rem .875rem; border-radius: 999px;

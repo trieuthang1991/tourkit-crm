@@ -293,7 +293,7 @@
     // Chỉ báo đang tải: vòng xoay theo màu thương hiệu + chữ, gói trong một viên thuốc nổi giữa
     // bảng. Bản mặc định của DataTables là ba chấm nảy trong khung trần — trông như trang chưa làm
     // xong. Markup để Ở ĐÂY (một chỗ) thay vì mỗi màn tự khai.
-    processing: '<span class="tk-load"><span class="tk-load-spin"></span>Đang tải…</span>',
+    processing: '<span class="tk-load tk-load-sm"><span class="tk-load-spin"></span>Đang tải…</span>',
     search: 'Tìm:', lengthMenu: 'Hiện _MENU_ dòng',
     info: 'Hiện _START_–_END_ trên _TOTAL_', infoEmpty: 'Không có dữ liệu', infoFiltered: '(lọc từ _MAX_)',
     zeroRecords: 'Không tìm thấy', emptyTable: 'Chưa có dữ liệu',

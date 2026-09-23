@@ -92,6 +92,14 @@ a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
   width: 132px; height: 132px; margin-bottom: .25rem;
   background: url('/img/branding/mascot/mascot-map.png') center / contain no-repeat;
 }
+
+/* Tabulator bọc loader/alert trong hộp VIỀN 4px đậm + bo góc mặc định → gỡ hẳn để chỉ còn máy bay +
+   chữ, thả tự nhiên giữa lưới. Nội dung lỗi (.tk-load-loi) tự có pill nền/viền riêng nên vẫn nổi rõ. */
+.tabulator .tabulator-loader-msg,
+.tabulator .tabulator-alert-msg {
+  border: 0 !important; background: transparent !important; box-shadow: none !important;
+  padding: .25rem .5rem !important; color: var(--bs-secondary-color) !important;
+}
 .tk-empty-title { font-weight: 500; color: var(--bs-heading-color); }
 .tk-empty-hint { font-size: .8rem; color: var(--bs-secondary-color); }
 .tk-grid .tabulator-alert { background: rgba(var(--bs-primary-rgb), .04); }
