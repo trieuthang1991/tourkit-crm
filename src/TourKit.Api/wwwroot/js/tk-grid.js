@@ -406,7 +406,7 @@
     wireBulkBar(table, reload, opts);
     tameMenus();
     fitHeight(el, table);
-    if (opts.wireFilters !== false) { wireFilterBar(reload, filterKeys, collectFilters, opts); }
+    if (opts.wireFilters !== false) { wireFilterBar(reload, filterKeys, collectFilters, opts, function () { return lastFiltered; }); }
 
     return { table: table, reload: reload, filters: collectFilters, filteredTotal: function () { return lastFiltered; } };
   };
@@ -629,7 +629,7 @@
   }
 
   // ===== Thanh lọc chuẩn của repo =====
-  function wireFilterBar(reload, filterKeys, collectFilters, opts) {
+  function wireFilterBar(reload, filterKeys, collectFilters, opts, getFiltered) {
     on('btn-search', reload);
     var q = document.getElementById('f-q');
     if (q) {
@@ -728,9 +728,21 @@
       });
     }
 
-    // Xuất TOÀN BỘ theo bộ lọc đang áp (server-side) — không chỉ trang hiện tại.
-    on('btn-export', function () {
+    // Xuất file: MẶC ĐỊNH mở POPUP chung (tk.exportDialog) cho chọn số dòng theo bộ lọc đang áp —
+    // KHÔNG tải thẳng. Màn nào chưa tự nối #btn-export sẽ có hành vi chuẩn này. (Thiếu bootstrap →
+    // rơi về tải thẳng như cũ.)
+    on('btn-export', function (e) {
+      if (e && e.preventDefault) { e.preventDefault(); }
       var d = collectFilters();
+      if (d.q != null && d.search == null) { d.search = d.q; }   // vài handler Export đọc `search`
+      if (tk.exportDialog) {
+        tk.exportDialog({
+          url: opts.exportUrl || '?handler=Export', filters: d,
+          filteredTotal: getFiltered ? getFiltered() : null,
+          pageSize: opts.pageSize || 20
+        });
+        return;
+      }
       var qs = Object.keys(d).map(function (k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(d[k]);
       }).join('&');

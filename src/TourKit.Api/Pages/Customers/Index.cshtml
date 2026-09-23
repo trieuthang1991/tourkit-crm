@@ -285,14 +285,15 @@
       // Lọc nâng cao: tk.advFilter tự chèn nút icon lọc vào nhóm nút Tìm/Đặt lại (khuôn chuẩn).
       tk.advFilter();
 
-      // "Xuất file" — dựng URL export kèm ĐÚNG bộ lọc đang áp.
-      $('#btn-export').on('click', function () {
+      // "Xuất file" mở POPUP CHUNG (tk.exportDialog): chọn số dòng xuất theo bộ lọc đang áp.
+      // Màn này dùng DataTables (tk.table), không có grid.filters()/filteredTotal() → tự gom lọc
+      // bằng collectFilters() rồi đổi khoá search[value] → search cho khớp handler Export.
+      $('#btn-export').off('click').on('click', function (e) {
+        e.preventDefault();
         var d = {}; collectFilters(d);
-        var qs = Object.keys(d).map(function (k) {
-          var key = k === 'search[value]' ? 'search' : k;
-          return encodeURIComponent(key) + '=' + encodeURIComponent(d[k]);
-        }).join('&');
-        window.location = '?handler=Export' + (qs ? '&' + qs : '');
+        var f = {};
+        Object.keys(d).forEach(function (k) { f[k === 'search[value]' ? 'search' : k] = d[k]; });
+        tk.exportDialog({ url: '?handler=Export', filters: f, filteredTotal: null, pageSize: dt.page.len(), max: 20000 });
       });
       $('#btn-reset').on('click', function () {
         $('#f-q').val('');

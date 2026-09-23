@@ -64,7 +64,7 @@
     <div class="row g-2 align-items-center">
       <div class="col-md-4"><input type="text" id="f-q" class="form-control" placeholder="Mã PNR" /></div>
       <div class="col-md-2">
-        <select id="f-marketRef" class="form-select tk-s2f" data-placeholder="Thị trường"><option value=""></option>@foreach (var m in Model.Markets) { <option value="@m.Id">@m.Name</option> }</select>
+        <select id="f-marketRef" class="form-select tk-s2f tk-market" data-placeholder="Thị trường"><option value=""></option>@foreach (var m in Model.Markets) { <option value="@m.Id">@m.Name</option> }</select>
       </div>
       <div class="col-md-2">
         <select id="f-providerRef" class="form-select" data-placeholder="NCC"></select>
@@ -121,7 +121,7 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Thị trường</label>
-        <select name="Input.MarketRef" class="form-select tk-s2" data-placeholder="Chọn thị trường">
+        <select name="Input.MarketRef" class="form-select tk-s2 tk-market" data-placeholder="Chọn thị trường">
           <option value=""></option>
           @foreach (var m in Model.Markets) { <option value="@m.Id">@m.Name</option> }
         </select>
@@ -368,12 +368,14 @@
         });
       });
 
-      // Xuất TOÀN BỘ theo bộ lọc đang áp — handler Export nhận keyword ở tham số `search`.
+      // "Xuất file" mở POPUP CHUNG (tk.exportDialog): chọn số dòng xuất theo bộ lọc đang áp.
       $('#btn-export').off('click').on('click', function (e) {
         e.preventDefault();
-        var p = new URLSearchParams(grid.filters());
-        var q = $('#f-q').val(); if (q) { p.set('search', q); }
-        location.href = '?handler=Export&' + p.toString();
+        var f = grid.filters(); var q = $('#f-q').val(); if (q) { f.search = q; }
+        tk.exportDialog({
+          url: '?handler=Export', filters: f, filteredTotal: grid.filteredTotal(),
+          pageSize: grid.table.getPageSize(), max: 20000
+        });
       });
     });
   </script>

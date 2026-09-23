@@ -296,12 +296,14 @@
         ]
       });
 
-      // Xuất TOÀN BỘ theo bộ lọc đang áp — handler Export nhận keyword ở tham số `search`.
+      // "Xuất file" mở POPUP CHUNG (tk.exportDialog): chọn số dòng xuất theo bộ lọc đang áp.
       $('#btn-export').off('click').on('click', function (e) {
         e.preventDefault();
-        var p = new URLSearchParams(grid.filters());
-        var q = $('#f-q').val(); if (q) { p.set('search', q); }
-        location.href = '?handler=Export&' + p.toString();
+        var f = grid.filters(); var q = $('#f-q').val(); if (q) { f.search = q; }
+        tk.exportDialog({
+          url: '?handler=Export', filters: f, filteredTotal: grid.filteredTotal(),
+          pageSize: grid.table.getPageSize(), max: 20000
+        });
       });
     });
   </script>
