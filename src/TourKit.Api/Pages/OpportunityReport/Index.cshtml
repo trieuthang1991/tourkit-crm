@@ -30,10 +30,12 @@
     <div class="text-muted mb-1" style="font-size:.78rem">CRM <span class="mx-1">/</span> <span class="text-body">Báo cáo phễu cơ hội</span></div>
     <h4 class="mb-0">Báo cáo phễu cơ hội</h4>
   </div>
+  @* 2 ô ngày gộp thành MỘT ô chọn khoảng (tk.dateRanges tự bắt cặp #...From + #...To .tk-datef,
+     ghi ISO ngược về name=tu/den nên form GET không phải sửa). *@
   <form method="get" class="d-flex gap-2 align-items-center">
-    <input type="text" name="tu" class="form-control tk-datef" placeholder="Từ ngày" autocomplete="off"
+    <input type="text" id="f-kyFrom" name="tu" class="form-control tk-datef" placeholder="Kỳ từ" autocomplete="off"
            value="@(Model.Tu?.ToString("yyyy-MM-dd"))" />
-    <input type="text" name="den" class="form-control tk-datef" placeholder="đến ngày" autocomplete="off"
+    <input type="text" id="f-kyTo" name="den" class="form-control tk-datef" placeholder="đến ngày" autocomplete="off"
            value="@(Model.Den?.ToString("yyyy-MM-dd"))" />
     <button type="submit" class="btn btn-primary text-nowrap"><i class="ti ti-search me-1"></i>Xem</button>
     <a href="/bao-cao-co-hoi" class="btn btn-icon btn-label-secondary" title="Bỏ lọc kỳ"><i class="ti ti-rotate"></i></a>
