@@ -167,6 +167,17 @@ a.tk-cell-main:hover { color: var(--bs-primary); text-decoration: underline; }
 .tabulator-menu .tabulator-menu-item:not(.tabulator-menu-item-disabled):hover { background: rgba(var(--bs-primary-rgb), .08); }
 .tabulator-menu .tabulator-menu-separator { border-top: 1px solid var(--bs-border-color); margin: .25rem 0; }
 
+/* Mục "Chuyển trạng thái ▸" trong menu hành động (chuột phải / ⋮): MỘT action, hover mở submenu. */
+.tk-status-parent { display: inline-flex; align-items: center; gap: .5rem; width: 100%; }
+.tk-status-parent > i:first-child { font-size: .95rem; color: var(--bs-secondary-color); }
+.tk-status-parent-txt { flex: 1 1 auto; }
+.tk-status-caret { font-size: .9rem; color: var(--bs-secondary-color); margin-left: auto; }
+.tk-status-opt { display: inline-flex; align-items: center; gap: .4rem; }
+/* Submenu trạng thái (chứa .tk-status-opt, KHÔNG chứa mục cha): thu gọn + badge căn giữa,
+   tránh hộp rộng thừa trắng. */
+.tabulator-menu:has(.tk-status-opt):not(:has(.tk-status-parent)) { min-width: 148px; }
+.tabulator-menu:has(.tk-status-opt):not(:has(.tk-status-parent)) .tabulator-menu-item { text-align: center; }
+
 /* Nút chọn cột. Hiện ở MỌI tiêu đề thì hàng tiêu đề đầy icon lặp lại — chỉ để nút ở cột thao tác
    (⋮, ngoài cùng phải) làm nút "chỉnh bảng" cố định; các cột còn lại nút chỉ hiện khi rê chuột
    vào đúng cột đó, dùng để tắt nhanh chính cột đang vướng. */

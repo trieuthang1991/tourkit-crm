@@ -64,8 +64,9 @@
   };
 
   // ===== Cột TRẠNG THÁI đổi-nhanh dùng CHUNG (bám mẫu Đơn hàng) =====
-  // Badge hiện tại bấm ra menu các trạng thái ĐÍCH → POST tới handler Razor → nạp lại lưới.
-  // Mọi màn có trạng thái phải dùng cái này thay vì tự nối menu, để hành vi + hình ảnh y hệt nhau.
+  // Badge ở cột này CHỈ để HIỂN THỊ. Việc đổi trạng thái nằm trong MENU HÀNH ĐỘNG (chuột phải trên
+  // dòng + nút ⋮) như mọi thao tác khác — tk.grid tự chèn mục "Chuyển trạng thái" nhờ dấu `_tkStatusCfg`
+  // trên cột, KHÔNG cần mỗi màn sửa hàm actions.
   //   columns: [ …, g.statusCol({
   //     field:'status', handler:'?handler=SetStatus',
   //     options:[{v:0,label:'Nháp',color:'secondary'}, {v:1,label:'Đã gửi',color:'info'}, …],
@@ -78,41 +79,55 @@
     var byV = {};
     opts.forEach(function (x) { byV[x.v] = x; });
     function cur(row) { return byV[row[o.field]] || { label: row[o.field] == null ? '—' : row[o.field], color: 'secondary' }; }
-    function targets(row) {
-      var vs = o.allowed ? (o.allowed(row) || []) : opts.map(function (x) { return x.v; });
-      return vs.filter(function (v) { return v !== row[o.field] && byV[v]; });
-    }
     return {
-      title: o.title || 'Trạng thái', field: o.field, width: o.width || 160,
+      title: o.title || 'Trạng thái', field: o.field, width: o.width || 150,
       hozAlign: o.hozAlign || 'left', headerSort: false,
-      clickMenu: function (e, cell) {
-        var row = cell.getRow().getData();
-        return targets(row).map(function (v) {
-          var x = byV[v];
-          return {
-            label: '<span class="badge bg-label-' + esc(x.color || 'secondary') + ' me-2">' + esc(x.label) + '</span>' +
-              (x.hint ? '<small class="text-muted">' + esc(x.hint) + '</small>' : ''),
-            action: function (ev) {
-              ev.stopPropagation();
-              var go = function () { g.setStatus(o.handler, row[o.idField || 'id'], v, { param: o.param, idParam: o.idParam, reload: o.reload }); };
-              if (x.confirm && tk.confirmDelete) {
-                tk.confirmDelete({ title: typeof x.confirm === 'string' ? x.confirm : 'Đổi sang "' + x.label + '"?', confirmText: 'Đổi', icon: 'question' }).then(function (ok) { if (ok) { go(); } });
-              } else { go(); }
-            }
-          };
-        });
-      },
+      _tkStatusCfg: o,   // tk.grid đọc để chèn "Chuyển trạng thái" vào menu hành động (chuột phải + ⋮)
       formatter: function (c) {
         var row = c.getData();
         var s = cur(row);
-        var body = !targets(row).length
-          ? '<span class="badge bg-label-' + esc(s.color || 'secondary') + '">' + esc(s.label) + '</span>'
-          : g.pick(s.label, s.color, 'Bấm để đổi trạng thái');
+        var badge = '<span class="badge bg-label-' + esc(s.color || 'secondary') + '">' + esc(s.label) + '</span>';
         var sub = o.sub ? o.sub(row) : null;   // dòng phụ tuỳ chọn (vd "Đã chuyển đơn")
-        if (!sub) { return body; }
-        return '<div class="tk-cell">' + body + '<div class="tk-cell-sub mt-1">' + esc(sub) + '</div></div>';
+        if (!sub) { return badge; }
+        return '<div class="tk-cell">' + badge + '<div class="tk-cell-sub mt-1">' + esc(sub) + '</div></div>';
       }
     };
+  };
+
+  // Sinh mục "Chuyển trạng thái" cho MENU HÀNH ĐỘNG của một dòng (chuột phải / ⋮): MỘT mục cha,
+  // hover mở SUBMENU sang phải liệt kê các trạng thái đích (dùng `menu` lồng của Tabulator).
+  // Trả [] nếu không còn bước hợp lệ (trạng thái cuối) → không thêm mục thừa.
+  g.statusMenuItems = function (row, o) {
+    var opts = o.options || [];
+    var byV = {};
+    opts.forEach(function (x) { byV[x.v] = x; });
+    var current = row[o.field];
+    var vs = o.allowed ? (o.allowed(row) || []) : opts.map(function (x) { return x.v; });
+    var targets = vs.filter(function (v) { return v !== current && byV[v]; });
+    if (!targets.length) { return []; }
+
+    var sub = targets.map(function (v) {
+      var x = byV[v];
+      return {
+        label: '<span class="tk-status-opt">' +
+          '<span class="badge bg-label-' + esc(x.color || 'secondary') + '">' + esc(x.label) + '</span>' +
+          (x.hint ? '<small class="text-muted">' + esc(x.hint) + '</small>' : '') + '</span>',
+        action: function (ev) {
+          ev.stopPropagation();
+          var go = function () { g.setStatus(o.handler, row[o.idField || 'id'], v, { param: o.param, idParam: o.idParam, reload: o.reload }); };
+          if (x.confirm && tk.confirmDelete) {
+            tk.confirmDelete({ title: typeof x.confirm === 'string' ? x.confirm : 'Đổi sang "' + x.label + '"?', confirmText: 'Đổi', icon: 'question' }).then(function (ok) { if (ok) { go(); } });
+          } else { go(); }
+        }
+      };
+    });
+
+    return [{
+      label: '<span class="tk-status-parent"><i class="ti ti-arrows-exchange"></i>' +
+        '<span class="tk-status-parent-txt">Chuyển trạng thái</span>' +
+        '<i class="ti ti-chevron-right tk-status-caret"></i></span>',
+      menu: sub
+    }];
   };
 
   // POST đổi trạng thái tới handler Razor (auth bằng cookie — KHÔNG gọi /api/v1 vì API dùng JWT → 401),
@@ -221,7 +236,23 @@
       return d;
     }
 
-    var actionsFor = opts.actions || function () { return []; };
+    // Cột trạng thái đổi-nhanh (g.statusCol) đánh dấu `_tkStatusCfg` → chèn nhóm "Chuyển trạng thái"
+    // vào menu hành động của MỌI dòng (chuột phải + ⋮), sau các mục Sửa/Xoá… của màn.
+    var statusCfgs = (opts.columns || []).map(function (c) { return c && c._tkStatusCfg; }).filter(Boolean);
+    var baseActions = opts.actions || function () { return []; };
+    var actionsFor = statusCfgs.length ? function (row) {
+      var items = baseActions(row).slice();
+      statusCfgs.forEach(function (cfg) {
+        var extra = g.statusMenuItems(row, cfg);
+        if (extra.length) {
+          if (items.length) { items.push({ separator: true }); }
+          items = items.concat(extra);
+        }
+      });
+      return items;
+    } : baseActions;
+    // Có cột trạng thái cũng đủ để bật menu dòng + nút ⋮, dù màn không khai báo `actions` riêng.
+    var hasRowMenu = !!(opts.actions || statusCfgs.length);
 
     /**
      * Dòng TỔNG không phải một bản ghi, nên không được mang menu hành động.
@@ -264,7 +295,7 @@
       });
     }
     columns = columns.concat(dataCols);
-    if (opts.actions) {
+    if (hasRowMenu) {
       columns.push({
         // Tiêu đề cột này mang nút "chỉnh bảng" cố định (ẩn/hiện cột) — một chỗ duy nhất,
         // luôn nhìn thấy, thay vì rải icon trên từng cột.
@@ -338,7 +369,7 @@
       },
       columns: columns
     };
-    if (opts.actions) { config.rowContextMenu = rowActionMenu; }
+    if (hasRowMenu) { config.rowContextMenu = rowActionMenu; }
     if (opts.onRowClick) { el.classList.add('tk-grid-clickable'); }
     if (selectable) {
       // 'highlight' = CHỈ ô chọn mới tích/bỏ tích. Để `true` thì bấm vào ô dữ liệu bất kỳ cũng
@@ -521,10 +552,25 @@
     new MutationObserver(function (recs) {
       recs.forEach(function (rec) {
         Array.prototype.forEach.call(rec.addedNodes, function (n) {
-          if (n.nodeType === 1 && n.classList && n.classList.contains('tabulator-menu')) { placeMenu(n); }
+          if (n.nodeType === 1 && n.classList && n.classList.contains('tabulator-menu')) {
+            // Menu CON (submenu "Chuyển trạng thái") = khi đã có menu khác đang mở → để Tabulator tự
+            // đặt cạnh mục cha (nó tự lật trái khi hết chỗ). Chỉ nắn menu CẤP 1. CSS đã chặn lỗi ép
+            // chiều cao cho cả hai cấp.
+            if (document.querySelectorAll('.tabulator-menu').length <= 1) { placeMenu(n); }
+          }
         });
       });
     }).observe(document.body, { childList: true, subtree: true });
+
+    // Submenu Tabulator mặc định mở bằng CLICK. Cho mở bằng HOVER (đúng thói quen menu desktop):
+    // rê vào mục có submenu mà CHƯA mở (chỉ đang có 1 menu) thì tự bấm để bung sang phải. Guard >1
+    // để không click lặp gây đóng khi submenu đã mở hoặc khi con trỏ đang ở trong submenu.
+    document.addEventListener('mouseover', function (e) {
+      var item = e.target.closest && e.target.closest('.tabulator-menu-item-submenu');
+      if (!item) { return; }
+      if (document.querySelectorAll('.tabulator-menu').length > 1) { return; }
+      item.click();
+    });
   }
 
   function placeMenu(m) {
