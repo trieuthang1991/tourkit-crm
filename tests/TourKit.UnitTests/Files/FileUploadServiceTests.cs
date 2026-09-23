@@ -2,7 +2,6 @@ using System.Text;
 using TourKit.Application.Common;
 using TourKit.Application.Files;
 using TourKit.Shared.Entities;
-using TourKit.UnitTests.Booking; // FakeRepository<T> generic dùng chung
 
 namespace TourKit.UnitTests.Files;
 

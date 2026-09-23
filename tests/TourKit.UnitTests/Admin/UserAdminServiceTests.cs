@@ -3,7 +3,6 @@ using TourKit.Application.Auth;
 using TourKit.Application.Common;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Security;
-using TourKit.UnitTests.Catalog; // FakeRepository<T>
 
 namespace TourKit.UnitTests.Admin;
 

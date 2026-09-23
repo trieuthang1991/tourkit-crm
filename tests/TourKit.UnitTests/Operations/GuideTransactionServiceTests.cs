@@ -2,7 +2,6 @@ using TourKit.Application.Common;
 using TourKit.Application.Operations;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Enums;
-using TourKit.UnitTests.Catalog; // FakeRepository<T>
 
 namespace TourKit.UnitTests.Operations;
 

@@ -1,6 +1,5 @@
 using TourKit.Shared.Constants;
 using TourKit.Shared.Entities;
-using TourKit.UnitTests.Collaboration;
 
 namespace TourKit.UnitTests.Common;
 

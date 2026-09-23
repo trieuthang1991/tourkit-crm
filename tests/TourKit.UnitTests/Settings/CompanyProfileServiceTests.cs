@@ -1,7 +1,6 @@
 using TourKit.Application.Common;
 using TourKit.Application.Settings;
 using TourKit.Shared.Entities;
-using TourKit.UnitTests.Catalog; // FakeRepository<T>
 
 namespace TourKit.UnitTests.Settings;
 

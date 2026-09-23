@@ -4,7 +4,6 @@ using TourKit.Application.Work;
 using TourKit.Application.Work.Validators;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Enums;
-using TourKit.UnitTests.Catalog; // FakeRepository<T>
 
 namespace TourKit.UnitTests.Work;
 

@@ -107,6 +107,44 @@ public sealed class Repository<T>(AppDbContext db) : IRepository<T> where T : Ba
         return (items, total);
     }
 
+    public async Task<(IReadOnlyList<T> Items, int Total)> PageAsync<TKey1, TKey2>(
+        int page, int size,
+        Expression<Func<T, TKey1>> orderBy, bool descending,
+        Expression<Func<T, TKey2>> thenBy, bool thenDescending,
+        Expression<Func<T, bool>>? predicate = null)
+    {
+        var q = predicate is null ? Set : Set.Where(predicate);
+        var p = page < PaginationDefaults.FirstPage ? PaginationDefaults.FirstPage : page;
+        var s = PageSize(size);
+        var total = await q.CountAsync();
+
+        var b1 = descending ? q.OrderByDescending(orderBy) : q.OrderBy(orderBy);
+        var b2 = thenDescending ? b1.ThenByDescending(thenBy) : b1.ThenBy(thenBy);
+
+        var items = await b2.AsNoTracking().Skip((p - 1) * s).Take(s).ToListAsync();
+        return (items, total);
+    }
+
+    public async Task<(IReadOnlyList<T> Items, int Total)> PageAsync<TKey1, TKey2, TKey3>(
+        int page, int size,
+        Expression<Func<T, TKey1>> orderBy, bool descending,
+        Expression<Func<T, TKey2>> thenBy, bool thenDescending,
+        Expression<Func<T, TKey3>> thenBy2, bool thenDescending2,
+        Expression<Func<T, bool>>? predicate = null)
+    {
+        var q = predicate is null ? Set : Set.Where(predicate);
+        var p = page < PaginationDefaults.FirstPage ? PaginationDefaults.FirstPage : page;
+        var s = PageSize(size);
+        var total = await q.CountAsync();
+
+        var b1 = descending ? q.OrderByDescending(orderBy) : q.OrderBy(orderBy);
+        var b2 = thenDescending ? b1.ThenByDescending(thenBy) : b1.ThenBy(thenBy);
+        var b3 = thenDescending2 ? b2.ThenByDescending(thenBy2) : b2.ThenBy(thenBy2);
+
+        var items = await b3.AsNoTracking().Skip((p - 1) * s).Take(s).ToListAsync();
+        return (items, total);
+    }
+
     public Task<decimal> SumAsync(Expression<Func<T, decimal>> selector, Expression<Func<T, bool>>? predicate = null)
         => (predicate is null ? Set : Set.Where(predicate)).SumAsync(selector);
 

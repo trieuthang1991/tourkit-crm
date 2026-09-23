@@ -18,7 +18,18 @@ public sealed class CustomerCareService(
         var f = filter ?? new CustomerCareListFilter();
         var kw = string.IsNullOrWhiteSpace(f.Q) ? null : f.Q.Trim();
 
-        var all = await repo.ListAsync(c =>
+        // Mọi tiêu chí — kể cả từ khoá (khớp Tiêu đề, cột của chính bảng) — đều dịch được sang SQL,
+        // và thứ tự ưu tiên nghiệp vụ (trạng thái trước, rồi tới hạn) nay cắt trang được ở CSDL nhờ
+        // nạp chồng PageAsync hai khoá. Trước đây phải nạp cả bảng lịch hẹn về rồi sắp trong bộ nhớ.
+        var kwL = kw?.ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        var (pageEntities, tong) = await repo.PageAsync(
+            page, size,
+            c => c.Status, descending: false,
+            // Chưa đặt hẹn thì xuống cuối nhóm — trước đây dùng MaxValue trong bộ nhớ, ở SQL thì
+            // NULL sắp sau cùng khi tăng dần trên Postgres (NULLS LAST là mặc định của ASC).
+            c => c.RemindAt, thenDescending: false,
+            c =>
             (f.CustomerId == null || c.CustomerId == f.CustomerId) &&
             (f.AssignedToUserId == null || c.AssignedToUserId == f.AssignedToUserId) &&
             (f.Status == null || c.Status == f.Status) &&
@@ -26,17 +37,11 @@ public sealed class CustomerCareService(
             // Khoảng ngày nhắc hẹn đẩy xuống SQL (bảng lịch hẹn xếp cột theo thời gian).
             (f.RemindFrom == null || (c.RemindAt != null && c.RemindAt >= f.RemindFrom)) &&
             (f.RemindTo == null || (c.RemindAt != null && c.RemindAt <= f.RemindTo)) &&
-            (f.RemindIsNull == null || (f.RemindIsNull.Value ? c.RemindAt == null : c.RemindAt != null)));
-
-        var filtered = all
-            .Where(c => kw == null || c.Title.Contains(kw, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(c => c.Status)
-            .ThenBy(c => c.RemindAt ?? DateTimeOffset.MaxValue)
-            .ToList();
+            (f.RemindIsNull == null || (f.RemindIsNull.Value ? c.RemindAt == null : c.RemindAt != null)) &&
+            (kwL == null || c.Title.ToLower().Contains(kwL)));
+#pragma warning restore CA1304, CA1311, CA1862
 
         // Cắt trang TRƯỚC rồi mới tra tên: chỉ nạp khách/nhân viên xuất hiện trong đúng trang này.
-        // Trước đây nạp TOÀN BỘ bảng Customers (3.000 dòng) chỉ để đặt tên cho vài dòng hiển thị.
-        var pageEntities = filtered.Skip((page - 1) * size).Take(size).ToList();
         var customerIds = pageEntities.Select(c => c.CustomerId).ToHashSet();
         var userIds = pageEntities.Where(c => c.AssignedToUserId is not null)
             .Select(c => c.AssignedToUserId!.Value).ToHashSet();
@@ -49,7 +54,7 @@ public sealed class CustomerCareService(
             : (await userRepo.ListAsync(x => userIds.Contains(x.Id))).ToDictionary(x => x.Id, x => x.FullName);
 
         var pageItems = pageEntities.Select(c => Map(c, customerNames, userNames)).ToList();
-        return new PagedResult<CustomerCareDto>(pageItems, filtered.Count, page, size);
+        return new PagedResult<CustomerCareDto>(pageItems, tong, page, size);
     }
 
     public async Task<CustomerCareStatsDto> GetStatsAsync()

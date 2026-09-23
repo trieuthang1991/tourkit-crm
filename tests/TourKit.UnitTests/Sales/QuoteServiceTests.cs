@@ -3,7 +3,6 @@ using TourKit.Application.Sales;
 using TourKit.Application.Sales.Dtos;
 using TourKit.Application.Sales.Validators;
 using TourKit.Shared.Entities;
-using TourKit.UnitTests.Booking; // FakeRepository<T> generic dùng chung
 
 namespace TourKit.UnitTests.Sales;
 

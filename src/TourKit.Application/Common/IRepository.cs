@@ -27,6 +27,34 @@ public interface IRepository<T> where T : BaseEntity
         int page, int size, Expression<Func<T, TKey>> orderBy, bool descending,
         Expression<Func<T, bool>>? predicate = null);
 
+    /// <summary>
+    /// Cắt trang ở SQL với HAI khoá sắp xếp.
+    ///
+    /// Cần thiết cho những màn mà thứ tự là ƯU TIÊN NGHIỆP VỤ chứ không phải một cột đơn: lịch hẹn
+    /// và công việc xếp "chưa xong trước, trong mỗi nhóm thì gần hạn trước". Chỉ có một khoá thì hai
+    /// màn đó buộc phải nạp cả bảng về rồi sắp trong bộ nhớ — đúng thứ ta đang gỡ bỏ.
+    ///
+    /// Hai khoá đi kèm hướng riêng: trạng thái thường tăng dần (chưa xong = số nhỏ), còn hạn thì
+    /// cũng tăng dần (gần nhất trước) — nhưng chỗ khác lại cần giảm, nên không gộp thành một cờ.
+    /// </summary>
+    Task<(IReadOnlyList<T> Items, int Total)> PageAsync<TKey1, TKey2>(
+        int page, int size,
+        Expression<Func<T, TKey1>> orderBy, bool descending,
+        Expression<Func<T, TKey2>> thenBy, bool thenDescending,
+        Expression<Func<T, bool>>? predicate = null);
+
+    /// <summary>
+    /// Cắt trang ở SQL với BA khoá sắp xếp. Màn Công việc cần đúng ba: trạng thái (chưa xong trước),
+    /// rồi độ ưu tiên (cao trước), rồi hạn (gần trước). Bỏ bớt khoá nào cũng làm đảo thứ tự mà người
+    /// dùng trông vào để biết nên làm gì tiếp.
+    /// </summary>
+    Task<(IReadOnlyList<T> Items, int Total)> PageAsync<TKey1, TKey2, TKey3>(
+        int page, int size,
+        Expression<Func<T, TKey1>> orderBy, bool descending,
+        Expression<Func<T, TKey2>> thenBy, bool thenDescending,
+        Expression<Func<T, TKey3>> thenBy2, bool thenDescending2,
+        Expression<Func<T, bool>>? predicate = null);
+
     /// <summary>Cộng ở SQL (SUM) — KHÔNG materialize bảng. Dùng cho thẻ thống kê có tổng tiền.</summary>
     Task<decimal> SumAsync(Expression<Func<T, decimal>> selector, Expression<Func<T, bool>>? predicate = null);
 

@@ -27,28 +27,30 @@ public sealed class WorkTaskService(
         // "Của tôi" (mineScope) bám hệ cũ (Tasking): việc ĐƯỢC GIAO cho tôi HOẶC việc DO TÔI TẠO.
         // Ngoài mineScope thì giữ nguyên nghĩa cũ: lọc theo assigneeUserId truyền vào (null = tất cả).
         var me = currentUser.UserId;
-        var items = await repo.ListAsync(x =>
+        // Mọi tiêu chí — kể cả từ khoá (khớp Tiêu đề, cột của chính bảng) — dịch được sang SQL, và
+        // thứ tự ưu tiên nghiệp vụ ba bậc (chưa xong trước → ưu tiên cao trước → gần hạn trước) nay
+        // cắt trang được ở CSDL. Trước đây phải nạp cả bảng công việc về rồi sắp trong bộ nhớ.
+        var kwL = kw?.ToLowerInvariant();
+#pragma warning disable CA1304, CA1311, CA1862
+        var (entities, tong) = await repo.PageAsync(
+            page, size,
+            x => x.Status, descending: false,
+            x => x.Priority, thenDescending: true,
+            // Việc chưa đặt hạn xuống cuối nhóm: NULL sắp sau cùng khi tăng dần trên Postgres.
+            x => x.DueDate, thenDescending2: false,
+            x =>
             (mineScope
                 ? (x.AssigneeUserId == me || x.CreatedByUserId == me)
                 : (assigneeUserId == null || x.AssigneeUserId == assigneeUserId)) &&
             (status == null || x.Status == status) &&
-            (priority == null || x.Priority == priority));
+            (priority == null || x.Priority == priority) &&
+            (kwL == null || x.Title.ToLower().Contains(kwL)));
+#pragma warning restore CA1304, CA1311, CA1862
 
         var names = await LoadUserNamesAsync();
         var workflows = await LoadWorkflowNamesAsync();
-        var ordered = items
-            .Where(x => kw == null || x.Title.Contains(kw, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(x => x.Status)
-            .ThenByDescending(x => x.Priority)
-            .ThenBy(x => x.DueDate ?? DateTimeOffset.MaxValue)
-            .ToList();
-
-        var pageItems = ordered
-            .Skip((page - 1) * size)
-            .Take(size)
-            .Select(x => Map(x, names, workflows))
-            .ToList();
-        return new PagedResult<WorkTaskDto>(pageItems, ordered.Count, page, size);
+        var pageItems = entities.Select(x => Map(x, names, workflows)).ToList();
+        return new PagedResult<WorkTaskDto>(pageItems, tong, page, size);
     }
 
     public async Task<WorkTaskStatsDto> GetStatsAsync(bool mineScope = false)

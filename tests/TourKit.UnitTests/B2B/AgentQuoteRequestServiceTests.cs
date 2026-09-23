@@ -4,7 +4,6 @@ using TourKit.Application.B2B.Validators;
 using TourKit.Application.Common;
 using TourKit.Shared.Entities;
 using TourKit.Shared.Enums;
-using TourKit.UnitTests.Booking; // FakeRepository<T> generic dùng chung
 
 namespace TourKit.UnitTests.B2B;
 
