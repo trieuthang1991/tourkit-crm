@@ -327,7 +327,7 @@
           // Cùng một chỉ báo với DataTables (xem tk.dtLanguage.processing): hai lưới nằm cạnh nhau
           // trong cùng sản phẩm mà mỗi cái quay một kiểu thì trông như hai phần mềm ghép lại.
           data: {
-            loading: '<span class="tk-load tk-load-sm"><span class="tk-load-spin"></span>Đang tải…</span>',
+            loading: '<span class="tk-load tk-load-sm"><span class="tk-load-spin"></span><span>Đang tải<span class="tk-dots"></span></span></span>',
             error: '<span class="tk-load tk-load-loi"><i class="ti ti-alert-triangle me-2"></i>Lỗi tải dữ liệu</span>'
           }
         }
