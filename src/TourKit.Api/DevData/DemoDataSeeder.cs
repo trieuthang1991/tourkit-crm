@@ -153,6 +153,10 @@ public static class DemoDataSeeder
                 e = new Customer { Code = code, FullName = name, Phone = phone, CustomerType = type, Source = source, Tag = tag, Address = address };
                 db.Add(e);
             }
+            // Cột search PHẢI có, kể cả bản seed cũ còn rỗng — thiếu thì ô tìm gõ SĐT/tên không ra ai
+            // (predicate ListAsync khớp PhoneNormalized/SearchName). Set idempotent nên chạy lại vô hại.
+            e.PhoneNormalized = TourKit.Shared.Text.VietnameseText.NormalizePhone(e.Phone);
+            e.SearchName = TourKit.Shared.Text.VietnameseText.NormalizeSearch(e.FullName);
             return e;
         }
         var c1 = await CustOf("KH_00001", "Nguyễn Văn An", "0901000001", 0, "Facebook", "VIP", "Hà Nội");
