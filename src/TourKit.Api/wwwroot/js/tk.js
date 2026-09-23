@@ -635,8 +635,17 @@
   };
 
   // Client-side DataTables cho danh mục nhỏ (bảng đã render sẵn ở server): search/paging/entries VN, fix width.
+  // opts.plain = true → BẢNG TĨNH: tắt phân trang/tìm/số dòng (dùng cho bảng TỔNG HỢP nhỏ ở báo cáo —
+  // vài dòng mà bày "Hiện 20 dòng / Tìm / phân trang" chỉ gây rối, nhìn lệch với lưới chuẩn).
   tk.tableClient = function (selector, opts) {
     opts = opts || {};
+    if (opts.plain) {
+      return $(selector).DataTable({
+        ordering: opts.ordering || false, autoWidth: false,
+        paging: false, searching: false, info: false, lengthChange: false,
+        dom: 't', language: tk.dtLanguage, columnDefs: opts.columnDefs || []
+      });
+    }
     return $(selector).DataTable({
       ordering: opts.ordering || false, autoWidth: false, pageLength: opts.pageLength || 20,
       lengthMenu: [10, 20, 50, 100], dom: tk.dtDom, language: tk.dtLanguage,

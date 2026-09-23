@@ -159,8 +159,9 @@
       }
       // Bảng đã render sẵn ở server nên dùng bản client — được ô tìm, chọn số dòng và "Hiện X–Y
       // trên Z" tiếng Việt mà không phải thêm handler nào.
-      if ($('#tbl-nv').length) { tk.tableClient('#tbl-nv'); }
-      if ($('#tbl-huy').length) { tk.tableClient('#tbl-huy'); }
+      // Bảng TỔNG HỢP nhỏ → bảng tĩnh (plain): không phân trang/tìm/số dòng cho gọn, đúng kiểu lưới chuẩn.
+      if ($('#tbl-nv').length) { tk.tableClient('#tbl-nv', { plain: true }); }
+      if ($('#tbl-huy').length) { tk.tableClient('#tbl-huy', { plain: true }); }
     });
   </script>
 }
