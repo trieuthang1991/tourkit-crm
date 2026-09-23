@@ -337,7 +337,7 @@
       // cuộn diễn ra NGAY TRONG bảng nên chỉ có MỘT thanh cuộn, không cuộn trang.
       height: 420,
       // Bảng rỗng phải NÓI ĐƯỢC phải làm gì tiếp, đừng để mỗi dòng chữ "Không có dữ liệu".
-      placeholder: '<div class="tk-empty"><i class="ti ti-inbox"></i>' +
+      placeholder: '<div class="tk-empty"><span class="tk-empty-mascot"></span>' +
         '<div class="tk-empty-title">' + esc(opts.emptyTitle || 'Chưa có dữ liệu') + '</div>' +
         '<div class="tk-empty-hint">' + esc(opts.emptyHint || 'Thử nới bộ lọc hoặc bấm Đặt lại để xem toàn bộ danh sách.') + '</div></div>',
       ajaxURL: opts.url || '?handler=Data',
