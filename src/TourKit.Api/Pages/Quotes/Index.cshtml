@@ -235,15 +235,22 @@
             }
           },
           { title: 'Hạn hiệu lực', field: 'validUntil', width: 140, formatter: 'tkStack' },
-          {
-            title: 'Trạng thái', field: 'statusLabel', width: 170,
-            formatter: function (c) {
-              var r = c.getData();
-              var h = '<span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>';
-              if (r.convertedOrderId) { h += '<div class="tk-cell-sub mt-1">Đã chuyển đơn</div>'; }
-              return '<div class="tk-cell">' + h + '</div>';
-            }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 180,
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 0, label: 'Nháp', color: 'secondary' },
+              { v: 1, label: 'Đã gửi', color: 'info' },
+              { v: 2, label: 'Chấp nhận', color: 'success' },
+              { v: 3, label: 'Từ chối', color: 'danger' }
+            ],
+            // Bám ĐÚNG state machine của QuoteService; đã chuyển đơn hoặc không có quyền → khoá (server cũng chặn).
+            allowed: function (r) {
+              if (!CAN_MANAGE || r.convertedOrderId) { return []; }
+              return ({ 0: [1], 1: [2, 3], 2: [1, 3], 3: [1] })[r.status] || [];
+            },
+            sub: function (r) { return r.convertedOrderId ? 'Đã chuyển đơn' : null; }
+          })
         ]
       });
 

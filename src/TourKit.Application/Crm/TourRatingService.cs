@@ -133,6 +133,25 @@ public sealed class TourRatingService(
         await repo.SaveChangesAsync();
     }
 
+    public async Task SetStatusAsync(Guid id, int status)
+    {
+        // Kiểm duyệt chỉ có 2 trạng thái — chặn giá trị lạ ngay ở biên, không để lọt số bừa vào DB.
+        if (status is not (0 or 1))
+        {
+            throw new ValidationAppException("Trạng thái đánh giá không hợp lệ.");
+        }
+
+        var entity = await repo.GetByIdAsync(id);
+        if (entity is null)
+        {
+            throw new NotFoundException();
+        }
+
+        entity.Status = status;
+        repo.Update(entity);
+        await repo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var entity = await repo.GetByIdAsync(id);

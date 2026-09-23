@@ -12,5 +12,7 @@ public interface ITourRatingService
     Task<TourRatingDto> GetAsync(Guid id);
     Task<TourRatingDto> CreateAsync(CreateTourRatingDto dto);
     Task UpdateAsync(Guid id, UpdateTourRatingDto dto);
+    /// <summary>Đổi nhanh trạng thái kiểm duyệt: 0 Ẩn · 1 Hiển thị.</summary>
+    Task SetStatusAsync(Guid id, int status);
     Task DeleteAsync(Guid id);
 }

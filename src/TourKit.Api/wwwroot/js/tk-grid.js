@@ -62,6 +62,81 @@
       '<span class="badge bg-label-' + esc(color || 'secondary') + '">' + esc(label || '—') + '</span>' +
       '<i class="ti ti-chevron-down"></i></button>';
   };
+
+  // ===== Cột TRẠNG THÁI đổi-nhanh dùng CHUNG (bám mẫu Đơn hàng) =====
+  // Badge hiện tại bấm ra menu các trạng thái ĐÍCH → POST tới handler Razor → nạp lại lưới.
+  // Mọi màn có trạng thái phải dùng cái này thay vì tự nối menu, để hành vi + hình ảnh y hệt nhau.
+  //   columns: [ …, g.statusCol({
+  //     field:'status', handler:'?handler=SetStatus',
+  //     options:[{v:0,label:'Nháp',color:'secondary'}, {v:1,label:'Đã gửi',color:'info'}, …],
+  //     allowed:function(row){ return [1,2]; },   // tuỳ chọn: chặn theo state machine; mặc định = mọi trạng thái khác
+  //   }) ]
+  // Giá trị `v` có thể là số (status int) hoặc chuỗi (vd stageCode của Cơ hội). `param` đổi tên
+  // field POST (mặc định 'status'); mục có `confirm` sẽ hỏi lại trước khi đổi (dùng cho Huỷ…).
+  g.statusCol = function (o) {
+    var opts = o.options || [];
+    var byV = {};
+    opts.forEach(function (x) { byV[x.v] = x; });
+    function cur(row) { return byV[row[o.field]] || { label: row[o.field] == null ? '—' : row[o.field], color: 'secondary' }; }
+    function targets(row) {
+      var vs = o.allowed ? (o.allowed(row) || []) : opts.map(function (x) { return x.v; });
+      return vs.filter(function (v) { return v !== row[o.field] && byV[v]; });
+    }
+    return {
+      title: o.title || 'Trạng thái', field: o.field, width: o.width || 160,
+      hozAlign: o.hozAlign || 'left', headerSort: false,
+      clickMenu: function (e, cell) {
+        var row = cell.getRow().getData();
+        return targets(row).map(function (v) {
+          var x = byV[v];
+          return {
+            label: '<span class="badge bg-label-' + esc(x.color || 'secondary') + ' me-2">' + esc(x.label) + '</span>' +
+              (x.hint ? '<small class="text-muted">' + esc(x.hint) + '</small>' : ''),
+            action: function (ev) {
+              ev.stopPropagation();
+              var go = function () { g.setStatus(o.handler, row[o.idField || 'id'], v, { param: o.param, idParam: o.idParam, reload: o.reload }); };
+              if (x.confirm && tk.confirmDelete) {
+                tk.confirmDelete({ title: typeof x.confirm === 'string' ? x.confirm : 'Đổi sang "' + x.label + '"?', confirmText: 'Đổi', icon: 'question' }).then(function (ok) { if (ok) { go(); } });
+              } else { go(); }
+            }
+          };
+        });
+      },
+      formatter: function (c) {
+        var row = c.getData();
+        var s = cur(row);
+        var body = !targets(row).length
+          ? '<span class="badge bg-label-' + esc(s.color || 'secondary') + '">' + esc(s.label) + '</span>'
+          : g.pick(s.label, s.color, 'Bấm để đổi trạng thái');
+        var sub = o.sub ? o.sub(row) : null;   // dòng phụ tuỳ chọn (vd "Đã chuyển đơn")
+        if (!sub) { return body; }
+        return '<div class="tk-cell">' + body + '<div class="tk-cell-sub mt-1">' + esc(sub) + '</div></div>';
+      }
+    };
+  };
+
+  // POST đổi trạng thái tới handler Razor (auth bằng cookie — KHÔNG gọi /api/v1 vì API dùng JWT → 401),
+  // hiện toast theo Result rồi nạp lại lưới. Không truyền reload thì tự gọi window.tkGridReload.
+  g.setStatus = function (handler, id, value, opts) {
+    opts = opts || {};
+    var token = document.querySelector('input[name="__RequestVerificationToken"]');
+    var fd = new FormData();
+    fd.append(opts.idParam || 'id', id);
+    fd.append(opts.param || 'status', value);
+    return fetch(handler, {
+      method: 'POST',
+      headers: token ? { 'RequestVerificationToken': token.value } : {},
+      body: fd
+    }).then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (res) {
+      if (res && res.message) {
+        if (res.isSuccess !== false && tk.toast) { tk.toast(res.message); }
+        else if (res.isSuccess === false && tk.error) { tk.error(res.message); }
+      }
+      var reload = opts.reload || window.tkGridReload;
+      if (reload) { reload(); }
+      return res;
+    });
+  };
   // Ô tiền: số đậm bên phải + ghi chú mờ bên dưới.
   g.moneyCell = function (value, sub) {
     return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main ' + ((value || 0) > 0 ? 'text-success' : '') + '">' +

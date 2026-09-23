@@ -151,6 +151,36 @@ public sealed class QuoteService(
         return await MapAsync(quote);
     }
 
+    // State machine báo giá: Nháp(0)→Gửi(1)→{Chấp nhận(2)|Từ chối(3)}; Chấp nhận/Từ chối gửi lại được.
+    // Giữ ở MỘT chỗ để server là nguồn chân lý — client (allowed()) chỉ vẽ đúng lựa chọn hợp lệ.
+    private static readonly Dictionary<int, int[]> StatusTransitions = new()
+    {
+        [0] = [1],
+        [1] = [2, 3],
+        [2] = [1, 3],
+        [3] = [1],
+    };
+
+    public async Task SetStatusAsync(Guid id, int status)
+    {
+        var quote = await quoteRepo.GetByIdAsync(id) ?? throw new NotFoundException();
+
+        // Đã chuyển thành đơn thì trạng thái báo giá khoá lại — đổi tiếp sẽ lệch với đơn đã sinh.
+        if (quote.ConvertedOrderId is not null)
+        {
+            throw new ValidationAppException("Báo giá đã chuyển thành đơn — không đổi được trạng thái.");
+        }
+
+        if (!StatusTransitions.TryGetValue(quote.Status, out var allowed) || !allowed.Contains(status))
+        {
+            throw new ValidationAppException("Không thể chuyển trạng thái báo giá sang bước này.");
+        }
+
+        quote.Status = status;
+        quoteRepo.Update(quote);
+        await quoteRepo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var quote = await quoteRepo.GetByIdAsync(id) ?? throw new NotFoundException();

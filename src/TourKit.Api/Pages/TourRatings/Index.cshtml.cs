@@ -184,6 +184,13 @@ public class IndexModel : TkListPageModel
         return new JsonResult(Result.Success("Đã lưu đánh giá tour."));
     }
 
+    /// <summary>Đổi nhanh trạng thái kiểm duyệt (Ẩn/Hiển thị) từ menu trên dòng lưới.</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        await _svc.SetStatusAsync(id, status);
+        return new JsonResult(Result.Success(status == 1 ? "Đã hiển thị đánh giá." : "Đã ẩn đánh giá."));
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
         await _svc.DeleteAsync(id);

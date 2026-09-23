@@ -208,6 +208,25 @@ public class IndexModel : TkListPageModel
         }
     }
 
+    /// <summary>Đổi nhanh trạng thái báo giá từ menu trên dòng (state machine ở QuoteService).</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        if (!CanManage)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền đổi trạng thái báo giá."));
+        }
+
+        try
+        {
+            await _svc.SetStatusAsync(id, status);
+            return new JsonResult(Result.Success($"Đã đổi trạng thái báo giá thành \"{StatusLabel(status)}\"."));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
         if (!CanManage)
