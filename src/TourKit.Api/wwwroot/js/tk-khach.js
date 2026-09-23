@@ -146,8 +146,18 @@
               '<input type="text" class="form-control" id="tk-khach-ten" placeholder="Nguyễn Thị Lan" /></div>' +
             '<div class="mb-3"><label class="form-label">Điện thoại <span class="text-danger">*</span></label>' +
               '<input type="text" class="form-control" id="tk-khach-sdt" placeholder="09xxxxxxxx" /></div>' +
-            '<div class="mb-1"><label class="form-label">Email</label>' +
+            '<div class="mb-3"><label class="form-label">Email</label>' +
               '<input type="text" class="form-control" id="tk-khach-email" placeholder="ten@congty.vn" /></div>' +
+            '<div class="mb-3"><label class="form-label">Loại khách <span class="text-danger">*</span></label>' +
+              '<select class="form-select" id="tk-khach-loai">' +
+                '<option value="0">Cá nhân</option><option value="1">Doanh nghiệp</option>' +
+                '<option value="2">Đối tác</option><option value="3">Cộng tác viên</option></select></div>' +
+            '<div id="tk-khach-dn" class="d-none">' +
+              '<div class="mb-3"><label class="form-label">Tên công ty <span class="text-danger">*</span></label>' +
+                '<input type="text" class="form-control" id="tk-khach-congty" placeholder="Công ty TNHH ..." /></div>' +
+              '<div class="mb-1"><label class="form-label">Mã số thuế</label>' +
+                '<input type="text" class="form-control" id="tk-khach-mst" placeholder="0xxxxxxxxxx" /></div>' +
+            '</div>' +
           '</div>' +
           '<div class="modal-footer">' +
             '<button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Đóng</button>' +
@@ -155,11 +165,20 @@
           '</div>' +
         '</div></div>';
       document.body.appendChild(el);
+      // Khối Doanh nghiệp (tên công ty + MST) chỉ hiện khi chọn loại "Doanh nghiệp" (1).
+      $('#tk-khach-loai').on('change', function () {
+        $('#tk-khach-dn').toggleClass('d-none', this.value !== '1');
+      });
     }
 
     $('#tk-khach-ten').val(opts.ten || '');
     $('#tk-khach-sdt').val(opts.sdt || '');
     $('#tk-khach-email').val(opts.email || '');
+    // Reset loại khách + khối DN mỗi lần mở (hộp dùng lại).
+    $('#tk-khach-loai').val(String(opts.loai != null ? opts.loai : 0));
+    $('#tk-khach-dn').toggleClass('d-none', String(opts.loai) !== '1');
+    $('#tk-khach-congty').val('');
+    $('#tk-khach-mst').val('');
 
     var hop = bootstrap.Modal.getOrCreateInstance(el);
 
@@ -168,10 +187,20 @@
       var ten = ($('#tk-khach-ten').val() || '').trim();
       if (!ten) { tk.error('Bắt buộc nhập tên khách.'); $('#tk-khach-ten').trigger('focus'); return; }
 
+      var loai = $('#tk-khach-loai').val() || '0';
+      var congty = ($('#tk-khach-congty').val() || '').trim();
+      // Khách doanh nghiệp: tên công ty bắt buộc (đối soát/xuất hoá đơn VAT cần).
+      if (loai === '1' && !congty) { tk.error('Khách doanh nghiệp phải nhập tên công ty.'); $('#tk-khach-congty').trigger('focus'); return; }
+
       var fd = new FormData();
       fd.append('fullName', ten);
       fd.append('phone', ($('#tk-khach-sdt').val() || '').trim());
       fd.append('email', ($('#tk-khach-email').val() || '').trim());
+      fd.append('customerType', loai);
+      if (loai === '1') {
+        fd.append('unitName', congty);
+        fd.append('taxCode', ($('#tk-khach-mst').val() || '').trim());
+      }
       tk.post('?handler=TaoNhanhKhach', fd).then(function (res) {
         if (res && res.isSuccess) {
           hop.hide();

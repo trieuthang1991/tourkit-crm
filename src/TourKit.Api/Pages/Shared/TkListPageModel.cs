@@ -167,11 +167,19 @@ public abstract class TkListPageModel : PageModel
     /// loại, thẻ…) để người dùng bổ sung sau ở màn Khách hàng — nhồi hết vào đây thì "tạo nhanh"
     /// không còn nhanh.
     /// </summary>
-    public async Task<IActionResult> OnPostTaoNhanhKhachAsync(string? fullName, string? phone, string? email)
+    public async Task<IActionResult> OnPostTaoNhanhKhachAsync(
+        string? fullName, string? phone, string? email,
+        int customerType = 0, string? unitName = null, string? taxCode = null)
     {
         if (string.IsNullOrWhiteSpace(fullName))
         {
             return new JsonResult(TourKit.Api.Web.Result.Error("Bắt buộc nhập tên khách."));
+        }
+
+        // Khách doanh nghiệp (type 1): tên công ty là bắt buộc — đối soát/xuất hoá đơn VAT cần nó.
+        if (customerType == 1 && string.IsNullOrWhiteSpace(unitName))
+        {
+            return new JsonResult(TourKit.Api.Web.Result.Error("Khách doanh nghiệp phải nhập tên công ty."));
         }
 
         var svc = HttpContext.RequestServices
@@ -181,7 +189,10 @@ public abstract class TkListPageModel : PageModel
         {
             var moi = await svc.CreateAsync(new TourKit.Application.Customers.Dtos.CreateCustomerDto(
                 fullName.Trim(), string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(),
-                Email: string.IsNullOrWhiteSpace(email) ? null : email.Trim()));
+                CustomerType: customerType,
+                Email: string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
+                UnitName: string.IsNullOrWhiteSpace(unitName) ? null : unitName.Trim(),
+                TaxCode: string.IsNullOrWhiteSpace(taxCode) ? null : taxCode.Trim()));
 
             return new JsonResult(TourKit.Api.Web.Result.Success($"Đã tạo khách {moi.FullName}.", new
             {
