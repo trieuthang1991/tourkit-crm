@@ -114,24 +114,49 @@ public class IndexModel : TkListPageModel
         return DtJson(dt.Draw, result.Total, result.Total, items);
     }
 
-    /// <summary>Xuất CSV (giới hạn 5000 dòng).</summary>
+    /// <summary>Xuất CSV theo ĐÚNG bộ lọc đang áp (giới hạn 5000 dòng). Ghi NHÃN đọc được — tên
+    /// chuyến/đơn/NV và "Ẩn/Hiển thị" — chứ không phải GUID hay số trạng thái thô như bản cũ.</summary>
     public async Task<IActionResult> OnGetExportAsync()
     {
         const int max = 5000;
         var stars = int.TryParse(Request.Query["stars"], out var st) ? st : (int?)null;
         var status = int.TryParse(Request.Query["status"], out var stt) ? stt : (int?)null;
-        var result = await _svc.ListAsync(1, max, Request.Query["search"], stars, status);
+        var sales = Guid.TryParse(Request.Query["salesUserId"], out var su) ? su : (Guid?)null;
+        var oper = Guid.TryParse(Request.Query["operatorUserId"], out var ou) ? ou : (Guid?)null;
+        var result = await _svc.ListAsync(1, max, Request.Query["search"], stars, status, sales, oper);
+
+        // Enrich giống lưới nhưng CHỈ theo tập kết quả (không nạp cả bảng): tên chuyến, mã đơn, ngày, tên NV.
+        var deps = new Dictionary<Guid, DepartureDto>();
+        foreach (var id in result.Items.Where(r => r.TourDepartureId is not null).Select(r => r.TourDepartureId!.Value).Distinct())
+        {
+            try { deps[id] = await _departures.GetAsync(id); } catch (Exception) { /* chuyến đã xoá */ }
+        }
+        var orderIds = result.Items.Where(r => r.OrderId is not null).Select(r => r.OrderId!.Value).Distinct().ToList();
+        var orders = orderIds.Count == 0
+            ? []
+            : (await _orders.ListAsync(o => orderIds.Contains(o.Id))).ToDictionary(o => o.Id, o => o);
+        var userNames = (await _users.ListAsync()).ToDictionary(u => u.Id, u => u.FullName);
+        string? Name(Guid? uid) => uid is { } id && userNames.TryGetValue(id, out var n) ? n : null;
+        string Fmt(DateTimeOffset? d) => d?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "";
 
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("Chuyến đi,Khách hàng,SĐT,Số sao,Nhận xét,Trạng thái");
+        sb.AppendLine("Khách hàng,SĐT,Tour / Dịch vụ,Mã đặt chỗ,Khởi hành,Ngày về,NV phụ trách,NV điều hành,Số sao,Nhận xét,Trạng thái");
         foreach (var r in result.Items)
         {
+            DepartureDto? dep = r.TourDepartureId is { } dgid && deps.TryGetValue(dgid, out var d) ? d : null;
+            TourKit.Shared.Entities.Order? ord = r.OrderId is { } oid && orders.TryGetValue(oid, out var o) ? o : null;
             string C(string? v) => "\"" + (v ?? "").Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
-            sb.Append(C(r.TourDepartureId?.ToString())).Append(',').Append(C(r.CustomerName)).Append(',')
+            sb.Append(C(r.CustomerName)).Append(',')
               .Append(C(r.CustomerPhone)).Append(',')
+              .Append(C(dep is null ? null : $"{dep.Code} — {dep.Title}")).Append(',')
+              .Append(C(ord?.Code)).Append(',')
+              .Append(C(Fmt(dep?.DepartureDate))).Append(',')
+              .Append(C(Fmt(dep?.EndDate))).Append(',')
+              .Append(C(Name(r.SalesUserId) ?? Name(ord?.SalesUserId))).Append(',')
+              .Append(C(Name(r.OperatorUserId) ?? Name(dep?.AssignedToUserId))).Append(',')
               .Append(r.Stars.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(',')
               .Append(C(r.Comment)).Append(',')
-              .Append(r.Status.ToString(System.Globalization.CultureInfo.InvariantCulture)).AppendLine();
+              .Append(C(StatusLabel(r.Status))).AppendLine();
         }
 
         var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();

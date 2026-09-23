@@ -2,12 +2,31 @@
 @model TourKit.Api.Pages.Customers.DuplicatesModel
 @{ ViewData["Title"] = "Rà khách trùng"; }
 
-<div class="d-flex justify-content-between align-items-center py-3 mb-2">
-  <h4 class="fw-bold mb-0"><span class="text-muted fw-light">CRM /</span> Rà khách trùng</h4>
-  <a asp-page="Index" class="btn btn-label-secondary btn-sm"><i class="ti ti-arrow-left me-1"></i> Về Data khách hàng</a>
+@{
+  var soNhom = Model.Groups.Count;
+  var soKhach = Model.Groups.Sum(g => g.Customers.Count);
+  var theoSdt = Model.Groups.Count(g => g.MatchType == "phone");
+  var theoEmail = soNhom - theoSdt;
+
+  (string Label, string Value, string Icon, string Color, string Sub)[] cards =
+  {
+    ("Nhóm nghi trùng", soNhom.ToString("#,##0"), "ti ti-copy", "danger", "mỗi nhóm ≥2 khách"),
+    ("Khách liên quan", soKhach.ToString("#,##0"), "ti ti-users", "warning", "cần rà & gộp thủ công"),
+    ("Trùng theo SĐT", theoSdt.ToString("#,##0"), "ti ti-phone", "info", "cùng số điện thoại chuẩn hoá"),
+    ("Trùng theo Email", theoEmail.ToString("#,##0"), "ti ti-mail", "secondary", "cùng email chuẩn hoá"),
+  };
+}
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <div>
+    <div class="text-muted mb-1" style="font-size:.78rem">CRM <span class="mx-1">/</span> <span class="text-body">Rà khách trùng</span></div>
+    <h4 class="mb-0">Rà khách trùng</h4>
+  </div>
+  @* Về ĐÚNG "Data khách hàng" (/khach-hang = lưới thật), không phải bản cũ mà asp-page="Index" trỏ tới. *@
+  <a href="/khach-hang" class="btn btn-label-secondary"><i class="ti ti-arrow-left me-1"></i> Về Data khách hàng</a>
 </div>
 
-@if (Model.Groups.Count == 0)
+@if (soNhom == 0)
 {
   <div class="card"><div class="card-body text-center text-muted py-5">
     <i class="ti ti-checks ti-lg mb-2 d-block"></i> Không phát hiện khách trùng (theo SĐT/email chuẩn hoá).
@@ -15,7 +34,28 @@
 }
 else
 {
-  <p class="text-muted mb-3">Phát hiện <strong>@Model.Groups.Count</strong> nhóm nghi trùng — mỗi nhóm ≥2 khách cùng SĐT hoặc email.</p>
+  <div class="row g-4 mb-4">
+    @foreach (var s in cards)
+    {
+      <div class="col-sm-6 col-lg-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="avatar flex-shrink-0 me-3">
+                <span class="avatar-initial rounded-3 bg-label-@s.Color"><i class="@s.Icon ti-md"></i></span>
+              </div>
+              <div>
+                <span class="d-block text-muted small">@s.Label</span>
+                <h4 class="mb-0">@s.Value</h4>
+              </div>
+            </div>
+            <div class="text-muted small mt-2">@s.Sub</div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
   @foreach (var g in Model.Groups)
   {
     <div class="card mb-3">
