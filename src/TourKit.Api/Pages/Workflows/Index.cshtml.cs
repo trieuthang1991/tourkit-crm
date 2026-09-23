@@ -27,7 +27,19 @@ public class IndexModel : PageModel
         public int Status { get; set; }
     }
 
+    // Trạng thái dự án: 0 đang dùng · 1 lưu trữ.
+    public static string StatusLabel(int s) => s == 1 ? "Lưu trữ" : "Đang dùng";
+    public static string StatusColor(int s) => s == 1 ? "secondary" : "success";
+
     public async Task OnGetAsync() => Items = await _svc.ListAsync();
+
+    /// <summary>Đổi nhanh trạng thái dự án (lưu trữ / khôi phục) từ nút trên dòng.</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        await _svc.SetStatusAsync(id, status);
+        TempData["ok"] = status == 1 ? "Đã lưu trữ dự án." : "Đã khôi phục dự án.";
+        return RedirectToPage();
+    }
 
     public async Task<IActionResult> OnPostSaveAsync()
     {

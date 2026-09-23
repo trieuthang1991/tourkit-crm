@@ -65,10 +65,41 @@ public class IndexModel : TkListPageModel
         _ => "secondary",
     };
 
+    // Vòng đời đặt dịch vụ: 0 Chờ đặt · 1 Đã đặt · 2 Huỷ · 3 Hoàn tất (bám AgentBooking cho nhất quán).
+    public static string StatusLabel(int s) => s switch
+    {
+        1 => "Đã đặt",
+        2 => "Đã huỷ",
+        3 => "Hoàn tất",
+        _ => "Chờ đặt",
+    };
+
+    public static string StatusColor(int s) => s switch
+    {
+        1 => "info",
+        2 => "danger",
+        3 => "success",
+        _ => "warning",
+    };
+
     public async Task OnGetAsync()
     {
         Stats = await _svc.GetStatsAsync();
         // Ô chọn NCC nay gọi server (?handler=ProviderLookup) nên không nạp danh mục xuống trang nữa.
+    }
+
+    /// <summary>Đổi nhanh trạng thái đặt dịch vụ từ menu trên dòng (state machine ở ServiceBookingService).</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        try
+        {
+            await _svc.SetStatusAsync(id, status);
+            return new JsonResult(Result.Success($"Đã đổi trạng thái thành \"{StatusLabel(status)}\"."));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
     }
 
     /// <summary>Dựng bộ lọc từ query — đúng các tiêu chí ServiceBookingListFilter hỗ trợ.</summary>

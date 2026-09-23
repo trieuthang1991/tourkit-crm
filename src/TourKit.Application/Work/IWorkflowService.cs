@@ -7,6 +7,8 @@ public interface IWorkflowService
     Task<WorkflowBoardDto> GetBoardAsync(Guid id);
     Task<WorkflowDto> CreateAsync(CreateWorkflowDto dto);
     Task UpdateAsync(Guid id, UpdateWorkflowDto dto);
+    /// <summary>Đổi nhanh trạng thái dự án: 0 đang dùng · 1 lưu trữ.</summary>
+    Task SetStatusAsync(Guid id, int status);
     Task DeleteAsync(Guid id);
 
     Task<WorkflowSectionDto> AddSectionAsync(Guid workflowId, CreateSectionDto dto);

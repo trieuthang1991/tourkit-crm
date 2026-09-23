@@ -303,10 +303,21 @@
               return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main ' + (v < 0 ? 'text-danger' : 'text-success') + '">' + money(v) + '</div></div>';
             }
           },
-          {
-            title: 'Trạng thái', field: 'statusLabel', width: 160,
-            formatter: 'tkBadge', formatterParams: { color: 'statusColor', sub: 'paymentDueDateText' }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 170, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 0, label: 'Tạo mới', color: 'info' },
+              { v: 1, label: 'Đã duyệt', color: 'success' },
+              { v: 2, label: 'Không duyệt', color: 'danger', confirm: 'Đánh dấu vé này KHÔNG duyệt?' }
+            ],
+            // Bám ĐÚNG state machine của FlightTicketIndividualService; không có quyền → khoá (server cũng chặn).
+            allowed: function (r) {
+              if (!CAN_MANAGE) { return []; }
+              return ({ 0: [1, 2], 1: [0], 2: [0] })[r.status] || [];
+            },
+            sub: function (r) { return r.paymentDueDateText; }
+          })
         ]
       });
 

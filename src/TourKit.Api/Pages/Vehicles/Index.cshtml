@@ -114,13 +114,14 @@
             formatter: function (c) { return g.stack(c.getValue(), null); } },
           { title: 'Số chỗ', field: 'seatType', width: 110, hozAlign: 'center',
             formatter: function (c) { return '<span class="badge bg-label-info">' + esc(c.getValue()) + '</span>'; } },
-          {
-            title: 'Trạng thái', field: 'status', width: 150,
-            formatter: function (c) {
-              var r = c.getData();
-              return '<span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + esc(r.statusLabel) + '</span>';
-            }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 150, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 1, label: 'Hoạt động', color: 'success' },
+              { v: 0, label: 'Ngừng', color: 'secondary' }
+            ]
+          })
         ]
       });
     });

@@ -69,6 +69,26 @@ public sealed class VehicleService(
         await repo.SaveChangesAsync();
     }
 
+    /// <summary>Đổi nhanh trạng thái Hoạt động(1)/Ngừng(0) — xem <see cref="IVehicleService.SetStatusAsync"/>.</summary>
+    public async Task SetStatusAsync(Guid id, int status)
+    {
+        // Kiểm duyệt chỉ có 2 trạng thái — chặn giá trị lạ ngay ở biên, không để lọt số bừa vào DB.
+        if (status is not (0 or 1))
+        {
+            throw new ValidationAppException("Trạng thái xe không hợp lệ.");
+        }
+
+        var vehicle = await repo.GetByIdAsync(id);
+        if (vehicle is null)
+        {
+            throw new NotFoundException();
+        }
+
+        vehicle.Status = status;
+        repo.Update(vehicle);
+        await repo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var vehicle = await repo.GetByIdAsync(id);

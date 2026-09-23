@@ -185,6 +185,25 @@ public class IndexModel : TkListPageModel
         }
     }
 
+    /// <summary>Đổi nhanh trạng thái đặt chỗ đại lý từ menu trên dòng lưới.</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        if (!CanManage)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền đổi trạng thái đặt chỗ đại lý."));
+        }
+
+        try
+        {
+            await _svc.UpdateStatusAsync(id, status);
+            return new JsonResult(Result.Success($"Đã đổi trạng thái booking thành \"{StatusLabel(status)}\"."));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+    }
+
     public async Task<IActionResult> OnPostAddPassengerAsync(
         Guid bookingId, string fullName, DateTimeOffset? dateOfBirth, string? passportNo, string? nationality, string? note)
     {

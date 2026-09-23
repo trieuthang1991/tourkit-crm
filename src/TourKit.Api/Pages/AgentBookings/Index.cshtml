@@ -228,10 +228,22 @@
             topCalcFormatter: function (c) { return '<span class="fw-semibold">' + money(c.getValue()) + '</span>'; },
             formatter: function (c) { return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main text-primary">' + money(c.getValue()) + '</div></div>'; }
           },
-          {
-            title: 'Trạng thái', field: 'statusLabel', width: 160,
-            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 160, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 0, label: 'Chờ', color: 'warning' },
+              { v: 1, label: 'Đã xác nhận', color: 'info' },
+              { v: 2, label: 'Đã huỷ', color: 'danger', confirm: 'Huỷ booking này?' },
+              { v: 3, label: 'Hoàn tất', color: 'success' }
+            ],
+            // Server (AgentBookingService.UpdateStatusAsync) KHÔNG tự kiểm state machine — allowed() ở
+            // đây là nơi chặn duy nhất; không có quyền quản lý thì khoá hẳn.
+            allowed: function (r) {
+              if (!CAN_MANAGE) { return []; }
+              return ({ 0: [1, 2], 1: [3, 2], 2: [], 3: [] })[r.status] || [];
+            }
+          })
         ]
       });
 

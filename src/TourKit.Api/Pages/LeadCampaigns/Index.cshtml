@@ -160,10 +160,14 @@
                 '<div class="tk-cell-sub">' + (Number(r.closeRate) || 0) + '%</div></div>';
             }
           },
-          {
-            title: 'Trạng thái', field: 'statusLabel', width: 140,
-            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 150, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 0, label: 'Đang chạy', color: 'info' },
+              { v: 1, label: 'Hoàn thành', color: 'success' }
+            ]
+          })
         ]
       });
 

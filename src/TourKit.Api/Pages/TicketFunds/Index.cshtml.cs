@@ -213,6 +213,25 @@ public class IndexModel : TkListPageModel
         return new JsonResult(Result.Success("Đã lưu quỹ vé ứng."));
     }
 
+    /// <summary>Đổi nhanh trạng thái Chưa sử dụng/Đã sử dụng từ menu trên dòng lưới.</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        if (!CanManage)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền đổi trạng thái quỹ vé ứng."));
+        }
+
+        try
+        {
+            await _svc.SetStatusAsync(id, status);
+            return new JsonResult(Result.Success($"Đã đổi trạng thái quỹ vé thành \"{TicketFundStatusText.Label(status)}\"."));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
         if (!CanManage)

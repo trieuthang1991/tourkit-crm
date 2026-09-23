@@ -180,6 +180,22 @@ public class IndexModel : TkListPageModel
         return new JsonResult(Result.Success("Đã chuyển \"" + StatusLabel(status) + "\"."));
     }
 
+    /// <summary>Đổi nhanh trạng thái từ menu trên dòng lưới — gọi ĐÚNG <see cref="IWorkTaskService.MoveAsync"/>
+    /// mà Kanban (<see cref="OnPostMoveAsync"/>) đang dùng, chỉ khác nơi gọi (JSON toast thay vì kéo–thả).</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        try
+        {
+            await _svc.MoveAsync(id, status);
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+
+        return new JsonResult(Result.Success("Đã chuyển \"" + StatusLabel(status) + "\"."));
+    }
+
     public async Task<IActionResult> OnPostSaveAsync()
     {
         if (!ModelState.IsValid)

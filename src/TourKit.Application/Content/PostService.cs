@@ -93,6 +93,23 @@ public sealed class PostService(
         await repo.SaveChangesAsync();
     }
 
+    /// <summary>Đổi nhanh trạng thái (Nháp/Xuất bản) từ menu trên dòng lưới — 2 chiều, không có bậc "Lưu trữ".</summary>
+    public async Task SetStatusAsync(Guid id, int status)
+    {
+        if (status is not (0 or Published))
+        {
+            throw new ValidationAppException("Trạng thái bài viết không hợp lệ.");
+        }
+
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+
+        entity.Status = status;
+        // Cùng luật với UpdateAsync: lần đầu xuất bản → ghi thời điểm; gỡ xuất bản → xoá thời điểm.
+        entity.PublishedAt = status == Published ? (entity.PublishedAt ?? DateTimeOffset.UtcNow) : null;
+        repo.Update(entity);
+        await repo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();

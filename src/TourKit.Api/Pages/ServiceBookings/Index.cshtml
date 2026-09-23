@@ -63,7 +63,7 @@
         <select id="f-providerId" class="form-select" data-placeholder="Nhà cung cấp"></select>
       </div>
       <div class="col-md-2">
-        <select id="f-status" class="form-select tk-auto"><option value="">Trạng thái</option><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+        <select id="f-status" class="form-select tk-auto"><option value="">Trạng thái</option><option value="0">Chờ đặt</option><option value="1">Đã đặt</option><option value="2">Đã huỷ</option><option value="3">Hoàn tất</option></select>
       </div>
       @* tk.dateRanges() ẩn CẢ CỘT chứa f-dateTo → KHÔNG để nút chung cột đó (nếu không nút biến mất). *@
       <div class="col-md-2"><input type="text" id="f-dateFrom" class="form-control tk-datef" placeholder="Bắt đầu từ" /></div>
@@ -147,10 +147,17 @@
                 '<div class="tk-cell-sub">' + money(r.quantity) + ' × ' + money(r.unitPrice) + '</div></div>';
             }
           },
-          {
-            title: 'Trạng thái', field: 'status', width: 120, hozAlign: 'center',
-            formatter: function (c) { return '<span class="badge bg-label-secondary">' + esc(c.getValue()) + '</span>'; }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 140, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 0, label: 'Chờ đặt', color: 'warning' },
+              { v: 1, label: 'Đã đặt', color: 'info' },
+              { v: 2, label: 'Đã huỷ', color: 'danger', confirm: 'Huỷ đặt dịch vụ này?' },
+              { v: 3, label: 'Hoàn tất', color: 'success' }
+            ],
+            allowed: function (r) { return ({ 0: [1, 2], 1: [3, 2] })[r.status] || []; }
+          })
         ]
       });
     });

@@ -10,5 +10,6 @@ public interface IInvoiceService
     Task<InvoiceDto> GetAsync(Guid id);
     Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto);
     Task<InvoiceDto> UpdateAsync(Guid id, UpdateInvoiceDto dto);
+    Task SetStatusAsync(Guid id, int status);
     Task DeleteAsync(Guid id);
 }

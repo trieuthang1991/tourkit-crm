@@ -163,10 +163,20 @@
                 '<div class="tk-cell-sub">VAT ' + money(r.vatAmount) + '</div></div>';
             }
           },
-          {
-            title: 'Trạng thái', field: 'statusLabel', width: 140,
-            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 170, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 0, label: 'Nháp', color: 'secondary' },
+              { v: 1, label: 'Đã phát hành', color: 'success' },
+              { v: 2, label: 'Đã huỷ', color: 'danger', confirm: 'Huỷ hoá đơn này?' }
+            ],
+            // Bám ĐÚNG state machine của InvoiceService; không có quyền quản lý → khoá (server cũng chặn).
+            allowed: function (r) {
+              if (!CAN_MANAGE) { return []; }
+              return ({ 0: [1], 1: [2] })[r.status] || [];
+            }
+          })
         ]
       });
 

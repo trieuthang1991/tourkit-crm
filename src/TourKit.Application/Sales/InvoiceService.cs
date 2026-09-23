@@ -132,6 +132,28 @@ public sealed class InvoiceService(
         return await MapAsync(invoice);
     }
 
+    // State machine hoá đơn: Nháp(0)→Phát hành(1)→Huỷ(2); Huỷ là trạng thái cuối, không đổi tiếp được.
+    private static readonly Dictionary<int, int[]> StatusTransitions = new()
+    {
+        [0] = [1],
+        [1] = [2],
+        [2] = [],
+    };
+
+    public async Task SetStatusAsync(Guid id, int status)
+    {
+        var invoice = await invoiceRepo.GetByIdAsync(id) ?? throw new NotFoundException();
+
+        if (!StatusTransitions.TryGetValue(invoice.Status, out var allowed) || !allowed.Contains(status))
+        {
+            throw new ValidationAppException("Không thể chuyển trạng thái hoá đơn sang bước này.");
+        }
+
+        invoice.Status = status;
+        invoiceRepo.Update(invoice);
+        await invoiceRepo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var invoice = await invoiceRepo.GetByIdAsync(id) ?? throw new NotFoundException();

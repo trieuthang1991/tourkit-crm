@@ -504,10 +504,20 @@
             bottomCalcFormatter: function (c) { return '<span class="fw-medium">' + g.money(c.getValue()) + '</span>'; },
             formatter: function (c) { return g.moneyCell(c.getValue()); }
           },
-          {
-            title: 'Cột phễu', field: 'stageName', width: 150,
-            formatter: 'tkBadge', formatterParams: { color: 'stageTone' }
-          },
+          g.statusCol({
+            field: 'stageCode', title: 'Cột phễu', width: 160,
+            handler: '?handler=Move', param: 'stageCode',
+            options: STAGES.map(function (s) {
+              return { v: s.code, label: s.name, color: s.code === CHOT ? 'success' : (s.code === HUY ? 'danger' : 'info') };
+            }),
+            // Đổi NHANH chỉ giữa các cột pipeline: loại Chốt(hệ thống đánh dấu khi sinh đơn) + Huỷ
+            // (bắt buộc lý do → dùng action "Huỷ cơ hội"). Đã chốt đơn / không có quyền → khoá.
+            allowed: function (r) {
+              if (!CAN_MANAGE || r.convertedOrderId || r.stageCode === CHOT) { return []; }
+              return STAGES.map(function (s) { return s.code; }).filter(function (c) { return c !== HUY && c !== CHOT; });
+            },
+            sub: function (r) { return r.convertedOrderId ? 'Đã chốt đơn' : null; }
+          }),
           { title: 'Ngày tạo', field: 'createdAtText', width: 110 }
         ]
       });

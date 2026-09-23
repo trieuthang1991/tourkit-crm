@@ -34,5 +34,8 @@ public interface IProviderService
     /// Dòng có sẵn mà không nằm trong <paramref name="services"/> sẽ bị XOÁ (xoá mềm).
     /// </summary>
     Task UpdateWithServicesAsync(Guid id, UpdateProviderDto dto, IReadOnlyList<ProviderServiceLineDto> services);
+
+    /// <summary>Đổi nhanh trạng thái Hoạt động/Ngừng từ menu trên dòng lưới (không đụng các trường khác).</summary>
+    Task SetStatusAsync(Guid id, int status);
     Task DeleteAsync(Guid id);
 }

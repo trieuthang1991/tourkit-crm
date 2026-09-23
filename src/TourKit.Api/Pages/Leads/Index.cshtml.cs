@@ -236,6 +236,29 @@ public class IndexModel : TkListPageModel
         return new JsonResult(Result.Success("Đã chuyển trạng thái."));
     }
 
+    /// <summary>Đổi nhanh trạng thái từ menu trên dòng lưới — tái dùng ĐÚNG thao tác Get+Update mà
+    /// Kanban (<see cref="OnPostMoveAsync"/>) đang dùng, chỉ khác nơi gọi (JSON toast thay vì kéo–thả).</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        if (!Enum.IsDefined(typeof(LeadStatus), status))
+        {
+            return new JsonResult(Result.Error("Trạng thái không hợp lệ."));
+        }
+
+        try
+        {
+            var lead = await _svc.GetAsync(id);
+            await _svc.UpdateAsync(id, new UpdateLeadDto(
+                lead.FullName, lead.Phone, lead.Email, lead.Source, (LeadStatus)status, lead.AssignedToUserId, lead.BranchId));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+
+        return new JsonResult(Result.Success($"Đã đổi trạng thái thành \"{StatusLabel((LeadStatus)status)}\"."));
+    }
+
     /// <summary>Xuất CSV theo đúng bộ lọc đang áp (giới hạn 5000 dòng).</summary>
     public async Task<IActionResult> OnGetExportAsync()
     {

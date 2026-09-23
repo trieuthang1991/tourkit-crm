@@ -817,14 +817,15 @@
               return '<div class="tk-cell tk-cell-right"><div class="tk-cell-main ' + (v > 0 ? 'text-danger' : '') + '">' + money(v) + '</div></div>';
             }
           },
-          {
-            title: 'Đánh giá & TT', field: 'status', width: 150,
-            formatter: function (c) {
-              var r = c.getData();
-              return '<div class="tk-cell"><span class="badge bg-label-' + (r.status === 1 ? 'success' : 'secondary') + '">' + esc(r.statusLabel) + '</span>' +
-                '<div class="tk-cell-sub mt-1">Đánh giá: ' + (r.rate || 0) + '</div></div>';
-            }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 150, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 1, label: 'Hoạt động', color: 'success' },
+              { v: 0, label: 'Ngừng', color: 'secondary' }
+            ],
+            sub: function (r) { return 'Đánh giá: ' + (r.rate || 0); }
+          })
         ]
       });
 

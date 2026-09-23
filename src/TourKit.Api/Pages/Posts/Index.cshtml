@@ -189,10 +189,14 @@
           },
           { title: 'Chuyên mục', field: 'categoryName', widthGrow: 2, minWidth: 150,
             formatter: function (c) { return g.stack(c.getValue(), null); } },
-          {
-            title: 'Trạng thái', field: 'statusLabel', width: 130,
-            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
-          },
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 130, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 1, label: 'Xuất bản', color: 'success' },
+              { v: 0, label: 'Nháp', color: 'secondary' }
+            ]
+          }),
           { title: 'Xuất bản', field: 'publishedAtText', width: 140,
             formatter: function (c) { return g.stack(c.getValue(), null); } },
           {

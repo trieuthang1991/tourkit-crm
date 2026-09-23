@@ -132,6 +132,13 @@ public class IndexModel : TkListPageModel
         return new JsonResult(Result.Success("Đã lưu bài viết."));
     }
 
+    /// <summary>Đổi nhanh trạng thái (Nháp/Xuất bản) từ menu trên dòng lưới.</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        await _svc.SetStatusAsync(id, status);
+        return new JsonResult(Result.Success(status == 1 ? "Đã xuất bản bài viết." : "Đã chuyển bài viết về nháp."));
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
         await _svc.DeleteAsync(id);

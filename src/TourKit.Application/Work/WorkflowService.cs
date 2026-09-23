@@ -93,6 +93,20 @@ public sealed class WorkflowService(
         await repo.SaveChangesAsync();
     }
 
+    public async Task SetStatusAsync(Guid id, int status)
+    {
+        // Chỉ 2 trạng thái: 0 đang dùng · 1 lưu trữ (Archived). Chặn giá trị lạ ngay ở biên.
+        if (status is not (0 or Archived))
+        {
+            throw new ValidationAppException("Trạng thái dự án không hợp lệ.");
+        }
+
+        var board = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+        board.Status = status;
+        repo.Update(board);
+        await repo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var board = await repo.GetByIdAsync(id) ?? throw new NotFoundException();

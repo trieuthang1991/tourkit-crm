@@ -15,7 +15,7 @@
   </div>
   <div class="card-datatable table-responsive">
     <table id="tbl" class="table table-hover">
-      <thead><tr><th>Tên</th><th>Bắt đầu</th><th>Kết thúc</th><th class="text-end">Cột / Việc</th><th></th></tr></thead>
+      <thead><tr><th>Tên</th><th>Bắt đầu</th><th>Kết thúc</th><th class="text-end">Cột / Việc</th><th class="text-center">Trạng thái</th><th></th></tr></thead>
       <tbody>
       @foreach (var x in Model.Items)
       {
@@ -24,7 +24,9 @@
           <td>@(x.StartDate?.ToString("dd/MM/yyyy") ?? "—")</td>
           <td>@(x.EndDate?.ToString("dd/MM/yyyy") ?? "—")</td>
           <td class="text-end">@x.SectionCount / @x.TaskCount</td>
+          <td class="text-center"><span class="badge bg-label-@TourKit.Api.Pages.Workflows.IndexModel.StatusColor(x.Status)">@TourKit.Api.Pages.Workflows.IndexModel.StatusLabel(x.Status)</span></td>
           <td class="text-end">
+            <button type="button" class="btn btn-icon btn-sm js-status" data-id="@x.Id" data-next="@(x.Status == 1 ? 0 : 1)" title="@(x.Status == 1 ? "Khôi phục" : "Lưu trữ")"><i class="ti @(x.Status == 1 ? "ti-archive-off" : "ti-archive")"></i></button>
             <button type="button" class="btn btn-icon btn-sm js-edit" title="Sửa"><i class="ti ti-edit"></i></button>
             <button type="button" class="btn btn-icon btn-sm text-danger js-del" data-id="@x.Id" title="Xoá"><i class="ti ti-trash"></i></button>
           </td>
@@ -36,6 +38,7 @@
 </div>
 
 <form id="delete-form" method="post" asp-page-handler="Delete" class="d-none"><input type="hidden" name="id" /></form>
+<form id="status-form" method="post" asp-page-handler="SetStatus" class="d-none"><input type="hidden" name="id" /><input type="hidden" name="status" /></form>
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="oc" style="width:520px;max-width:100%">
   <div class="offcanvas-header border-bottom"><h5 class="offcanvas-title">dự án</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
@@ -70,10 +73,17 @@
   <script>
     var oc;
     $(function () {
-      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [4] }] });
+      tk.tableClient('#tbl', { columnDefs: [{ orderable: false, targets: [5] }] });
       oc = tk.form({ offcanvas: '#oc', form: '#frm', table: '#tbl', saveUrl: '?handler=Save', title: 'dự án',
         rules: { 'Input.Name': { required: true } }, messages: { 'Input.Name': { required: 'Bắt buộc nhập tên' } } });
       $('#tbl tbody').on('click', '.js-edit', function () { oc.open($(this).closest('tr').data('json')); });
+      // Lưu trữ / khôi phục dự án — submit form ẩn (cùng lối với Xoá; trang tải lại hiện trạng thái mới).
+      $('#tbl tbody').on('click', '.js-status', function () {
+        var f = document.getElementById('status-form');
+        f.querySelector('[name="id"]').value = this.getAttribute('data-id');
+        f.querySelector('[name="status"]').value = this.getAttribute('data-next');
+        f.submit();
+      });
       $('#tbl tbody').on('click', '.js-del', function () {
         var id = this.getAttribute('data-id');
         tk.confirmDelete({ title: 'Xoá dự án?' }).then(function (ok) { if (ok) { var f = document.getElementById('delete-form'); f.querySelector('[name="id"]').value = id; f.submit(); } });

@@ -16,6 +16,7 @@ public interface IPostService
     Task<PostDto> GetAsync(Guid id);
     Task<PostDto> CreateAsync(CreatePostDto dto);
     Task UpdateAsync(Guid id, UpdatePostDto dto);
+    Task SetStatusAsync(Guid id, int status);
     Task DeleteAsync(Guid id);
 }
 

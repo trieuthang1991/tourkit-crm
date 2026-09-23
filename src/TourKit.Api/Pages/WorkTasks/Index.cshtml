@@ -337,10 +337,17 @@ else
                 '<div class="progress-bar" style="width:' + p + '%"></div></div><span class="small text-muted">' + p + '%</span></div>';
             }
           },
-          {
-            title: 'Trạng thái', field: 'statusLabel', width: 140,
-            formatter: 'tkBadge', formatterParams: { color: 'statusColor' }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 140, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 0, label: 'Cần làm', color: 'warning' },
+              { v: 1, label: 'Đang làm', color: 'info' },
+              { v: 2, label: 'Hoàn thành', color: 'success' },
+              { v: 3, label: 'Huỷ', color: 'secondary', confirm: 'Đổi sang "Huỷ"?' }
+            ]
+            // Bảng công việc di chuyển tự do như Kanban — không khoá allowed, bám đúng hành vi kéo–thả hiện có.
+          })
         ]
       });
 

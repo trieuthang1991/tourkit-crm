@@ -10,5 +10,6 @@ public interface IFlightTicketIndividualService
     Task<FlightTicketIndividualDto> GetAsync(Guid id);
     Task<FlightTicketIndividualDto> CreateAsync(CreateFlightTicketIndividualDto dto);
     Task UpdateAsync(Guid id, UpdateFlightTicketIndividualDto dto);
+    Task SetStatusAsync(Guid id, int status);
     Task DeleteAsync(Guid id);
 }

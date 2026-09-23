@@ -286,6 +286,25 @@ public class IndexModel : TkListPageModel
         return new JsonResult(Result.Success("Đã lưu vé máy bay lẻ."));
     }
 
+    /// <summary>Đổi nhanh trạng thái duyệt vé từ menu trên dòng (state machine ở FlightTicketIndividualService).</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        if (!CanManage)
+        {
+            return new JsonResult(Result.Error("Bạn không có quyền đổi trạng thái vé máy bay lẻ."));
+        }
+
+        try
+        {
+            await _svc.SetStatusAsync(id, status);
+            return new JsonResult(Result.Success($"Đã đổi trạng thái vé thành \"{StatusLabel(status)}\"."));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
         if (!CanManage)

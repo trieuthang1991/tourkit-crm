@@ -143,4 +143,18 @@ public class IndexModel : TkListPageModel
         await _svc.CreateAsync(new CreateLeadCampaignDto(Input.Name, Input.Note));
         return new JsonResult(Result.Success("Đã lưu chiến dịch chia số."));
     }
+
+    /// <summary>Đổi nhanh trạng thái Đang chạy/Hoàn thành từ menu trên dòng lưới.</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        try
+        {
+            await _svc.SetStatusAsync(id, status);
+            return new JsonResult(Result.Success(status == 1 ? "Đã đánh dấu hoàn thành chiến dịch." : "Đã chuyển chiến dịch về đang chạy."));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+    }
 }

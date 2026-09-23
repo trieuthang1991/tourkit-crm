@@ -672,6 +672,20 @@ public class IndexModel : TkListPageModel
         };
     }
 
+    /// <summary>Đổi nhanh trạng thái Hoạt động/Ngừng từ menu trên dòng lưới.</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        try
+        {
+            await _svc.SetStatusAsync(id, status);
+            return new JsonResult(Result.Success(status == 1 ? "Đã kích hoạt nhà cung cấp." : "Đã ngừng hoạt động nhà cung cấp."));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
         await _svc.DeleteAsync(id);

@@ -91,6 +91,24 @@ public sealed class TicketFundService(
         await repo.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Đổi nhanh trạng thái Chưa sử dụng(0)/Đã sử dụng(1) — xem <see cref="ITicketFundService.SetStatusAsync"/>.
+    /// Đây là TRỤC KHÁC với đóng quỹ (<see cref="TicketFund.IsClosed"/>) — không đụng tới cờ đó.
+    /// </summary>
+    public async Task SetStatusAsync(Guid id, int status)
+    {
+        // Kiểm duyệt chỉ có 2 trạng thái — chặn giá trị lạ ngay ở biên, không để lọt số bừa vào DB.
+        if (status is not ((int)TicketFundStatus.ChuaSuDung or (int)TicketFundStatus.DaSuDung))
+        {
+            throw new ValidationAppException("Trạng thái quỹ vé không hợp lệ.");
+        }
+
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+        entity.Status = status;
+        repo.Update(entity);
+        await repo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();

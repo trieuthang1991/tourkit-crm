@@ -162,6 +162,28 @@ public sealed class FlightTicketIndividualService(
         await repo.SaveChangesAsync();
     }
 
+    // State machine duyệt vé lẻ: Tạo mới(0)→{Đã duyệt(1)|Không duyệt(2)}; cả hai mở lại được về Tạo mới(0).
+    private static readonly Dictionary<int, int[]> StatusTransitions = new()
+    {
+        [0] = [1, 2],
+        [1] = [0],
+        [2] = [0],
+    };
+
+    public async Task SetStatusAsync(Guid id, int status)
+    {
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+
+        if (!StatusTransitions.TryGetValue(entity.Status, out var allowed) || !allowed.Contains(status))
+        {
+            throw new ValidationAppException("Không thể chuyển trạng thái duyệt vé sang bước này.");
+        }
+
+        entity.Status = status;
+        repo.Update(entity);
+        await repo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();

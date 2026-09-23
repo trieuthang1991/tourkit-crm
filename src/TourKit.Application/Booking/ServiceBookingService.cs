@@ -98,6 +98,30 @@ public sealed class ServiceBookingService(
         await repo.SaveChangesAsync();
     }
 
+    // Vòng đời đặt dịch vụ (bám AgentBooking cho nhất quán): Chờ đặt(0)→{Đã đặt(1)|Huỷ(2)};
+    // Đã đặt(1)→{Hoàn tất(3)|Huỷ(2)}; Huỷ/Hoàn tất là bước cuối.
+    private static readonly Dictionary<int, int[]> StatusTransitions = new()
+    {
+        [0] = [1, 2],
+        [1] = [3, 2],
+        [2] = [],
+        [3] = [],
+    };
+
+    public async Task SetStatusAsync(Guid id, int status)
+    {
+        var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();
+
+        if (!StatusTransitions.TryGetValue(entity.Status, out var allowed) || !allowed.Contains(status))
+        {
+            throw new ValidationAppException("Không thể chuyển trạng thái đặt dịch vụ sang bước này.");
+        }
+
+        entity.Status = status;
+        repo.Update(entity);
+        await repo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var entity = await repo.GetByIdAsync(id) ?? throw new NotFoundException();

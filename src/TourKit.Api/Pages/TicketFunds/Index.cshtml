@@ -275,14 +275,16 @@
               return '<div class="tk-row-media">' + g.avatar(v) + g.stack(v, null) + '</div>';
             }
           },
-          {
-            title: 'Trạng thái', field: 'status', width: 140, hozAlign: 'center',
-            formatter: function (c) {
-              var m = TF_STATUS[c.getValue()];
-              return m ? '<span class="badge ' + m.c + '">' + m.t + '</span>'
-                       : '<span class="badge bg-label-secondary">' + esc(c.getValue()) + '</span>';
-            }
-          },
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 160, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            // Nhãn + màu lấy từ TF_STATUS (nguồn TicketFundStatusText phía server) — không tự chép lại.
+            options: Object.keys(TF_STATUS).map(function (k) {
+              return { v: Number(k), label: TF_STATUS[k].t, color: TF_STATUS[k].c.replace('bg-label-', '') };
+            }),
+            // Không có quyền quản lý → khoá (server cũng chặn ở OnPostSetStatusAsync).
+            allowed: function () { return CAN_MANAGE ? [0, 1] : []; }
+          }),
           {
             title: 'Đóng quỹ', field: 'isClosed', width: 150,
             formatter: function (c) {

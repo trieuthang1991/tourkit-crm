@@ -68,6 +68,20 @@ public class IndexModel : TkListPageModel
         return new JsonResult(Result.Success("Đã lưu xe."));
     }
 
+    /// <summary>Đổi nhanh trạng thái Hoạt động/Ngừng từ menu trên dòng lưới.</summary>
+    public async Task<IActionResult> OnPostSetStatusAsync(Guid id, int status)
+    {
+        try
+        {
+            await _svc.SetStatusAsync(id, status);
+            return new JsonResult(Result.Success(status == 1 ? "Đã kích hoạt xe." : "Đã ngừng hoạt động xe."));
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(Result.Error(ex.Message));
+        }
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(Guid id)
     {
         await _svc.DeleteAsync(id);

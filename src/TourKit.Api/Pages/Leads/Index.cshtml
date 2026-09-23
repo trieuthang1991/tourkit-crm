@@ -406,14 +406,23 @@
               return '<div class="tk-row-media">' + g.avatar(v, true) + g.stack(v, null) + '</div>';
             }
           },
-          {
-            title: 'Trạng thái', field: 'status', width: 150,
-            formatter: function (c) {
-              var r = c.getData();
-              return '<div class="tk-cell"><span class="badge bg-label-' + r.statusColor + '">' + esc(r.statusLabel) + '</span>' +
-                (r.convertedCustomerId ? '<div class="tk-cell-sub mt-1">Đã chuyển KH</div>' : '') + '</div>';
-            }
-          }
+          g.statusCol({
+            field: 'status', title: 'Trạng thái', width: 160, hozAlign: 'center',
+            handler: '?handler=SetStatus',
+            options: [
+              { v: 1, label: 'Mới', color: 'secondary' },
+              { v: 2, label: 'Đã liên hệ', color: 'warning' },
+              { v: 3, label: 'Tiềm năng', color: 'info' },
+              { v: 4, label: 'Đã chốt', color: 'success' },
+              { v: 5, label: 'Thất bại', color: 'danger', confirm: 'Đổi sang "Thất bại"?' }
+            ],
+            // Phễu Lead: Mới→Đã liên hệ/Thất bại→Tiềm năng→Đã chốt (chốt là ngõ cụt, chuyển KH là
+            // hành động riêng ở menu dòng); Thất bại mở lại được về Mới.
+            allowed: function (r) {
+              return ({ 1: [2, 5], 2: [3, 5], 3: [4, 5], 4: [], 5: [1] })[r.status] || [];
+            },
+            sub: function (r) { return r.convertedCustomerId ? 'Đã chuyển KH' : null; }
+          })
         ]
       });
 
