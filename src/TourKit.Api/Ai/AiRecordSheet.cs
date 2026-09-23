@@ -60,7 +60,7 @@ public sealed class AiRecordSheet(
                 sb.Append("HỒ SƠ CƠ HỘI BÁN HÀNG\n")
                   .Append("- Tên khách: ").Append(lead.FullName).Append('\n')
                   .Append("- Nguồn: ").Append(Or(lead.Source)).Append('\n')
-                  .Append("- Trạng thái: ").Append(lead.Status).Append('\n')
+                  .Append("- Trạng thái: ").Append(TourKit.Shared.Enums.LeadStatusText.Vi(lead.Status)).Append('\n')
                   .Append("- Có số điện thoại: ").Append(Yes(lead.Phone)).Append('\n')
                   .Append("- Có email: ").Append(Yes(lead.Email)).Append('\n')
                   .Append("- Đã chuyển thành khách hàng: ").Append(lead.ConvertedCustomerId is null ? "chưa" : "rồi").Append('\n');
