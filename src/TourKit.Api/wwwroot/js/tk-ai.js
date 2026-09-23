@@ -245,22 +245,25 @@
   function breakdown(items) {
     if (!items || !items.length) { return ''; }
 
-    var html = '<div class="table-responsive mt-3"><table class="table table-sm table-borderless mb-0"><tbody>';
+    // Bố cục DỌC (không phải bảng 4 cột): panel AI hẹp, nhồi giải thích vào một ô ~30% thì chữ vỡ
+    // xuống dòng liên tục. Mỗi tiêu chí: hàng [nhãn·trọng số  —  điểm] + thanh tiến độ full + ghi
+    // chú FULL-WIDTH bên dưới → đọc thoáng, không bị bóp.
+    var html = '<div class="mt-3">';
     for (var i = 0; i < items.length; i++) {
       var c = items[i];
       var pct = Math.max(0, Math.min(100, Number(c.score) || 0));
       html +=
-        '<tr>' +
-          '<td class="ps-0" style="width:38%">' + esc(c.label) +
-            '<span class="text-muted small"> · ' + esc(c.weight) + '%</span></td>' +
-          '<td style="width:22%">' +
-            '<div class="progress" style="height:.375rem"><div class="progress-bar" style="width:' + pct + '%"></div></div>' +
-          '</td>' +
-          '<td class="text-end pe-2 text-nowrap" style="width:8%">' + pct + '</td>' +
-          '<td class="text-muted small">' + esc(c.note) + '</td>' +
-        '</tr>';
+        '<div class="' + (i ? 'pt-2 mt-2 border-top' : '') + '">' +
+          '<div class="d-flex justify-content-between align-items-baseline gap-2 mb-1">' +
+            '<span class="small fw-medium">' + esc(c.label) +
+              '<span class="text-muted fw-normal"> · ' + esc(c.weight) + '%</span></span>' +
+            '<span class="small fw-semibold flex-shrink-0">' + pct + '</span>' +
+          '</div>' +
+          '<div class="progress" style="height:.375rem"><div class="progress-bar" style="width:' + pct + '%"></div></div>' +
+          (c.note ? '<div class="text-muted small mt-1">' + esc(c.note) + '</div>' : '') +
+        '</div>';
     }
-    return html + '</tbody></table></div>';
+    return html + '</div>';
   }
 
   function render(box, d) {
