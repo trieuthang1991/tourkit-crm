@@ -208,12 +208,9 @@
 
     function kbCardHtml(c) {
       var sub = [c.phone, c.assigneeName].filter(Boolean).map(tk.escape).join(' · ');
-      return '<div class="tk-kb-top">' + tk.g.avatar(c.fullName, true) +
-        '<div class="tk-kb-main">' +
-          '<div class="fw-medium text-truncate">' + tk.escape(c.fullName) + '</div>' +
-          (sub ? '<div class="small text-muted text-truncate">' + sub + '</div>' : '') +
-        '</div></div>' +
-        (c.convertedCustomerId ? '<span class="badge bg-label-success mt-2">Đã chuyển KH</span>' : '');
+      return '<div class="fw-medium kanban-text">' + tk.escape(c.fullName) + '</div>' +
+        (sub ? '<div class="small text-muted">' + sub + '</div>' : '') +
+        (c.convertedCustomerId ? '<span class="badge bg-label-success mt-1">Đã chuyển KH</span>' : '');
     }
 
     function kbBoardEl(status) {
@@ -224,7 +221,7 @@
     function kbSyncMore(status, hasMore, total) {
       var board = kbBoardEl(status); if (!board) { return; }
       var head = board.querySelector('.kanban-title-board');
-      if (head && head.dataset.base) { head.innerHTML = tk.escape(head.dataset.base) + ' <span class="tk-kb-count">' + total + '</span>'; }
+      if (head && head.dataset.base) { head.textContent = head.dataset.base + ' (' + total + ')'; }
       var btn = board.querySelector('.kb-more');
       if (!hasMore) { if (btn) { btn.remove(); } return; }
       if (!btn) {
@@ -261,7 +258,7 @@
           res.cards.forEach(function (c) { kbCards[c.id] = c; });
           return {
             id: 'st-' + s.id,
-            title: tk.escape(s.name) + ' <span class="tk-kb-count">' + res.total + '</span>',
+            title: tk.escape(s.name) + ' (' + res.total + ')',
             class: 'bg-label-' + s.color,
             item: res.cards.map(function (c) { return { id: c.id, title: kbCardHtml(c) }; })
           };

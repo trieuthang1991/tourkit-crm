@@ -659,43 +659,6 @@ table.dataTable > tbody > tr:last-child > td { border-bottom: 0; }
 .dataTables_wrapper .pagination .page-item.disabled .page-link { opacity: .5; }
 .dataTables_wrapper .pagination .page-link:hover { background: rgba(var(--bs-primary-rgb), .08); }
 
-/* ===== KANBAN chuẩn hoá (jKanban) — dùng CHUNG Khách tiềm năng / Công việc / Cơ hội =====
-   Trước: thẻ generic (viền+bóng+trắng) không phản hồi, đầu cột tô đặc thô, cột không thành khung.
-   Nay: mỗi CỘT là một khung nền nhạt bo góc (đầu cột giữ tint màu trạng thái + đếm dạng pill),
-   THẺ gọn có avatar, rê chuột NHẤC LÊN (phản hồi vật lý), con trỏ grab. */
-.app-kanban .kanban-container { align-items: flex-start; }   /* cột cao theo nội dung, không kéo đều */
-.app-kanban .kanban-board {
-  background: var(--bs-body-bg, #f5f4f7);
-  border: 1px solid var(--bs-border-color); border-radius: .75rem; overflow: hidden;
-}
-.app-kanban .kanban-board-header { padding: .7rem .85rem; margin: 0; border-bottom: 1px solid var(--bs-border-color); }
-.app-kanban .kanban-title-board { font-size: .875rem !important; font-weight: 600; letter-spacing: -.01em; }
-.app-kanban .kanban-drag { padding: .75rem; min-height: 44px; }
-/* Đếm số ở đầu cột: pill nhỏ (thay "(2)" trơn). */
-.tk-kb-count {
-  font-size: .7rem; font-weight: 600; padding: .04rem .45rem; border-radius: 999px; margin-left: .4rem;
-  background: rgba(0, 0, 0, .06); color: var(--bs-secondary-color); vertical-align: middle;
-}
-/* Thẻ: viền mảnh + bóng rất nhẹ, HOVER nhấc lên, con trỏ grab. */
-.app-kanban .kanban-item {
-  padding: .7rem .8rem !important; margin-bottom: .5rem !important; border-radius: .5rem !important;
-  border: 1px solid var(--bs-border-color) !important; background: var(--bs-card-bg, #fff) !important;
-  box-shadow: 0 1px 2px rgba(75, 70, 92, .05) !important;
-  cursor: grab; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-}
-.app-kanban .kanban-item:hover {
-  transform: translateY(-2px); box-shadow: 0 .45rem 1rem rgba(75, 70, 92, .14) !important;
-  border-color: rgba(var(--bs-primary-rgb), .4) !important;
-}
-.app-kanban .kanban-item:active { cursor: grabbing; transform: scale(.985); }
-.app-kanban .kanban-item:last-child { margin-bottom: 0 !important; }
-/* Nội dung thẻ: avatar + tên/sub, số điện thoại chữ số đều. */
-.tk-kb-top { display: flex; align-items: center; gap: .55rem; min-width: 0; }
-.tk-kb-main { min-width: 0; }
-.tk-kb-main .small { font-variant-numeric: tabular-nums; }
-/* Nút "Tải thêm" gọn trong cột. */
-.app-kanban .kb-more { font-size: .8125rem; margin: 0 .75rem .75rem; width: calc(100% - 1.5rem); }
-
 /* ---- Dòng trạng thái của ô SĐT tự tra khách ---------------------------------------------------
    Ba trạng thái phải phân biệt được NGAY bằng màu: chưa gõ đủ số (không hiện gì), đã có hồ sơ
    (xanh), chưa có ai dùng số này (vàng + nút tạo nhanh). Dùng token theme, không ghi cứng mã màu. */
